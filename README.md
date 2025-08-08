@@ -2,33 +2,7 @@
 
 **Distributed Workflow Orchestration System**
 
-A production-ready system for orchestrating complex workflows across multiple machines with real-time monitoring, secure function execution, and professional terminal interfaces.
-
-## Key Features
-
-### Terminal Interface
-- Enterprise-grade monitoring dashboard with real-time charts
-- Keyboard-driven workflow for efficient operations
-- Configurable alerting with severity-based notifications  
-- Multiple view modes: Overview, Nodes, Tasks, Workflows, Alerts
-
-### Secure Execution
-- Curated function library with 30+ audited functions
-- No arbitrary code execution - only pre-registered functions
-- Input validation and safety limits on all operations
-- Authentication system with role-based access control
-
-### Modern Architecture  
-- Streamlined CLI with unified commands
-- Multi-node cluster with Socket.IO real-time communication
-- Intelligent scheduling with multiple policies
-- Async-first design for high performance
-
-### Enterprise Monitoring
-- Real-time performance metrics with configurable refresh rates
-- Professional visualizations with charts and graphs
-- System health tracking (CPU, memory, throughput)
-- Alert management with threshold monitoring
+Local first LLM-Orchestration for LLM-Tasks and Workflows 
 
 ## Quick Start
 
