@@ -83,52 +83,37 @@ gleitzeit pro
 ### Batch Processing
 
 ```bash
-# Discover files in a folder
-gleitzeit discover /path/to/images
+# Data analysis functions
+gleitzeit run --function random_data --args data_type=numbers count=100 min=1 max=1000
+gleitzeit run --function analyze_numbers --args numbers="[1,5,10,15,20]"
 
-# Process all images in a folder
-gleitzeit run --batch-folder /path/to/images --prompt "Describe this image" --type vision
+# Text processing functions  
+gleitzeit run --function count_words --args text="Hello world from Gleitzeit"
+gleitzeit run --function extract_keywords --args text="Machine learning and AI"
 
-# Process text files
-gleitzeit run --batch-folder /path/to/documents --prompt "Summarize this content" --type text
-
-# Process with specific file types
-gleitzeit run --batch-folder /path/to/mixed --extensions ".jpg,.png" --type vision
-
-# Process with functions
-gleitzeit run --batch-folder /path/to/data --prompt "count_words" --type function
+# CSV data processing
+gleitzeit run --function csv_filter --args file=data.csv column=age min_value=18
 ```
 
-## Python API
+### Quick Monitoring
 
-### Simple Task Execution
+```bash
+# Terminal monitoring (in new terminal)
+gleitzeit pro
 
-```python
-import asyncio
-from gleitzeit_cluster import GleitzeitCluster
-
-async def main():
-    # Create cluster
-    cluster = GleitzeitCluster()
-    await cluster.start()
-    
-    # Quick text analysis
-    result = await cluster.analyze_text("Explain machine learning")
-    print(result)
-    
-    # Quick image analysis
-    results = await cluster.batch_analyze_images(
-        "Describe the image",
-        ["photo1.jpg", "photo2.jpg"]
-    )
-    print(results)
-    
-    await cluster.stop()
-
-asyncio.run(main())
+# Simple status check
+gleitzeit status
 ```
 
-### Advanced Workflows
+## Requirements
+
+- **Python 3.9+**
+- **Ollama** (for LLM tasks): `curl -fsSL https://ollama.ai/install.sh | sh`
+- **Models**: `ollama pull llama3` and `ollama pull llava` (for vision)
+
+## Python API (Optional)
+
+For programmatic workflows:
 
 ```python
 import asyncio
@@ -250,145 +235,15 @@ async def batch_text_analysis():
 asyncio.run(batch_text_analysis())
 ```
 
-## Built-in Functions
+## What Makes This Different?
 
-The system includes 30+ secure functions for common tasks:
-
-```python
-# Data processing
-analyze_numbers(numbers=[1,2,3,4,5])
-fibonacci(n=10)
-current_timestamp()
-
-# Text processing  
-count_words(text="Hello world")
-extract_keywords(text="AI and machine learning", max_keywords=3)
-text_stats(text="Sample text")
-word_frequency(text="hello world hello")
-
-# Batch processing
-async_batch_process(items=["item1", "item2"], delay=0.5)
-
-# And many more...
-```
-
-## Workflow YAML Format
-
-```yaml
-name: "Document Processing Pipeline"
-description: "Extract, analyze, and summarize documents"
-error_strategy: "continue_on_error"
-max_parallel_tasks: 3
-
-tasks:
-  - name: "Extract Text"
-    type: "vision"
-    image_path: "document.png"  
-    prompt: "Extract all text from this document"
-    model: "llava"
-    
-  - name: "Word Count"
-    type: "function"
-    function_name: "count_words"
-    args:
-      text: "{{Extract Text.result}}"
-    dependencies: ["Extract Text"]
-    
-  - name: "Generate Summary"
-    type: "text"
-    prompt: "Summarize this text: {{Extract Text.result}}"
-    model: "llama3"
-    dependencies: ["Extract Text"]
-    
-  - name: "Final Report"  
-    type: "text"
-    prompt: |
-      Create a final report:
-      - Original text: {{Extract Text.result}}
-      - Word count: {{Word Count.result}}
-      - Summary: {{Generate Summary.result}}
-    model: "llama3"
-    dependencies: ["Word Count", "Generate Summary"]
-```
-
-## CLI Commands Reference
-
-### Core Commands
-- `gleitzeit run` - Execute tasks and workflows
-- `gleitzeit dev` - Start development environment  
-- `gleitzeit status` - Check cluster status
-- `gleitzeit pro` - Professional monitoring interface
-- `gleitzeit discover` - Analyze folder contents for batch processing
-
-### Task Execution
-- `--text "prompt"` - Text generation task
-- `--vision image.jpg --prompt "..."` - Vision analysis task
-- `--function func_name --args key=value` - Function execution
-- `--workflow file.yaml` - Workflow execution
-
-### Batch Processing
-- `--batch-folder /path/to/folder` - Process all files in folder
-- `--type vision|text|function` - Task type for batch processing
-- `--extensions ".jpg,.png"` - File extensions to include
-- `--discover /path/to/folder` - Analyze folder without processing
-
-### Function Management
-- `gleitzeit functions list` - List all functions
-- `gleitzeit functions info func_name` - Function details
-- `gleitzeit functions categories` - List function categories
-
-### System Management  
-- `gleitzeit executor` - Start executor node
-- `gleitzeit setup` - Post-installation setup
-
-## Features
-
-✅ **Local-First**: Everything runs on your infrastructure  
-✅ **Distributed**: Scale across multiple machines  
-✅ **Auto-Start**: Services start automatically when needed  
-✅ **Batch Processing**: Efficient parallel processing of multiple items  
-✅ **Workflow Orchestration**: Complex multi-step workflows with dependencies  
-✅ **30+ Built-in Functions**: Ready-to-use secure functions  
-✅ **Real-time Monitoring**: Track progress with professional interface  
-✅ **LLM Integration**: Works with Ollama, OpenAI, and more  
-✅ **Vision Tasks**: Image analysis and processing  
-✅ **No Cloud Dependencies**: Complete privacy and control  
-
-## Requirements
-
-- **Python 3.9+**
-- **Redis** (auto-started if needed)
-- **Ollama** (for LLM tasks): `curl -fsSL https://ollama.ai/install.sh | sh`
-
-### Recommended Models
-```bash
-# For text tasks
-ollama pull llama3
-
-# For vision tasks  
-ollama pull llava
-
-# For code tasks
-ollama pull codellama
-```
-
-## Development
-
-```bash
-# Clone repository
-git clone https://github.com/leifmarkthaler/gleitzeit.git
-cd gleitzeit
-
-# Install in development mode
-pip install -e ".[dev]"
-
-# Run tests
-pytest tests/
-
-# Run specific test categories
-pytest tests/ -m "not slow"  # Skip slow tests
-pytest tests/test_batch_processing.py  # Batch tests only
-```
+- **Local-first**: Everything runs on your machine
+- **No API keys**: No cloud dependencies or costs
+- **Workflow orchestration**: Chain tasks with dependencies and data flow
+- **Built-in functions**: 30+ secure functions for data processing
+- **Privacy**: Your data never leaves your computer
+- **Simple**: Just install and run commands
+- **Extensible**: 30+ built-in functions + Python API
 
 ## Status
 
