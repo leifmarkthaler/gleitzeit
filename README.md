@@ -83,11 +83,20 @@ gleitzeit pro
 ### Batch Processing
 
 ```bash
-# Process multiple images
-gleitzeit run --function async_batch_process --args 'items=["img1.jpg","img2.jpg","img3.jpg"]' delay=0.5
+# Discover files in a folder
+gleitzeit discover /path/to/images
 
-# Batch text analysis
-gleitzeit run --workflow batch_analysis.yaml
+# Process all images in a folder
+gleitzeit run --batch-folder /path/to/images --prompt "Describe this image" --type vision
+
+# Process text files
+gleitzeit run --batch-folder /path/to/documents --prompt "Summarize this content" --type text
+
+# Process with specific file types
+gleitzeit run --batch-folder /path/to/mixed --extensions ".jpg,.png" --type vision
+
+# Process with functions
+gleitzeit run --batch-folder /path/to/data --prompt "count_words" --type function
 ```
 
 ## Python API
@@ -309,12 +318,19 @@ tasks:
 - `gleitzeit dev` - Start development environment  
 - `gleitzeit status` - Check cluster status
 - `gleitzeit pro` - Professional monitoring interface
+- `gleitzeit discover` - Analyze folder contents for batch processing
 
 ### Task Execution
 - `--text "prompt"` - Text generation task
 - `--vision image.jpg --prompt "..."` - Vision analysis task
 - `--function func_name --args key=value` - Function execution
 - `--workflow file.yaml` - Workflow execution
+
+### Batch Processing
+- `--batch-folder /path/to/folder` - Process all files in folder
+- `--type vision|text|function` - Task type for batch processing
+- `--extensions ".jpg,.png"` - File extensions to include
+- `--discover /path/to/folder` - Analyze folder without processing
 
 ### Function Management
 - `gleitzeit functions list` - List all functions

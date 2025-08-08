@@ -27,7 +27,7 @@ from .scheduler.scheduler_node import GleitzeitScheduler, SchedulingPolicy
 from .core.node import NodeCapabilities
 from .core.task import TaskType
 from .functions.registry import get_function_registry
-from .cli_run import run_command_handler
+from .cli_run import run_command_handler, discover_batch_files
 from .cli_dev import dev_command_handler
 from .cli_monitor import monitor_command_handler
 from .cli_monitor_pro import monitor_pro_command_handler  
@@ -844,6 +844,18 @@ def main():
     run.add_argument('--model', '-m', help='Model to use (for text/vision)')
     run.add_argument('--output', '-o', help='Output file for results')
     
+    # Batch processing arguments
+    run.add_argument('--batch-folder', help='Process all files in a folder')
+    run.add_argument('--type', choices=['vision', 'text', 'function'], default='vision', 
+                     help='Task type for batch processing (default: vision)')
+    run.add_argument('--extensions', help='File extensions to process (comma-separated)')
+    run.add_argument('--discover', help='Discover and analyze files in folder (no processing)')
+    
+    # Discovery command (separate for better UX)
+    discover = subparsers.add_parser('discover', help='Analyze folder contents for batch processing')
+    discover.add_argument('folder', help='Folder path to analyze')
+    discover.add_argument('--max-preview', type=int, default=5, help='Max files to preview per category')
+    
     # Functions commands
     functions = subparsers.add_parser('functions', help='Manage secure functions')
     functions_sub = functions.add_subparsers(dest='functions_command', help='Function operations')
@@ -900,6 +912,27 @@ def main():
         asyncio.run(functions_command(args))
     elif args.command == 'run':
         asyncio.run(run_command_handler(args))
+    elif args.command == 'discover':
+        discovery = discover_batch_files(args.folder, max_preview=args.max_preview)
+        print(f"📂 Folder Analysis: {discovery['folder']}")
+        print(f"   Total files: {discovery['total_files']}")
+        print()
+        
+        for category, info in discovery['categories'].items():
+            print(f"📁 {info['description']}: {info['count']} files")
+            if info['preview']:
+                preview = ', '.join(info['preview'])
+                if len(info['preview']) < info['count']:
+                    preview += f", ... (+{info['count'] - len(info['preview'])} more)"
+                print(f"   Files: {preview}")
+            size_mb = info['total_size'] / (1024 * 1024)
+            print(f"   Total size: {size_mb:.1f} MB")
+            print()
+        
+        if discovery['suggested_commands']:
+            print("💡 Suggested batch commands:")
+            for cmd in discovery['suggested_commands']:
+                print(f"   {cmd}")
     else:
         parser.print_help()
 
