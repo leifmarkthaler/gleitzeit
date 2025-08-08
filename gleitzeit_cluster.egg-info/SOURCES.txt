@@ -3,11 +3,13 @@ MANIFEST.in
 OVERVIEW.md
 README.md
 example_workflow.yaml
+install.sh
 pyproject.toml
 requirements-monitor.txt
 setup.py
 docs/getting-started.md
 docs/multi-endpoint-ollama.md
+examples/README.md
 examples/auth_demo.py
 examples/batch_demo.py
 examples/functions_demo.py
@@ -65,3 +67,13 @@ gleitzeit_cluster/scheduler/scheduler_node.py
 gleitzeit_cluster/storage/__init__.py
 gleitzeit_cluster/storage/redis_client.py
 gleitzeit_cluster/storage/result_cache.py
+tests/__init__.py
+tests/conftest.py
+tests/test_batch_processing.py
+tests/test_cluster.py
+tests/test_cluster_integration.py
+tests/test_folder_batch_processing.py
+tests/test_functions.py
+tests/test_service_manager.py
+tests/test_tasks.py
+tests/test_workflows.py

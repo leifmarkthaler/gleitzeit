@@ -52,92 +52,87 @@ Dynamic: license-file
 
 # Gleitzeit
 
-**Local-First LLM Task Runner**
+**Distributed Workflow Orchestration System**
 
-Run LLM and vision tasks locally with a simple CLI. No cloud dependencies, just pure local processing. 
+A local-first distributed computing platform for orchestrating tasks, workflows, and batch processing. Built for LLM tasks, data processing, and complex multi-step workflows.
 
 ## Quick Install
 
 ```bash
-# One-line installer
+# Install from source
+pip install -e .
+
+# Or use the installer
 curl -sSL https://raw.githubusercontent.com/leifmarkthaler/gleitzeit/main/install.sh | bash
 ```
 
-After installation, restart your terminal.
+## Core Concepts
 
-## Simple Examples
+### 🎯 Tasks
+Individual units of work that can be executed independently.
 
-### Text Generation with LLMs
+- **Text Tasks**: LLM text generation and analysis
+- **Vision Tasks**: Image analysis and processing  
+- **Function Tasks**: Execute built-in or custom Python functions
+- **HTTP Tasks**: Make API calls and process responses
+
+### 🔄 Workflows
+Orchestrate multiple tasks with dependencies and data flow.
+
+- **Parallel execution**: Tasks run simultaneously when possible
+- **Dependencies**: Control execution order with task dependencies
+- **Data flow**: Pass results between tasks using `{{task_id.result}}`
+- **Error handling**: Configure how workflows handle task failures
+
+### 📦 Batch Processing
+Process multiple items efficiently with parallel execution.
+
+- **Parallel batching**: Process lists of items simultaneously
+- **Staged processing**: Multi-stage batch pipelines
+- **Auto-scaling**: Automatically scale processing based on load
+
+### 🖥️ Cluster Management
+Distributed execution across multiple nodes.
+
+- **Auto-start**: Automatically start required services
+- **Service management**: Redis and executor nodes managed automatically
+- **Real-time monitoring**: Track progress across distributed execution
+
+## CLI Usage
+
+### Basic Task Execution
 
 ```bash
-# Start the task runner
-gleitzeit dev
+# Text generation
+gleitzeit run --text "Explain quantum computing" --model llama3
 
-# Generate text with Ollama (requires ollama installed)
-gleitzeit run --text "Write a Python function to calculate fibonacci numbers"
+# Image analysis
+gleitzeit run --vision photo.jpg --prompt "Describe this image" --model llava
 
-# Analyze text
-gleitzeit run --text "Summarize the key benefits of renewable energy" --model llama3
+# Function execution
+gleitzeit run --function fibonacci --args n=10
 
-# Creative writing
-gleitzeit run --text "Write a short story about a robot learning to paint"
-```
-
-### Vision Tasks
-
-```bash
-# Analyze an image
-gleitzeit run --vision photo.jpg --prompt "What's in this image?"
-
-# Extract text from image
-gleitzeit run --vision document.png --prompt "Extract all text from this image"
-
-# Describe charts or graphs
-gleitzeit run --vision chart.png --prompt "Explain what this chart shows"
-```
-
-### Python Functions
-
-```bash
 # List available functions
 gleitzeit functions list
-
-# Run built-in functions
-gleitzeit run --function fibonacci_sequence --args n=10
-gleitzeit run --function analyze_numbers --args numbers=[1,2,3,4,5]
-
-# Process CSV data
-gleitzeit run --function csv_filter --args file=data.csv column=age min_value=18
 ```
 
-### Workflows (Multiple Tasks)
+### Workflow Management
 
 ```bash
-# Create a workflow file
-cat > document_analysis.yaml << EOF
-name: "Document Analysis Pipeline"
-tasks:
-  - name: "Extract Text"
-    image: "document.png"
-    prompt: "Extract all text from this document"
-    model: "llava"
-    
-  - name: "Summarize"
-    prompt: "Summarize this text: {{task_1.result}}"
-    model: "llama3"
-    dependencies: ["task_1"]
-    
-  - name: "Translate"  
-    prompt: "Translate to Spanish: {{task_2.result}}"
-    model: "llama3"
-    dependencies: ["task_2"]
-EOF
+# Start development environment
+gleitzeit dev
 
-# Run the workflow
-gleitzeit run --workflow document_analysis.yaml
+# Run workflow from file
+gleitzeit run --workflow my_workflow.yaml
+
+# Check cluster status
+gleitzeit status
+
+# Monitor with professional interface
+gleitzeit pro
 ```
 
-### Built-in Functions
+### Batch Processing
 
 ```bash
 # Data analysis functions
@@ -174,41 +169,108 @@ For programmatic workflows:
 
 ```python
 import asyncio
-from gleitzeit_cluster import GleitzeitCluster, Task, TaskType, TaskParameters, Workflow
+from gleitzeit_cluster import GleitzeitCluster, Workflow, Task, TaskType, TaskParameters
 
 async def main():
     cluster = GleitzeitCluster()
     await cluster.start()
     
-    # Create tasks
-    generate_task = Task(
-        name="Generate Content",
-        task_type=TaskType.TEXT,
-        parameters=TaskParameters(
-            prompt="Write a blog post about AI safety",
-            model_name="llama3"
-        )
+    # Create workflow
+    workflow = Workflow(name="Data Processing Pipeline")
+    
+    # Task 1: Generate data
+    generate_task = workflow.add_python_task(
+        name="Generate Dataset",
+        function_name="fibonacci",
+        kwargs={"n": 10}
     )
     
-    summarize_task = Task(
-        name="Summarize",
-        task_type=TaskType.TEXT,
-        parameters=TaskParameters(
-            prompt="Create a 2-sentence summary: {{task_1.result}}",
-            model_name="llama3"
-        ),
-        dependencies=["task_1"]
+    # Task 2: Analyze data (depends on Task 1)
+    analyze_task = workflow.add_python_task(
+        name="Analyze Numbers", 
+        function_name="analyze_numbers",
+        kwargs={"numbers": "{{Generate Dataset.result}}"},
+        dependencies=["Generate Dataset"]
     )
     
-    # Create and submit workflow
-    workflow = Workflow(
-        name="Content Pipeline",
-        tasks=[generate_task, summarize_task]
+    # Task 3: Summarize with LLM (depends on Task 2)
+    summary_task = workflow.add_text_task(
+        name="Generate Summary",
+        prompt="Create a summary of this analysis: {{Analyze Numbers.result}}",
+        model="llama3",
+        dependencies=["Analyze Numbers"]
     )
     
+    # Submit and monitor workflow
     workflow_id = await cluster.submit_workflow(workflow)
     
     # Wait for completion
+    while True:
+        status = await cluster.get_workflow_status(workflow_id)
+        print(f"Progress: {status['completed_tasks']}/{status['total_tasks']}")
+        
+        if status["status"] == "completed":
+            print("Results:", status["task_results"])
+            break
+        elif status["status"] == "failed":
+            print("Workflow failed:", status.get("error"))
+            break
+            
+        await asyncio.sleep(1)
+    
+    await cluster.stop()
+
+asyncio.run(main())
+```
+
+### Batch Processing
+
+```python
+import asyncio
+from gleitzeit_cluster import GleitzeitCluster, Workflow, Task, TaskType, TaskParameters
+
+async def batch_text_analysis():
+    cluster = GleitzeitCluster()
+    await cluster.start()
+    
+    # Batch processing workflow
+    workflow = Workflow(name="Batch Text Analysis")
+    
+    texts = [
+        "Artificial intelligence is transforming industries",
+        "Climate change requires immediate action",  
+        "Space exploration opens new frontiers"
+    ]
+    
+    # Create parallel analysis tasks
+    for i, text in enumerate(texts):
+        workflow.add_python_task(
+            name=f"Analyze Text {i+1}",
+            function_name="count_words",
+            kwargs={"text": text}
+        )
+        
+        workflow.add_python_task(
+            name=f"Extract Keywords {i+1}",
+            function_name="extract_keywords", 
+            kwargs={"text": text, "max_keywords": 3}
+        )
+    
+    # Aggregation task
+    workflow.add_text_task(
+        name="Generate Report",
+        prompt='''Create a report from these analyses:
+        Text 1 words: {{Analyze Text 1.result}}, keywords: {{Extract Keywords 1.result}}
+        Text 2 words: {{Analyze Text 2.result}}, keywords: {{Extract Keywords 2.result}}
+        Text 3 words: {{Analyze Text 3.result}}, keywords: {{Extract Keywords 3.result}}''',
+        model="llama3",
+        dependencies=[f"Analyze Text {i+1}" for i in range(3)] + [f"Extract Keywords {i+1}" for i in range(3)]
+    )
+    
+    # Execute batch workflow
+    workflow_id = await cluster.submit_workflow(workflow)
+    
+    # Monitor progress
     while True:
         status = await cluster.get_workflow_status(workflow_id)
         if status["status"] in ["completed", "failed"]:
@@ -216,11 +278,13 @@ async def main():
         await asyncio.sleep(1)
     
     if status["status"] == "completed":
-        print("Results:", status["task_results"])
+        print("Batch Results:")
+        for task_name, result in status["task_results"].items():
+            print(f"  {task_name}: {result}")
     
     await cluster.stop()
 
-asyncio.run(main())
+asyncio.run(batch_text_analysis())
 ```
 
 ## What Makes This Different?
@@ -235,19 +299,19 @@ asyncio.run(main())
 
 ## Status
 
-- **Version**: 0.0.1 (Early Development)
-- **License**: MIT
+- **Version**: 0.0.1 (Alpha)
+- **License**: MIT  
 - **Python**: 3.9+ required
-
-## Roadmap
-
-- [ ] More LLM integrations (OpenAI, Anthropic)
-- [ ] Workflow templates
-- [ ] Web interface
-- [ ] Multi-machine clustering
+- **Platform**: macOS, Linux (Windows support planned)
 
 ## Contributing
 
-This is an early-stage project. Issues and pull requests welcome!
+This project is in active development. Contributions welcome!
+
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
 **Repository**: https://github.com/leifmarkthaler/gleitzeit
