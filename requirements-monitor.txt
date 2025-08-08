@@ -1,0 +1,2 @@
+# Additional dependencies for monitoring GUI
+rich>=13.0.0

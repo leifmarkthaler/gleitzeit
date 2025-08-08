@@ -1,0 +1,22 @@
+name: Example Data Pipeline
+description: Demonstrates streamlined workflow syntax
+
+tasks:
+  - name: Generate Numbers
+    function: random_data
+    args:
+      data_type: numbers
+      count: 20
+      min: 1
+      max: 100
+
+  - name: Analyze Numbers
+    function: analyze_numbers
+    args:
+      numbers: "{{task_1.result}}"
+    dependencies: ["task_1"]
+
+  - name: Generate Report
+    prompt: "Summarize these statistics in a brief report: {{task_2.result}}"
+    model: llama3
+    dependencies: ["task_2"]

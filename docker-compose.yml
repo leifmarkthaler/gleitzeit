@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    networks:
+      - gleitzeit
+
+  socketio-server:
+    image: node:18-alpine
+    ports:
+      - "8000:8000"
+    working_dir: /app
+    volumes:
+      - ./socketio-server:/app
+    command: npm start
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - PORT=8000
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+
+  gleitzeit-scheduler:
+    build: .
+    command: python -m gleitzeit_cluster.scheduler.main
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - SOCKETIO_URL=http://socketio-server:8000
+    depends_on:
+      - redis
+      - socketio-server
+    networks:
+      - gleitzeit
+
+  gleitzeit-executor:
+    build: .
+    command: python -m gleitzeit_cluster.executor.main --node-id executor-1
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - SOCKETIO_URL=http://socketio-server:8000
+      - OLLAMA_URL=http://host.docker.internal:11434
+    depends_on:
+      - redis
+      - socketio-server
+    networks:
+      - gleitzeit
+
+volumes:
+  redis_data:
+
+networks:
+  gleitzeit:
+    driver: bridge
