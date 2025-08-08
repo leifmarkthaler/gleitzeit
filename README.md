@@ -65,37 +65,39 @@ gleitzeit run --function csv_filter --args file=data.csv column=age min_value=18
 cat > document_analysis.yaml << EOF
 name: "Document Analysis Pipeline"
 tasks:
-  - name: "extract_text"
-    type: "vision"
-    image_path: "document.pdf"
+  - name: "Extract Text"
+    image: "document.png"
     prompt: "Extract all text from this document"
+    model: "llava"
     
-  - name: "summarize"
-    type: "text" 
-    prompt: "Summarize this text: {extract_text.result}"
-    depends_on: ["extract_text"]
+  - name: "Summarize"
+    prompt: "Summarize this text: {{task_1.result}}"
+    model: "llama3"
+    dependencies: ["task_1"]
     
-  - name: "translate"
-    type: "text"
-    prompt: "Translate to Spanish: {summarize.result}"
-    depends_on: ["summarize"]
+  - name: "Translate"  
+    prompt: "Translate to Spanish: {{task_2.result}}"
+    model: "llama3"
+    dependencies: ["task_2"]
 EOF
 
 # Run the workflow
 gleitzeit run --workflow document_analysis.yaml
 ```
 
-### Batch Processing
+### Built-in Functions
 
 ```bash
-# Process multiple images
-gleitzeit run --vision "*.jpg" --prompt "Describe each image" --batch
+# Data analysis functions
+gleitzeit run --function random_data --args data_type=numbers count=100 min=1 max=1000
+gleitzeit run --function analyze_numbers --args numbers="[1,5,10,15,20]"
 
-# Analyze multiple documents
-gleitzeit run --text "data/*.txt" --prompt "Extract key insights from each file" --batch
+# Text processing functions  
+gleitzeit run --function count_words --args text="Hello world from Gleitzeit"
+gleitzeit run --function extract_keywords --args text="Machine learning and AI"
 
-# Run function on multiple CSV files
-gleitzeit run --function analyze_data --args files="reports/*.csv" --batch
+# CSV data processing
+gleitzeit run --function csv_filter --args file=data.csv column=age min_value=18
 ```
 
 ### Quick Monitoring
@@ -120,43 +122,49 @@ For programmatic workflows:
 
 ```python
 import asyncio
-from gleitzeit_cluster import GleitzeitCluster, Workflow
+from gleitzeit_cluster import GleitzeitCluster, Task, TaskType, TaskParameters, Workflow
 
 async def main():
     cluster = GleitzeitCluster()
     await cluster.start()
     
-    # Create a multi-step workflow
-    workflow = cluster.create_workflow("content_pipeline")
-    
-    # Step 1: Generate content
-    workflow.add_task(
-        "generate", 
-        task_type="text",
-        prompt="Write a blog post about AI safety",
-        model="llama3"
+    # Create tasks
+    generate_task = Task(
+        name="Generate Content",
+        task_type=TaskType.TEXT,
+        parameters=TaskParameters(
+            prompt="Write a blog post about AI safety",
+            model_name="llama3"
+        )
     )
     
-    # Step 2: Create summary (depends on step 1)
-    workflow.add_task(
-        "summarize",
-        task_type="text", 
-        prompt="Create a 2-sentence summary: {generate.result}",
-        depends_on=["generate"]
+    summarize_task = Task(
+        name="Summarize",
+        task_type=TaskType.TEXT,
+        parameters=TaskParameters(
+            prompt="Create a 2-sentence summary: {{task_1.result}}",
+            model_name="llama3"
+        ),
+        dependencies=["task_1"]
     )
     
-    # Step 3: Generate image prompt (parallel to summary)
-    workflow.add_task(
-        "image_prompt",
-        task_type="text",
-        prompt="Create an image description for: {generate.result}",
-        depends_on=["generate"] 
+    # Create and submit workflow
+    workflow = Workflow(
+        name="Content Pipeline",
+        tasks=[generate_task, summarize_task]
     )
     
-    # Execute workflow
-    result = await cluster.execute_workflow(workflow)
-    print(f"Summary: {result['summarize']}")
-    print(f"Image prompt: {result['image_prompt']}")
+    workflow_id = await cluster.submit_workflow(workflow)
+    
+    # Wait for completion
+    while True:
+        status = await cluster.get_workflow_status(workflow_id)
+        if status["status"] in ["completed", "failed"]:
+            break
+        await asyncio.sleep(1)
+    
+    if status["status"] == "completed":
+        print("Results:", status["task_results"])
     
     await cluster.stop()
 
@@ -168,7 +176,7 @@ asyncio.run(main())
 - **Local-first**: Everything runs on your machine
 - **No API keys**: No cloud dependencies or costs
 - **Workflow orchestration**: Chain tasks with dependencies and data flow
-- **Batch processing**: Handle multiple files with glob patterns
+- **Built-in functions**: 30+ secure functions for data processing
 - **Privacy**: Your data never leaves your computer
 - **Simple**: Just install and run commands
 - **Extensible**: 30+ built-in functions + Python API
