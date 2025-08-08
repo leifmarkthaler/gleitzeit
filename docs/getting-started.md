@@ -1,126 +1,347 @@
-# Getting Started with Gleitzeit Cluster
+# Getting Started with Gleitzeit
 
-## 🚀 Quick Start
+Gleitzeit is a distributed workflow orchestration system that allows you to execute tasks across multiple machines with real-time monitoring. This guide will get you up and running in minutes.
 
-### 1. Installation
-
-```bash
-pip install gleitzeit-cluster
-```
-
-### 2. Start Infrastructure
-
-Start Redis and Socket.IO servers:
+## Quick Install
 
 ```bash
-docker-compose up -d redis socketio-server
+# One-line installer (recommended)
+curl -sSL https://raw.githubusercontent.com/leifmarkthaler/gleitzeit/main/install.sh | bash
+
+# Or install with UV
+uv pip install "gleitzeit-cluster[monitor]" && ~/.venv/bin/gleitzeit-setup
+
+# Or install with pip
+pip install "gleitzeit-cluster[monitor]" && python -m gleitzeit_cluster.post_install
 ```
 
-### 3. Basic Usage
+After installation, restart your terminal or run `source ~/.zshrc` to use the `gleitzeit` command.
+
+## Your First Workflow
+
+### Start the Development Environment
+
+```bash
+# Terminal 1: Start cluster + executor + scheduler
+gleitzeit dev
+```
+
+This starts all components in development mode. You'll see:
+- Cluster server running on http://localhost:8000
+- Executor node ready to process tasks
+- Scheduler distributing work
+
+### Launch Monitoring Dashboard
+
+```bash
+# Terminal 2: Professional monitoring interface
+gleitzeit pro
+```
+
+This opens a real-time terminal dashboard showing:
+- System performance metrics
+- Active tasks and workflows
+- Node status and health
+- Alert notifications
+
+### Execute Your First Task
+
+```bash
+# Terminal 3: Run a simple function
+gleitzeit run --function fibonacci --args n=10
+
+# Or analyze text
+gleitzeit run --text "Explain quantum computing" --model llama3
+
+# Or process an image
+gleitzeit run --vision image.jpg --prompt "Describe this image"
+```
+
+## Core Concepts
+
+### Tasks
+Individual work units that can be:
+- **Function calls**: Execute pre-registered Python functions
+- **Text generation**: Use LLM models for text processing
+- **Vision analysis**: Process images with vision models
+- **HTTP requests**: Make external API calls
+
+### Workflows
+Collections of dependent tasks that can:
+- Run tasks in parallel or sequence
+- Pass data between tasks
+- Handle errors and retries
+- Cache results for efficiency
+
+### Nodes
+Execution environments that can:
+- **Executors**: Process tasks with different capabilities (CPU/GPU)
+- **Schedulers**: Distribute tasks across executors
+- **Cluster**: Coordinate the entire system
+
+## Available Functions
+
+View all built-in functions:
+
+```bash
+# List all functions
+gleitzeit functions list
+
+# Search for specific functions
+gleitzeit functions search "data"
+
+# Get details about a function
+gleitzeit functions show fibonacci_sequence
+
+# Show function statistics
+gleitzeit functions stats
+```
+
+Gleitzeit includes 30+ secure, audited functions across categories:
+- **Core**: Math, text processing, utilities
+- **Data**: CSV processing, aggregation, analysis
+
+## Python API
+
+For programmatic use:
 
 ```python
 import asyncio
-from gleitzeit_cluster import GleitzeitCluster
+from gleitzeit_cluster import GleitzeitCluster, Task, TaskType, TaskParameters
 
 async def main():
-    # Initialize cluster
+    # Start cluster
     cluster = GleitzeitCluster()
     await cluster.start()
     
-    try:
-        # Quick text analysis
-        result = await cluster.analyze_text("Explain quantum computing")
-        print(f"Result: {result}")
-        
-        # Create complex workflow
-        workflow = cluster.create_workflow("my-analysis")
-        workflow.add_text_task("summarize", "Summarize this document...")
-        workflow.add_text_task("keywords", "Extract keywords...")
-        
-        # Execute workflow
-        result = await cluster.execute_workflow(workflow)
-        print(f"Workflow completed: {result.status}")
-        
-    finally:
-        await cluster.stop()
+    # Create a simple task
+    task = Task(
+        name="Calculate Fibonacci",
+        task_type=TaskType.FUNCTION,
+        parameters=TaskParameters(
+            function_name="fibonacci_sequence",
+            kwargs={"n": 10}
+        )
+    )
+    
+    # Execute task
+    result = await cluster.execute_task(task)
+    print(f"Result: {result}")
+    
+    # Create a workflow with multiple tasks
+    workflow = cluster.create_workflow("data-analysis")
+    
+    # Add tasks to workflow
+    workflow.add_task("generate_data", 
+                     function_name="generate_sample_data",
+                     kwargs={"size": 100})
+                     
+    workflow.add_task("analyze_data",
+                     function_name="analyze_numbers", 
+                     depends_on=["generate_data"])
+    
+    # Execute workflow
+    result = await cluster.execute_workflow(workflow)
+    print(f"Workflow result: {result}")
+    
+    await cluster.stop()
 
+# Run the example
 asyncio.run(main())
 ```
 
-## 📖 Core Concepts
+## Configuration
 
-### Workflows
+### Basic Configuration
 
-Workflows are collections of tasks with dependencies:
+Create a configuration file `gleitzeit.yaml`:
 
-```python
-workflow = cluster.create_workflow("document-analysis")
+```yaml
+cluster:
+  host: localhost
+  port: 8000
+  redis_url: redis://localhost:6379
 
-# Tasks can depend on other tasks
-task1 = workflow.add_text_task("summarize", "Summarize document")
-task2 = workflow.add_text_task("keywords", "Extract keywords", 
-                               dependencies=[task1.id])
+executors:
+  - name: cpu-worker
+    max_tasks: 4
+    capabilities: [text, function]
+  
+  - name: gpu-worker  
+    max_tasks: 2
+    capabilities: [vision, text]
+    gpu_only: true
+
+scheduler:
+  policy: least_loaded
+  queue_size: 1000
+  heartbeat_interval: 30
 ```
-
-### Task Types
-
-- **Text Tasks**: LLM-based text processing
-- **Vision Tasks**: Image analysis with vision models  
-- **Python Tasks**: Pure Python computation
-- **HTTP Tasks**: API calls and web requests
-- **File Tasks**: File operations
-
-### Executor Nodes
-
-Register nodes to handle different task types:
-
-```python
-from gleitzeit_cluster import ExecutorNode, NodeCapabilities, TaskType
-
-node = ExecutorNode(
-    name="gpu-worker-1",
-    capabilities=NodeCapabilities(
-        supported_task_types={TaskType.TEXT_PROMPT, TaskType.VISION_TASK},
-        available_models=["llama3", "llava"],
-        has_gpu=True
-    )
-)
-
-await cluster.register_node(node)
-```
-
-## 🔧 Configuration
 
 ### Environment Variables
 
 ```bash
-export REDIS_URL="redis://localhost:6379"
-export SOCKETIO_URL="http://localhost:8000"
-export OLLAMA_URL="http://localhost:11434"
+export GLEITZEIT_REDIS_URL="redis://localhost:6379"
+export GLEITZEIT_LOG_LEVEL="INFO"
+export GLEITZEIT_MAX_WORKERS="4"
 ```
 
-### Error Handling
+## Distributed Setup
 
-Configure how workflows handle failures:
+### Start Components Separately
 
-```python
-from gleitzeit_cluster.core.workflow import WorkflowErrorStrategy
+```bash
+# Terminal 1: Start cluster server
+gleitzeit serve --host 0.0.0.0 --port 8000
 
-workflow.error_strategy = WorkflowErrorStrategy.CONTINUE_ON_ERROR
-workflow.max_parallel_tasks = 5
+# Terminal 2: Start scheduler
+gleitzeit scheduler --cluster http://localhost:8000
+
+# Terminal 3: Start CPU executor
+gleitzeit executor --name cpu-1 --cluster http://localhost:8000 --cpu-only
+
+# Terminal 4: Start GPU executor (if available)
+gleitzeit executor --name gpu-1 --cluster http://localhost:8000 --gpu-only
 ```
 
-## 🎯 Examples
+### Multi-Machine Setup
 
-See the `examples/` directory for:
+On the main machine:
+```bash
+# Start cluster server
+gleitzeit serve --host 0.0.0.0 --port 8000
+```
 
-- **minimal_example.py** - Basic cluster usage
-- **workflow_examples.py** - Complex workflow patterns
-- **distributed_setup.py** - Multi-node deployment
+On worker machines:
+```bash
+# Connect executors to main machine
+gleitzeit executor --cluster http://MAIN_MACHINE_IP:8000 --name worker-1
+```
 
-## 🚀 Next Steps
+## Monitoring and Management
 
-1. **Set up Ollama**: Install and configure Ollama with your preferred models
-2. **Deploy Executors**: Start executor nodes on different machines
-3. **Build Dashboards**: Create monitoring interfaces with Socket.IO
-4. **Scale Up**: Add more Redis instances and load balancing
+### System Status
+
+```bash
+# Quick system status
+gleitzeit status
+
+# Watch status continuously
+gleitzeit status --watch
+
+# Check specific cluster
+gleitzeit status --cluster http://localhost:8000
+```
+
+### Results Management
+
+```bash
+# List recent results
+gleitzeit results list
+
+# Show specific result
+gleitzeit results show WORKFLOW_ID
+
+# Export results
+gleitzeit results export results.json
+
+# Clear old results
+gleitzeit results clear --days 7
+```
+
+### Authentication
+
+```bash
+# Login with API key
+gleitzeit auth login
+
+# Check current auth status
+gleitzeit auth status
+
+# Logout
+gleitzeit auth logout
+```
+
+## Docker Setup
+
+Using the included Docker configuration:
+
+```bash
+# Start Redis and supporting services
+docker-compose up -d
+
+# Run Gleitzeit in Docker
+docker build -t gleitzeit .
+docker run -d --name gleitzeit-cluster \
+  --network host \
+  gleitzeit gleitzeit serve
+```
+
+## Troubleshooting
+
+### Common Issues
+
+**Command not found:**
+```bash
+# Reload shell configuration
+source ~/.zshrc
+
+# Or use full path
+~/.venv/bin/gleitzeit --help
+```
+
+**Connection errors:**
+```bash
+# Check if Redis is running
+redis-cli ping
+
+# Check cluster status
+curl http://localhost:8000/health
+```
+
+**Permission errors:**
+```bash
+# Re-run setup
+gleitzeit-setup
+
+# Or manually set PATH
+export PATH="$HOME/.venv/bin:$PATH"
+```
+
+### Getting Help
+
+```bash
+# Command help
+gleitzeit --help
+gleitzeit COMMAND --help
+
+# Function documentation
+gleitzeit functions show FUNCTION_NAME
+
+# System diagnostics
+gleitzeit status --cluster http://localhost:8000
+```
+
+### Performance Tips
+
+1. **Use appropriate node types**: CPU vs GPU tasks
+2. **Batch related tasks**: Group similar operations
+3. **Enable caching**: Reuse results with `--cache`
+4. **Monitor resources**: Use `gleitzeit pro` dashboard
+5. **Scale horizontally**: Add more executor nodes
+
+## Next Steps
+
+- Explore the `examples/` directory for more complex workflows
+- Read the API documentation for advanced usage
+- Check out the monitoring guide for production deployments
+- Join the community for support and contributions
+
+## Resources
+
+- **Repository**: https://github.com/leifmarkthaler/gleitzeit
+- **Issues**: https://github.com/leifmarkthaler/gleitzeit/issues
+- **Documentation**: See other `.md` files in this repository
+- **Examples**: Check the `examples/` directory
+
+Happy orchestrating! 🚀
