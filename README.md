@@ -58,6 +58,46 @@ gleitzeit run --function analyze_numbers --args numbers=[1,2,3,4,5]
 gleitzeit run --function csv_filter --args file=data.csv column=age min_value=18
 ```
 
+### Workflows (Multiple Tasks)
+
+```bash
+# Create a workflow file
+cat > document_analysis.yaml << EOF
+name: "Document Analysis Pipeline"
+tasks:
+  - name: "extract_text"
+    type: "vision"
+    image_path: "document.pdf"
+    prompt: "Extract all text from this document"
+    
+  - name: "summarize"
+    type: "text" 
+    prompt: "Summarize this text: {extract_text.result}"
+    depends_on: ["extract_text"]
+    
+  - name: "translate"
+    type: "text"
+    prompt: "Translate to Spanish: {summarize.result}"
+    depends_on: ["summarize"]
+EOF
+
+# Run the workflow
+gleitzeit run --workflow document_analysis.yaml
+```
+
+### Batch Processing
+
+```bash
+# Process multiple images
+gleitzeit run --vision "*.jpg" --prompt "Describe each image" --batch
+
+# Analyze multiple documents
+gleitzeit run --text "data/*.txt" --prompt "Extract key insights from each file" --batch
+
+# Run function on multiple CSV files
+gleitzeit run --function analyze_data --args files="reports/*.csv" --batch
+```
+
 ### Quick Monitoring
 
 ```bash
@@ -76,28 +116,47 @@ gleitzeit status
 
 ## Python API (Optional)
 
-For more advanced workflows:
+For programmatic workflows:
 
 ```python
 import asyncio
-from gleitzeit_cluster import GleitzeitCluster, Task, TaskType, TaskParameters
+from gleitzeit_cluster import GleitzeitCluster, Workflow
 
 async def main():
     cluster = GleitzeitCluster()
     await cluster.start()
     
-    # Text generation task
-    task = Task(
-        name="Generate Code",
-        task_type=TaskType.TEXT,
-        parameters=TaskParameters(
-            prompt="Write a Python function to sort a list",
-            model="llama3"
-        )
+    # Create a multi-step workflow
+    workflow = cluster.create_workflow("content_pipeline")
+    
+    # Step 1: Generate content
+    workflow.add_task(
+        "generate", 
+        task_type="text",
+        prompt="Write a blog post about AI safety",
+        model="llama3"
     )
     
-    result = await cluster.execute_task(task)
-    print(result)
+    # Step 2: Create summary (depends on step 1)
+    workflow.add_task(
+        "summarize",
+        task_type="text", 
+        prompt="Create a 2-sentence summary: {generate.result}",
+        depends_on=["generate"]
+    )
+    
+    # Step 3: Generate image prompt (parallel to summary)
+    workflow.add_task(
+        "image_prompt",
+        task_type="text",
+        prompt="Create an image description for: {generate.result}",
+        depends_on=["generate"] 
+    )
+    
+    # Execute workflow
+    result = await cluster.execute_workflow(workflow)
+    print(f"Summary: {result['summarize']}")
+    print(f"Image prompt: {result['image_prompt']}")
     
     await cluster.stop()
 
@@ -108,8 +167,10 @@ asyncio.run(main())
 
 - **Local-first**: Everything runs on your machine
 - **No API keys**: No cloud dependencies or costs
-- **Simple**: Just install and run commands
+- **Workflow orchestration**: Chain tasks with dependencies and data flow
+- **Batch processing**: Handle multiple files with glob patterns
 - **Privacy**: Your data never leaves your computer
+- **Simple**: Just install and run commands
 - **Extensible**: 30+ built-in functions + Python API
 
 ## Status
