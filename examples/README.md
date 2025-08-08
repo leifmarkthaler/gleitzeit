@@ -9,6 +9,7 @@ Working examples that demonstrate the current API and capabilities.
 - **`functions_demo.py`** - Built-in function capabilities  
 - **`workflow_demo.py`** - Multi-step workflows with dependencies
 - **`vision_demo.py`** - Image analysis (requires Ollama + llava)
+- **`batch_demo.py`** - Batch processing capabilities
 
 ### Requirements
 - **Ollama** (for LLM tasks): `curl -fsSL https://ollama.ai/install.sh | sh`
@@ -28,6 +29,9 @@ python examples/workflow_demo.py
 
 # Vision analysis (requires images)
 python examples/vision_demo.py
+
+# Batch processing
+python examples/batch_demo.py
 ```
 
 ## Example Features Demonstrated
@@ -36,6 +40,7 @@ python examples/vision_demo.py
 - **Task Types**: TEXT, VISION, FUNCTION, HTTP, FILE
 - **Workflow Dependencies**: Using `{{task_id.result}}` syntax
 - **Function Registry**: 30+ built-in secure functions
+- **Batch Processing**: Handle multiple items efficiently
 - **Async Support**: Both sync and async functions
 - **Error Handling**: Graceful failure management
 - **Real-time Monitoring**: Workflow progress tracking
@@ -71,7 +76,8 @@ cp your_image.jpg test_image.jpg
 1. Start with `simple_example.py` to verify your setup
 2. Explore functions with `functions_demo.py`  
 3. Build workflows with `workflow_demo.py`
-4. Try vision tasks with `vision_demo.py` (after setting up Ollama + llava)
+4. Try batch processing with `batch_demo.py`
+5. Try vision tasks with `vision_demo.py` (after setting up Ollama + llava)
 
 ## CLI Equivalents
 

@@ -151,12 +151,12 @@ class Task(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         """Post-initialization validation"""
         # Auto-detect requirements based on task type
-        if self.task_type == TaskType.VISION_TASK:
+        if self.task_type == TaskType.VISION:
             self.requirements.requires_gpu = True
             if self.parameters.model_name:
                 self.requirements.required_models.append(self.parameters.model_name)
         
-        elif self.task_type == TaskType.TEXT_PROMPT:
+        elif self.task_type == TaskType.TEXT:
             if self.parameters.model_name:
                 self.requirements.required_models.append(self.parameters.model_name)
     

@@ -1,0 +1,3 @@
+[console_scripts]
+gleitzeit = gleitzeit_cluster.cli:main
+gleitzeit-setup = gleitzeit_cluster.post_install:main

@@ -38,9 +38,9 @@ async def main():
         )
         
         workflow = Workflow(
-            name="Simple Text Generation",
-            tasks=[text_task]
+            name="Simple Text Generation"
         )
+        workflow.add_task(text_task)
         
         workflow_id = await cluster.submit_workflow(workflow)
         print(f"📋 Submitted workflow: {workflow_id}")
