@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from .workflow import Workflow, WorkflowStatus, WorkflowResult, WorkflowErrorStrategy
 from .task import Task, TaskType
 from .node import ExecutorNode
+from .service_manager import ServiceManager
 from ..execution.task_executor import TaskExecutor
 from ..execution.ollama_endpoint_manager import EndpointConfig, LoadBalancingStrategy
 from ..storage.redis_client import RedisClient
@@ -34,7 +35,11 @@ class GleitzeitCluster:
         enable_socketio: bool = True,
         auto_start_socketio_server: bool = True,
         socketio_host: str = "0.0.0.0",
-        socketio_port: int = 8000
+        socketio_port: int = 8000,
+        auto_start_services: bool = True,
+        auto_start_redis: bool = True,
+        auto_start_executors: bool = True,
+        min_executors: int = 1
     ):
         """Initialize cluster connection"""
         self.redis_url = redis_url
@@ -44,6 +49,15 @@ class GleitzeitCluster:
         self.auto_start_socketio_server = auto_start_socketio_server
         self.socketio_host = socketio_host
         self.socketio_port = socketio_port
+        
+        # Auto-start configuration
+        self.auto_start_services = auto_start_services
+        self.auto_start_redis = auto_start_redis
+        self.auto_start_executors = auto_start_executors
+        self.min_executors = min_executors
+        
+        # Service manager for auto-starting services
+        self.service_manager = ServiceManager() if auto_start_services else None
         
         # Local fallback storage
         self._workflows: Dict[str, Workflow] = {}
@@ -91,6 +105,20 @@ class GleitzeitCluster:
         print(f"🚀 Starting Gleitzeit Cluster")
         print(f"   Redis: {self.redis_url}")
         print(f"   Socket.IO: {self.socketio_url}")
+        
+        # Auto-start services if enabled
+        if self.service_manager:
+            print(f"🔧 Auto-start services enabled")
+            service_results = await self.service_manager.ensure_services_running(
+                redis_url=self.redis_url,
+                socketio_url=self.socketio_url,
+                auto_start_redis=self.auto_start_redis and self.enable_redis,
+                auto_start_executor=self.auto_start_executors and self.enable_socketio,
+                min_executors=self.min_executors
+            )
+            
+            if service_results.get("services_started"):
+                print(f"   🚀 Started: {', '.join(service_results['services_started'])}")
         
         # Connect to Redis if enabled
         if self.redis_client:
@@ -159,6 +187,10 @@ class GleitzeitCluster:
         # Disconnect from Redis if connected
         if self.redis_client:
             await self.redis_client.disconnect()
+        
+        # Stop managed services
+        if self.service_manager:
+            self.service_manager.stop_managed_services()
             
         self._is_started = False
     

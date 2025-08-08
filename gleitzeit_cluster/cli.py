@@ -440,9 +440,9 @@ async def executor_command(args):
     # Configure capabilities based on arguments
     capabilities = NodeCapabilities(
         supported_task_types=[
-            TaskType.PYTHON_CODE,
-            TaskType.OLLAMA_TEXT,
-            TaskType.OLLAMA_VISION,
+            TaskType.FUNCTION,
+            TaskType.TEXT,
+            TaskType.VISION,
         ],
         available_models=["llama3.1", "codellama", "llava"],
         max_concurrent_tasks=args.tasks,
@@ -456,7 +456,7 @@ async def executor_command(args):
         capabilities.has_gpu = True
         print("   Mode: GPU tasks only")
     elif args.cpu_only:
-        capabilities.supported_task_types = [TaskType.PYTHON_CODE, TaskType.OLLAMA_TEXT]
+        capabilities.supported_task_types = [TaskType.FUNCTION, TaskType.TEXT]
         capabilities.has_gpu = False
         print("   Mode: CPU tasks only")
     
