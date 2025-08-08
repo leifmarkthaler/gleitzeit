@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gleitzeit Cluster Dashboard</title>
+    <link rel="stylesheet" href="/static/dashboard.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1>🚀 Gleitzeit Cluster Dashboard</h1>
+                <div class="connection-status">
+                    <span id="connection-indicator" class="status-disconnected">●</span>
+                    <span id="connection-text">Connecting...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <main class="dashboard">
+            <!-- Overview Cards -->
+            <section class="overview-section">
+                <h2>📊 Cluster Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="active-workflows">0</div>
+                            <div class="stat-label">Active Workflows</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">⚡</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="processing-tasks">0</div>
+                            <div class="stat-label">Processing Tasks</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🖥️</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="active-nodes">0</div>
+                            <div class="stat-label">Active Nodes</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-content">
+                            <div class="stat-value" id="completed-workflows">0</div>
+                            <div class="stat-label">Completed</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Two Column Layout -->
+            <div class="dashboard-columns">
+                <!-- Left Column: Active Workflows -->
+                <section class="workflows-section">
+                    <h2>📋 Active Workflows</h2>
+                    <div id="workflows-list" class="workflows-list">
+                        <div class="empty-state">
+                            <p>No active workflows</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right Column: Nodes and Activity -->
+                <aside class="sidebar">
+                    <!-- Executor Nodes -->
+                    <section class="nodes-section">
+                        <h3>🖥️ Executor Nodes</h3>
+                        <div id="nodes-list" class="nodes-list">
+                            <div class="empty-state">
+                                <p>No nodes connected</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Recent Activity -->
+                    <section class="activity-section">
+                        <h3>📡 Recent Activity</h3>
+                        <div id="activity-feed" class="activity-feed">
+                            <div class="activity-item">
+                                <span class="activity-time">Starting up...</span>
+                                <span class="activity-message">Dashboard initialized</span>
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="/static/dashboard.js"></script>
+</body>
+</html>
