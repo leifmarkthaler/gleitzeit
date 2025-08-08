@@ -1,134 +1,8 @@
-# Gleitzeit Cluster
+# Gleitzeit
 
-**Distributed Workflow Orchestration System**
+**Local-First LLM Task Runner**
 
-Local first LLM-Orchestration for LLM-Tasks and Workflows 
-
-## Quick Start
-
-### Installation
-
-**With UV (Recommended):**
-```bash
-# Install UV package manager
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install Gleitzeit with monitoring
-uv pip install "gleitzeit-cluster[monitor]" && ~/.venv/bin/gleitzeit-setup
-```
-
-**With pip:**
-```bash
-# Install with monitoring
-pip install "gleitzeit-cluster[monitor]" && python -m gleitzeit_cluster.post_install
-```
-
-### Basic Usage
-
-```bash
-# Start development environment
-gleitzeit dev
-
-# Launch monitoring dashboard (in new terminal)
-gleitzeit pro
-
-# Run a function
-gleitzeit run --function fibonacci --args n=10
-```
-
-### Available Commands
-
-```bash
-gleitzeit dev        # Start cluster + executor + scheduler  
-gleitzeit pro        # Monitoring dashboard
-gleitzeit run        # Execute tasks
-gleitzeit status     # System status
-gleitzeit functions  # Browse function library
-```
-
-## Architecture
-
-```
-┌─────────────────────────────────────────┐
-│            Gleitzeit Cluster            │
-├─────────────────────────────────────────┤
-│  Control Plane: Scheduler + Machine Mgr │
-├─────────────────────────────────────────┤
-│  Communication: Redis + Socket.IO       │
-├─────────────────────────────────────────┤
-│  Execution Plane: Distributed Executors │
-└─────────────────────────────────────────┘
-```
-
-## Python API
-
-### Basic Usage
-
-```python
-from gleitzeit_cluster import GleitzeitCluster
-
-# Start cluster
-cluster = GleitzeitCluster()
-await cluster.start()
-
-# Submit workflow
-workflow = cluster.create_workflow("analyze-documents")
-workflow.add_task("text_analysis", prompt="Analyze this document", model="llama3")
-workflow.add_task("vision_analysis", image_path="chart.png", model="llava")
-
-# Execute and monitor
-result = await cluster.execute_workflow(workflow)
-print(f"Results: {result}")
-```
-
-### Distributed Components
-
-```bash
-# Start Redis and Socket.IO servers
-docker-compose up -d
-
-# Start scheduler
-gleitzeit scheduler --name scheduler-1
-
-# Start executor nodes
-gleitzeit executor --name gpu-1 --gpu-only
-gleitzeit executor --name cpu-1 --cpu-only
-```
-
-## Documentation
-
-- [Architecture Overview](docs/architecture.md)
-- [Getting Started Guide](docs/getting-started.md)  
-- [API Reference](docs/api.md)
-- [Deployment Guide](docs/deployment.md)
-
-## Development
-
-```bash
-# Clone repository
-git clone https://github.com/leifmarkthaler/gleitzeit
-cd gleitzeit
-
-# Install development dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Format code
-black gleitzeit_cluster/
-isort gleitzeit_cluster/
-```
-
-## Status
-
-- **Version**: 0.0.1
-- **Python**: 3.9+
-- **Status**: Early Development
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
+Run LLM and vision tasks locally with a simple CLI. No cloud dependencies, just pure local processing. 
 
 ## Quick Install
 
@@ -137,6 +11,122 @@ MIT License - see [LICENSE](LICENSE) file for details.
 curl -sSL https://raw.githubusercontent.com/leifmarkthaler/gleitzeit/main/install.sh | bash
 ```
 
+After installation, restart your terminal.
+
+## Simple Examples
+
+### Text Generation with LLMs
+
+```bash
+# Start the task runner
+gleitzeit dev
+
+# Generate text with Ollama (requires ollama installed)
+gleitzeit run --text "Write a Python function to calculate fibonacci numbers"
+
+# Analyze text
+gleitzeit run --text "Summarize the key benefits of renewable energy" --model llama3
+
+# Creative writing
+gleitzeit run --text "Write a short story about a robot learning to paint"
+```
+
+### Vision Tasks
+
+```bash
+# Analyze an image
+gleitzeit run --vision photo.jpg --prompt "What's in this image?"
+
+# Extract text from image
+gleitzeit run --vision document.png --prompt "Extract all text from this image"
+
+# Describe charts or graphs
+gleitzeit run --vision chart.png --prompt "Explain what this chart shows"
+```
+
+### Python Functions
+
+```bash
+# List available functions
+gleitzeit functions list
+
+# Run built-in functions
+gleitzeit run --function fibonacci_sequence --args n=10
+gleitzeit run --function analyze_numbers --args numbers=[1,2,3,4,5]
+
+# Process CSV data
+gleitzeit run --function csv_filter --args file=data.csv column=age min_value=18
+```
+
+### Quick Monitoring
+
+```bash
+# Terminal monitoring (in new terminal)
+gleitzeit pro
+
+# Simple status check
+gleitzeit status
+```
+
+## Requirements
+
+- **Python 3.9+**
+- **Ollama** (for LLM tasks): `curl -fsSL https://ollama.ai/install.sh | sh`
+- **Models**: `ollama pull llama3` and `ollama pull llava` (for vision)
+
+## Python API (Optional)
+
+For more advanced workflows:
+
+```python
+import asyncio
+from gleitzeit_cluster import GleitzeitCluster, Task, TaskType, TaskParameters
+
+async def main():
+    cluster = GleitzeitCluster()
+    await cluster.start()
+    
+    # Text generation task
+    task = Task(
+        name="Generate Code",
+        task_type=TaskType.TEXT,
+        parameters=TaskParameters(
+            prompt="Write a Python function to sort a list",
+            model="llama3"
+        )
+    )
+    
+    result = await cluster.execute_task(task)
+    print(result)
+    
+    await cluster.stop()
+
+asyncio.run(main())
+```
+
+## What Makes This Different?
+
+- **Local-first**: Everything runs on your machine
+- **No API keys**: No cloud dependencies or costs
+- **Simple**: Just install and run commands
+- **Privacy**: Your data never leaves your computer
+- **Extensible**: 30+ built-in functions + Python API
+
+## Status
+
+- **Version**: 0.0.1 (Early Development)
+- **License**: MIT
+- **Python**: 3.9+ required
+
+## Roadmap
+
+- [ ] More LLM integrations (OpenAI, Anthropic)
+- [ ] Workflow templates
+- [ ] Web interface
+- [ ] Multi-machine clustering
+
 ## Contributing
 
-Contributions welcome! Please open an issue or submit a pull request.
+This is an early-stage project. Issues and pull requests welcome!
+
+**Repository**: https://github.com/leifmarkthaler/gleitzeit
