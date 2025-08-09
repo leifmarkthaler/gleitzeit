@@ -68,6 +68,7 @@ class SocketIOServer:
         # Connection tracking
         self.connected_clients: Dict[str, Dict[str, Any]] = {}
         self.executor_nodes: Dict[str, Dict[str, Any]] = {}
+        self.external_service_nodes: Dict[str, Dict[str, Any]] = {}
         self.workflow_rooms: Dict[str, Set[str]] = {}
         
         # Monitoring tracking
@@ -248,6 +249,21 @@ class SocketIOServer:
             await self.broadcast_event('node:disconnected', {
                 'node_id': node_info['node_id'],
                 'name': node_info['name'],
+                'node_type': 'executor',
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        
+        # Check if it's an external service node
+        if sid in self.external_service_nodes:
+            service_info = self.external_service_nodes[sid]
+            del self.external_service_nodes[sid]
+            
+            # Notify about external service disconnection
+            await self.broadcast_event('external_service:disconnected', {
+                'service_id': service_info['service_id'],
+                'service_name': service_info['service_name'],
+                'node_type': 'external_service',
+                'capabilities': service_info.get('capabilities', []),
                 'timestamp': datetime.utcnow().isoformat()
             })
         
@@ -528,40 +544,83 @@ class SocketIOServer:
     # ========================
     
     async def handle_node_register(self, sid, data):
-        """Handle executor node registration"""
+        """Handle node registration (executor nodes and external services)"""
         node_id = data.get('node_id')
         name = data.get('name')
         capabilities = data.get('capabilities', {})
+        node_type = data.get('node_type', 'executor')
         
-        logger.info(f"Node registered: {name} ({node_id})")
+        logger.info(f"{node_type.title()} registered: {name} ({node_id})")
         
-        # Store node info
-        self.executor_nodes[sid] = {
-            'sid': sid,
-            'node_id': node_id,
-            'name': name,
-            'capabilities': capabilities,
-            'status': 'ready',
-            'current_tasks': 0,
-            'registered_at': datetime.utcnow(),
-            'last_heartbeat': datetime.utcnow()
-        }
-        
-        # Broadcast node registration
-        await self.broadcast_event('node:registered', {
-            'node_id': node_id,
-            'name': name,
-            'capabilities': capabilities,
-            'timestamp': datetime.utcnow().isoformat()
-        })
+        if node_type == 'external_service':
+            # Store external service info
+            self.external_service_nodes[sid] = {
+                'sid': sid,
+                'service_id': node_id,
+                'service_name': name,
+                'node_type': 'external_service',
+                'capabilities': capabilities.get('service_capabilities', []),
+                'task_types': capabilities.get('task_types', []),
+                'status': 'ready',
+                'current_tasks': 0,
+                'max_tasks': capabilities.get('max_concurrent_tasks', 10),
+                'registered_at': datetime.utcnow(),
+                'last_heartbeat': datetime.utcnow()
+            }
+            
+            # Broadcast external service registration
+            await self.broadcast_event('external_service:registered', {
+                'service_id': node_id,
+                'service_name': name,
+                'node_type': 'external_service',
+                'capabilities': capabilities.get('service_capabilities', []),
+                'task_types': capabilities.get('task_types', []),
+                'max_concurrent_tasks': capabilities.get('max_concurrent_tasks', 10),
+                'timestamp': datetime.utcnow().isoformat()
+            })
+        else:
+            # Store regular executor node info
+            self.executor_nodes[sid] = {
+                'sid': sid,
+                'node_id': node_id,
+                'name': name,
+                'node_type': 'executor',
+                'capabilities': capabilities,
+                'status': 'ready',
+                'current_tasks': 0,
+                'registered_at': datetime.utcnow(),
+                'last_heartbeat': datetime.utcnow()
+            }
+            
+            # Broadcast node registration
+            await self.broadcast_event('node:registered', {
+                'node_id': node_id,
+                'name': name,
+                'node_type': 'executor',
+                'capabilities': capabilities,
+                'timestamp': datetime.utcnow().isoformat()
+            })
     
     async def handle_node_heartbeat(self, sid, data):
-        """Handle node heartbeat"""
-        if sid in self.executor_nodes:
+        """Handle node heartbeat (executor nodes and external services)"""
+        node_type = data.get('node_type', 'executor')
+        
+        if sid in self.executor_nodes and node_type == 'executor':
+            # Handle executor node heartbeat
             self.executor_nodes[sid]['last_heartbeat'] = datetime.utcnow()
             self.executor_nodes[sid]['status'] = data.get('status', 'ready')
             self.executor_nodes[sid]['cpu_usage'] = data.get('cpu_usage')
             self.executor_nodes[sid]['memory_usage'] = data.get('memory_usage')
+            self.executor_nodes[sid]['current_tasks'] = data.get('active_tasks', 0)
+            
+        elif sid in self.external_service_nodes and node_type == 'external_service':
+            # Handle external service heartbeat
+            self.external_service_nodes[sid]['last_heartbeat'] = datetime.utcnow()
+            self.external_service_nodes[sid]['status'] = data.get('status', 'ready')
+            self.external_service_nodes[sid]['current_tasks'] = data.get('active_tasks', 0)
+            self.external_service_nodes[sid]['tasks_completed'] = data.get('tasks_completed', 0)
+            self.external_service_nodes[sid]['tasks_failed'] = data.get('tasks_failed', 0)
+            self.external_service_nodes[sid]['uptime_seconds'] = data.get('uptime_seconds', 0)
     
     async def handle_node_status(self, sid, data):
         """Handle node status update"""

@@ -161,6 +161,128 @@ class Workflow(BaseModel):
         self.add_task(task)
         return task
     
+    def add_external_task(
+        self,
+        name: str,
+        external_task_type: str,
+        service_name: str,
+        external_parameters: Optional[Dict[str, Any]] = None,
+        service_url: Optional[str] = None,
+        dependencies: Optional[List[str]] = None,
+        timeout: int = 1800,
+        **task_kwargs
+    ) -> Task:
+        """Convenience method to add an external task"""
+        from .task import TaskType, TaskParameters
+        
+        # Map external_task_type to TaskType
+        task_type_mapping = {
+            'ml_training': TaskType.EXTERNAL_ML,
+            'ml_inference': TaskType.EXTERNAL_ML,
+            'data_processing': TaskType.EXTERNAL_PROCESSING,
+            'api_integration': TaskType.EXTERNAL_API,
+            'database_operations': TaskType.EXTERNAL_DATABASE,
+            'webhook_handling': TaskType.EXTERNAL_WEBHOOK,
+            'custom_processing': TaskType.EXTERNAL_CUSTOM
+        }
+        
+        task_type = task_type_mapping.get(external_task_type, TaskType.EXTERNAL_CUSTOM)
+        
+        task = Task(
+            name=name,
+            task_type=task_type,
+            parameters=TaskParameters(
+                service_name=service_name,
+                service_url=service_url,
+                external_task_type=external_task_type,
+                external_parameters=external_parameters or {},
+                external_timeout=timeout,
+                **task_kwargs
+            ),
+            dependencies=dependencies or [],
+            timeout_seconds=timeout
+        )
+        self.add_task(task)
+        return task
+    
+    def add_external_ml_task(
+        self,
+        name: str,
+        service_name: str,
+        operation: str,  # 'train', 'inference', 'evaluate'
+        model_params: Optional[Dict[str, Any]] = None,
+        data_params: Optional[Dict[str, Any]] = None,
+        dependencies: Optional[List[str]] = None,
+        timeout: int = 3600,
+        **kwargs
+    ) -> Task:
+        """Convenience method to add external ML task"""
+        return self.add_external_task(
+            name=name,
+            external_task_type="ml_training" if operation == "train" else "ml_inference",
+            service_name=service_name,
+            external_parameters={
+                'operation': operation,
+                'model_params': model_params or {},
+                'data_params': data_params or {},
+                **kwargs
+            },
+            dependencies=dependencies,
+            timeout=timeout
+        )
+    
+    def add_external_api_task(
+        self,
+        name: str,
+        service_name: str,
+        endpoint: str,
+        method: str = "POST",
+        payload: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
+        dependencies: Optional[List[str]] = None,
+        timeout: int = 300,
+        **kwargs
+    ) -> Task:
+        """Convenience method to add external API task"""
+        return self.add_external_task(
+            name=name,
+            external_task_type="api_integration",
+            service_name=service_name,
+            external_parameters={
+                'endpoint': endpoint,
+                'method': method,
+                'payload': payload or {},
+                'headers': headers or {},
+                **kwargs
+            },
+            dependencies=dependencies,
+            timeout=timeout
+        )
+    
+    def add_external_database_task(
+        self,
+        name: str,
+        service_name: str,
+        operation: str,  # 'query', 'update', 'batch_process'
+        query_params: Optional[Dict[str, Any]] = None,
+        dependencies: Optional[List[str]] = None,
+        timeout: int = 600,
+        **kwargs
+    ) -> Task:
+        """Convenience method to add external database task"""
+        return self.add_external_task(
+            name=name,
+            external_task_type="database_operations",
+            service_name=service_name,
+            external_parameters={
+                'operation': operation,
+                'query_params': query_params or {},
+                **kwargs
+            },
+            dependencies=dependencies,
+            timeout=timeout
+        )
+    
     def get_ready_tasks(self) -> List[Task]:
         """Get tasks that are ready to execute"""
         ready_tasks = []

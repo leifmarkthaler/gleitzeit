@@ -96,31 +96,43 @@ class TaskDispatcher:
             raise
             
     async def _get_available_executors(self) -> List[Dict[str, str]]:
-        """Get list of available executor nodes"""
+        """Get list of available executor nodes (including external services)"""
         try:
-            # Get active nodes from Redis
-            active_node_ids = await self.redis_client.get_active_nodes()
+            executor_nodes = []
             
-            # If we have Socket.IO server, get real-time executor status
             if self.socketio_server:
-                executor_nodes = []
-                for node_id in active_node_ids:
-                    # Check Socket.IO server for executor status
-                    for sid, node_info in self.socketio_server.executor_nodes.items():
-                        if node_info.get('node_id') == node_id and node_info.get('status') == 'ready':
-                            executor_nodes.append({
-                                'node_id': node_id,
-                                'sid': sid,
-                                'current_tasks': node_info.get('current_tasks', 0),
-                                'max_tasks': node_info.get('max_tasks', 4)
-                            })
+                # Get regular executor nodes
+                for sid, node_info in self.socketio_server.executor_nodes.items():
+                    if node_info.get('status') == 'ready':
+                        executor_nodes.append({
+                            'node_id': node_info.get('node_id'),
+                            'sid': sid,
+                            'node_type': 'executor',
+                            'current_tasks': node_info.get('current_tasks', 0),
+                            'max_tasks': node_info.get('max_tasks', 4),
+                            'capabilities': node_info.get('capabilities', {})
+                        })
+                
+                # Get external service nodes
+                for sid, service_info in self.socketio_server.external_service_nodes.items():
+                    if service_info.get('status') == 'ready':
+                        executor_nodes.append({
+                            'node_id': service_info.get('service_id'),
+                            'sid': sid,
+                            'node_type': 'external_service',
+                            'current_tasks': service_info.get('current_tasks', 0),
+                            'max_tasks': service_info.get('max_tasks', 10),
+                            'task_types': service_info.get('task_types', []),
+                            'capabilities': service_info.get('capabilities', [])
+                        })
                 
                 # Sort by current load (least loaded first)
                 executor_nodes.sort(key=lambda x: x['current_tasks'])
                 return executor_nodes
             else:
-                # Fallback: assume all active nodes are available
-                return [{'node_id': node_id, 'sid': None} for node_id in active_node_ids]
+                # Fallback: get active nodes from Redis
+                active_node_ids = await self.redis_client.get_active_nodes()
+                return [{'node_id': node_id, 'sid': None, 'node_type': 'executor'} for node_id in active_node_ids]
                 
         except Exception as e:
             self.logger.logger.error(f"Failed to get available executors: {e}")
@@ -168,13 +180,14 @@ class TaskDispatcher:
             self.logger.logger.error(f"Failed to dispatch {priority} priority tasks: {e}")
             
     async def _assign_task_to_executor(self, task_id: str, executor: Dict) -> bool:
-        """Assign a specific task to a specific executor"""
+        """Assign a specific task to a specific executor (regular or external service)"""
         try:
             # Mark as pending to avoid duplicate assignments
             self._pending_assignments.add(task_id)
             
             node_id = executor['node_id']
             sid = executor.get('sid')
+            node_type = executor.get('node_type', 'executor')
             
             # Get task details for assignment
             task_data = await self.redis_client.redis.hgetall(f"task:{task_id}")
@@ -185,14 +198,35 @@ class TaskDispatcher:
             # Re-resolve task parameters before assignment
             await self._resolve_task_parameters(task_id, task_data)
             
+            # Check if this is an external task that needs routing to external service
+            task_type = task_data.get('task_type', '')
+            is_external_task = task_type.startswith('external_')
+            
+            if is_external_task and node_type != 'external_service':
+                # External task should go to external service, skip regular executor
+                return False
+            elif not is_external_task and node_type == 'external_service':
+                # Regular task should not go to external service, skip
+                return False
+            
+            # For external services, check task type compatibility
+            if node_type == 'external_service':
+                task_types = executor.get('task_types', [])
+                if task_type not in task_types:
+                    # Check if any supported task type matches
+                    external_task_type = task_data.get('external_task_type')
+                    if external_task_type and external_task_type not in task_types:
+                        return False
+            
             # Assign task in Redis
             await self.redis_client.assign_task_to_node(task_id, node_id)
             
             # Notify executor via Socket.IO if available
             if self.socketio_server and sid:
-                await self._notify_executor_via_socketio(sid, task_id, task_data)
+                await self._notify_executor_via_socketio(sid, task_id, task_data, executor)
             
-            self.logger.logger.info(f"Assigned task {task_id[:8]}... to executor {node_id}")
+            executor_type = "external service" if node_type == 'external_service' else "executor"
+            self.logger.logger.info(f"Assigned task {task_id[:8]}... to {executor_type} {node_id}")
             return True
             
         except Exception as e:
@@ -259,23 +293,42 @@ class TaskDispatcher:
         except Exception as e:
             self.logger.logger.error(f"Failed to resolve parameters for task {task_id}: {e}")
             
-    async def _notify_executor_via_socketio(self, sid: str, task_id: str, task_data: Dict):
+    async def _notify_executor_via_socketio(self, sid: str, task_id: str, task_data: Dict, executor: Dict):
         """Notify executor about task assignment via Socket.IO"""
         try:
             if not self.socketio_server:
                 return
-                
+            
+            # Parse parameters for external tasks
+            parameters = task_data.get('parameters', '{}')
+            if isinstance(parameters, str):
+                try:
+                    import json
+                    parameters = json.loads(parameters)
+                except json.JSONDecodeError:
+                    parameters = {}
+            
             # Prepare task assignment notification
             assignment_data = {
                 'task_id': task_id,
                 'workflow_id': task_data.get('workflow_id'),
                 'task_type': task_data.get('task_type'),
                 'task_name': task_data.get('name'),
-                'parameters': task_data.get('parameters'),
+                'parameters': parameters,
                 'priority': task_data.get('priority', 'normal'),
                 'max_retries': int(task_data.get('max_retries', 3)),
+                'timeout': int(task_data.get('timeout', 300)),
                 'assigned_at': datetime.utcnow().isoformat()
             }
+            
+            # Add external task specific fields
+            if executor.get('node_type') == 'external_service':
+                assignment_data.update({
+                    'external_task_type': parameters.get('external_task_type'),
+                    'service_name': parameters.get('service_name'),
+                    'external_parameters': parameters.get('external_parameters', {}),
+                    'external_timeout': parameters.get('external_timeout', 1800)
+                })
             
             # Send assignment to executor
             await self.socketio_server.sio.emit(
@@ -285,7 +338,8 @@ class TaskDispatcher:
                 namespace='/cluster'
             )
             
-            self.logger.logger.info(f"Notified executor {sid} about task {task_id[:8]}...")
+            executor_type = "external service" if executor.get('node_type') == 'external_service' else "executor"
+            self.logger.logger.info(f"Notified {executor_type} {sid} about task {task_id[:8]}...")
             
         except Exception as e:
             self.logger.logger.error(f"Failed to notify executor {sid} about task {task_id}: {e}")

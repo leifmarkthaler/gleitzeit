@@ -17,6 +17,14 @@ class TaskType(Enum):
     HTTP = "http"           # HTTP requests
     FILE = "file"           # File operations
     
+    # External task types (executed outside cluster via Socket.IO)
+    EXTERNAL_API = "external_api"           # External API calls
+    EXTERNAL_ML = "external_ml"             # ML training/inference
+    EXTERNAL_DATABASE = "external_database" # Database operations
+    EXTERNAL_PROCESSING = "external_processing" # Data processing
+    EXTERNAL_WEBHOOK = "external_webhook"   # Webhook-based tasks
+    EXTERNAL_CUSTOM = "external_custom"     # Custom external services
+    
     # Legacy aliases for backward compatibility
     @classmethod
     def _missing_(cls, value):
@@ -84,6 +92,16 @@ class TaskParameters(BaseModel):
     source_path: Optional[str] = None
     target_path: Optional[str] = None
     content: Optional[str] = None
+    
+    # External task parameters
+    service_name: Optional[str] = None          # Target external service name
+    service_url: Optional[str] = None           # External service URL (optional)
+    external_task_type: Optional[str] = None    # Specific task type for external service
+    external_parameters: Optional[Dict[str, Any]] = Field(default_factory=dict)  # Service-specific params
+    callback_url: Optional[str] = None          # Callback URL for async completion
+    webhook_token: Optional[str] = None         # Authentication token for webhooks
+    polling_interval: Optional[int] = 5         # Polling interval in seconds
+    external_timeout: Optional[int] = 1800      # Extended timeout for external tasks (30 min default)
 
 
 class TaskRequirements(BaseModel):
