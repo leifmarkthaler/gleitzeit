@@ -28,6 +28,7 @@ from .core.node import NodeCapabilities
 from .core.task import TaskType
 from .functions.registry import get_function_registry
 from .cli_run import run_command_handler, discover_batch_files
+import json
 from .cli_dev import dev_command_handler
 from .cli_monitor import monitor_command_handler
 from .cli_logs import logs_command_handler
@@ -743,6 +744,104 @@ async def cmd_export_functions(registry, args):
         print(f"❌ Export failed: {e}")
 
 
+async def resume_command_handler(args):
+    """Handle resume command for workflow recovery"""
+    
+    # Connect to Redis for workflow recovery
+    cluster = GleitzeitCluster(
+        enable_redis=True,
+        enable_real_execution=True,  # Enable real execution for resumed workflows
+        enable_socketio=True         # Enable for distributed task execution
+    )
+    
+    try:
+        await cluster.start()
+        
+        if not cluster.redis_client:
+            print("❌ Redis connection required for workflow recovery")
+            print("💡 Start Redis: docker run -p 6379:6379 redis:alpine redis-server --appendonly yes")
+            return
+        
+        # Get resumable workflows
+        resumable = await cluster.redis_client.get_resumable_workflows()
+        
+        if not resumable:
+            print("✅ No interrupted workflows found")
+            print("💡 All workflows either completed or were never started")
+            return
+        
+        # Handle specific workflow resume
+        if args.workflow_id:
+            # Find the workflow to resume
+            target_workflow = None
+            for workflow in resumable:
+                if workflow['id'].startswith(args.workflow_id) or workflow['id'] == args.workflow_id:
+                    target_workflow = workflow
+                    break
+            
+            if not target_workflow:
+                print(f"❌ Workflow not found or not resumable: {args.workflow_id}")
+                if resumable:
+                    print("\n📋 Available workflows:")
+                    for w in resumable:
+                        print(f"   {w['id'][:8]}... - {w['name']}")
+                return
+            
+            print(f"🔄 Resuming workflow: {target_workflow['name']}")
+            print(f"   ID: {target_workflow['id']}")
+            
+            try:
+                # Resume the workflow
+                result = await cluster.resume_workflow(target_workflow['id'])
+                
+                print(f"✅ Workflow resumption completed:")
+                print(f"   Restored tasks: {result['restored_tasks']}")
+                print(f"   Blocked tasks: {result['blocked_tasks']}")
+                
+                if result['ready_for_execution']:
+                    print(f"   🚀 Workflow is now ready for execution")
+                    print(f"   💡 Tasks will be processed by available executor nodes")
+                else:
+                    print(f"   ⚠️  No tasks could be restored (all blocked by dependencies)")
+                    
+            except Exception as e:
+                print(f"❌ Failed to resume workflow: {e}")
+            
+            return
+        
+        # Display resumable workflows
+        if args.format == 'json':
+            print(json.dumps(resumable, indent=2, default=str))
+        else:
+            print(f"🔄 Found {len(resumable)} resumable workflows:")
+            print()
+            
+            for workflow in resumable:
+                progress = f"{workflow['completed_tasks']}/{workflow['total_tasks']}"
+                incomplete = workflow.get('incomplete_tasks', 0)
+                recoverable = len(workflow.get('recoverable_tasks', []))
+                
+                print(f"📋 {workflow['name']}")
+                print(f"   ID: {workflow['id'][:12]}...")
+                print(f"   Status: {workflow['status']}")
+                print(f"   Progress: {progress} tasks completed")
+                print(f"   Recovery: {recoverable}/{incomplete} tasks can be resumed")
+                if workflow.get('created_at'):
+                    print(f"   Created: {workflow['created_at']}")
+                print()
+        
+            print("💡 Workflow recovery options:")
+            print("   • Resume specific workflow: gleitzeit resume --workflow-id <ID>")
+            print("   • View details: gleitzeit resume --format json")
+            print("   • Monitor progress: gleitzeit monitor")
+        
+    except Exception as e:
+        print(f"❌ Resume command failed: {e}")
+    finally:
+        if cluster:
+            await cluster.stop()
+
+
 def main():
     """CLI entry point"""
     parser = argparse.ArgumentParser(prog="gleitzeit")
@@ -915,6 +1014,12 @@ def main():
     discover.add_argument('folder', help='Folder path to analyze')
     discover.add_argument('--max-preview', type=int, default=5, help='Max files to preview per category')
     
+    # Resume command for workflow recovery
+    resume = subparsers.add_parser('resume', help='List and resume interrupted workflows')
+    resume.add_argument('--list', action='store_true', help='List resumable workflows (default)')
+    resume.add_argument('--workflow-id', help='Resume specific workflow by ID')
+    resume.add_argument('--format', choices=['table', 'json'], default='table', help='Output format')
+    
     # Functions commands
     functions = subparsers.add_parser('functions', help='Manage secure functions')
     functions_sub = functions.add_subparsers(dest='functions_command', help='Function operations')
@@ -983,6 +1088,8 @@ def main():
         asyncio.run(functions_command(args))
     elif args.command == 'run':
         asyncio.run(run_command_handler(args))
+    elif args.command == 'resume':
+        asyncio.run(resume_command_handler(args))
     elif args.command == 'discover':
         discovery = discover_batch_files(args.folder, max_preview=args.max_preview)
         print(f"📂 Folder Analysis: {discovery['folder']}")

@@ -548,6 +548,163 @@ class RedisClient:
         except Exception as e:
             raise RedisOperationError(f"Failed to get active nodes: {e}")
     
+    async def get_active_workflows(self) -> List[str]:
+        """Get list of active workflow IDs"""
+        try:
+            return await self.redis.smembers("workflows:active")
+        except Exception as e:
+            raise RedisOperationError(f"Failed to get active workflows: {e}")
+    
+    async def get_resumable_workflows(self) -> List[Dict[str, Any]]:
+        """Get workflows that can be resumed after cluster restart"""
+        try:
+            active_workflow_ids = await self.get_active_workflows()
+            resumable = []
+            
+            for workflow_id in active_workflow_ids:
+                workflow_data = await self.get_workflow(workflow_id)
+                if workflow_data:
+                    # Check if workflow was interrupted (status is RUNNING but no recent activity)
+                    status = workflow_data.get('status')
+                    if status in ['running', 'pending']:
+                        # Get task-level recovery information
+                        incomplete_tasks = await self.get_incomplete_tasks(workflow_id)
+                        
+                        resumable.append({
+                            'id': workflow_id,
+                            'name': workflow_data.get('name'),
+                            'status': status,
+                            'total_tasks': int(workflow_data.get('total_tasks', 0)),
+                            'completed_tasks': int(workflow_data.get('completed_tasks', 0)),
+                            'failed_tasks': int(workflow_data.get('failed_tasks', 0)),
+                            'incomplete_tasks': len(incomplete_tasks),
+                            'recoverable_tasks': [t for t in incomplete_tasks if t['can_resume']],
+                            'created_at': workflow_data.get('created_at'),
+                            'started_at': workflow_data.get('started_at')
+                        })
+            
+            return resumable
+        except Exception as e:
+            raise RedisOperationError(f"Failed to get resumable workflows: {e}")
+    
+    async def get_incomplete_tasks(self, workflow_id: str) -> List[Dict[str, Any]]:
+        """Get tasks that were not completed for a workflow"""
+        try:
+            # Get list of task IDs from workflow
+            tasks_key = f"workflow:{workflow_id}:tasks"
+            task_ids = await self.redis.lrange(tasks_key, 0, -1)
+            
+            incomplete_tasks = []
+            completed_task_ids = set()
+            
+            # Get completed and failed task results to identify incomplete ones
+            results = await self.get_workflow_results(workflow_id)
+            errors = await self.get_workflow_errors(workflow_id)
+            completed_task_ids.update(results.keys())
+            completed_task_ids.update(errors.keys())
+            
+            for task_id in task_ids:
+                if task_id not in completed_task_ids:
+                    # Get task data
+                    task_data = await self.redis.hgetall(f"task:{task_id}")
+                    if task_data:
+                        # Check if task dependencies are satisfied
+                        can_resume = await self._can_task_resume(task_id, completed_task_ids)
+                        
+                        incomplete_tasks.append({
+                            'id': task_id,
+                            'name': task_data.get('name'),
+                            'task_type': task_data.get('task_type'),
+                            'status': task_data.get('status', 'pending'),
+                            'priority': task_data.get('priority', 'normal'),
+                            'dependencies': json.loads(task_data.get('dependencies', '[]')),
+                            'retry_count': int(task_data.get('retry_count', 0)),
+                            'max_retries': int(task_data.get('max_retries', 3)),
+                            'can_resume': can_resume,
+                            'created_at': task_data.get('created_at')
+                        })
+            
+            return incomplete_tasks
+        except Exception as e:
+            raise RedisOperationError(f"Failed to get incomplete tasks for {workflow_id}: {e}")
+    
+    async def _can_task_resume(self, task_id: str, completed_task_ids: Set[str]) -> bool:
+        """Check if a task can be resumed (all dependencies satisfied)"""
+        try:
+            deps_key = f"task:{task_id}:dependencies"
+            dependencies = await self.redis.smembers(deps_key)
+            
+            # Task can resume if all its dependencies are completed
+            for dep_id in dependencies:
+                if dep_id not in completed_task_ids:
+                    return False
+            
+            return True
+        except Exception as e:
+            # If we can't check dependencies, assume task can resume
+            return True
+    
+    async def restore_workflow_tasks(self, workflow_id: str) -> Dict[str, Any]:
+        """Restore incomplete tasks back to the queue for execution"""
+        try:
+            # Get incomplete tasks that can be resumed
+            incomplete_tasks = await self.get_incomplete_tasks(workflow_id)
+            resumable_tasks = [t for t in incomplete_tasks if t['can_resume']]
+            
+            restored_count = 0
+            skipped_count = 0
+            
+            async with self.transaction() as pipe:
+                for task_info in resumable_tasks:
+                    task_id = task_info['id']
+                    priority = task_info['priority']
+                    
+                    # Reset task status to pending
+                    pipe.hset(f"task:{task_id}", mapping={
+                        "status": "pending",
+                        "assigned_node_id": "",
+                        "assigned_at": "",
+                        "resumed_at": datetime.utcnow().isoformat()
+                    })
+                    
+                    # Add back to priority queue (remove first to avoid duplicates)
+                    priority_queue = f"queue:tasks:{priority}"
+                    pipe.zrem(priority_queue, task_id)
+                    pipe.zadd(priority_queue, {task_id: time.time()})
+                    
+                    # Clean up any stale assignments
+                    pipe.hdel("queue:assigned", task_id)
+                    pipe.zrem("queue:processing", task_id)
+                    
+                    restored_count += 1
+                
+                # Update workflow status to running if it was interrupted
+                pipe.hset(f"workflow:{workflow_id}", mapping={
+                    "status": "running",
+                    "resumed_at": datetime.utcnow().isoformat()
+                })
+                
+                # Publish workflow resumed event
+                event = {
+                    "type": "workflow_resumed",
+                    "workflow_id": workflow_id,
+                    "restored_tasks": restored_count,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+                pipe.publish(f"notifications:workflow:{workflow_id}", json.dumps(event))
+                pipe.publish("notifications:global", json.dumps(event))
+            
+            return {
+                "workflow_id": workflow_id,
+                "total_incomplete": len(incomplete_tasks),
+                "restored_tasks": restored_count,
+                "skipped_tasks": len(incomplete_tasks) - restored_count,
+                "ready_for_execution": restored_count > 0
+            }
+            
+        except Exception as e:
+            raise RedisOperationError(f"Failed to restore tasks for workflow {workflow_id}: {e}")
+    
     async def get_nodes_by_capability(self, capability: str) -> List[str]:
         """Get nodes with specific capability"""
         try:

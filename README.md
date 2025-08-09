@@ -49,6 +49,8 @@ Orchestrate multiple tasks with dependencies and data flow.
 - **Dependencies**: Control execution order with task dependencies
 - **Data flow**: Pass results between tasks using `{{task_id.result}}`
 - **Advanced error handling**: Comprehensive error registry with structured codes and resolution hints
+- **Workflow persistence**: Redis persistence ensures workflows survive system restarts and can be resumed
+- **Task-level recovery**: Resume from exactly where workflows were interrupted, with dependency resolution
 
 ### 📦 Batch Processing
 Process multiple items efficiently with parallel execution.
@@ -196,6 +198,13 @@ gleitzeit events --follow
 
 # Simple status check
 gleitzeit status
+
+# Check for interrupted workflows (after system restart)
+gleitzeit resume
+gleitzeit resume --format json
+
+# Resume specific workflow by ID (task-level recovery)
+gleitzeit resume --workflow-id wf_abc123
 ```
 
 ## Requirements
@@ -474,6 +483,46 @@ async def multi_endpoint_setup():
 asyncio.run(multi_endpoint_setup())
 ```
 
+### Task-Level Recovery (Advanced)
+
+When workflows are interrupted (system restart, crash, etc.), Gleitzeit can resume from exactly where they stopped:
+
+```python
+import asyncio
+from gleitzeit_cluster import GleitzeitCluster
+
+async def recovery_example():
+    cluster = GleitzeitCluster(enable_redis=True)
+    await cluster.start()
+    
+    # Check for interrupted workflows
+    if cluster.redis_client:
+        resumable = await cluster.redis_client.get_resumable_workflows()
+        
+        for workflow in resumable:
+            print(f"📋 {workflow['name']}")
+            print(f"   Progress: {workflow['completed_tasks']}/{workflow['total_tasks']}")
+            print(f"   Can resume: {len(workflow['recoverable_tasks'])} tasks")
+            
+            # Resume workflow - only incomplete tasks with satisfied dependencies
+            result = await cluster.resume_workflow(workflow['id'])
+            print(f"✅ Restored {result['restored_tasks']} tasks to queue")
+    
+    await cluster.stop()
+
+# Command line recovery
+# gleitzeit resume                    # List interrupted workflows
+# gleitzeit resume --workflow-id abc  # Resume specific workflow
+
+asyncio.run(recovery_example())
+```
+
+**Task Recovery Features:**
+- **Dependency Resolution**: Only resume tasks whose dependencies are satisfied
+- **Granular Control**: Resume individual tasks, not entire workflows
+- **State Preservation**: All task results, errors, and metadata preserved
+- **Smart Queueing**: Tasks restored to appropriate priority queues for execution
+
 **Multi-Endpoint Features:**
 - **Automatic Failover**: Seamlessly retry on healthy endpoints if one fails
 - **Load Balancing**: Distribute requests using LEAST_LOADED, ROUND_ROBIN, FASTEST_RESPONSE, or MODEL_AFFINITY strategies
@@ -625,6 +674,7 @@ $ gleitzeit auth login
 - **🔧 Robust Error Handling**: Circuit breakers, retry logic, structured logging, and error categorization for development
 - **🎯 Privacy-First**: Your data never leaves your computer - no external APIs or tracking
 - **🚀 Simple but Powerful**: Just install and run commands, but with enterprise-grade error handling underneath
+- **💾 Task-Level Recovery**: Redis persistence with intelligent task restoration - resume workflows from exactly where they were interrupted, with automatic dependency resolution
 
 ## Status
 
@@ -689,7 +739,8 @@ This project is in active development. Contributions welcome!
 - `gleitzeit errors stats` - View comprehensive error catalog statistics
 - `gleitzeit errors validate` - Check error catalog consistency
 
-### Utilities
+### Task Recovery & Utilities
+- `gleitzeit resume` - List interrupted workflows and resume with task-level precision
 - `gleitzeit status` - Quick cluster status check
 - `gleitzeit discover` - Analyze folders for batch processing
 - `gleitzeit functions` - Manage built-in secure functions

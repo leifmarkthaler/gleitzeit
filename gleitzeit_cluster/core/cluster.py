@@ -172,6 +172,9 @@ class GleitzeitCluster:
                 self.logger.logger.warning("Task executor failed to start, continuing without it")
                 self.task_executor = None
             
+        # Check for resumable workflows after startup
+        await self._check_resumable_workflows()
+        
         self._is_started = True
         self.logger.logger.info("Gleitzeit Cluster started successfully")
     
@@ -338,6 +341,32 @@ class GleitzeitCluster:
             
         self._is_started = False
         self.logger.logger.info("Gleitzeit Cluster stopped")
+    
+    async def _check_resumable_workflows(self):
+        """Check for workflows that can be resumed after cluster restart"""
+        if not self.redis_client:
+            return
+            
+        try:
+            resumable = await self.redis_client.get_resumable_workflows()
+            
+            if resumable:
+                self.logger.logger.info(f"Found {len(resumable)} resumable workflows:")
+                for workflow in resumable:
+                    progress = f"{workflow['completed_tasks']}/{workflow['total_tasks']}"
+                    self.logger.logger.info(f"  - {workflow['name']} ({workflow['id'][:8]}...): {progress} tasks")
+                    
+                self.logger.logger.info("💡 Use 'gleitzeit resume' to continue interrupted workflows")
+                
+                # TODO: Implement automatic resumption logic
+                # For now, just log the information for user awareness
+                
+        except Exception as e:
+            error_info = ErrorCategorizer.categorize_error(e, {
+                "component": "workflow_recovery",
+                "operation": "check_resumable"
+            })
+            self.logger.log_error(error_info)
     
     def create_workflow(self, name: str, description: Optional[str] = None) -> Workflow:
         """Create a new workflow"""
@@ -635,6 +664,76 @@ class GleitzeitCluster:
     async def list_nodes(self) -> List[Dict[str, Any]]:
         """List all executor nodes"""
         return [node.to_dict() for node in self._nodes.values()]
+    
+    async def resume_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        """Resume a specific workflow by restoring its incomplete tasks to the queue"""
+        if not self._is_started:
+            raise RuntimeError("Cluster not started. Call await cluster.start() first.")
+        
+        if not self.redis_client:
+            raise RuntimeError("Redis connection required for workflow resumption")
+        
+        try:
+            # Check if workflow exists and is resumable
+            workflow_data = await self.redis_client.get_workflow(workflow_id)
+            if not workflow_data:
+                raise WorkflowNotFoundError(f"Workflow {workflow_id} not found", context={
+                    "workflow_id": workflow_id,
+                    "operation": "resume"
+                })
+            
+            status = workflow_data.get('status')
+            if status not in ['running', 'pending']:
+                raise GleitzeitError(
+                    ErrorCode.WORKFLOW_VALIDATION_FAILED,
+                    context={
+                        "workflow_id": workflow_id,
+                        "current_status": status,
+                        "expected_status": "running or pending",
+                        "operation": "resume"
+                    }
+                )
+            
+            # Get incomplete tasks details before resuming
+            incomplete_tasks = await self.redis_client.get_incomplete_tasks(workflow_id)
+            resumable_tasks = [t for t in incomplete_tasks if t['can_resume']]
+            blocked_tasks = [t for t in incomplete_tasks if not t['can_resume']]
+            
+            self.logger.logger.info(f"Resuming workflow: {workflow_data.get('name')} ({workflow_id[:8]}...)")
+            self.logger.logger.info(f"Found {len(resumable_tasks)} resumable tasks, {len(blocked_tasks)} blocked tasks")
+            
+            # Restore tasks to queue
+            restore_result = await self.redis_client.restore_workflow_tasks(workflow_id)
+            
+            if restore_result['restored_tasks'] > 0:
+                self.logger.logger.info(f"✅ Restored {restore_result['restored_tasks']} tasks to execution queue")
+            
+            if blocked_tasks:
+                self.logger.logger.warning(f"⚠️  {len(blocked_tasks)} tasks still blocked by dependencies:")
+                for task in blocked_tasks:
+                    deps = ', '.join(task['dependencies']) if task['dependencies'] else 'none'
+                    self.logger.logger.warning(f"  - {task['name']} (depends on: {deps})")
+            
+            return {
+                "workflow_id": workflow_id,
+                "workflow_name": workflow_data.get('name'),
+                "status": "resumed",
+                "total_tasks": int(workflow_data.get('total_tasks', 0)),
+                "completed_tasks": int(workflow_data.get('completed_tasks', 0)),
+                "incomplete_tasks": len(incomplete_tasks),
+                "restored_tasks": restore_result['restored_tasks'],
+                "blocked_tasks": len(blocked_tasks),
+                "ready_for_execution": restore_result['ready_for_execution']
+            }
+            
+        except Exception as e:
+            error_info = ErrorCategorizer.categorize_error(e, {
+                "component": "workflow_recovery",
+                "operation": "resume_workflow",
+                "workflow_id": workflow_id
+            })
+            self.logger.log_error(error_info)
+            raise
     
     # Convenience methods for common workflow patterns
     

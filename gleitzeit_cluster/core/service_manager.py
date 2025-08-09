@@ -54,9 +54,9 @@ class ServiceManager:
         try:
             print("🔄 Starting Redis server...")
             
-            # Try to start Redis as a daemon
+            # Try to start Redis as a daemon with persistence enabled
             result = subprocess.run(
-                ["redis-server", "--daemonize", "yes", "--port", "6379"],
+                ["redis-server", "--daemonize", "yes", "--port", "6379", "--appendonly", "yes"],
                 capture_output=True,
                 text=True,
                 timeout=10
