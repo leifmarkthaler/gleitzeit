@@ -61,6 +61,7 @@ class SocketIOProviderManager:
     def attach_to_server(self, sio_server: AsyncServer):
         """Attach to an existing Socket.IO server"""
         self.sio = sio_server
+        
         self._setup_handlers()
         logger.info("SocketIO Provider Manager attached to server")
     
@@ -69,6 +70,12 @@ class SocketIOProviderManager:
         if not self.sio:
             return
             
+        # Ensure the /providers namespace is enabled
+        logger.info("Setting up /providers namespace handlers")
+        
+        # Use a simpler approach - just ensure handlers are set up correctly
+        logger.info("Registering /providers namespace event handlers")
+        
         # Provider lifecycle events
         self.sio.on('connect', namespace='/providers')(self.handle_provider_connect)
         self.sio.on('disconnect', namespace='/providers')(self.handle_provider_disconnect)

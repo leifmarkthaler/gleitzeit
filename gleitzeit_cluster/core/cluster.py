@@ -1015,24 +1015,43 @@ if __name__ == "__main__":
         """Get the attached extension manager"""
         return self.extension_manager
     
+    def set_socketio_provider_manager(self, provider_manager) -> None:
+        """
+        Set the Socket.IO provider manager for this cluster
+        
+        Args:
+            provider_manager: SocketIOProviderManager instance
+        """
+        self.socketio_provider_manager = provider_manager
+        if hasattr(self, 'socketio_server') and self.socketio_server:
+            provider_manager.attach_to_server(self.socketio_server.sio)
+        self.logger.logger.info("Socket.IO provider manager attached to cluster")
+    
     def set_unified_provider_manager(self, provider_manager) -> None:
         """
         Set the unified provider manager (extensions + MCP) for this cluster
         
         Args:
-            provider_manager: UnifiedProviderManager instance
+            provider_manager: UnifiedProviderManager or SocketIOProviderManager instance
         """
-        self.unified_provider_manager = provider_manager
-        provider_manager.attach_to_cluster(self)
-        self.logger.logger.info("Unified provider manager attached to cluster")
+        # Support both legacy UnifiedProviderManager and new SocketIOProviderManager
+        if hasattr(provider_manager, 'attach_to_server'):
+            # New Socket.IO provider manager
+            self.set_socketio_provider_manager(provider_manager)
+        else:
+            # Legacy unified provider manager
+            self.unified_provider_manager = provider_manager
+            provider_manager.attach_to_cluster(self)
+            self.logger.logger.info("Unified provider manager attached to cluster")
     
     def get_unified_provider_manager(self):
         """Get the attached unified provider manager"""
-        return self.unified_provider_manager
+        # Return Socket.IO provider manager if available, otherwise legacy manager
+        return getattr(self, 'socketio_provider_manager', None) or getattr(self, 'unified_provider_manager', None)
     
     async def find_provider_for_model(self, model: str) -> Optional[str]:
         """
-        Find which provider supports a specific model (extensions or MCP servers)
+        Find which provider supports a specific model (extensions or Socket.IO providers)
         
         Args:
             model: Model name to find provider for
@@ -1040,8 +1059,12 @@ if __name__ == "__main__":
         Returns:
             Provider name that supports the model, or None if not found
         """
-        # Try unified provider manager first (supports both extensions and MCP)
-        if self.unified_provider_manager:
+        # Try Socket.IO provider manager first
+        if hasattr(self, 'socketio_provider_manager') and self.socketio_provider_manager:
+            return self.socketio_provider_manager.find_provider_for_model(model)
+        
+        # Try unified provider manager (legacy MCP support)
+        if hasattr(self, 'unified_provider_manager') and self.unified_provider_manager:
             result = self.unified_provider_manager.find_provider_for_model(model)
             return result["name"] if result else None
         
@@ -1053,13 +1076,27 @@ if __name__ == "__main__":
     
     async def get_available_extension_models(self) -> Dict[str, Any]:
         """
-        Get all models available through providers (extensions + MCP servers)
+        Get all models available through providers (extensions + Socket.IO providers)
         
         Returns:
             Dictionary of available models and their providers
         """
-        # Use unified provider manager if available
-        if self.unified_provider_manager:
+        # Use Socket.IO provider manager first
+        if hasattr(self, 'socketio_provider_manager') and self.socketio_provider_manager:
+            all_providers = self.socketio_provider_manager.get_all_providers()
+            models = {}
+            for provider_name, provider_info in all_providers.items():
+                for model in provider_info.get('models', []):
+                    models[model] = {
+                        'provider': provider_name,
+                        'provider_type': provider_info.get('type', 'unknown'),
+                        'capabilities': provider_info.get('capabilities', []),
+                        'connected': provider_info.get('connected', False)
+                    }
+            return models
+        
+        # Use unified provider manager if available (legacy)
+        if hasattr(self, 'unified_provider_manager') and self.unified_provider_manager:
             return self.unified_provider_manager.get_available_models()
         
         # Fall back to extension manager only

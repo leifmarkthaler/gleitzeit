@@ -187,11 +187,11 @@ async def start_server_with_providers():
         cors_allowed_origins="*"
     )
     
-    # Create and attach provider manager
+    # Create and attach provider manager BEFORE starting server
     provider_manager = SocketIOProviderManager()
     provider_manager.attach_to_server(server.sio)
     
-    # Start server
+    # Start server (namespace handlers are now registered)
     await server.start()
     
     # Start health monitoring
