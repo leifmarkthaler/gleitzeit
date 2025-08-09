@@ -48,6 +48,42 @@ Distributed execution across multiple nodes.
 
 ## CLI Usage
 
+### Authentication & Setup
+
+```bash
+# Initialize authentication (creates admin user)
+gleitzeit auth init
+# Save the API key shown - it won't be displayed again!
+
+# Login with API key
+gleitzeit auth login --api-key gzt_xxxxx --save
+
+# Or use environment variable
+export GLEITZEIT_API_KEY=gzt_xxxxx
+
+# Check authentication status
+gleitzeit auth status
+```
+
+### User Management (Admin Only)
+
+```bash
+# Create users with different roles
+gleitzeit auth user create john_doe --email john@example.com --role USER
+gleitzeit auth user create jane_admin --role OPERATOR
+gleitzeit auth user create api_service --role SERVICE
+
+# Create API keys for users
+gleitzeit auth key create "John's Key" --user john_doe --expires 30
+gleitzeit auth key list --user john_doe
+
+# List all users
+gleitzeit auth user list
+
+# Logout when done
+gleitzeit auth logout
+```
+
 ### Basic Task Execution
 
 ```bash
@@ -95,6 +131,19 @@ gleitzeit run --function extract_keywords --args text="Machine learning and AI"
 gleitzeit run --function csv_filter --args file=data.csv column=age min_value=18
 ```
 
+### Folder Batch Processing
+
+```bash
+# Discover files in a folder
+gleitzeit discover /path/to/images
+
+# Process all images in a folder
+gleitzeit run --batch-folder /path/to/images --prompt "Describe this image" --type vision
+
+# Process specific file types
+gleitzeit run --batch-folder /docs --type text --extensions .txt,.md
+```
+
 ### Quick Monitoring
 
 ```bash
@@ -115,11 +164,28 @@ gleitzeit status
 
 For programmatic workflows:
 
+### Basic Workflow with Authentication
+
 ```python
 import asyncio
+import os
 from gleitzeit_cluster import GleitzeitCluster, Workflow, Task, TaskType, TaskParameters
+from gleitzeit_cluster.auth import AuthManager
 
 async def main():
+    # Authenticate using environment variable or saved credentials
+    auth_manager = AuthManager()
+    
+    # Option 1: Use environment variable
+    # export GLEITZEIT_API_KEY=gzt_xxxxx
+    context = auth_manager.authenticate_from_environment()
+    
+    # Option 2: Use API key directly
+    # context = auth_manager.authenticate_api_key("gzt_xxxxx")
+    
+    if context:
+        print(f"Authenticated as: {context.user.username}")
+    
     cluster = GleitzeitCluster()
     await cluster.start()
     
@@ -320,13 +386,15 @@ asyncio.run(multi_endpoint_setup())
 ## What Makes This Different?
 
 - **Local-first**: Everything runs on your machine
-- **No API keys**: No cloud dependencies or costs
+- **Secure Authentication**: File-based API key system with role-based access control
+- **No cloud dependencies**: No external auth servers or API costs
 - **Workflow orchestration**: Chain tasks with dependencies and data flow
 - **Built-in functions**: 30+ secure functions for data processing
 - **Privacy**: Your data never leaves your computer
 - **Simple**: Just install and run commands
 - **Extensible**: 30+ built-in functions + Python API
 - **Multi-Endpoint Support**: Scale across multiple Ollama servers with automatic failover
+- **Role-Based Access**: Admin, Operator, User, Service, and Readonly roles
 
 ## Status
 
