@@ -51,7 +51,10 @@ class GleitzeitCluster:
         auto_start_redis: bool = True,
         auto_start_executors: bool = True,
         min_executors: int = 1,
-        auto_recovery: bool = True
+        auto_recovery: bool = True,
+        use_external_python_executor: bool = False,  # Feature flag for external Python execution
+        auto_start_python_executor: bool = True,  # Auto-start Python executor service
+        python_executor_workers: int = 4  # Number of Python executor workers
     ):
         """Initialize cluster connection"""
         self.redis_url = redis_url
@@ -68,6 +71,12 @@ class GleitzeitCluster:
         self.auto_start_executors = auto_start_executors
         self.min_executors = min_executors
         self.auto_recovery = auto_recovery
+        
+        # External Python executor configuration
+        self.use_external_python_executor = use_external_python_executor
+        self.auto_start_python_executor = auto_start_python_executor
+        self.python_executor_workers = python_executor_workers
+        self.python_executor_process = None
         
         # Service manager for auto-starting services
         self.service_manager = ServiceManager() if auto_start_services else None
@@ -192,6 +201,16 @@ class GleitzeitCluster:
                 self.logger.log_error(error_info)
                 self.logger.logger.warning("Task dispatcher failed to start, tasks won't be automatically assigned")
             
+        # Start Python executor service if using external execution
+        if self.use_external_python_executor and self.auto_start_python_executor:
+            try:
+                await self._start_python_executor_service()
+                self.logger.logger.info("✅ Python Executor Service started")
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "python_executor"})
+                self.logger.log_error(error_info)
+                self.logger.logger.warning("Python executor service failed to start")
+        
         # Check for resumable workflows after startup
         await self._check_resumable_workflows()
         
@@ -416,9 +435,54 @@ class GleitzeitCluster:
             })
             self.logger.log_error(error_info)
     
+    async def _start_python_executor_service(self):
+        """Start Python executor as a subprocess"""
+        import asyncio
+        import sys
+        import os
+        
+        # Create the Python executor service script
+        executor_script = f'''
+import asyncio
+import sys
+from pathlib import Path
+sys.path.insert(0, "{os.getcwd()}")
+
+from services.python_executor_service import PythonExecutorService
+
+async def main():
+    executor = PythonExecutorService(
+        service_name="Python Executor (Auto)",
+        cluster_url="{self.socketio_url}",
+        max_workers={self.python_executor_workers},
+        isolation_mode="subprocess"
+    )
+    await executor.start()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+'''
+        
+        # Start Python executor as subprocess
+        self.python_executor_process = await asyncio.create_subprocess_exec(
+            sys.executable, '-c', executor_script,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        
+        # Give it a moment to start
+        await asyncio.sleep(1)
+        
+        # Check if process is still running
+        if self.python_executor_process.returncode is not None:
+            stdout, stderr = await self.python_executor_process.communicate()
+            raise RuntimeError(f"Python executor failed to start: {stderr.decode()}")
+    
     def create_workflow(self, name: str, description: Optional[str] = None) -> Workflow:
         """Create a new workflow"""
         workflow = Workflow(name=name, description=description)
+        # Pass the external executor flag to the workflow
+        workflow._use_external_python_executor = self.use_external_python_executor
         self._workflows[workflow.id] = workflow
         return workflow
     

@@ -31,6 +31,7 @@ class ExternalServiceCapability(Enum):
     FILE_PROCESSING = "file_processing"
     WEBHOOK_HANDLING = "webhook_handling"
     CUSTOM_PROCESSING = "custom_processing"
+    PYTHON_EXECUTION = "python_execution"  # For external Python task execution
 
 
 class ExternalServiceNode:

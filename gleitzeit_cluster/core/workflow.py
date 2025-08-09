@@ -142,22 +142,51 @@ class Workflow(BaseModel):
         args: Optional[List[Any]] = None,
         kwargs: Optional[Dict[str, Any]] = None,
         dependencies: Optional[List[str]] = None,
+        use_external_executor: bool = False,  # Override flag
         **task_kwargs
     ) -> Task:
-        """Convenience method to add a Python task"""
+        """
+        Convenience method to add a Python task.
+        
+        Can route to either native or external execution based on configuration.
+        """
         from .task import TaskType, TaskParameters
         
-        task = Task(
-            name=name,
-            task_type=TaskType.FUNCTION,
-            parameters=TaskParameters(
-                function_name=function_name,
-                args=args or [],
-                kwargs=kwargs or {},
-                **task_kwargs
-            ),
-            dependencies=dependencies or []
-        )
+        # Check if we should use external execution
+        # This can be overridden per-task or use cluster default
+        use_external = use_external_executor or getattr(self, '_use_external_python_executor', False)
+        
+        if use_external:
+            # Route to external Python executor service
+            task = Task(
+                name=name,
+                task_type=TaskType.EXTERNAL_PROCESSING,
+                parameters=TaskParameters(
+                    service_name="Python Executor",  # Default Python executor service
+                    external_task_type="python_execution",
+                    external_parameters={
+                        "function_name": function_name,
+                        "args": args or [],
+                        "kwargs": kwargs or {}
+                    },
+                    **task_kwargs
+                ),
+                dependencies=dependencies or []
+            )
+        else:
+            # Native execution (legacy)
+            task = Task(
+                name=name,
+                task_type=TaskType.FUNCTION,
+                parameters=TaskParameters(
+                    function_name=function_name,
+                    args=args or [],
+                    kwargs=kwargs or {},
+                    **task_kwargs
+                ),
+                dependencies=dependencies or []
+            )
+        
         self.add_task(task)
         return task
     
