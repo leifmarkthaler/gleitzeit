@@ -148,23 +148,47 @@ class LiveMonitoringClient:
         print(f"🏢 Cluster Status:")
         print(f"   Connected Clients: {cluster.get('connected_clients', 0)}")
         print(f"   Executor Nodes:    {cluster.get('executor_nodes', 0)}")
+        print(f"   External Services: {cluster.get('external_service_nodes', 0)}")
         print(f"   Active Workflows:  {cluster.get('active_workflows', 0)}")
         print(f"   Monitoring Users:  {cluster.get('monitoring_clients', 0)}")
         print()
         
-        # Node metrics
+        # Node metrics (executors and external services)
         nodes = metrics.get('node_metrics', [])
         if nodes:
-            print(f"🖥️  Executor Nodes ({len(nodes)} active):")
-            for node in nodes:
-                status_icon = "🟢" if node.get('status') == 'ready' else "🔴"
-                gpu_info = "🎮" if node.get('has_gpu') else "💻"
-                
-                print(f"   {status_icon} {gpu_info} {node.get('name', 'Unknown')[:20]:20} "
-                      f"CPU: {node.get('cpu_usage', 0):5.1f}% "
-                      f"MEM: {node.get('memory_usage', 0):5.1f}% "
-                      f"Tasks: {node.get('active_tasks', 0)}/{node.get('max_tasks', 1)}")
-            print()
+            executor_nodes = [n for n in nodes if n.get('node_type') == 'executor']
+            external_services = [n for n in nodes if n.get('node_type') == 'external_service']
+            
+            if executor_nodes:
+                print(f"🖥️  Executor Nodes ({len(executor_nodes)} active):")
+                for node in executor_nodes:
+                    status_icon = "🟢" if node.get('status') == 'ready' else "🔴"
+                    gpu_info = "🎮" if node.get('has_gpu') else "💻"
+                    
+                    print(f"   {status_icon} {gpu_info} {node.get('name', 'Unknown')[:20]:20} "
+                          f"CPU: {node.get('cpu_usage', 0):5.1f}% "
+                          f"MEM: {node.get('memory_usage', 0):5.1f}% "
+                          f"Tasks: {node.get('active_tasks', 0)}/{node.get('max_tasks', 1)}")
+                print()
+            
+            if external_services:
+                print(f"🔗 External Services ({len(external_services)} active):")
+                for service in external_services:
+                    status_icon = "🟢" if service.get('status') == 'ready' else "🔴"
+                    capabilities = service.get('capabilities', [])
+                    cap_preview = ', '.join(capabilities[:2])
+                    if len(capabilities) > 2:
+                        cap_preview += f" +{len(capabilities)-2}"
+                    
+                    completed = service.get('tasks_completed', 0)
+                    failed = service.get('tasks_failed', 0)
+                    success_rate = (completed / max(completed + failed, 1)) * 100
+                    
+                    print(f"   {status_icon} 🌐 {service.get('name', 'Unknown')[:20]:20} "
+                          f"Tasks: {service.get('active_tasks', 0)}/{service.get('max_tasks', 10):2} "
+                          f"Success: {success_rate:5.1f}% "
+                          f"({cap_preview})")
+                print()
         
         # Queue status
         queues = metrics.get('queue_metrics', {})

@@ -784,20 +784,23 @@ class SocketIOServer:
         cluster_metrics = {
             'connected_clients': len(self.connected_clients),
             'executor_nodes': len(self.executor_nodes),
+            'external_service_nodes': len(self.external_service_nodes),
             'active_workflows': len(self.workflow_rooms),
             'monitoring_clients': len(self.monitoring_clients)
         }
         
-        # Node metrics
+        # Node metrics (executor nodes and external services)
         node_metrics = []
         total_cpu = 0
         total_memory = 0
         total_active_tasks = 0
         
+        # Regular executor nodes
         for sid, node_info in self.executor_nodes.items():
             node_data = {
                 'node_id': node_info['node_id'],
                 'name': node_info['name'],
+                'node_type': 'executor',
                 'status': node_info.get('status', 'unknown'),
                 'cpu_usage': node_info.get('cpu_usage', 0),
                 'memory_usage': node_info.get('memory_usage', 0),
@@ -812,6 +815,28 @@ class SocketIOServer:
             total_cpu += node_info.get('cpu_usage', 0)
             total_memory += node_info.get('memory_usage', 0) 
             total_active_tasks += node_info.get('current_tasks', 0)
+        
+        # External service nodes
+        for sid, service_info in self.external_service_nodes.items():
+            service_data = {
+                'node_id': service_info['service_id'],
+                'name': service_info['service_name'],
+                'node_type': 'external_service',
+                'status': service_info.get('status', 'unknown'),
+                'cpu_usage': 0,  # External services don't report CPU
+                'memory_usage': 0,  # External services don't report memory
+                'active_tasks': service_info.get('current_tasks', 0),
+                'max_tasks': service_info.get('max_tasks', 10),
+                'last_heartbeat': service_info.get('last_heartbeat'),
+                'has_gpu': False,
+                'uptime_seconds': service_info.get('uptime_seconds', 0),
+                'capabilities': service_info.get('capabilities', []),
+                'tasks_completed': service_info.get('tasks_completed', 0),
+                'tasks_failed': service_info.get('tasks_failed', 0)
+            }
+            node_metrics.append(service_data)
+            
+            total_active_tasks += service_info.get('current_tasks', 0)
         
         # System metrics (server host)
         try:
