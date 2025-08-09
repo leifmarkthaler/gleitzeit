@@ -392,7 +392,7 @@ gleitzeit errors show GZ1025
 - **🐍 Simple Python Integration** - Decorator-based custom functions
 - **📊 Real-Time Monitoring** - Socket.IO events, no polling
 - **🔧 Clean API** - Simplified configuration, intelligent defaults
-- **🚀 Production Ready** - Service-based scaling, robust error handling
+- **🚀 Development Ready** - Service-based architecture, basic error handling
 
 ## 📁 Project Structure
 
@@ -529,13 +529,38 @@ report_task = workflow.add_python_task("Format", function_name="create_report", 
 
 ## 📈 Status
 
-- **Version**: 0.0.1 (Alpha)
-- **Architecture**: Production-ready unified Socket.IO design ✅
-- **Core Features**: Complete LLM orchestration ✅  
-- **API**: Stable and streamlined ✅
-- **Testing**: Comprehensive test suite ✅
+- **Version**: 0.0.1 (Alpha) - **NOT PRODUCTION READY**
+- **Stage**: Active Development - Core architecture implemented
+- **Architecture**: Unified Socket.IO design (needs production testing)
+- **Core Features**: Basic LLM orchestration (needs real-world validation)
+- **API**: Streamlined but evolving
+- **Testing**: Unit tests passing (needs integration and load testing)
 
-**Ready for**: LLM workflow orchestration, AI endpoint management, complex multi-model pipelines
+**Current State**: Development prototype suitable for experimentation and testing
+
+### Production Readiness Roadmap
+
+**Completed ✅:**
+- [x] Unified Socket.IO architecture design
+- [x] Basic LLM orchestration (text, vision)  
+- [x] Python task decorator integration
+- [x] Multi-provider routing (internal, OpenAI, Anthropic)
+- [x] Core workflow engine with dependencies
+- [x] Basic error handling and testing
+
+**In Progress 🚧:**
+- [ ] **Real execution testing** - Full Socket.IO service integration
+- [ ] **Production error handling** - Comprehensive failure scenarios
+- [ ] **Performance optimization** - Load testing and bottleneck analysis
+- [ ] **Security hardening** - Authentication, input validation, sandboxing
+- [ ] **Documentation** - Complete API docs and deployment guides
+
+**Needed for Production 🎯:**
+- [ ] **Integration testing** - End-to-end workflow validation
+- [ ] **Load testing** - Multi-user, high-throughput scenarios  
+- [ ] **Deployment automation** - Docker, Kubernetes, monitoring
+- [ ] **Production monitoring** - Metrics, alerting, observability
+- [ ] **Security audit** - Vulnerability assessment and hardening
 
 ## 🤝 Contributing
 
