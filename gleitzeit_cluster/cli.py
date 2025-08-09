@@ -30,7 +30,12 @@ from .functions.registry import get_function_registry
 from .cli_run import run_command_handler, discover_batch_files
 from .cli_dev import dev_command_handler
 from .cli_monitor import monitor_command_handler
-from .cli_monitor_pro import monitor_pro_command_handler  
+from .cli_logs import logs_command_handler
+from .cli_stats import stats_command_handler
+from .cli_inspect import inspect_command_handler
+from .cli_watch import watch_command_handler
+from .cli_health import health_command_handler
+from .cli_events import events_command_handler
 from .cli_status import status_command_handler
 
 
@@ -750,16 +755,65 @@ def main():
     dev.add_argument('--no-scheduler', action='store_true', help='Disable scheduler')
     dev.add_argument('--no-executor', action='store_true', help='Disable executors')
     
-    # Monitor command (NEW - for monitoring dashboard)
-    monitor = subparsers.add_parser('monitor', help='Terminal monitoring dashboard')
+    # Monitoring commands
+    monitor = subparsers.add_parser('monitor', help='Real-time monitoring dashboard')
     monitor.add_argument('--cluster', default='http://localhost:8000', help='Cluster URL to monitor')
     monitor.add_argument('--refresh', type=float, default=1.0, help='Refresh rate in seconds')
-    monitor.add_argument('--pro', action='store_true', help='Use professional monitoring interface')
     
-    # Professional monitor (alias)
-    monitor_pro = subparsers.add_parser('pro', help='Professional monitoring dashboard')
-    monitor_pro.add_argument('--cluster', default='http://localhost:8000', help='Cluster URL to monitor')
-    monitor_pro.add_argument('--refresh', type=float, default=0.5, help='Refresh rate in seconds')
+    # Logs command
+    logs = subparsers.add_parser('logs', help='View and stream logs')
+    logs.add_argument('--cluster', default='http://localhost:8000', help='Cluster URL')
+    logs.add_argument('--type', choices=['workflow', 'task', 'node', 'system'], help='Source type to filter')
+    logs.add_argument('--id', help='Source ID to filter (workflow/task/node ID)')
+    logs.add_argument('--level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'], help='Minimum log level')
+    logs.add_argument('-f', '--follow', action='store_true', help='Follow logs in real-time')
+    logs.add_argument('-n', '--tail', type=int, default=50, help='Number of lines to show initially')
+    logs.add_argument('--search', help='Search string to filter logs')
+    logs.add_argument('--json', action='store_true', help='Output logs as JSON')
+    
+    # Stats command
+    stats = subparsers.add_parser('stats', help='Show cluster statistics')
+    stats.add_argument('--cluster', default='http://localhost:8000', help='Cluster URL')
+    stats.add_argument('--format', choices=['table', 'json', 'csv'], default='table', help='Output format')
+    stats.add_argument('--range', type=int, help='Time range in minutes (e.g., 60 for last hour)')
+    
+    # Inspect command
+    inspect = subparsers.add_parser('inspect', help='Deep inspection of cluster entities')
+    inspect.add_argument('type', choices=['workflow', 'task', 'node'], help='Entity type to inspect')
+    inspect.add_argument('id', help='Entity ID to inspect')
+    inspect.add_argument('--cluster', default='http://localhost:8000', help='Cluster URL')
+    inspect.add_argument('--json', action='store_true', help='Output as JSON')
+    
+    # Watch command
+    watch = subparsers.add_parser('watch', help='Watch specific entities')
+    watch_sub = watch.add_subparsers(dest='watch_type', help='What to watch')
+    
+    # Watch workflow
+    watch_workflow = watch_sub.add_parser('workflow', help='Watch a workflow')
+    watch_workflow.add_argument('id', help='Workflow ID')
+    watch_workflow.add_argument('--no-exit', action='store_true', help="Don't exit when workflow completes")
+    
+    # Watch task
+    watch_task = watch_sub.add_parser('task', help='Watch a task')
+    watch_task.add_argument('id', help='Task ID')
+    
+    # Watch queue
+    watch_queue = watch_sub.add_parser('queue', help='Watch the task queue')
+    
+    watch.add_argument('--cluster', default='http://localhost:8000', help='Cluster URL')
+    
+    # Health command
+    health = subparsers.add_parser('health', help='System health check')
+    health.add_argument('--cluster', default='http://localhost:8000', help='Cluster URL')
+    health.add_argument('--format', choices=['table', 'json'], default='table', help='Output format')
+    health.add_argument('-q', '--quiet', action='store_true', help='Quiet mode - only output status')
+    
+    # Events command
+    events = subparsers.add_parser('events', help='Stream cluster events')
+    events.add_argument('--cluster', default='http://localhost:8000', help='Cluster URL')
+    events.add_argument('--types', nargs='+', choices=['task_started', 'task_completed', 'task_failed', 'workflow_started', 'workflow_completed', 'workflow_failed', 'node_joined', 'node_left', 'system_error', 'system_warning'], help='Event types to filter')
+    events.add_argument('--json', action='store_true', help='Output events as JSON')
+    events.add_argument('--no-follow', dest='follow', action='store_false', help="Don't follow events continuously")
     
     # Status command (NEW - simple status check)
     status = subparsers.add_parser('status', help='Show cluster status')
@@ -887,12 +941,21 @@ def main():
     if args.command == 'dev':
         asyncio.run(dev_command_handler(args))
     elif args.command == 'monitor':
-        if getattr(args, 'pro', False):
-            asyncio.run(monitor_pro_command_handler(args))
-        else:
-            asyncio.run(monitor_command_handler(args))
-    elif args.command == 'pro':
-        asyncio.run(monitor_pro_command_handler(args))
+        asyncio.run(monitor_command_handler(args))
+    elif args.command == 'logs':
+        asyncio.run(logs_command_handler(args))
+    elif args.command == 'stats':
+        asyncio.run(stats_command_handler(args))
+    elif args.command == 'inspect':
+        asyncio.run(inspect_command_handler(args))
+    elif args.command == 'watch':
+        # Handle watch subcommand
+        args.type = args.watch_type
+        asyncio.run(watch_command_handler(args))
+    elif args.command == 'health':
+        asyncio.run(health_command_handler(args))
+    elif args.command == 'events':
+        asyncio.run(events_command_handler(args))
     elif args.command == 'status':
         asyncio.run(status_command_handler(args))
     elif args.command == 'serve':
