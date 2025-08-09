@@ -172,6 +172,19 @@ test_data/
 test_batch_folder/
 *.test.json
 *.test.yaml
+test_*.py
+*_test.py
+
+# Documentation artifacts
+*_ANALYSIS.md
+*_SUMMARY.md
+*_STATUS.md
+*_RESULTS.md
+ARCHITECTURE_*.md
+STREAMLINING_*.md
+CONSISTENCY_*.md
+UNIFIED_*.md
+FINAL_*.md
 
 # Local configuration files
 config.local.*
