@@ -511,7 +511,7 @@ gleitzeit inspect workflow wf_abc123 --json > workflow_details.json
 4. **Performance Analysis**: `gleitzeit stats` to understand workflow behavior
 5. **Deep Debugging**: `gleitzeit inspect` for detailed troubleshooting
 
-⚠️ **Note**: Currently monitors development/mock execution. Production monitoring features are planned for future releases.
+⚠️ **Note**: Monitoring shows real execution for CLI commands (`gleitzeit run`) and development mock execution for monitoring/inspection commands.
 
 ### Event-Driven Architecture
 
@@ -636,7 +636,12 @@ $ gleitzeit auth login
 - **Platform**: macOS, Linux (Windows support planned)
 
 ### Development Roadmap to Production:
-- [ ] Replace mock execution with real task processing
+- [x] **Real task execution implemented** ✅ **COMPLETE**
+  - ✅ CLI commands (`gleitzeit run`) use real execution by default
+  - ✅ Python functions, Ollama text/vision, HTTP requests all work
+  - ✅ TaskExecutor with retry logic and error handling
+  - ✅ Multi-endpoint Ollama support with load balancing
+  - ⚠️ Note: Monitoring/inspection commands use mock execution for development
 - [x] **Comprehensive error handling and recovery** ✅ **DEVELOPMENT COMPLETE**
   - ✅ 25+ structured error definitions across all domains
   - ✅ Intelligent retry logic with circuit breakers

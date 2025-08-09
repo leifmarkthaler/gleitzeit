@@ -526,7 +526,7 @@ async def run_command_handler(args):
     # Start cluster connection for execution tasks
     cluster = GleitzeitCluster(
         enable_redis=False,
-        enable_real_execution=False
+        enable_real_execution=True  # Enable real execution for CLI commands
     )
     
     try:

@@ -68,7 +68,7 @@ class PythonExecutor:
         Returns:
             Function execution result
         """
-        if task.task_type not in [TaskType.PYTHON_FUNCTION, TaskType.PYTHON_CODE]:
+        if task.task_type != TaskType.FUNCTION:
             raise PythonExecutionError(f"Invalid task type: {task.task_type}")
         
         params = task.parameters
