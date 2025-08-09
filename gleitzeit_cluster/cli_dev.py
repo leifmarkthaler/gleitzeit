@@ -90,9 +90,8 @@ class GleitzeitDevEnvironment:
                 
                 capabilities = NodeCapabilities(
                     supported_task_types=[
-                        TaskType.FUNCTION,
-                        TaskType.TEXT,
-                        TaskType.VISION,
+                        TaskType.EXTERNAL_PROCESSING,
+                        TaskType.EXTERNAL_CUSTOM,
                     ],
                     available_models=["llama3", "codellama", "llava"],
                     max_concurrent_tasks=3,
