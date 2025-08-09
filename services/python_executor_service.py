@@ -75,7 +75,6 @@ class PythonExecutorService(ExternalServiceNode):
         
         # Register task handlers
         self.register_task_handler("python_execution", self.execute_python_task)
-        self.register_task_handler("function", self.execute_python_task)  # Legacy support
         self.register_task_handler("data_processing", self.execute_python_task)
         
         # Track execution metrics

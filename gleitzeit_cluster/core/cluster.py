@@ -19,7 +19,6 @@ from .errors import (
     WorkflowNotFoundError
 )
 from ..execution.task_executor import TaskExecutor
-from ..execution.ollama_endpoint_manager import EndpointConfig, LoadBalancingStrategy
 from ..storage.redis_client import RedisClient
 from ..communication.socketio_client import ClusterSocketClient
 from ..communication.socketio_server import SocketIOServer
@@ -36,53 +35,47 @@ class GleitzeitCluster:
     
     def __init__(
         self, 
+        # Core connectivity
         redis_url: str = "redis://localhost:6379", 
         socketio_url: str = "http://localhost:8000",
         ollama_url: str = "http://localhost:11434",
-        ollama_endpoints: Optional[List[EndpointConfig]] = None,
-        ollama_strategy: LoadBalancingStrategy = LoadBalancingStrategy.LEAST_LOADED,
-        enable_real_execution: bool = True,
+        
+        # Service configuration (simplified)
         enable_redis: bool = True,
         enable_socketio: bool = True,
-        auto_start_socketio_server: bool = True,
         socketio_host: str = "0.0.0.0",
         socketio_port: int = 8000,
+        
+        # Unified architecture (always enabled)
+        auto_start_internal_llm_service: bool = True,
+        auto_start_python_executor: bool = True,
+        
+        # Performance tuning
+        python_executor_workers: int = 4,
+        llm_service_workers: int = 20,
+        
+        # Development/testing overrides
+        enable_real_execution: bool = False,  # Default to safe mode
         auto_start_services: bool = True,
-        auto_start_redis: bool = True,
-        auto_start_executors: bool = True,
-        min_executors: int = 1,
-        auto_recovery: bool = True,
-        use_external_python_executor: bool = False,  # Feature flag for external Python execution
-        auto_start_python_executor: bool = True,  # Auto-start Python executor service
-        python_executor_workers: int = 4,  # Number of Python executor workers
-        use_unified_socketio_architecture: bool = False,  # Route ALL tasks via Socket.IO
-        auto_start_internal_llm_service: bool = True,  # Auto-start internal LLM service
-        llm_service_workers: int = 20  # Number of concurrent LLM tasks
+        auto_recovery: bool = True
     ):
         """Initialize cluster connection"""
         self.redis_url = redis_url
         self.socketio_url = socketio_url
         self.enable_redis = enable_redis
         self.enable_socketio = enable_socketio
-        self.auto_start_socketio_server = auto_start_socketio_server
         self.socketio_host = socketio_host
         self.socketio_port = socketio_port
         
-        # Auto-start configuration
+        # Simplified auto-start configuration
         self.auto_start_services = auto_start_services
-        self.auto_start_redis = auto_start_redis
-        self.auto_start_executors = auto_start_executors
-        self.min_executors = min_executors
         self.auto_recovery = auto_recovery
         
-        # External Python executor configuration
-        self.use_external_python_executor = use_external_python_executor
+        # Service configuration (unified architecture always enabled)
         self.auto_start_python_executor = auto_start_python_executor
         self.python_executor_workers = python_executor_workers
         self.python_executor_process = None
         
-        # Unified Socket.IO architecture configuration
-        self.use_unified_socketio_architecture = use_unified_socketio_architecture
         self.auto_start_internal_llm_service = auto_start_internal_llm_service
         self.llm_service_workers = llm_service_workers
         self.internal_llm_process = None
@@ -121,8 +114,8 @@ class GleitzeitCluster:
         else:
             self.redis_client = None
         
-        # Initialize Socket.IO server (if auto-start enabled)
-        if enable_socketio and auto_start_socketio_server:
+        # Initialize Socket.IO server (always auto-start in unified architecture)
+        if enable_socketio:
             self.socketio_server = SocketIOServer(
                 host=socketio_host,
                 port=socketio_port,
@@ -144,9 +137,7 @@ class GleitzeitCluster:
         self.enable_real_execution = enable_real_execution
         if enable_real_execution:
             self.task_executor = TaskExecutor(
-                ollama_url=ollama_url,
-                ollama_endpoints=ollama_endpoints,
-                ollama_strategy=ollama_strategy
+                ollama_url=ollama_url
             )
         else:
             self.task_executor = None
@@ -197,7 +188,7 @@ class GleitzeitCluster:
                 self.task_executor = None
         
         # Start task dispatcher for automatic task assignment
-        if self.redis_client and (self.enable_real_execution or enable_socketio):
+        if self.redis_client and self.enable_socketio:
             try:
                 self.task_dispatcher = TaskDispatcher(
                     redis_client=self.redis_client,
@@ -210,8 +201,8 @@ class GleitzeitCluster:
                 self.logger.log_error(error_info)
                 self.logger.logger.warning("Task dispatcher failed to start, tasks won't be automatically assigned")
             
-        # Start Python executor service if using external execution
-        if self.use_external_python_executor and self.auto_start_python_executor:
+        # Start Python executor service (unified architecture)
+        if self.auto_start_python_executor:
             try:
                 await self._start_python_executor_service()
                 self.logger.logger.info("✅ Python Executor Service started")
@@ -220,8 +211,8 @@ class GleitzeitCluster:
                 self.logger.log_error(error_info)
                 self.logger.logger.warning("Python executor service failed to start")
         
-        # Start internal LLM service if using unified architecture
-        if self.use_unified_socketio_architecture and self.auto_start_internal_llm_service:
+        # Start internal LLM service (unified architecture)
+        if self.auto_start_internal_llm_service:
             try:
                 await self._start_internal_llm_service()
                 self.logger.logger.info("✅ Internal LLM Service started")
@@ -242,9 +233,8 @@ class GleitzeitCluster:
             return await self.service_manager.ensure_services_running(
                 redis_url=self.redis_url,
                 socketio_url=self.socketio_url,
-                auto_start_redis=self.auto_start_redis and self.enable_redis,
-                auto_start_executor=self.auto_start_executors and self.enable_socketio,
-                min_executors=self.min_executors
+                auto_start_redis=self.enable_redis,
+                auto_start_executor=self.enable_socketio
             )
         
         return await self.retry_manager.execute_with_retry(
@@ -543,9 +533,6 @@ if __name__ == "__main__":
     def create_workflow(self, name: str, description: Optional[str] = None) -> Workflow:
         """Create a new workflow"""
         workflow = Workflow(name=name, description=description)
-        # Pass configuration flags to the workflow
-        workflow._use_external_python_executor = self.use_external_python_executor
-        workflow._use_unified_socketio_architecture = self.use_unified_socketio_architecture
         self._workflows[workflow.id] = workflow
         return workflow
     

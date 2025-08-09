@@ -26,13 +26,19 @@ class GleitzeitDevEnvironment:
         enable_redis: bool = False,
         enable_scheduler: bool = True,
         enable_executor: bool = True,
-        executor_count: int = 1
+        executor_count: int = 1,
+        use_unified_architecture: bool = True,
+        auto_start_llm_service: bool = True,
+        use_external_python: bool = True
     ):
         self.cluster_port = cluster_port
         self.enable_redis = enable_redis
         self.enable_scheduler = enable_scheduler
         self.enable_executor = enable_executor
         self.executor_count = executor_count
+        self.use_unified_architecture = use_unified_architecture
+        self.auto_start_llm_service = auto_start_llm_service
+        self.use_external_python = use_external_python
         
         self.cluster: Optional[GleitzeitCluster] = None
         self.scheduler: Optional[GleitzeitScheduler] = None
@@ -53,7 +59,10 @@ class GleitzeitDevEnvironment:
             enable_socketio=True,
             auto_start_socketio_server=True,
             socketio_host="localhost",
-            socketio_port=self.cluster_port
+            socketio_port=self.cluster_port,
+            use_unified_socketio_architecture=self.use_unified_architecture,
+            auto_start_internal_llm_service=self.auto_start_llm_service,
+            use_external_python_executor=self.use_external_python
         )
         await self.cluster.start()
         
@@ -118,6 +127,11 @@ class GleitzeitDevEnvironment:
         print(f"   gleitzeit run --text 'Write a poem'")
         print(f"   gleitzeit functions list")
         print()
+        print("🔧 Unified Architecture Mode:")
+        print("   ✅ All tasks route through Socket.IO services")
+        print("   ✅ LLM tasks via Internal/External LLM services")
+        print("   ✅ Python tasks via Python Executor service")
+        print()
         print("Press Ctrl+C to stop all services")
         print("=" * 50)
     
@@ -171,7 +185,10 @@ async def dev_command_handler(args):
         enable_redis=not args.no_redis,
         enable_scheduler=not args.no_scheduler,
         enable_executor=not args.no_executor,
-        executor_count=args.executors
+        executor_count=args.executors,
+        use_unified_architecture=getattr(args, 'unified', True),
+        auto_start_llm_service=not getattr(args, 'no_auto_llm', False),
+        use_external_python=not getattr(args, 'no_external_python', False)
     )
     
     # Setup signal handlers

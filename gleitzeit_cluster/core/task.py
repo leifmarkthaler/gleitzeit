@@ -10,36 +10,15 @@ import uuid
 
 
 class TaskType(Enum):
-    """Streamlined task types for Gleitzeit"""
-    TEXT = "text"            # LLM text generation
-    VISION = "vision"        # Vision/image analysis
-    FUNCTION = "function"    # Secure function execution
-    HTTP = "http"           # HTTP requests
-    FILE = "file"           # File operations
-    
-    # External task types (executed outside cluster via Socket.IO)
+    """Task types for unified Socket.IO architecture"""
+    # All tasks are now external and route via Socket.IO services
     EXTERNAL_API = "external_api"           # External API calls
     EXTERNAL_ML = "external_ml"             # ML training/inference
     EXTERNAL_DATABASE = "external_database" # Database operations
-    EXTERNAL_PROCESSING = "external_processing" # Data processing
+    EXTERNAL_PROCESSING = "external_processing" # Data processing (Python tasks)
     EXTERNAL_WEBHOOK = "external_webhook"   # Webhook-based tasks
-    EXTERNAL_CUSTOM = "external_custom"     # Custom external services
+    EXTERNAL_CUSTOM = "external_custom"     # Custom external services (LLM tasks)
     
-    # Legacy aliases for backward compatibility
-    @classmethod
-    def _missing_(cls, value):
-        """Handle legacy task type names"""
-        legacy_map = {
-            "text_prompt": cls.TEXT,
-            "ollama_text": cls.TEXT,
-            "vision_task": cls.VISION,
-            "ollama_vision": cls.VISION,
-            "python_function": cls.FUNCTION,
-            "python_code": cls.FUNCTION,
-            "http_request": cls.HTTP,
-            "file_operation": cls.FILE
-        }
-        return legacy_map.get(value)
 
 
 class TaskStatus(Enum):
@@ -67,7 +46,7 @@ class TaskParameters(BaseModel):
     
     # Common parameters
     prompt: Optional[str] = None
-    model_name: Optional[str] = "llama3"
+    model: Optional[str] = "llama3"
     temperature: Optional[float] = 0.7
     max_tokens: Optional[int] = None
     timeout_seconds: Optional[int] = 300
@@ -168,15 +147,13 @@ class Task(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         """Post-initialization validation"""
-        # Auto-detect requirements based on task type
-        if self.task_type == TaskType.VISION:
+        # Auto-detect requirements based on external task type
+        if (self.task_type == TaskType.EXTERNAL_CUSTOM and 
+            self.parameters.external_task_type == "vision"):
             self.requirements.requires_gpu = True
-            if self.parameters.model_name:
-                self.requirements.required_models.append(self.parameters.model_name)
-        
-        elif self.task_type == TaskType.TEXT:
-            if self.parameters.model_name:
-                self.requirements.required_models.append(self.parameters.model_name)
+            
+        if self.parameters.model:
+            self.requirements.required_models.append(self.parameters.model)
     
     def update_status(self, status: TaskStatus, error: Optional[str] = None) -> None:
         """Update task status with timestamp"""

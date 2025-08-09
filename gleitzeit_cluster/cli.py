@@ -854,6 +854,9 @@ def main():
     dev.add_argument('--no-redis', action='store_true', help='Disable Redis')
     dev.add_argument('--no-scheduler', action='store_true', help='Disable scheduler')
     dev.add_argument('--no-executor', action='store_true', help='Disable executors')
+    dev.add_argument('--unified', action='store_true', help='Use unified Socket.IO architecture (recommended)')
+    dev.add_argument('--no-auto-llm', action='store_true', help='Disable auto-start internal LLM service')
+    dev.add_argument('--no-external-python', action='store_true', help='Disable external Python executor')
     
     # Monitoring commands
     monitor = subparsers.add_parser('monitor', help='Real-time monitoring dashboard')

@@ -219,7 +219,7 @@ class TaskExecutor:
             if self._multi_endpoint_mode:
                 # Use endpoint manager for multi-endpoint execution
                 result = await self.ollama_manager.execute_text_task(
-                    model=params.model_name or "llama3",
+                    model=params.model or "llama3",
                     prompt=params.prompt,
                     temperature=params.temperature or 0.7,
                     max_tokens=params.max_tokens,
@@ -229,7 +229,7 @@ class TaskExecutor:
             else:
                 # Single endpoint mode
                 result = await self.ollama_client.generate_text(
-                    model=params.model_name or "llama3",
+                    model=params.model or "llama3",
                     prompt=params.prompt,
                     temperature=params.temperature or 0.7,
                     max_tokens=params.max_tokens,
@@ -260,7 +260,7 @@ class TaskExecutor:
             if self._multi_endpoint_mode:
                 # Use endpoint manager for multi-endpoint execution
                 result = await self.ollama_manager.execute_vision_task(
-                    model=params.model_name or "llava",
+                    model=params.model or "llava",
                     prompt=params.prompt,
                     image_path=str(image_path),
                     temperature=params.temperature or 0.4,
@@ -270,7 +270,7 @@ class TaskExecutor:
             else:
                 # Single endpoint mode
                 result = await self.ollama_client.generate_vision(
-                    model=params.model_name or "llava",
+                    model=params.model or "llava",
                     prompt=params.prompt,
                     image_path=image_path,
                     temperature=params.temperature or 0.4,

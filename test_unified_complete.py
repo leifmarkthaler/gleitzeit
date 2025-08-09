@@ -298,9 +298,8 @@ async def run_comprehensive_test():
         
         success1 = await test_unified_architecture()
         success2 = await test_provider_flexibility()
-        success3 = await test_backwards_compatibility()
         
-        if success1 and success2 and success3:
+        if success1 and success2:
             print("\n🎉 All unified architecture tests passed!")
             
             print("\n✅ Verified Features:")

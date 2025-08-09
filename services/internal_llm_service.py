@@ -86,7 +86,6 @@ class InternalLLMService(ExternalServiceNode):
         
         # Register task handlers
         self.register_task_handler("llm_generation", self.execute_llm_task)
-        self.register_task_handler("text", self.execute_llm_task)  # Legacy support
         self.register_task_handler("vision", self.execute_vision_task)
         
         # Track LLM metrics
