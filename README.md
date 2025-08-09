@@ -235,6 +235,88 @@ async def batch_text_analysis():
 asyncio.run(batch_text_analysis())
 ```
 
+### Multi-Endpoint Ollama (Advanced)
+
+Distribute LLM workloads across multiple Ollama servers for scalability and reliability:
+
+```python
+import asyncio
+from gleitzeit_cluster import GleitzeitCluster, Workflow
+from gleitzeit_cluster.execution.ollama_endpoint_manager import EndpointConfig, LoadBalancingStrategy
+
+async def multi_endpoint_setup():
+    # Configure multiple Ollama endpoints
+    endpoints = [
+        EndpointConfig(
+            name="local_cpu",
+            url="http://localhost:11434",
+            priority=1,  # Lower priority for CPU
+            models=["llama3", "mistral"],
+            tags={"cpu", "local"}
+        ),
+        EndpointConfig(
+            name="gpu_server",
+            url="http://gpu-server:11434",
+            priority=5,  # Higher priority for GPU
+            max_concurrent=10,
+            models=["llama3", "llava", "codellama"],
+            tags={"gpu", "vision", "fast"}
+        ),
+        EndpointConfig(
+            name="cloud_backup",
+            url="http://cloud.example.com:11434",
+            priority=2,
+            max_concurrent=20,
+            tags={"cloud", "scalable"}
+        )
+    ]
+    
+    # Create cluster with multi-endpoint support
+    cluster = GleitzeitCluster(
+        ollama_endpoints=endpoints,
+        ollama_strategy=LoadBalancingStrategy.LEAST_LOADED  # or ROUND_ROBIN, FASTEST_RESPONSE, MODEL_AFFINITY
+    )
+    await cluster.start()
+    
+    # Your existing code works unchanged!
+    workflow = Workflow(name="Multi-Endpoint Demo")
+    
+    # Automatically routed to best available endpoint
+    text_task = workflow.add_text_task(
+        name="Generate Text",
+        prompt="Explain distributed computing",
+        model="llama3"
+    )
+    
+    # Vision tasks automatically routed to GPU endpoint
+    vision_task = workflow.add_vision_task(
+        name="Analyze Image",
+        prompt="Describe this image",
+        model="llava",
+        image_path="photo.jpg"
+    )
+    
+    # Submit and monitor
+    workflow_id = await cluster.submit_workflow(workflow)
+    
+    # Get endpoint statistics
+    stats = cluster.task_executor.ollama_manager.get_endpoint_stats()
+    for endpoint, data in stats.items():
+        print(f"{endpoint}: Load={data['stats']['current_load']}, Success={data['stats']['success_rate']:.2%}")
+    
+    await cluster.stop()
+
+asyncio.run(multi_endpoint_setup())
+```
+
+**Multi-Endpoint Features:**
+- **Automatic Failover**: Seamlessly retry on healthy endpoints if one fails
+- **Load Balancing**: Distribute requests using LEAST_LOADED, ROUND_ROBIN, FASTEST_RESPONSE, or MODEL_AFFINITY strategies
+- **Model Routing**: Automatically route to endpoints with required models
+- **Health Monitoring**: Continuous health checks with automatic recovery
+- **Priority-based Selection**: Prefer high-performance endpoints
+- **Tag-based Routing**: Route by capabilities (gpu, vision, fast)
+
 ## What Makes This Different?
 
 - **Local-first**: Everything runs on your machine
@@ -244,6 +326,7 @@ asyncio.run(batch_text_analysis())
 - **Privacy**: Your data never leaves your computer
 - **Simple**: Just install and run commands
 - **Extensible**: 30+ built-in functions + Python API
+- **Multi-Endpoint Support**: Scale across multiple Ollama servers with automatic failover
 
 ## Status
 
