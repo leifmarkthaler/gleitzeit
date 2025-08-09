@@ -125,7 +125,7 @@ class TestTask:
             task_type=TaskType.TEXT,
             parameters=TaskParameters(
                 prompt="Test prompt",
-                model_name="llama3"
+                model="llama3"
             ),
             dependencies=["dep1"],
             metadata={"custom": "value"}
@@ -153,13 +153,13 @@ class TestTaskParameters:
         """Test text task parameters"""
         params = TaskParameters(
             prompt="Test prompt",
-            model_name="llama3",
+            model="llama3",
             temperature=0.8,
             max_tokens=100
         )
         
         assert params.prompt == "Test prompt"
-        assert params.model_name == "llama3"
+        assert params.model == "llama3"
         assert params.temperature == 0.8
         assert params.max_tokens == 100
     
@@ -168,12 +168,12 @@ class TestTaskParameters:
         params = TaskParameters(
             prompt="Describe this image",
             image_path="/path/to/image.jpg",
-            model_name="llava"
+            model="llava"
         )
         
         assert params.prompt == "Describe this image"
         assert params.image_path == "/path/to/image.jpg"
-        assert params.model_name == "llava"
+        assert params.model == "llava"
     
     def test_function_parameters(self):
         """Test function task parameters"""

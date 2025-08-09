@@ -60,7 +60,7 @@ class TestWorkflow:
         assert task.name == "analyze_text"
         assert task.task_type == TaskType.TEXT
         assert task.parameters.prompt == "Analyze this text"
-        assert task.parameters.model_name == "llama3"
+        assert task.parameters.model == "llama3"
         assert task.dependencies == ["prev_task"]
         assert task.id in workflow.tasks
     
@@ -79,7 +79,7 @@ class TestWorkflow:
         assert task.task_type == TaskType.VISION
         assert task.parameters.prompt == "Describe this image"
         assert task.parameters.image_path == "/path/to/image.jpg"
-        assert task.parameters.model_name == "llava"
+        assert task.parameters.model == "llava"
         assert task.requirements.requires_gpu is True
     
     def test_add_python_task_convenience(self):

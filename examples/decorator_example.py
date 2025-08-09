@@ -111,8 +111,7 @@ async def main():
     print("🏗️ Creating workflow...")
     cluster = GleitzeitCluster(
         enable_redis=False,  # Simplified for demo
-        enable_socketio=True,
-        auto_start_socketio_server=True
+        enable_socketio=True
     )
     
     await cluster.start()

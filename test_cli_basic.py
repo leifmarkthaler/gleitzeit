@@ -121,9 +121,7 @@ from gleitzeit_cluster import GleitzeitCluster
 
 # Test CLI-style cluster creation with unified architecture
 cluster = GleitzeitCluster(
-    use_unified_socketio_architecture=True,
     auto_start_internal_llm_service=True,
-    use_external_python_executor=True,
     enable_redis=False,
     enable_socketio=False,
     enable_real_execution=False,

@@ -310,6 +310,53 @@ ERROR_CATALOG: Dict[ErrorCode, ErrorDefinition] = {
         tags=["service", "startup", "dependencies"]
     ),
     
+    # External Service Errors (unified architecture)
+    ErrorCode.EXTERNAL_SERVICE_UNAVAILABLE: ErrorDefinition(
+        code=ErrorCode.EXTERNAL_SERVICE_UNAVAILABLE,
+        domain=ErrorDomain.INFRASTRUCTURE,
+        message="External service is unavailable",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.MEDIUM,
+        retry_after=10,
+        user_message="External service is temporarily unavailable",
+        resolution_hint="Check service status and retry in a few moments",
+        tags=["external", "service", "availability"]
+    ),
+    
+    ErrorCode.EXTERNAL_SERVICE_TIMEOUT: ErrorDefinition(
+        code=ErrorCode.EXTERNAL_SERVICE_TIMEOUT,
+        domain=ErrorDomain.INFRASTRUCTURE,
+        message="External service request timed out",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.MEDIUM,
+        retry_after=5,
+        user_message="External service is taking too long to respond",
+        resolution_hint="Check service performance or increase timeout settings",
+        tags=["external", "service", "timeout"]
+    ),
+    
+    ErrorCode.PYTHON_EXECUTOR_SERVICE_FAILED: ErrorDefinition(
+        code=ErrorCode.PYTHON_EXECUTOR_SERVICE_FAILED,
+        domain=ErrorDomain.EXECUTION,
+        message="Python executor service failed",
+        category=ErrorCategory.PERMANENT,
+        severity=ErrorSeverity.HIGH,
+        user_message="Python task execution service is not working",
+        resolution_hint="Start Python executor service: python services/python_executor_service.py",
+        tags=["python", "executor", "service"]
+    ),
+    
+    ErrorCode.INTERNAL_LLM_SERVICE_FAILED: ErrorDefinition(
+        code=ErrorCode.INTERNAL_LLM_SERVICE_FAILED,
+        domain=ErrorDomain.EXECUTION,
+        message="Internal LLM service failed",
+        category=ErrorCategory.PERMANENT,
+        severity=ErrorSeverity.HIGH,
+        user_message="Internal LLM service is not working",
+        resolution_hint="Start internal LLM service: python services/internal_llm_service.py",
+        tags=["llm", "internal", "service"]
+    ),
+    
     ErrorCode.CLUSTER_START_FAILED: ErrorDefinition(
         code=ErrorCode.CLUSTER_START_FAILED,
         domain=ErrorDomain.INFRASTRUCTURE,

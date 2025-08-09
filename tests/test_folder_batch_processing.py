@@ -264,7 +264,7 @@ class TestFolderBatchIntegration:
                     parameters=TaskParameters(
                         image_path=str(temp_batch_folder / "images" / "photo1.jpg"),
                         prompt="Describe image",
-                        model_name="llava"
+                        model="llava"
                     )
                 )
             elif task_type == "text":
@@ -273,7 +273,7 @@ class TestFolderBatchIntegration:
                     task_type=TaskType.TEXT,
                     parameters=TaskParameters(
                         prompt="Analyze this text",
-                        model_name="llama3"
+                        model="llama3"
                     )
                 )
             else:  # function

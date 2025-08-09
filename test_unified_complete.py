@@ -37,10 +37,6 @@ async def test_unified_architecture():
     print("1. Testing unified architecture configuration...")
     
     cluster = GleitzeitCluster(
-        # Enable unified architecture
-        use_unified_socketio_architecture=True,
-        use_external_python_executor=True,
-        
         # Disable auto-start for testing
         auto_start_internal_llm_service=False,
         auto_start_python_executor=False,
@@ -52,8 +48,8 @@ async def test_unified_architecture():
         auto_start_services=False
     )
     
-    print(f"   ✅ Unified architecture enabled: {cluster.use_unified_socketio_architecture}")
-    print(f"   ✅ External Python enabled: {cluster.use_external_python_executor}")
+    print(f"   ✅ Unified architecture enabled by default")
+    print(f"   ✅ External services enabled by default")
     
     # Test 2: Workflow creation and task routing
     print("\n2. Testing task routing in unified architecture...")
@@ -61,8 +57,8 @@ async def test_unified_architecture():
     workflow = cluster.create_workflow("Unified Test Workflow")
     
     # Verify flags are passed to workflow
-    assert workflow._use_unified_socketio_architecture == True
-    assert workflow._use_external_python_executor == True
+    # Unified architecture is always enabled now
+    # External services are always enabled now
     print("   ✅ Configuration flags passed to workflow")
     
     # Test LLM task routing
@@ -165,7 +161,6 @@ async def test_provider_flexibility():
     print("=" * 35)
     
     cluster = GleitzeitCluster(
-        use_unified_socketio_architecture=True,
         enable_redis=False,
         enable_socketio=False,
         enable_real_execution=False,
@@ -232,7 +227,6 @@ async def test_backwards_compatibility():
     
     # Old architecture (default)
     cluster_old = GleitzeitCluster(
-        use_unified_socketio_architecture=False,  # Legacy mode
         enable_redis=False,
         enable_socketio=False,
         enable_real_execution=False
@@ -258,8 +252,6 @@ async def test_backwards_compatibility():
     
     # New architecture
     cluster_new = GleitzeitCluster(
-        use_unified_socketio_architecture=True,  # New mode
-        use_external_python_executor=True,
         enable_redis=False,
         enable_socketio=False,
         enable_real_execution=False,

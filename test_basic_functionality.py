@@ -66,7 +66,6 @@ async def test_basic_workflow():
     # Test 4: External Python task (new way)
     print("\n4. Testing external Python task routing...")
     cluster_external = GleitzeitCluster(
-        use_external_python_executor=True,
         enable_redis=False,
         enable_socketio=False,
         enable_real_execution=False,
@@ -92,7 +91,7 @@ async def test_basic_workflow():
         temperature=0.1
     )
     print(f"✅ LLM task: {llm_task.task_type}")
-    print(f"   Model: {llm_task.parameters.model_name}")
+    print(f"   Model: {llm_task.parameters.model}")
     
     # Test 6: Task dependencies
     print("\n6. Testing task dependencies...")

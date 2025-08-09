@@ -130,7 +130,6 @@ async def test_workflow_integration():
     from gleitzeit_cluster import GleitzeitCluster
     
     cluster = GleitzeitCluster(
-        use_external_python_executor=True,
         enable_redis=False,
         enable_socketio=False,
         enable_real_execution=False,

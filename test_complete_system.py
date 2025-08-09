@@ -120,8 +120,6 @@ async def demonstration_workflow():
         enable_redis=False,
         enable_socketio=False,
         
-        # Use external Python execution
-        use_external_python_executor=True,
         auto_start_python_executor=False,  # Manual for demo
         auto_start_services=False
     )
@@ -269,13 +267,13 @@ async def architecture_summary():
     print("1. Task Routing:")
     
     # Native Python (legacy)
-    cluster_native = GleitzeitCluster(use_external_python_executor=False, enable_redis=False, enable_socketio=False, enable_real_execution=False)
+    cluster_native = GleitzeitCluster(enable_redis=False, enable_socketio=False, enable_real_execution=False)
     workflow_native = cluster_native.create_workflow("Native Test")
     native_task = workflow_native.add_python_task("Native Task", "some_function")
     print(f"   Native Python:  {native_task.task_type}")
     
     # External Python (new)
-    cluster_external = GleitzeitCluster(use_external_python_executor=True, enable_redis=False, enable_socketio=False, enable_real_execution=False, auto_start_python_executor=False)
+    cluster_external = GleitzeitCluster(enable_redis=False, enable_socketio=False, enable_real_execution=False, auto_start_python_executor=False)
     workflow_external = cluster_external.create_workflow("External Test")
     external_task = workflow_external.add_python_task("External Task", "some_function")
     print(f"   External Python: {external_task.task_type} → {external_task.parameters.service_name}")

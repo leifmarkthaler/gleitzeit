@@ -88,7 +88,7 @@ class TestBatchProcessing:
             task_type=TaskType.TEXT,
             parameters=TaskParameters(
                 prompt="Summarize results: {{words_0.result}}, {{keywords_0.result}}",
-                model_name="llama3"
+                model="llama3"
             ),
             dependencies=[f"words_{i}" for i in range(3)] + [f"keywords_{i}" for i in range(3)]
         )
@@ -210,7 +210,7 @@ class TestBatchConvenienceMethods:
                 task_type=TaskType.TEXT,
                 parameters=TaskParameters(
                     prompt=f"Analyze: {text}",
-                    model_name="llama3"
+                    model="llama3"
                 )
             )
             workflow.add_task(task)

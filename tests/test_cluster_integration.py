@@ -447,7 +447,7 @@ class TestBatchProcessingIntegration:
             task_type=TaskType.TEXT,
             parameters=TaskParameters(
                 prompt="Analyze this sequence: {{func_batch.result}}",
-                model_name="llama3"
+                model="llama3"
             ),
             dependencies=["func_batch"]
         )
@@ -460,7 +460,7 @@ class TestBatchProcessingIntegration:
             parameters=TaskParameters(
                 prompt="What do you see?",
                 image_path="/test/image.jpg",
-                model_name="llava"
+                model="llava"
             )
         )
         
