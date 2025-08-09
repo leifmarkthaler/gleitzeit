@@ -46,6 +46,12 @@ Authentication and security examples
 - User management
 - Secure workflow execution
 
+### **`multi_ollama_hosts.py`**
+Multiple local Ollama server configuration
+- Multi-endpoint setup and configuration
+- Load balancing strategies
+- Automatic failover demonstration
+
 ## 🚀 Quick Start
 
 ```bash
@@ -63,6 +69,9 @@ python examples/vision_demo.py
 
 # 5. Test batch processing
 python examples/batch_demo.py
+
+# 6. Multiple Ollama hosts
+python examples/multi_ollama_hosts.py
 ```
 
 ## 📋 Requirements
@@ -106,6 +115,7 @@ Gleitzeit Orchestrator → Socket.IO Services → AI Models/Python Functions
 | `batch_demo.py` | Parallel Processing | Scalable batch workflows |
 | `real_world_workflows.py` | Production Patterns | Complex business workflows |
 | `auth_demo.py` | Security | Authentication patterns |
+| `multi_ollama_hosts.py` | Multi-Endpoint | Multiple Ollama server setup |
 
 ## 🔄 Common Patterns
 

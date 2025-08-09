@@ -1,347 +1,480 @@
 # Getting Started with Gleitzeit
 
-Gleitzeit is a distributed workflow orchestration system that allows you to execute tasks across multiple machines with real-time monitoring. This guide will get you up and running in minutes.
+Gleitzeit is an **LLM Workflow Orchestration Platform** that coordinates AI tasks across multiple models and services using a unified Socket.IO architecture. This guide will get you running LLM workflows in minutes.
 
-## Quick Install
+## 🎯 What Gleitzeit Does
 
+Gleitzeit **orchestrates** (coordinates) rather than executes:
+- 🧠 **LLM Task Orchestration** - Route tasks across internal Ollama and external providers (OpenAI, Anthropic)
+- 🔗 **Workflow Management** - Complex multi-step AI pipelines with dependencies  
+- 🐍 **Python Integration** - Simple decorator-based custom functions via Socket.IO services
+- ⚡ **Pure Orchestration** - Gleitzeit coordinates; Socket.IO services execute
+
+## 📋 Prerequisites
+
+### Essential Requirements
 ```bash
-# One-line installer (recommended)
-curl -sSL https://raw.githubusercontent.com/leifmarkthaler/gleitzeit/main/install.sh | bash
+# Python 3.9+
+python --version
 
-# Or install with UV
-uv pip install "gleitzeit-cluster[monitor]" && ~/.venv/bin/gleitzeit-setup
+# Redis for coordination
+redis-server
 
-# Or install with pip
-pip install "gleitzeit-cluster[monitor]" && python -m gleitzeit_cluster.post_install
+# Ollama for local LLM models
+curl -fsSL https://ollama.ai/install.sh | sh
+ollama serve
+
+# Install basic models
+ollama pull llama3
+ollama pull llava  # For vision tasks
 ```
 
-After installation, restart your terminal or run `source ~/.zshrc` to use the `gleitzeit` command.
+### Optional (External LLMs)
+- **OpenAI API Key** - For GPT models
+- **Anthropic API Key** - For Claude models
 
-## Your First Workflow
-
-### Start the Development Environment
-
-```bash
-# Terminal 1: Start cluster + executor + scheduler
-gleitzeit dev
-```
-
-This starts all components in development mode. You'll see:
-- Cluster server running on http://localhost:8000
-- Executor node ready to process tasks
-- Scheduler distributing work
-
-### Launch Monitoring Dashboard
+## 🚀 Installation
 
 ```bash
-# Terminal 2: Professional monitoring interface
-gleitzeit pro
+# Install from source
+git clone https://github.com/leifmarkthaler/gleitzeit
+cd gleitzeit
+pip install -e .
 ```
 
-This opens a real-time terminal dashboard showing:
-- System performance metrics
-- Active tasks and workflows
-- Node status and health
-- Alert notifications
+## ⚡ Quick Start (5 Minutes)
 
-### Execute Your First Task
-
-```bash
-# Terminal 3: Run a simple function
-gleitzeit run --function fibonacci --args n=10
-
-# Or analyze text
-gleitzeit run --text "Explain quantum computing" --model llama3
-
-# Or process an image
-gleitzeit run --vision image.jpg --prompt "Describe this image"
-```
-
-## Core Concepts
-
-### Tasks
-Individual work units that can be:
-- **Function calls**: Execute pre-registered Python functions
-- **Text generation**: Use LLM models for text processing
-- **Vision analysis**: Process images with vision models
-- **HTTP requests**: Make external API calls
-
-### Workflows
-Collections of dependent tasks that can:
-- Run tasks in parallel or sequence
-- Pass data between tasks
-- Handle errors and retries
-- Cache results for efficiency
-
-### Nodes
-Execution environments that can:
-- **Executors**: Process tasks with different capabilities (CPU/GPU)
-- **Schedulers**: Distribute tasks across executors
-- **Cluster**: Coordinate the entire system
-
-## Available Functions
-
-View all built-in functions:
-
-```bash
-# List all functions
-gleitzeit functions list
-
-# Search for specific functions
-gleitzeit functions search "data"
-
-# Get details about a function
-gleitzeit functions show fibonacci_sequence
-
-# Show function statistics
-gleitzeit functions stats
-```
-
-Gleitzeit includes 30+ secure, audited functions across categories:
-- **Core**: Math, text processing, utilities
-- **Data**: CSV processing, aggregation, analysis
-
-## Python API
-
-For programmatic use:
+### 1. Basic LLM Orchestration
 
 ```python
 import asyncio
-from gleitzeit_cluster import GleitzeitCluster, Task, TaskType, TaskParameters
+from gleitzeit_cluster import GleitzeitCluster
 
-async def main():
-    # Start cluster
+async def quick_start():
+    # Create orchestrator (unified architecture by default)
     cluster = GleitzeitCluster()
     await cluster.start()
     
-    # Create a simple task
-    task = Task(
-        name="Calculate Fibonacci",
-        task_type=TaskType.FUNCTION,
-        parameters=TaskParameters(
-            function_name="fibonacci_sequence",
-            kwargs={"n": 10}
-        )
+    # Create workflow
+    workflow = cluster.create_workflow("My First AI Workflow")
+    
+    # Add LLM task (routes to internal Ollama automatically)
+    analysis = workflow.add_text_task(
+        name="AI Analysis",
+        prompt="Explain the benefits of AI orchestration in 3 points",
+        model="llama3"  # Routes to internal Ollama service
     )
     
-    # Execute task
-    result = await cluster.execute_task(task)
-    print(f"Result: {result}")
+    # Execute workflow  
+    workflow_id = await cluster.submit_workflow(workflow)
+    result = await cluster.wait_for_workflow(workflow_id)
     
-    # Create a workflow with multiple tasks
-    workflow = cluster.create_workflow("data-analysis")
-    
-    # Add tasks to workflow
-    workflow.add_task("generate_data", 
-                     function_name="generate_sample_data",
-                     kwargs={"size": 100})
-                     
-    workflow.add_task("analyze_data",
-                     function_name="analyze_numbers", 
-                     depends_on=["generate_data"])
-    
-    # Execute workflow
-    result = await cluster.execute_workflow(workflow)
-    print(f"Workflow result: {result}")
+    print("🧠 AI Analysis Result:")
+    print(result.results["AI Analysis"])
     
     await cluster.stop()
 
-# Run the example
-asyncio.run(main())
+# Run it
+asyncio.run(quick_start())
 ```
 
-## Configuration
+### 2. Multi-Provider LLM Workflow
 
-### Basic Configuration
+```python
+async def multi_provider_example():
+    cluster = GleitzeitCluster()
+    await cluster.start()
+    
+    workflow = cluster.create_workflow("Multi-Provider AI Pipeline")
+    
+    # Task 1: Local Ollama (fast, private)
+    outline = workflow.add_text_task(
+        name="Create Outline",
+        prompt="Create an outline for a blog post about AI orchestration",
+        model="llama3"  # → Internal Ollama service
+    )
+    
+    # Task 2: External OpenAI (powerful)
+    content = workflow.add_text_task(
+        name="Write Content",
+        prompt="Write a detailed blog post based on: {{Create Outline.result}}",
+        model="gpt-4",  # → OpenAI service (automatic routing)
+        dependencies=["Create Outline"]
+    )
+    
+    # Task 3: External Anthropic (different perspective)
+    review = workflow.add_text_task(
+        name="Review Content",
+        prompt="Review and improve this content: {{Write Content.result}}",
+        model="claude-3",  # → Anthropic service (automatic routing)
+        dependencies=["Write Content"]
+    )
+    
+    # Execute pipeline
+    workflow_id = await cluster.submit_workflow(workflow)
+    result = await cluster.wait_for_workflow(workflow_id)
+    
+    print("📝 Final Content:")
+    print(result.results["Review Content"])
+    
+    await cluster.stop()
 
-Create a configuration file `gleitzeit.yaml`:
-
-```yaml
-cluster:
-  host: localhost
-  port: 8000
-  redis_url: redis://localhost:6379
-
-executors:
-  - name: cpu-worker
-    max_tasks: 4
-    capabilities: [text, function]
-  
-  - name: gpu-worker  
-    max_tasks: 2
-    capabilities: [vision, text]
-    gpu_only: true
-
-scheduler:
-  policy: least_loaded
-  queue_size: 1000
-  heartbeat_interval: 30
+asyncio.run(multi_provider_example())
 ```
 
-### Environment Variables
+### 3. Python + LLM Integration
+
+```python
+from gleitzeit_cluster.decorators import gleitzeit_task
+
+# Define custom Python tasks with decorators
+@gleitzeit_task(category="data")
+def analyze_sales(data: dict) -> dict:
+    total = sum(data.values())
+    growth = ((data["Q4"] - data["Q1"]) / data["Q1"]) * 100
+    return {
+        "total_revenue": total,
+        "growth_rate": growth,
+        "trend": "positive" if growth > 0 else "negative"
+    }
+
+async def mixed_workflow():
+    cluster = GleitzeitCluster()
+    await cluster.start()
+    
+    workflow = cluster.create_workflow("Business Intelligence Pipeline")
+    
+    # Python task (routes to Python Executor service)
+    analysis = workflow.add_python_task(
+        name="Analyze Data",
+        function_name="analyze_sales",
+        args=[{"Q1": 150000, "Q2": 175000, "Q3": 190000, "Q4": 210000}]
+    )
+    
+    # LLM task using Python results
+    insights = workflow.add_text_task(
+        name="Generate Insights",
+        prompt="Based on this business analysis, provide strategic recommendations: {{Analyze Data.result}}",
+        model="gpt-4",
+        dependencies=["Analyze Data"]
+    )
+    
+    # Execute mixed workflow
+    workflow_id = await cluster.submit_workflow(workflow)
+    result = await cluster.wait_for_workflow(workflow_id)
+    
+    print("📊 Business Insights:")
+    print(result.results["Generate Insights"])
+    
+    await cluster.stop()
+
+asyncio.run(mixed_workflow())
+```
+
+## 🏗️ Architecture Overview
+
+Gleitzeit uses a **pure orchestration** approach with Socket.IO services:
+
+```
+┌─────────────────────┐    ┌─────────────────────────────┐
+│   Gleitzeit         │    │     Socket.IO Services      │
+│   Orchestrator      │───▶│                             │
+│                     │    │  ┌─────────────────────────┐ │
+│ • Creates workflows │    │  │  Internal LLM Service   │ │
+│ • Manages deps      │    │  │  (Ollama Integration)   │ │
+│ • Routes tasks      │    │  └─────────────────────────┘ │
+│ • Monitors progress │    │                             │
+└─────────────────────┘    │  ┌─────────────────────────┐ │
+                           │  │ External LLM Providers  │ │
+                           │  │ (OpenAI, Anthropic)     │ │
+                           │  └─────────────────────────┘ │
+                           │                             │
+                           │  ┌─────────────────────────┐ │
+                           │  │ Python Executor Service │ │
+                           │  │  (@gleitzeit_task)      │ │
+                           │  └─────────────────────────┘ │
+                           └─────────────────────────────┘
+```
+
+**Key Benefits:**
+- ⚡ **Infinite Scalability** - Services scale independently
+- 🔄 **Pure Orchestration** - Focus on coordination, not execution
+- 🎯 **Provider Flexibility** - Mix local and external LLMs seamlessly
+- 🐍 **Simple Integration** - Decorator-based Python tasks
+
+## 🔧 Configuration
+
+### Simple Configuration (11 Parameters)
+
+```python
+# Works out-of-the-box with defaults
+cluster = GleitzeitCluster()
+
+# Custom configuration
+cluster = GleitzeitCluster(
+    redis_url="redis://localhost:6379",
+    socketio_url="http://localhost:8000",
+    ollama_url="http://localhost:11434",
+    enable_redis=True,
+    enable_socketio=True,
+    socketio_host="0.0.0.0",
+    socketio_port=8000,
+    auto_start_internal_llm_service=True,
+    auto_start_python_executor=True,
+    python_executor_workers=4,
+    llm_service_workers=20
+)
+```
+
+### External Provider Configuration
+
+```python
+import os
+
+# Set API keys for external providers
+os.environ["OPENAI_API_KEY"] = "your-openai-key"
+os.environ["ANTHROPIC_API_KEY"] = "your-anthropic-key"
+
+# Use external models automatically
+workflow.add_text_task("OpenAI Task", "Analyze this", model="gpt-4")
+workflow.add_text_task("Claude Task", "Review this", model="claude-3")
+```
+
+## 🚀 CLI Usage
+
+### Development Environment
 
 ```bash
-export GLEITZEIT_REDIS_URL="redis://localhost:6379"
-export GLEITZEIT_LOG_LEVEL="INFO"
-export GLEITZEIT_MAX_WORKERS="4"
+# Start development environment with all services
+gleitzeit dev
+
+# Custom development setup  
+gleitzeit dev --socketio-port 9000 --no-auto-llm
 ```
 
-## Distributed Setup
-
-### Start Components Separately
+### Direct Task Execution
 
 ```bash
-# Terminal 1: Start cluster server
-gleitzeit serve --host 0.0.0.0 --port 8000
+# Single LLM task
+gleitzeit run --text "Explain quantum computing" --model llama3
 
-# Terminal 2: Start scheduler
-gleitzeit scheduler --cluster http://localhost:8000
+# Vision analysis
+gleitzeit run --vision photo.jpg --prompt "Describe this image" --model llava
 
-# Terminal 3: Start CPU executor
-gleitzeit executor --name cpu-1 --cluster http://localhost:8000 --cpu-only
-
-# Terminal 4: Start GPU executor (if available)
-gleitzeit executor --name gpu-1 --cluster http://localhost:8000 --gpu-only
+# Custom Python function (if registered)
+gleitzeit run --function my_function --args data="test"
 ```
 
-### Multi-Machine Setup
-
-On the main machine:
-```bash
-# Start cluster server
-gleitzeit serve --host 0.0.0.0 --port 8000
-```
-
-On worker machines:
-```bash
-# Connect executors to main machine
-gleitzeit executor --cluster http://MAIN_MACHINE_IP:8000 --name worker-1
-```
-
-## Monitoring and Management
-
-### System Status
+### System Management
 
 ```bash
-# Quick system status
+# Check system status
 gleitzeit status
 
-# Watch status continuously
-gleitzeit status --watch
+# Monitor in real-time
+gleitzeit monitor
 
-# Check specific cluster
-gleitzeit status --cluster http://localhost:8000
+# View error catalog
+gleitzeit errors list
 ```
 
-### Results Management
+## 📊 Service Management
+
+### Start Services Manually
 
 ```bash
-# List recent results
-gleitzeit results list
-
-# Show specific result
-gleitzeit results show WORKFLOW_ID
-
-# Export results
-gleitzeit results export results.json
-
-# Clear old results
-gleitzeit results clear --days 7
+# Start Socket.IO services individually
+python services/internal_llm_service.py      # Ollama integration
+python services/external_llm_providers.py    # OpenAI, Anthropic  
+python services/python_executor_service.py   # Python task execution
 ```
 
-### Authentication
+### Service Configuration
+
+```python
+# Internal LLM Service (Ollama)
+# - Automatically handles llama3, llava, mistral, etc.
+# - Routes based on model name
+# - Provides vision capabilities
+
+# External LLM Providers
+# - OpenAI: gpt-3.5-turbo, gpt-4, gpt-4-turbo
+# - Anthropic: claude-3-haiku, claude-3-sonnet, claude-3-opus
+# - Automatic routing based on model name
+
+# Python Executor Service  
+# - Executes @gleitzeit_task decorated functions
+# - Handles both sync and async functions
+# - Provides sandboxed execution environment
+```
+
+## 🎯 Task Types and Routing
+
+### LLM Tasks (Automatic Routing)
+
+```python
+# Internal Ollama models
+workflow.add_text_task("Local", prompt="...", model="llama3")      # → Internal LLM Service
+workflow.add_text_task("Vision", prompt="...", model="llava")      # → Internal LLM Service
+
+# External provider models  
+workflow.add_text_task("OpenAI", prompt="...", model="gpt-4")      # → OpenAI Service
+workflow.add_text_task("Claude", prompt="...", model="claude-3")   # → Anthropic Service
+
+# Explicit provider control
+workflow.add_text_task("Custom", prompt="...", model="llama3", provider="internal")
+```
+
+### Vision Tasks
+
+```python
+# Vision analysis (routes to internal Ollama with vision models)
+workflow.add_vision_task(
+    name="Analyze Image",
+    prompt="What do you see in this image?",
+    image_path="/path/to/image.jpg", 
+    model="llava"
+)
+```
+
+### Python Tasks (Decorator Pattern)
+
+```python
+@gleitzeit_task(category="analysis")
+def custom_analysis(data: list) -> dict:
+    return {"processed": len(data), "summary": "complete"}
+
+# Routes to Python Executor service
+workflow.add_python_task(
+    name="Custom Processing",
+    function_name="custom_analysis",
+    args=[[1, 2, 3, 4, 5]]
+)
+```
+
+## 🔄 Common Workflow Patterns
+
+### Sequential Processing
+```python
+task_a = workflow.add_text_task("Step 1", prompt="...", model="llama3")
+task_b = workflow.add_text_task("Step 2", prompt="Process: {{Step 1.result}}", 
+                                model="gpt-4", dependencies=["Step 1"])
+```
+
+### Parallel + Aggregation
+```python
+# Multiple parallel analyses
+parallel_tasks = []
+for i, topic in enumerate(["AI", "ML", "Deep Learning"]):
+    task = workflow.add_text_task(f"Analyze {topic}", f"Explain {topic}", "llama3")
+    parallel_tasks.append(f"Analyze {topic}")
+
+# Combine results
+workflow.add_text_task("Summary", 
+                      prompt="Combine: " + " ".join([f"{{{task}.result}}" for task in parallel_tasks]),
+                      model="gpt-4", dependencies=parallel_tasks)
+```
+
+### Mixed Python + LLM
+```python
+# Python → LLM → Python pipeline
+data = workflow.add_python_task("Clean", function_name="clean_data", args=[raw_data])
+analysis = workflow.add_text_task("Analyze", prompt="{{Clean.result}}", model="gpt-4", dependencies=["Clean"])
+report = workflow.add_python_task("Format", function_name="create_report", 
+                                 args=["{{Analyze.result}}"], dependencies=["Analyze"])
+```
+
+## 📈 Monitoring
+
+### Real-Time Monitoring
+
+```python
+# Event-driven progress tracking
+async def on_task_completed(event):
+    print(f"✅ {event['task_name']}: {event['result']}")
+
+async def on_workflow_completed(event):  
+    print(f"🎉 Workflow {event['workflow_id']} completed!")
+
+cluster.on('task_completed', on_task_completed)
+cluster.on('workflow_completed', on_workflow_completed)
+```
+
+### System Statistics
 
 ```bash
-# Login with API key
-gleitzeit auth login
-
-# Check current auth status
-gleitzeit auth status
-
-# Logout
-gleitzeit auth logout
+# CLI monitoring
+gleitzeit monitor        # Live dashboard
+gleitzeit status         # Quick status
+gleitzeit events --json  # Event stream
 ```
 
-## Docker Setup
-
-Using the included Docker configuration:
-
-```bash
-# Start Redis and supporting services
-docker-compose up -d
-
-# Run Gleitzeit in Docker
-docker build -t gleitzeit .
-docker run -d --name gleitzeit-cluster \
-  --network host \
-  gleitzeit gleitzeit serve
-```
-
-## Troubleshooting
+## 🔍 Troubleshooting
 
 ### Common Issues
 
-**Command not found:**
-```bash
-# Reload shell configuration
-source ~/.zshrc
+**"No suitable service found"**
+- Check that required services are running
+- Verify model availability: `ollama list`
+- Check API keys for external providers
 
-# Or use full path
-~/.venv/bin/gleitzeit --help
+**"Connection refused"**
+- Ensure Redis is running: `redis-server`
+- Check Ollama is running: `ollama serve`
+- Verify Socket.IO services are started
+
+**"Model not found"**
+- Install missing models: `ollama pull llama3`
+- Check model name spelling
+- Verify model exists on Ollama server
+
+### Debug Commands
+
+```python
+# Check service health
+cluster = GleitzeitCluster()
+await cluster.start()
+
+# Test internal LLM service
+result = await cluster.test_service("Internal LLM Service", "llama3")
+print(f"Internal LLM test: {result}")
+
+# Test Python executor
+result = await cluster.test_service("Python Executor", "test_function")
+print(f"Python executor test: {result}")
 ```
 
-**Connection errors:**
-```bash
-# Check if Redis is running
-redis-cli ping
+## 📚 Next Steps
 
-# Check cluster status
-curl http://localhost:8000/health
+### Essential Examples
+```bash
+# Start with basics
+python examples/simple_example.py
+
+# Learn decorator patterns  
+python examples/decorator_example.py
+
+# Explore LLM orchestration
+python examples/llm_orchestration_examples.py
+
+# Try vision tasks
+python examples/vision_demo.py
 ```
 
-**Permission errors:**
-```bash
-# Re-run setup
-gleitzeit-setup
+### Advanced Topics
+- **Multiple Ollama Hosts**: See `docs/multi-ollama-setup.md`
+- **Production Deployment**: See deployment examples
+- **Custom Services**: Build your own Socket.IO services
+- **Performance Tuning**: Optimize for your workload
 
-# Or manually set PATH
-export PATH="$HOME/.venv/bin:$PATH"
-```
-
-### Getting Help
-
-```bash
-# Command help
-gleitzeit --help
-gleitzeit COMMAND --help
-
-# Function documentation
-gleitzeit functions show FUNCTION_NAME
-
-# System diagnostics
-gleitzeit status --cluster http://localhost:8000
-```
-
-### Performance Tips
-
-1. **Use appropriate node types**: CPU vs GPU tasks
-2. **Batch related tasks**: Group similar operations
-3. **Enable caching**: Reuse results with `--cache`
-4. **Monitor resources**: Use `gleitzeit pro` dashboard
-5. **Scale horizontally**: Add more executor nodes
-
-## Next Steps
-
-- Explore the `examples/` directory for more complex workflows
-- Read the API documentation for advanced usage
-- Check out the monitoring guide for production deployments
-- Join the community for support and contributions
-
-## Resources
-
+### Resources
 - **Repository**: https://github.com/leifmarkthaler/gleitzeit
-- **Issues**: https://github.com/leifmarkthaler/gleitzeit/issues
-- **Documentation**: See other `.md` files in this repository
+- **Issues**: https://github.com/leifmarkthaler/gleitzeit/issues  
 - **Examples**: Check the `examples/` directory
+- **API Reference**: See source code docstrings
 
-Happy orchestrating! 🚀
+---
+
+**Gleitzeit** - *German for "flextime"* - Flexible orchestration for your AI workflows 🚀
+
+**Status**: Development prototype suitable for experimentation and testing
