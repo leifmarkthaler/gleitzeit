@@ -141,6 +141,9 @@ class GleitzeitCluster:
             )
         else:
             self.task_executor = None
+        
+        # Extension manager integration
+        self.extension_manager = None
     
     async def start(self) -> None:
         """Start cluster components with comprehensive error handling"""
@@ -996,6 +999,46 @@ if __name__ == "__main__":
             stats["executor_stats"] = self.task_executor.get_executor_stats()
         
         return stats
+    
+    def set_extension_manager(self, extension_manager) -> None:
+        """
+        Set the extension manager for this cluster
+        
+        Args:
+            extension_manager: ExtensionManager instance from gleitzeit_extensions
+        """
+        self.extension_manager = extension_manager
+        self.logger.logger.info("Extension manager attached to cluster")
+    
+    def get_extension_manager(self):
+        """Get the attached extension manager"""
+        return self.extension_manager
+    
+    async def find_provider_for_model(self, model: str) -> Optional[str]:
+        """
+        Find which extension/provider supports a specific model
+        
+        Args:
+            model: Model name to find provider for
+            
+        Returns:
+            Extension name that supports the model, or None if not found
+        """
+        if self.extension_manager:
+            return self.extension_manager.find_extension_for_model(model)
+        return None
+    
+    async def get_available_extension_models(self) -> Dict[str, Any]:
+        """
+        Get all models available through extensions
+        
+        Returns:
+            Dictionary of available models and their providers
+        """
+        if self.extension_manager:
+            from gleitzeit_extensions.helpers import get_available_models
+            return get_available_models(self.extension_manager)
+        return {}
     
     def __str__(self) -> str:
         return f"GleitzeitCluster(workflows={len(self._workflows)}, nodes={len(self._nodes)})"

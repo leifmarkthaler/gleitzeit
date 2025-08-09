@@ -1,0 +1,59 @@
+name: claude
+description: Anthropic Claude models integration
+version: 1.0.0
+author: Gleitzeit Team
+
+models:
+  - name: claude-3-opus
+    capabilities: [text]
+    max_tokens: 4096
+    cost_per_token: 0.000075
+  - name: claude-3-sonnet
+    capabilities: [text]
+    max_tokens: 4096
+    cost_per_token: 0.000015
+  - name: claude-3-haiku
+    capabilities: [text]
+    max_tokens: 4096
+    cost_per_token: 0.0000025
+
+capabilities:
+  - text
+  - streaming
+  - function_calling
+
+dependencies:
+  packages:
+    - anthropic>=0.23.0
+    - httpx>=0.24.0
+
+config:
+  api_key:
+    type: string
+    required: true
+    env_var: ANTHROPIC_API_KEY
+    description: Anthropic API key
+  
+  timeout:
+    type: integer
+    default: 60
+    min: 10
+    max: 300
+    description: Request timeout in seconds
+  
+  max_retries:
+    type: integer
+    default: 3
+    min: 0
+    max: 10
+    description: Maximum retry attempts
+  
+  base_url:
+    type: string
+    default: https://api.anthropic.com
+    description: Anthropic API base URL
+
+service:
+  class_path: service.ClaudeService
+  # Alternative: specify full module path
+  # class_path: extensions.claude.service.ClaudeService
