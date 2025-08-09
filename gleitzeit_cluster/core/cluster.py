@@ -7,6 +7,11 @@ from .workflow import Workflow, WorkflowStatus, WorkflowResult, WorkflowErrorStr
 from .task import Task, TaskType
 from .node import ExecutorNode
 from .service_manager import ServiceManager
+from .error_handling import (
+    RetryManager, RetryConfig, GleitzeitLogger, 
+    ErrorCategorizer, ErrorCategory, ErrorSeverity,
+    CircuitBreaker
+)
 from ..execution.task_executor import TaskExecutor
 from ..execution.ollama_endpoint_manager import EndpointConfig, LoadBalancingStrategy
 from ..storage.redis_client import RedisClient
@@ -64,7 +69,24 @@ class GleitzeitCluster:
         self._nodes: Dict[str, ExecutorNode] = {}
         self._is_started = False
         
-        # Initialize Redis client
+        # Error handling and reliability components
+        self.logger = GleitzeitLogger("GleitzeitCluster")
+        self.retry_manager = RetryManager(self.logger)
+        self.circuit_breakers = {
+            'redis': CircuitBreaker(failure_threshold=5, recovery_timeout=30),
+            'ollama': CircuitBreaker(failure_threshold=3, recovery_timeout=60),
+            'socketio': CircuitBreaker(failure_threshold=5, recovery_timeout=30)
+        }
+        
+        # Retry configurations for different operations
+        self.retry_configs = {
+            'redis': RetryConfig(max_attempts=3, base_delay=1.0, max_delay=30.0),
+            'ollama': RetryConfig(max_attempts=2, base_delay=2.0, max_delay=60.0),
+            'socketio': RetryConfig(max_attempts=3, base_delay=1.0, max_delay=15.0),
+            'task_execution': RetryConfig(max_attempts=3, base_delay=2.0, max_delay=120.0)
+        }
+        
+        # Initialize Redis client with error handling
         if enable_redis:
             self.redis_client = RedisClient(redis_url=redis_url)
         else:
@@ -101,98 +123,216 @@ class GleitzeitCluster:
             self.task_executor = None
     
     async def start(self) -> None:
-        """Start cluster components"""
-        print(f"🚀 Starting Gleitzeit Cluster")
-        print(f"   Redis: {self.redis_url}")
-        print(f"   Socket.IO: {self.socketio_url}")
+        """Start cluster components with comprehensive error handling"""
+        self.logger.logger.info("Starting Gleitzeit Cluster")
+        self.logger.logger.info(f"Redis: {self.redis_url}")
+        self.logger.logger.info(f"Socket.IO: {self.socketio_url}")
         
         # Auto-start services if enabled
         if self.service_manager:
-            print(f"🔧 Auto-start services enabled")
-            service_results = await self.service_manager.ensure_services_running(
+            self.logger.logger.info("Auto-start services enabled")
+            try:
+                service_results = await self._start_services_with_retry()
+                if service_results.get("services_started"):
+                    self.logger.logger.info(f"Started services: {', '.join(service_results['services_started'])}")
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "service_manager"})
+                self.logger.log_error(error_info)
+        
+        # Connect to Redis with retry and circuit breaker
+        if self.redis_client:
+            await self._connect_redis_with_retry()
+        
+        # Start Socket.IO server with error handling
+        if self.socketio_server:
+            await self._start_socketio_server_with_retry()
+        
+        # Connect to Socket.IO client with error handling
+        if self.socketio_client:
+            await self._connect_socketio_client_with_retry()
+        
+        # Start task executor if enabled
+        if self.task_executor:
+            try:
+                await self.task_executor.start()
+                if self.task_executor._multi_endpoint_mode:
+                    healthy = len(self.task_executor.ollama_manager.get_healthy_endpoints())
+                    total = len(self.task_executor.ollama_manager.endpoints)
+                    self.logger.logger.info(f"Ollama: {healthy}/{total} endpoints healthy")
+                else:
+                    self.logger.logger.info(f"Ollama: {self.task_executor.ollama_client.base_url}")
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "task_executor"})
+                self.logger.log_error(error_info)
+                self.logger.logger.warning("Task executor failed to start, continuing without it")
+                self.task_executor = None
+            
+        self._is_started = True
+        self.logger.logger.info("Gleitzeit Cluster started successfully")
+    
+    async def _start_services_with_retry(self):
+        """Start services with retry logic"""
+        async def start_services():
+            return await self.service_manager.ensure_services_running(
                 redis_url=self.redis_url,
                 socketio_url=self.socketio_url,
                 auto_start_redis=self.auto_start_redis and self.enable_redis,
                 auto_start_executor=self.auto_start_executors and self.enable_socketio,
                 min_executors=self.min_executors
             )
+        
+        return await self.retry_manager.execute_with_retry(
+            start_services,
+            self.retry_configs['redis'],
+            service_name="service_manager",
+            context={"operation": "start_services"}
+        )
+    
+    async def _connect_redis_with_retry(self):
+        """Connect to Redis with circuit breaker and retry logic"""
+        circuit_breaker = self.circuit_breakers['redis']
+        
+        if not circuit_breaker.can_execute():
+            self.logger.logger.warning("Redis circuit breaker is open, skipping connection")
+            self.redis_client = None
+            return
+        
+        async def connect_redis():
+            await self.redis_client.connect()
+            return True
+        
+        try:
+            await self.retry_manager.execute_with_retry(
+                connect_redis,
+                self.retry_configs['redis'],
+                service_name="redis",
+                context={"operation": "connect", "url": self.redis_url}
+            )
+            circuit_breaker.record_success()
+            self.logger.logger.info("Redis: Connected successfully")
             
-            if service_results.get("services_started"):
-                print(f"   🚀 Started: {', '.join(service_results['services_started'])}")
+        except Exception as e:
+            circuit_breaker.record_failure()
+            error_info = ErrorCategorizer.categorize_error(e, {
+                "component": "redis",
+                "operation": "connect", 
+                "url": self.redis_url
+            })
+            self.logger.log_error(error_info)
+            self.logger.logger.warning("Redis: Connection failed, falling back to local storage")
+            self.redis_client = None
+    
+    async def _start_socketio_server_with_retry(self):
+        """Start Socket.IO server with retry logic"""
+        async def start_server():
+            await self.socketio_server.start()
+            # Give server a moment to start
+            import asyncio
+            await asyncio.sleep(0.5)
+            return True
         
-        # Connect to Redis if enabled
-        if self.redis_client:
-            try:
-                await self.redis_client.connect()
-                print(f"   Redis: ✅ Connected")
-            except Exception as e:
-                print(f"   Redis: ⚠️  Connection failed - {e}")
-                print(f"   Redis: Falling back to local storage")
-                self.redis_client = None
-        
-        # Start Socket.IO server if enabled
-        if self.socketio_server:
-            try:
-                await self.socketio_server.start()
-                print(f"   Socket.IO Server: ✅ Started on {self.socketio_host}:{self.socketio_port}")
-                
-                # Give server a moment to start
-                import asyncio
-                await asyncio.sleep(0.5)
-            except Exception as e:
-                print(f"   Socket.IO Server: ⚠️  Failed to start - {e}")
-                self.socketio_server = None
-        
-        # Connect to Socket.IO if enabled
-        if self.socketio_client:
-            try:
-                connected = await self.socketio_client.connect()
-                if connected:
-                    print(f"   Socket.IO Client: ✅ Connected")
-                else:
-                    print(f"   Socket.IO Client: ⚠️  Connection failed")
-                    self.socketio_client = None
-            except Exception as e:
-                print(f"   Socket.IO Client: ⚠️  Connection failed - {e}")
-                self.socketio_client = None
-        
-        # Start task executor if enabled
-        if self.task_executor:
-            await self.task_executor.start()
-            if self.task_executor._multi_endpoint_mode:
-                healthy = len(self.task_executor.ollama_manager.get_healthy_endpoints())
-                total = len(self.task_executor.ollama_manager.endpoints)
-                print(f"   Ollama: {healthy}/{total} endpoints healthy")
-            else:
-                print(f"   Ollama: {self.task_executor.ollama_client.base_url}")
+        try:
+            await self.retry_manager.execute_with_retry(
+                start_server,
+                self.retry_configs['socketio'],
+                service_name="socketio_server",
+                context={"operation": "start_server", "host": self.socketio_host, "port": self.socketio_port}
+            )
+            self.circuit_breakers['socketio'].record_success()
+            self.logger.logger.info(f"Socket.IO Server: Started on {self.socketio_host}:{self.socketio_port}")
             
-        self._is_started = True
+        except Exception as e:
+            self.circuit_breakers['socketio'].record_failure()
+            error_info = ErrorCategorizer.categorize_error(e, {
+                "component": "socketio_server",
+                "operation": "start",
+                "host": self.socketio_host,
+                "port": self.socketio_port
+            })
+            self.logger.log_error(error_info)
+            self.socketio_server = None
+    
+    async def _connect_socketio_client_with_retry(self):
+        """Connect Socket.IO client with retry logic"""
+        circuit_breaker = self.circuit_breakers['socketio']
+        
+        if not circuit_breaker.can_execute():
+            self.logger.logger.warning("Socket.IO circuit breaker is open, skipping client connection")
+            self.socketio_client = None
+            return
+        
+        async def connect_client():
+            connected = await self.socketio_client.connect()
+            if not connected:
+                raise Exception("Socket.IO client connection failed")
+            return connected
+        
+        try:
+            await self.retry_manager.execute_with_retry(
+                connect_client,
+                self.retry_configs['socketio'],
+                service_name="socketio_client",
+                context={"operation": "connect", "url": self.socketio_url}
+            )
+            circuit_breaker.record_success()
+            self.logger.logger.info("Socket.IO Client: Connected successfully")
+            
+        except Exception as e:
+            circuit_breaker.record_failure()
+            error_info = ErrorCategorizer.categorize_error(e, {
+                "component": "socketio_client",
+                "operation": "connect",
+                "url": self.socketio_url
+            })
+            self.logger.log_error(error_info)
+            self.socketio_client = None
     
     async def stop(self) -> None:
-        """Stop cluster components"""
-        print("🛑 Stopping Gleitzeit Cluster")
+        """Stop cluster components with error handling"""
+        self.logger.logger.info("Stopping Gleitzeit Cluster")
         
         # Stop task executor if enabled
         if self.task_executor:
-            await self.task_executor.stop()
+            try:
+                await self.task_executor.stop()
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "task_executor", "operation": "stop"})
+                self.logger.log_error(error_info)
         
         # Disconnect from Socket.IO client if connected
         if self.socketio_client:
-            await self.socketio_client.disconnect()
+            try:
+                await self.socketio_client.disconnect()
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "socketio_client", "operation": "disconnect"})
+                self.logger.log_error(error_info)
         
         # Stop Socket.IO server if started
         if self.socketio_server:
-            await self.socketio_server.stop()
+            try:
+                await self.socketio_server.stop()
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "socketio_server", "operation": "stop"})
+                self.logger.log_error(error_info)
         
         # Disconnect from Redis if connected
         if self.redis_client:
-            await self.redis_client.disconnect()
+            try:
+                await self.redis_client.disconnect()
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "redis", "operation": "disconnect"})
+                self.logger.log_error(error_info)
         
         # Stop managed services
         if self.service_manager:
-            self.service_manager.stop_managed_services()
+            try:
+                self.service_manager.stop_managed_services()
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "service_manager", "operation": "stop"})
+                self.logger.log_error(error_info)
             
         self._is_started = False
+        self.logger.logger.info("Gleitzeit Cluster stopped")
     
     def create_workflow(self, name: str, description: Optional[str] = None) -> Workflow:
         """Create a new workflow"""
@@ -212,23 +352,33 @@ class GleitzeitCluster:
         if self.redis_client:
             try:
                 await self.redis_client.store_workflow(workflow)
-                print(f"📋 Submitted workflow to Redis: {workflow.name} ({len(workflow.tasks)} tasks)")
+                self.logger.logger.info(f"Submitted workflow to Redis: {workflow.name} ({len(workflow.tasks)} tasks)")
             except Exception as e:
-                print(f"⚠️  Redis storage failed: {e}")
-                print(f"📋 Fallback to local storage: {workflow.name}")
+                error_info = ErrorCategorizer.categorize_error(e, {
+                    "component": "redis",
+                    "operation": "store_workflow",
+                    "workflow_id": workflow.id
+                })
+                self.logger.log_error(error_info)
+                self.logger.logger.warning(f"Fallback to local storage: {workflow.name}")
                 self._workflows[workflow.id] = workflow
         else:
             # Fallback to local storage
             self._workflows[workflow.id] = workflow
-            print(f"📋 Submitted workflow (local): {workflow.name} ({len(workflow.tasks)} tasks)")
+            self.logger.logger.info(f"Submitted workflow (local): {workflow.name} ({len(workflow.tasks)} tasks)")
         
         # Submit via Socket.IO if available
         if self.socketio_client and self.socketio_client.is_connected:
             try:
                 await self.socketio_client.submit_workflow(workflow)
-                print(f"📡 Workflow submitted via Socket.IO: {workflow.name}")
+                self.logger.logger.info(f"Workflow submitted via Socket.IO: {workflow.name}")
             except Exception as e:
-                print(f"⚠️  Socket.IO submission failed: {e}")
+                error_info = ErrorCategorizer.categorize_error(e, {
+                    "component": "socketio_client",
+                    "operation": "submit_workflow",
+                    "workflow_id": workflow.id
+                })
+                self.logger.log_error(error_info)
         
         return workflow.id
     
@@ -241,7 +391,7 @@ class GleitzeitCluster:
         # - Handle real-time progress updates
         # - Return actual execution results
         
-        print(f"⚡ Executing workflow: {workflow.name}")
+        self.logger.logger.info(f"Executing workflow: {workflow.name}")
         
         # Execute tasks in dependency order
         executed_tasks = set()
@@ -272,11 +422,12 @@ class GleitzeitCluster:
             
             # Execute ready tasks
             for task_id, task in ready_tasks:
-                print(f"   🔄 Processing task: {task.name}")
+                self.logger.logger.info(f"Processing task: {task.name}")
                 
-                try:
+                # Execute task with retry logic
+                async def execute_task_with_retry():
                     if self.task_executor and self.enable_real_execution:
-                        # Real execution using TaskExecutor
+                        # Real execution using TaskExecutor (already has retry logic)
                         result = await self.task_executor.execute_task(task)
                         workflow.mark_task_completed(task_id, result)
                         
@@ -286,9 +437,16 @@ class GleitzeitCluster:
                                 await self.redis_client.store_workflow_result(workflow.id, task_id, result)
                                 await self.redis_client.complete_task(task_id, result=result)
                             except Exception as e:
-                                print(f"⚠️  Redis result storage failed: {e}")
+                                error_info = ErrorCategorizer.categorize_error(e, {
+                                    "component": "redis", 
+                                    "operation": "store_result",
+                                    "task_id": task_id,
+                                    "workflow_id": workflow.id
+                                })
+                                self.logger.log_error(error_info)
                         
-                        print(f"   ✅ Completed task: {task.name}")
+                        self.logger.logger.info(f"Completed task: {task.name}")
+                        return result
                     else:
                         # Fallback to mock execution
                         mock_result = f"Mock result for {task.name}"
@@ -300,13 +458,45 @@ class GleitzeitCluster:
                                 await self.redis_client.store_workflow_result(workflow.id, task_id, mock_result)
                                 await self.redis_client.complete_task(task_id, result=mock_result)
                             except Exception as e:
-                                print(f"⚠️  Redis result storage failed: {e}")
+                                error_info = ErrorCategorizer.categorize_error(e, {
+                                    "component": "redis", 
+                                    "operation": "store_result",
+                                    "task_id": task_id,
+                                    "workflow_id": workflow.id
+                                })
+                                self.logger.log_error(error_info)
                         
-                        print(f"   ✅ Completed task (mock): {task.name}")
+                        self.logger.logger.info(f"Completed task (mock): {task.name}")
+                        return mock_result
+                
+                try:
+                    # Execute with retry logic for non-executor tasks
+                    if not (self.task_executor and self.enable_real_execution):
+                        await self.retry_manager.execute_with_retry(
+                            execute_task_with_retry,
+                            self.retry_configs['task_execution'],
+                            service_name="workflow_task",
+                            context={
+                                "task_id": task_id,
+                                "task_name": task.name,
+                                "workflow_id": workflow.id
+                            }
+                        )
+                    else:
+                        # TaskExecutor already has its own retry logic
+                        await execute_task_with_retry()
                     
                     executed_tasks.add(task_id)
                     
                 except Exception as e:
+                    error_info = ErrorCategorizer.categorize_error(e, {
+                        "component": "task_execution",
+                        "task_id": task_id,
+                        "task_name": task.name,
+                        "workflow_id": workflow.id
+                    })
+                    self.logger.log_error(error_info)
+                    
                     error_msg = str(e)
                     workflow.mark_task_failed(task_id, error_msg)
                     failed_tasks.add(task_id)
@@ -317,13 +507,19 @@ class GleitzeitCluster:
                             await self.redis_client.store_workflow_error(workflow.id, task_id, error_msg)
                             await self.redis_client.complete_task(task_id, error=error_msg)
                         except Exception as redis_error:
-                            print(f"⚠️  Redis error storage failed: {redis_error}")
+                            redis_error_info = ErrorCategorizer.categorize_error(redis_error, {
+                                "component": "redis",
+                                "operation": "store_error",
+                                "task_id": task_id,
+                                "workflow_id": workflow.id
+                            })
+                            self.logger.log_error(redis_error_info)
                     
-                    print(f"   ❌ Failed task: {task.name} - {error_msg}")
+                    self.logger.logger.error(f"Failed task: {task.name} - {error_msg}")
                     
                     # Handle error strategy
                     if workflow.error_strategy == WorkflowErrorStrategy.STOP_ON_FIRST_ERROR:
-                        print(f"   🛑 Stopping workflow due to task failure")
+                        self.logger.logger.warning("Stopping workflow due to task failure")
                         workflow.status = WorkflowStatus.FAILED
                         
                         # Update workflow status in Redis
@@ -336,7 +532,12 @@ class GleitzeitCluster:
                                     failed_tasks=len(failed_tasks)
                                 )
                             except Exception as redis_error:
-                                print(f"⚠️  Redis workflow status update failed: {redis_error}")
+                                redis_error_info = ErrorCategorizer.categorize_error(redis_error, {
+                                    "component": "redis",
+                                    "operation": "update_workflow_status",
+                                    "workflow_id": workflow.id
+                                })
+                                self.logger.log_error(redis_error_info)
                         
                         return workflow.to_result()
         
@@ -356,7 +557,12 @@ class GleitzeitCluster:
                     failed_tasks=len(failed_tasks)
                 )
             except Exception as e:
-                print(f"⚠️  Redis final status update failed: {e}")
+                error_info = ErrorCategorizer.categorize_error(e, {
+                    "component": "redis",
+                    "operation": "final_status_update",
+                    "workflow_id": workflow.id
+                })
+                self.logger.log_error(error_info)
             
         return workflow.to_result()
     
@@ -382,7 +588,12 @@ class GleitzeitCluster:
                         "errors": errors
                     }
             except Exception as e:
-                print(f"⚠️  Redis retrieval failed: {e}")
+                error_info = ErrorCategorizer.categorize_error(e, {
+                    "component": "redis",
+                    "operation": "get_workflow",
+                    "workflow_id": workflow_id
+                })
+                self.logger.log_error(error_info)
         
         # Fallback to local storage
         workflow = self._workflows.get(workflow_id)
@@ -404,7 +615,7 @@ class GleitzeitCluster:
         # - Update Redis state
         # - Clean up resources
         
-        print(f"🚫 Cancelled workflow: {workflow.name}")
+        self.logger.logger.info(f"Cancelled workflow: {workflow.name}")
         return True
     
     async def list_workflows(self) -> List[Dict[str, Any]]:
@@ -414,7 +625,7 @@ class GleitzeitCluster:
     async def register_node(self, node: ExecutorNode) -> None:
         """Register an executor node"""
         self._nodes[node.id] = node
-        print(f"🏗️  Registered executor node: {node.name}")
+        self.logger.logger.info(f"Registered executor node: {node.name}")
     
     async def list_nodes(self) -> List[Dict[str, Any]]:
         """List all executor nodes"""
@@ -500,6 +711,11 @@ class GleitzeitCluster:
                 redis_health = await self.redis_client.health_check()
                 stats["redis_health"] = redis_health
             except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {
+                    "component": "redis",
+                    "operation": "get_stats"
+                })
+                self.logger.log_error(error_info)
                 stats["redis_error"] = str(e)
         
         if self.task_executor:

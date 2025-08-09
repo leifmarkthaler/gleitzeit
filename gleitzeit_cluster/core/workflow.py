@@ -98,7 +98,7 @@ class Workflow(BaseModel):
         
         task = Task(
             name=name,
-            task_type=TaskType.TEXT_PROMPT,
+            task_type=TaskType.TEXT,
             parameters=TaskParameters(
                 prompt=prompt,
                 model_name=model,
@@ -123,7 +123,7 @@ class Workflow(BaseModel):
         
         task = Task(
             name=name,
-            task_type=TaskType.VISION_TASK,
+            task_type=TaskType.VISION,
             parameters=TaskParameters(
                 prompt=prompt,
                 image_path=image_path,
@@ -149,7 +149,7 @@ class Workflow(BaseModel):
         
         task = Task(
             name=name,
-            task_type=TaskType.PYTHON_FUNCTION,
+            task_type=TaskType.FUNCTION,
             parameters=TaskParameters(
                 function_name=function_name,
                 args=args or [],

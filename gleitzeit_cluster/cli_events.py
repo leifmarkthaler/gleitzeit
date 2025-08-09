@@ -8,6 +8,7 @@ workflow events, node events, and system events. JSON output for processing.
 
 import asyncio
 import sys
+from typing import List, Dict, Any
 import json
 from datetime import datetime
 from typing import Optional, Dict, Any, Set
