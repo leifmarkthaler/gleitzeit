@@ -12,6 +12,11 @@ from .error_handling import (
     ErrorCategorizer, ErrorCategory, ErrorSeverity,
     CircuitBreaker
 )
+from .errors import (
+    GleitzeitError, ErrorCode, 
+    RedisConnectionError, OllamaModelNotFoundError,
+    WorkflowNotFoundError
+)
 from ..execution.task_executor import TaskExecutor
 from ..execution.ollama_endpoint_manager import EndpointConfig, LoadBalancingStrategy
 from ..storage.redis_client import RedisClient

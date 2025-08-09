@@ -37,6 +37,7 @@ from .cli_watch import watch_command_handler
 from .cli_health import health_command_handler
 from .cli_events import events_command_handler
 from .cli_status import status_command_handler
+from .cli_errors import errors_command_handler
 
 
 class GleitzeitService:
@@ -821,6 +822,10 @@ def main():
     status.add_argument('--watch', action='store_true', help='Continuously watch status')
     status.add_argument('--interval', type=int, default=5, help='Watch interval in seconds')
     
+    # Errors command (NEW - error catalog management)
+    errors = subparsers.add_parser('errors', help='Manage and explore error catalog')
+    # Error subcommands are handled by the errors_command_handler
+    
     # Serve command
     serve = subparsers.add_parser('serve', help='Start Gleitzeit service')
     serve.add_argument('--host', default='localhost', help='Host (default: localhost)')
@@ -958,6 +963,9 @@ def main():
         asyncio.run(events_command_handler(args))
     elif args.command == 'status':
         asyncio.run(status_command_handler(args))
+    elif args.command == 'errors':
+        exit_code = errors_command_handler(args)
+        sys.exit(exit_code)
     elif args.command == 'serve':
         asyncio.run(serve_command(args))
     elif args.command == 'version':
