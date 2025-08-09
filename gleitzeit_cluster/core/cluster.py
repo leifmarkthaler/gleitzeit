@@ -144,6 +144,7 @@ class GleitzeitCluster:
         
         # Extension manager integration
         self.extension_manager = None
+        self.unified_provider_manager = None
     
     async def start(self) -> None:
         """Start cluster components with comprehensive error handling"""
@@ -1014,31 +1015,92 @@ if __name__ == "__main__":
         """Get the attached extension manager"""
         return self.extension_manager
     
+    def set_unified_provider_manager(self, provider_manager) -> None:
+        """
+        Set the unified provider manager (extensions + MCP) for this cluster
+        
+        Args:
+            provider_manager: UnifiedProviderManager instance
+        """
+        self.unified_provider_manager = provider_manager
+        provider_manager.attach_to_cluster(self)
+        self.logger.logger.info("Unified provider manager attached to cluster")
+    
+    def get_unified_provider_manager(self):
+        """Get the attached unified provider manager"""
+        return self.unified_provider_manager
+    
     async def find_provider_for_model(self, model: str) -> Optional[str]:
         """
-        Find which extension/provider supports a specific model
+        Find which provider supports a specific model (extensions or MCP servers)
         
         Args:
             model: Model name to find provider for
             
         Returns:
-            Extension name that supports the model, or None if not found
+            Provider name that supports the model, or None if not found
         """
+        # Try unified provider manager first (supports both extensions and MCP)
+        if self.unified_provider_manager:
+            result = self.unified_provider_manager.find_provider_for_model(model)
+            return result["name"] if result else None
+        
+        # Fall back to extension manager only
         if self.extension_manager:
             return self.extension_manager.find_extension_for_model(model)
+        
         return None
     
     async def get_available_extension_models(self) -> Dict[str, Any]:
         """
-        Get all models available through extensions
+        Get all models available through providers (extensions + MCP servers)
         
         Returns:
             Dictionary of available models and their providers
         """
+        # Use unified provider manager if available
+        if self.unified_provider_manager:
+            return self.unified_provider_manager.get_available_models()
+        
+        # Fall back to extension manager only
         if self.extension_manager:
             from gleitzeit_extensions.helpers import get_available_models
             return get_available_models(self.extension_manager)
+        
         return {}
+    
+    async def call_model_provider(
+        self, 
+        model: str, 
+        method: str, 
+        *args, 
+        **kwargs
+    ) -> Any:
+        """
+        Call a method on the provider that supports a specific model
+        
+        Args:
+            model: Model name
+            method: Method to call (e.g., 'generate_text', 'generate_vision')
+            *args, **kwargs: Arguments to pass to the method
+            
+        Returns:
+            Result from the provider
+        """
+        if not self.unified_provider_manager:
+            raise RuntimeError("No unified provider manager configured")
+        
+        # Find provider for model
+        provider_info = self.unified_provider_manager.find_provider_for_model(model)
+        if not provider_info:
+            raise ValueError(f"No provider found for model: {model}")
+        
+        provider_name = provider_info["name"]
+        
+        # Call the provider
+        return await self.unified_provider_manager.call_provider(
+            provider_name, method, *args, model=model, **kwargs
+        )
     
     def __str__(self) -> str:
         return f"GleitzeitCluster(workflows={len(self._workflows)}, nodes={len(self._nodes)})"
