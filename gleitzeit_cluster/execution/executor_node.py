@@ -144,6 +144,11 @@ class GleitzeitExecutorNode:
         print(f"   Capabilities: {len(self.node.capabilities.supported_task_types)} task types")
         
         self.running = True
+        self._start_time = time.time()  # Track start time for uptime
+        
+        # Initialize metrics tracking
+        self._task_execution_history = []
+        self._last_network_io = self._get_network_io_raw()
         
         try:
             # Start task executor
@@ -351,6 +356,9 @@ class GleitzeitExecutorNode:
             logger.info(f"✅ Task completed: {task_id} (took {execution_time:.2f}s)")
             print(f"✅ Task completed: {task_id} (took {execution_time:.2f}s)")
             
+            # Track task metrics
+            self._track_task_completion(task_id, execution_time, success=True)
+            
             await self.report_task_completed(task_id, workflow_id, result)
             
         except asyncio.CancelledError:
@@ -359,8 +367,13 @@ class GleitzeitExecutorNode:
             await self.report_task_failed(task_id, workflow_id, "Task cancelled")
             
         except Exception as e:
+            execution_time = time.time() - start_time
             logger.error(f"❌ Task failed: {task_id} - {e}")
             print(f"❌ Task failed: {task_id} - {e}")
+            
+            # Track task metrics
+            self._track_task_completion(task_id, execution_time, success=False, error=str(e))
+            
             await self.report_task_failed(task_id, workflow_id, str(e))
             
         finally:
@@ -416,19 +429,35 @@ class GleitzeitExecutorNode:
             await asyncio.sleep(self.heartbeat_interval)
     
     async def send_heartbeat(self):
-        """Send heartbeat with current status"""
+        """Send enhanced heartbeat with detailed metrics"""
         try:
             # Get current resources
             resources = self._get_current_resources()
             
-            await self.sio.emit('node:heartbeat', {
+            # Get task execution metrics
+            task_metrics = self._get_task_metrics()
+            
+            # Get network I/O metrics
+            net_io = self._get_network_io()
+            
+            # Get disk usage
+            disk_usage = self._get_disk_usage()
+            
+            heartbeat_data = {
                 'node_id': self.node_id,
                 'status': self.node.status.value,
                 'active_tasks': len(self.active_tasks),
                 'cpu_usage': resources.cpu_usage_percent,
                 'memory_usage': resources.memory_usage_percent,
-                'timestamp': datetime.utcnow().isoformat()
-            }, namespace='/cluster')
+                'gpu_usage': resources.gpu_usage_percent,
+                'disk_usage': disk_usage,
+                'network_io': net_io,
+                'task_metrics': task_metrics,
+                'timestamp': datetime.utcnow().isoformat(),
+                'uptime_seconds': time.time() - getattr(self, '_start_time', time.time())
+            }
+            
+            await self.sio.emit('node:heartbeat', heartbeat_data, namespace='/cluster')
             
         except Exception as e:
             logger.error(f"❌ Failed to send heartbeat: {e}")
@@ -474,6 +503,104 @@ class GleitzeitExecutorNode:
             active_tasks=len(self.active_tasks),
             queue_length=0  # No queue in this implementation
         )
+    
+    def _get_task_metrics(self) -> Dict[str, Any]:
+        """Get task execution metrics"""
+        # Calculate metrics from task history
+        recent_tasks = [
+            task for task in self._task_execution_history
+            if time.time() - task['completed_at'] < 300  # Last 5 minutes
+        ]
+        
+        if not recent_tasks:
+            return {
+                'tasks_completed_5min': 0,
+                'avg_execution_time': 0,
+                'success_rate': 100,
+                'total_tasks_completed': len(self._task_execution_history)
+            }
+        
+        successful_tasks = [t for t in recent_tasks if t['success']]
+        failed_tasks = [t for t in recent_tasks if not t['success']]
+        
+        avg_exec_time = sum(t.get('duration', 0) for t in successful_tasks) / max(len(successful_tasks), 1)
+        success_rate = (len(successful_tasks) / len(recent_tasks)) * 100 if recent_tasks else 100
+        
+        return {
+            'tasks_completed_5min': len(recent_tasks),
+            'tasks_successful_5min': len(successful_tasks),
+            'tasks_failed_5min': len(failed_tasks),
+            'avg_execution_time': round(avg_exec_time, 2),
+            'success_rate': round(success_rate, 1),
+            'total_tasks_completed': len(self._task_execution_history)
+        }
+    
+    def _get_network_io_raw(self) -> Dict[str, int]:
+        """Get raw network I/O counters"""
+        try:
+            net_io = psutil.net_io_counters()
+            return {
+                'bytes_sent': net_io.bytes_sent,
+                'bytes_recv': net_io.bytes_recv,
+                'packets_sent': net_io.packets_sent,
+                'packets_recv': net_io.packets_recv
+            }
+        except Exception:
+            return {'bytes_sent': 0, 'bytes_recv': 0, 'packets_sent': 0, 'packets_recv': 0}
+    
+    def _get_network_io(self) -> Dict[str, Any]:
+        """Get network I/O rates (bytes/sec)"""
+        try:
+            current_io = self._get_network_io_raw()
+            
+            # Calculate rates since last measurement
+            if hasattr(self, '_last_network_io') and hasattr(self, '_last_network_time'):
+                time_diff = time.time() - self._last_network_time
+                if time_diff > 0:
+                    bytes_sent_rate = (current_io['bytes_sent'] - self._last_network_io['bytes_sent']) / time_diff
+                    bytes_recv_rate = (current_io['bytes_recv'] - self._last_network_io['bytes_recv']) / time_diff
+                else:
+                    bytes_sent_rate = bytes_recv_rate = 0
+            else:
+                bytes_sent_rate = bytes_recv_rate = 0
+            
+            # Update for next calculation
+            self._last_network_io = current_io
+            self._last_network_time = time.time()
+            
+            return {
+                'bytes_sent_per_sec': round(bytes_sent_rate, 2),
+                'bytes_recv_per_sec': round(bytes_recv_rate, 2),
+                'total_bytes_sent': current_io['bytes_sent'],
+                'total_bytes_recv': current_io['bytes_recv']
+            }
+        except Exception as e:
+            logger.warning(f"Failed to get network I/O: {e}")
+            return {'bytes_sent_per_sec': 0, 'bytes_recv_per_sec': 0, 'total_bytes_sent': 0, 'total_bytes_recv': 0}
+    
+    def _get_disk_usage(self) -> float:
+        """Get disk usage percentage"""
+        try:
+            disk_usage = psutil.disk_usage('/')
+            return round(disk_usage.percent, 1)
+        except Exception:
+            return 0.0
+    
+    def _track_task_completion(self, task_id: str, duration: float, success: bool, error: str = None):
+        """Track task completion for metrics"""
+        task_record = {
+            'task_id': task_id,
+            'completed_at': time.time(),
+            'duration': duration,
+            'success': success,
+            'error': error
+        }
+        
+        self._task_execution_history.append(task_record)
+        
+        # Keep only last 1000 task records to prevent memory growth
+        if len(self._task_execution_history) > 1000:
+            self._task_execution_history = self._task_execution_history[-1000:]
     
     async def handle_cluster_shutdown(self, data):
         """Handle cluster shutdown notification"""

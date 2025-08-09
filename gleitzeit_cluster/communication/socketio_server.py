@@ -70,6 +70,19 @@ class SocketIOServer:
         self.executor_nodes: Dict[str, Dict[str, Any]] = {}
         self.workflow_rooms: Dict[str, Set[str]] = {}
         
+        # Monitoring tracking
+        self.monitoring_clients: Dict[str, Dict[str, Any]] = {}
+        self.metrics_history: Dict[str, List[Dict[str, Any]]] = {
+            'cluster_metrics': [],
+            'node_metrics': [],
+            'task_metrics': [],
+            'workflow_metrics': []
+        }
+        
+        # Real-time monitoring state
+        self._metrics_broadcast_task: Optional[asyncio.Task] = None
+        self._metrics_interval = 2.0  # seconds
+        
         # Setup event handlers
         self._setup_handlers()
         
@@ -105,6 +118,11 @@ class SocketIOServer:
         
         # Cluster events
         self.sio.on('cluster:stats', namespace='/cluster')(self.handle_cluster_stats)
+        
+        # Monitoring events
+        self.sio.on('monitor:subscribe', namespace='/cluster')(self.handle_monitor_subscribe)
+        self.sio.on('monitor:unsubscribe', namespace='/cluster')(self.handle_monitor_unsubscribe)
+        self.sio.on('monitor:get_metrics', namespace='/cluster')(self.handle_monitor_get_metrics)
     
     def _setup_routes(self):
         """Setup HTTP routes for health checks and monitoring"""
@@ -163,12 +181,23 @@ class SocketIOServer:
             logger.info(f"🚀 Socket.IO server started on http://{self.host}:{self.port}")
             print(f"🚀 Socket.IO server started on http://{self.host}:{self.port}")
             
+            # Start metrics broadcasting
+            self._metrics_broadcast_task = asyncio.create_task(self._metrics_broadcast_loop())
+            
         except Exception as e:
             logger.error(f"Failed to start server: {e}")
             raise
     
     async def stop(self):
         """Stop Socket.IO server"""
+        # Stop metrics broadcasting
+        if self._metrics_broadcast_task:
+            self._metrics_broadcast_task.cancel()
+            try:
+                await self._metrics_broadcast_task
+            except asyncio.CancelledError:
+                pass
+        
         if self.site:
             await self.site.stop()
         if self.runner:
@@ -603,6 +632,264 @@ class SocketIOServer:
             if node_info['node_id'] == node_id:
                 await self.sio.emit(event, data, room=sid, namespace='/cluster')
                 break
+    
+    # ========================
+    # Monitoring Handlers
+    # ========================
+    
+    async def handle_monitor_subscribe(self, sid, data):
+        """Handle monitoring subscription"""
+        subscription_types = data.get('types', ['all'])  # ['node_metrics', 'task_metrics', 'workflow_metrics', 'cluster_metrics']
+        
+        self.monitoring_clients[sid] = {
+            'sid': sid,
+            'subscribed_at': datetime.utcnow(),
+            'subscription_types': subscription_types,
+            'last_ping': datetime.utcnow()
+        }
+        
+        logger.info(f"Client {sid} subscribed to monitoring: {subscription_types}")
+        
+        # Send initial metrics
+        await self._send_initial_metrics(sid, subscription_types)
+        
+        await self.sio.emit(
+            'monitor:subscribed',
+            {'message': 'Successfully subscribed to real-time monitoring', 'types': subscription_types},
+            room=sid,
+            namespace='/cluster'
+        )
+    
+    async def handle_monitor_unsubscribe(self, sid, data):
+        """Handle monitoring unsubscription"""
+        if sid in self.monitoring_clients:
+            del self.monitoring_clients[sid]
+            
+        await self.sio.emit(
+            'monitor:unsubscribed',
+            {'message': 'Unsubscribed from monitoring'},
+            room=sid,
+            namespace='/cluster'
+        )
+    
+    async def handle_monitor_get_metrics(self, sid, data):
+        """Handle one-time metrics request"""
+        metrics_type = data.get('type', 'all')
+        history_minutes = data.get('history_minutes', 5)
+        
+        metrics = await self._collect_metrics()
+        
+        # Get historical metrics
+        historical_data = self._get_historical_metrics(metrics_type, history_minutes)
+        
+        response = {
+            'current_metrics': metrics,
+            'historical_metrics': historical_data,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+        
+        await self.sio.emit(
+            'monitor:metrics_response',
+            response,
+            room=sid,
+            namespace='/cluster'
+        )
+    
+    async def _metrics_broadcast_loop(self):
+        """Continuously broadcast metrics to monitoring clients"""
+        try:
+            while True:
+                if self.monitoring_clients:
+                    metrics = await self._collect_metrics()
+                    
+                    # Store metrics history (keep last 30 minutes)
+                    timestamp = datetime.utcnow()
+                    self._store_metrics_history(metrics, timestamp)
+                    
+                    # Broadcast to monitoring clients
+                    await self._broadcast_metrics(metrics)
+                
+                await asyncio.sleep(self._metrics_interval)
+                
+        except asyncio.CancelledError:
+            logger.info("Metrics broadcast loop cancelled")
+            raise
+        except Exception as e:
+            logger.error(f"Error in metrics broadcast loop: {e}")
+    
+    async def _collect_metrics(self) -> Dict[str, Any]:
+        """Collect comprehensive system metrics"""
+        import psutil
+        
+        # Cluster-wide metrics
+        cluster_metrics = {
+            'connected_clients': len(self.connected_clients),
+            'executor_nodes': len(self.executor_nodes),
+            'active_workflows': len(self.workflow_rooms),
+            'monitoring_clients': len(self.monitoring_clients)
+        }
+        
+        # Node metrics
+        node_metrics = []
+        total_cpu = 0
+        total_memory = 0
+        total_active_tasks = 0
+        
+        for sid, node_info in self.executor_nodes.items():
+            node_data = {
+                'node_id': node_info['node_id'],
+                'name': node_info['name'],
+                'status': node_info.get('status', 'unknown'),
+                'cpu_usage': node_info.get('cpu_usage', 0),
+                'memory_usage': node_info.get('memory_usage', 0),
+                'active_tasks': node_info.get('current_tasks', 0),
+                'max_tasks': node_info.get('capabilities', {}).get('max_concurrent_tasks', 1),
+                'last_heartbeat': node_info.get('last_heartbeat'),
+                'has_gpu': node_info.get('capabilities', {}).get('has_gpu', False),
+                'uptime_seconds': (datetime.utcnow() - node_info.get('registered_at', datetime.utcnow())).total_seconds()
+            }
+            node_metrics.append(node_data)
+            
+            total_cpu += node_info.get('cpu_usage', 0)
+            total_memory += node_info.get('memory_usage', 0) 
+            total_active_tasks += node_info.get('current_tasks', 0)
+        
+        # System metrics (server host)
+        try:
+            system_cpu = psutil.cpu_percent(interval=0.1)
+            system_memory = psutil.virtual_memory().percent
+            system_disk = psutil.disk_usage('/').percent
+        except:
+            system_cpu = system_memory = system_disk = 0
+        
+        # Task queue metrics (from Redis)
+        queue_metrics = {}
+        if self.redis_client:
+            try:
+                queue_metrics = {
+                    'urgent_queue': await self.redis_client.redis.llen('task_queue:urgent'),
+                    'high_queue': await self.redis_client.redis.llen('task_queue:high'),
+                    'normal_queue': await self.redis_client.redis.llen('task_queue:normal'),
+                    'low_queue': await self.redis_client.redis.llen('task_queue:low')
+                }
+                queue_metrics['total_queued'] = sum(queue_metrics.values())
+            except Exception as e:
+                logger.warning(f"Failed to get queue metrics: {e}")
+                queue_metrics = {'total_queued': 0}
+        
+        return {
+            'timestamp': datetime.utcnow().isoformat(),
+            'cluster_metrics': cluster_metrics,
+            'node_metrics': node_metrics,
+            'queue_metrics': queue_metrics,
+            'system_metrics': {
+                'server_cpu': system_cpu,
+                'server_memory': system_memory,
+                'server_disk': system_disk
+            },
+            'aggregate_metrics': {
+                'avg_node_cpu': total_cpu / max(len(node_metrics), 1),
+                'avg_node_memory': total_memory / max(len(node_metrics), 1),
+                'total_active_tasks': total_active_tasks,
+                'cluster_utilization': total_active_tasks / max(sum(n.get('max_tasks', 1) for n in node_metrics), 1) * 100
+            }
+        }
+    
+    def _store_metrics_history(self, metrics: Dict[str, Any], timestamp: datetime):
+        """Store metrics in history (keep last 30 minutes)"""
+        history_limit = int(30 * 60 / self._metrics_interval)  # 30 minutes of data
+        
+        # Store with timestamp
+        timestamped_metrics = {
+            'timestamp': timestamp.isoformat(),
+            **metrics
+        }
+        
+        # Add to each category
+        for category in self.metrics_history.keys():
+            self.metrics_history[category].append(timestamped_metrics)
+            
+            # Trim to limit
+            if len(self.metrics_history[category]) > history_limit:
+                self.metrics_history[category] = self.metrics_history[category][-history_limit:]
+    
+    def _get_historical_metrics(self, metrics_type: str, minutes: int) -> List[Dict[str, Any]]:
+        """Get historical metrics for specified time range"""
+        if metrics_type == 'all':
+            return self.metrics_history.get('cluster_metrics', [])[-int(minutes * 60 / self._metrics_interval):]
+        else:
+            return self.metrics_history.get(metrics_type, [])[-int(minutes * 60 / self._metrics_interval):]
+    
+    async def _send_initial_metrics(self, sid: str, subscription_types: List[str]):
+        """Send initial metrics to newly subscribed client"""
+        metrics = await self._collect_metrics()
+        
+        await self.sio.emit(
+            'monitor:initial_metrics',
+            {
+                'metrics': metrics,
+                'subscription_types': subscription_types,
+                'update_interval_seconds': self._metrics_interval
+            },
+            room=sid,
+            namespace='/cluster'
+        )
+    
+    async def _broadcast_metrics(self, metrics: Dict[str, Any]):
+        """Broadcast metrics to all monitoring clients"""
+        if not self.monitoring_clients:
+            return
+        
+        for sid, client_info in self.monitoring_clients.items():
+            subscription_types = client_info.get('subscription_types', ['all'])
+            
+            # Filter metrics based on subscription
+            if 'all' not in subscription_types:
+                filtered_metrics = {}
+                for sub_type in subscription_types:
+                    if sub_type in metrics:
+                        filtered_metrics[sub_type] = metrics[sub_type]
+                filtered_metrics['timestamp'] = metrics['timestamp']
+            else:
+                filtered_metrics = metrics
+            
+            try:
+                await self.sio.emit(
+                    'monitor:metrics_update',
+                    filtered_metrics,
+                    room=sid,
+                    namespace='/cluster'
+                )
+            except Exception as e:
+                logger.error(f"Failed to send metrics to client {sid}: {e}")
+    
+    # Enhanced node heartbeat handling with detailed metrics
+    async def handle_node_heartbeat(self, sid, data):
+        """Handle enhanced node heartbeat with detailed metrics"""
+        if sid in self.executor_nodes:
+            # Update basic info
+            self.executor_nodes[sid]['last_heartbeat'] = datetime.utcnow()
+            self.executor_nodes[sid]['status'] = data.get('status', 'ready')
+            
+            # Update detailed metrics
+            self.executor_nodes[sid]['cpu_usage'] = data.get('cpu_usage', 0)
+            self.executor_nodes[sid]['memory_usage'] = data.get('memory_usage', 0)
+            self.executor_nodes[sid]['gpu_usage'] = data.get('gpu_usage')
+            self.executor_nodes[sid]['disk_usage'] = data.get('disk_usage')
+            self.executor_nodes[sid]['network_io'] = data.get('network_io', {})
+            self.executor_nodes[sid]['current_tasks'] = data.get('active_tasks', 0)
+            
+            # Store task execution metrics
+            if 'task_metrics' in data:
+                task_metrics = data['task_metrics']
+                self.executor_nodes[sid]['task_metrics'] = task_metrics
+                
+                # Broadcast task metrics to monitoring clients
+                await self.broadcast_event('monitor:task_metrics', {
+                    'node_id': self.executor_nodes[sid]['node_id'],
+                    'task_metrics': task_metrics,
+                    'timestamp': datetime.utcnow().isoformat()
+                })
     
     def __str__(self) -> str:
         return f"SocketIOServer(http://{self.host}:{self.port})"
