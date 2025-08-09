@@ -206,6 +206,16 @@ class ErrorCode(Enum):
     HEALTH_CHECK_FAILED = "GZ9503"
     TELEMETRY_DISABLED = "GZ9504"
     DASHBOARD_UNAVAILABLE = "GZ9505"
+    MONITORING_CLIENT_CONNECT_FAILED = "GZ9506"
+    MONITORING_SUBSCRIPTION_FAILED = "GZ9507"
+    METRICS_BROADCAST_FAILED = "GZ9508"
+    MONITORING_DATA_CORRUPT = "GZ9509"
+    SOCKETIO_MONITORING_DISABLED = "GZ9510"
+    METRICS_HISTORY_OVERFLOW = "GZ9511"
+    NODE_HEARTBEAT_TIMEOUT = "GZ9512"
+    MONITORING_AUTHENTICATION_FAILED = "GZ9513"
+    REAL_TIME_STREAM_ERROR = "GZ9514"
+    METRICS_AGGREGATION_FAILED = "GZ9515"
 
 
 @dataclass
@@ -519,6 +529,29 @@ ERROR_CATALOG: Dict[ErrorCode, ErrorDefinition] = {
     ),
     
     # Monitoring Errors
+    ErrorCode.METRICS_COLLECTION_FAILED: ErrorDefinition(
+        code=ErrorCode.METRICS_COLLECTION_FAILED,
+        domain=ErrorDomain.MONITORING,
+        message="Failed to collect system metrics",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.LOW,
+        retry_after=10,
+        user_message="Metrics collection temporarily unavailable",
+        resolution_hint="Check system resource availability and permissions",
+        tags=["metrics", "collection", "system"]
+    ),
+    
+    ErrorCode.LOG_WRITE_FAILED: ErrorDefinition(
+        code=ErrorCode.LOG_WRITE_FAILED,
+        domain=ErrorDomain.MONITORING,
+        message="Failed to write monitoring logs",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.LOW,
+        user_message="Log writing temporarily unavailable",
+        resolution_hint="Check disk space and file permissions",
+        tags=["logging", "disk", "permissions"]
+    ),
+    
     ErrorCode.HEALTH_CHECK_FAILED: ErrorDefinition(
         code=ErrorCode.HEALTH_CHECK_FAILED,
         domain=ErrorDomain.MONITORING,
@@ -528,6 +561,144 @@ ERROR_CATALOG: Dict[ErrorCode, ErrorDefinition] = {
         user_message="System health check failed",
         resolution_hint="Check component status and logs",
         tags=["health", "monitoring", "check"]
+    ),
+    
+    ErrorCode.TELEMETRY_DISABLED: ErrorDefinition(
+        code=ErrorCode.TELEMETRY_DISABLED,
+        domain=ErrorDomain.MONITORING,
+        message="Telemetry collection is disabled",
+        category=ErrorCategory.VALIDATION,
+        severity=ErrorSeverity.LOW,
+        user_message="Monitoring data may be limited",
+        resolution_hint="Enable telemetry in configuration if detailed monitoring is needed",
+        tags=["telemetry", "config", "monitoring"]
+    ),
+    
+    ErrorCode.DASHBOARD_UNAVAILABLE: ErrorDefinition(
+        code=ErrorCode.DASHBOARD_UNAVAILABLE,
+        domain=ErrorDomain.MONITORING,
+        message="Monitoring dashboard is not available",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.LOW,
+        user_message="Web dashboard temporarily unavailable",
+        resolution_hint="Check if Socket.IO server is running on http://localhost:8000",
+        tags=["dashboard", "ui", "socketio"]
+    ),
+    
+    ErrorCode.MONITORING_CLIENT_CONNECT_FAILED: ErrorDefinition(
+        code=ErrorCode.MONITORING_CLIENT_CONNECT_FAILED,
+        domain=ErrorDomain.MONITORING,
+        message="Failed to connect monitoring client to server",
+        category=ErrorCategory.NETWORK,
+        severity=ErrorSeverity.MEDIUM,
+        retry_after=5,
+        user_message="Cannot connect to monitoring server",
+        resolution_hint="Verify Socket.IO server is running: netstat -an | grep 8000",
+        documentation_url="https://docs.gleitzeit.dev/monitoring/connection-issues",
+        tags=["client", "connection", "socketio"]
+    ),
+    
+    ErrorCode.MONITORING_SUBSCRIPTION_FAILED: ErrorDefinition(
+        code=ErrorCode.MONITORING_SUBSCRIPTION_FAILED,
+        domain=ErrorDomain.MONITORING,
+        message="Failed to subscribe to monitoring events",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.LOW,
+        retry_after=3,
+        user_message="Real-time monitoring subscription failed",
+        resolution_hint="Try reconnecting or restart monitoring client",
+        tags=["subscription", "events", "realtime"]
+    ),
+    
+    ErrorCode.METRICS_BROADCAST_FAILED: ErrorDefinition(
+        code=ErrorCode.METRICS_BROADCAST_FAILED,
+        domain=ErrorDomain.MONITORING,
+        message="Failed to broadcast metrics to monitoring clients",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.LOW,
+        user_message="Metrics updates may be delayed",
+        resolution_hint="Check network connectivity and server resources",
+        tags=["broadcast", "metrics", "network"]
+    ),
+    
+    ErrorCode.MONITORING_DATA_CORRUPT: ErrorDefinition(
+        code=ErrorCode.MONITORING_DATA_CORRUPT,
+        domain=ErrorDomain.MONITORING,
+        message="Monitoring data is corrupted or invalid",
+        category=ErrorCategory.PERMANENT,
+        severity=ErrorSeverity.MEDIUM,
+        user_message="Some monitoring data may be inaccurate",
+        resolution_hint="Restart monitoring services to reset data collection",
+        tags=["corruption", "data", "invalid"]
+    ),
+    
+    ErrorCode.SOCKETIO_MONITORING_DISABLED: ErrorDefinition(
+        code=ErrorCode.SOCKETIO_MONITORING_DISABLED,
+        domain=ErrorDomain.MONITORING,
+        message="Socket.IO real-time monitoring is disabled",
+        category=ErrorCategory.VALIDATION,
+        severity=ErrorSeverity.LOW,
+        user_message="Real-time monitoring not available",
+        resolution_hint="Enable Socket.IO monitoring in cluster configuration: enable_socketio=True",
+        tags=["socketio", "disabled", "config"]
+    ),
+    
+    ErrorCode.METRICS_HISTORY_OVERFLOW: ErrorDefinition(
+        code=ErrorCode.METRICS_HISTORY_OVERFLOW,
+        domain=ErrorDomain.MONITORING,
+        message="Metrics history buffer overflow",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.LOW,
+        user_message="Historical metrics data truncated",
+        resolution_hint="Consider reducing metrics collection interval or increasing buffer size",
+        tags=["history", "buffer", "memory"]
+    ),
+    
+    ErrorCode.NODE_HEARTBEAT_TIMEOUT: ErrorDefinition(
+        code=ErrorCode.NODE_HEARTBEAT_TIMEOUT,
+        domain=ErrorDomain.MONITORING,
+        message="Executor node heartbeat timeout",
+        category=ErrorCategory.NETWORK,
+        severity=ErrorSeverity.HIGH,
+        user_message="Executor node appears offline",
+        resolution_hint="Check node connectivity and restart executor if needed",
+        related_errors=[ErrorCode.SOCKETIO_CLIENT_TIMEOUT],
+        tags=["heartbeat", "timeout", "node"]
+    ),
+    
+    ErrorCode.MONITORING_AUTHENTICATION_FAILED: ErrorDefinition(
+        code=ErrorCode.MONITORING_AUTHENTICATION_FAILED,
+        domain=ErrorDomain.MONITORING,
+        message="Monitoring client authentication failed",
+        category=ErrorCategory.AUTHENTICATION,
+        severity=ErrorSeverity.MEDIUM,
+        user_message="Access to monitoring denied",
+        resolution_hint="Check authentication credentials and permissions",
+        related_errors=[ErrorCode.AUTH_TOKEN_EXPIRED, ErrorCode.AUTH_TOKEN_INVALID],
+        tags=["auth", "monitoring", "access"]
+    ),
+    
+    ErrorCode.REAL_TIME_STREAM_ERROR: ErrorDefinition(
+        code=ErrorCode.REAL_TIME_STREAM_ERROR,
+        domain=ErrorDomain.MONITORING,
+        message="Real-time data stream error",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.MEDIUM,
+        retry_after=2,
+        user_message="Real-time monitoring stream interrupted",
+        resolution_hint="Check network connection and try reconnecting",
+        tags=["stream", "realtime", "network"]
+    ),
+    
+    ErrorCode.METRICS_AGGREGATION_FAILED: ErrorDefinition(
+        code=ErrorCode.METRICS_AGGREGATION_FAILED,
+        domain=ErrorDomain.MONITORING,
+        message="Failed to aggregate metrics data",
+        category=ErrorCategory.TRANSIENT,
+        severity=ErrorSeverity.LOW,
+        user_message="Some aggregate metrics may be unavailable",
+        resolution_hint="Check data sources and computational resources",
+        tags=["aggregation", "computation", "data"]
     ),
 }
 
