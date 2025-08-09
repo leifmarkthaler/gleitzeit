@@ -51,6 +51,8 @@ Orchestrate multiple tasks with dependencies and data flow.
 - **Advanced error handling**: Comprehensive error registry with structured codes and resolution hints
 - **Workflow persistence**: Redis persistence ensures workflows survive system restarts and can be resumed
 - **Task-level recovery**: Resume from exactly where workflows were interrupted, with dependency resolution
+- **Automatic recovery**: Auto-resume interrupted workflows on cluster restart (configurable)
+- **Intelligent dispatch**: Recovered tasks automatically assigned to available executors
 
 ### 📦 Batch Processing
 Process multiple items efficiently with parallel execution.
@@ -518,10 +520,13 @@ asyncio.run(recovery_example())
 ```
 
 **Task Recovery Features:**
-- **Dependency Resolution**: Only resume tasks whose dependencies are satisfied
-- **Granular Control**: Resume individual tasks, not entire workflows
-- **State Preservation**: All task results, errors, and metadata preserved
-- **Smart Queueing**: Tasks restored to appropriate priority queues for execution
+- **🔄 Automatic Task Dispatch**: Restored tasks immediately assigned to available executors
+- **🧠 Parameter Re-Resolution**: Dynamic parameter substitution (e.g., `{{task.result}}`) during recovery
+- **📡 Distributed Execution**: Full integration with multi-node executor system
+- **⚡ Auto-Recovery**: Automatic workflow resumption on cluster startup
+- **🛡️ Race Condition Prevention**: Atomic operations prevent recovery conflicts
+- **🎯 Dependency Resolution**: Only resume tasks whose dependencies are satisfied
+- **📊 Recovery Analytics**: Detailed progress tracking and failure reporting
 
 **Multi-Endpoint Features:**
 - **Automatic Failover**: Seamlessly retry on healthy endpoints if one fails
@@ -674,7 +679,7 @@ $ gleitzeit auth login
 - **🔧 Robust Error Handling**: Circuit breakers, retry logic, structured logging, and error categorization for development
 - **🎯 Privacy-First**: Your data never leaves your computer - no external APIs or tracking
 - **🚀 Simple but Powerful**: Just install and run commands, but with enterprise-grade error handling underneath
-- **💾 Task-Level Recovery**: Redis persistence with intelligent task restoration - resume workflows from exactly where they were interrupted, with automatic dependency resolution
+- **🔄 Production-Ready Recovery**: Complete task-level recovery with automatic dispatch, parameter resolution, and distributed execution - workflows resume seamlessly after interruption
 
 ## Status
 

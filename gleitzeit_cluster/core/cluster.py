@@ -7,6 +7,7 @@ from .workflow import Workflow, WorkflowStatus, WorkflowResult, WorkflowErrorStr
 from .task import Task, TaskType
 from .node import ExecutorNode
 from .service_manager import ServiceManager
+from .task_dispatcher import TaskDispatcher
 from .error_handling import (
     RetryManager, RetryConfig, GleitzeitLogger, 
     ErrorCategorizer, ErrorCategory, ErrorSeverity,
@@ -49,7 +50,8 @@ class GleitzeitCluster:
         auto_start_services: bool = True,
         auto_start_redis: bool = True,
         auto_start_executors: bool = True,
-        min_executors: int = 1
+        min_executors: int = 1,
+        auto_recovery: bool = True
     ):
         """Initialize cluster connection"""
         self.redis_url = redis_url
@@ -65,9 +67,13 @@ class GleitzeitCluster:
         self.auto_start_redis = auto_start_redis
         self.auto_start_executors = auto_start_executors
         self.min_executors = min_executors
+        self.auto_recovery = auto_recovery
         
         # Service manager for auto-starting services
         self.service_manager = ServiceManager() if auto_start_services else None
+        
+        # Task dispatcher for automatic task assignment
+        self.task_dispatcher: Optional[TaskDispatcher] = None
         
         # Local fallback storage
         self._workflows: Dict[str, Workflow] = {}
@@ -171,6 +177,20 @@ class GleitzeitCluster:
                 self.logger.log_error(error_info)
                 self.logger.logger.warning("Task executor failed to start, continuing without it")
                 self.task_executor = None
+        
+        # Start task dispatcher for automatic task assignment
+        if self.redis_client and (self.enable_real_execution or enable_socketio):
+            try:
+                self.task_dispatcher = TaskDispatcher(
+                    redis_client=self.redis_client,
+                    socketio_server=self.socketio_server
+                )
+                await self.task_dispatcher.start()
+                self.logger.logger.info("✅ Task Dispatcher started")
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "task_dispatcher"})
+                self.logger.log_error(error_info)
+                self.logger.logger.warning("Task dispatcher failed to start, tasks won't be automatically assigned")
             
         # Check for resumable workflows after startup
         await self._check_resumable_workflows()
@@ -299,6 +319,14 @@ class GleitzeitCluster:
         """Stop cluster components with error handling"""
         self.logger.logger.info("Stopping Gleitzeit Cluster")
         
+        # Stop task dispatcher
+        if self.task_dispatcher:
+            try:
+                await self.task_dispatcher.stop()
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "task_dispatcher", "operation": "stop"})
+                self.logger.log_error(error_info)
+        
         # Stop task executor if enabled
         if self.task_executor:
             try:
@@ -354,12 +382,32 @@ class GleitzeitCluster:
                 self.logger.logger.info(f"Found {len(resumable)} resumable workflows:")
                 for workflow in resumable:
                     progress = f"{workflow['completed_tasks']}/{workflow['total_tasks']}"
-                    self.logger.logger.info(f"  - {workflow['name']} ({workflow['id'][:8]}...): {progress} tasks")
-                    
-                self.logger.logger.info("💡 Use 'gleitzeit resume' to continue interrupted workflows")
+                    recoverable = len(workflow.get('recoverable_tasks', []))
+                    self.logger.logger.info(f"  - {workflow['name']} ({workflow['id'][:8]}...): {progress} tasks, {recoverable} recoverable")
                 
-                # TODO: Implement automatic resumption logic
-                # For now, just log the information for user awareness
+                if self.auto_recovery and self.task_dispatcher:
+                    # Automatically resume workflows with recoverable tasks
+                    self.logger.logger.info("🚀 Auto-recovery enabled, resuming workflows...")
+                    
+                    auto_recovered = 0
+                    for workflow in resumable:
+                        recoverable_count = len(workflow.get('recoverable_tasks', []))
+                        if recoverable_count > 0:
+                            try:
+                                await self.resume_workflow(workflow['id'])
+                                auto_recovered += 1
+                                self.logger.logger.info(f"✅ Auto-resumed: {workflow['name']}")
+                            except Exception as e:
+                                self.logger.logger.error(f"❌ Auto-recovery failed for {workflow['name']}: {e}")
+                    
+                    if auto_recovered > 0:
+                        self.logger.logger.info(f"🎉 Auto-recovery completed: {auto_recovered}/{len(resumable)} workflows resumed")
+                    else:
+                        self.logger.logger.info("💡 No workflows had recoverable tasks for auto-recovery")
+                else:
+                    self.logger.logger.info("💡 Use 'gleitzeit resume' to continue interrupted workflows")
+                    if not self.auto_recovery:
+                        self.logger.logger.info("💡 Enable auto_recovery=True for automatic resumption")
                 
         except Exception as e:
             error_info = ErrorCategorizer.categorize_error(e, {
@@ -707,6 +755,14 @@ class GleitzeitCluster:
             
             if restore_result['restored_tasks'] > 0:
                 self.logger.logger.info(f"✅ Restored {restore_result['restored_tasks']} tasks to execution queue")
+                
+                # Immediately dispatch restored tasks if dispatcher is available
+                if self.task_dispatcher:
+                    dispatch_result = await self.task_dispatcher.dispatch_recovered_workflow(workflow_id)
+                    self.logger.logger.info(f"🚀 Immediately assigned {dispatch_result['assigned']} recovered tasks to executors")
+                    
+                    if dispatch_result['failed'] > 0:
+                        self.logger.logger.warning(f"⚠️  Failed to assign {dispatch_result['failed']} recovered tasks")
             
             if blocked_tasks:
                 self.logger.logger.warning(f"⚠️  {len(blocked_tasks)} tasks still blocked by dependencies:")
