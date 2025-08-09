@@ -90,24 +90,68 @@ class Workflow(BaseModel):
         name: str, 
         prompt: str, 
         model: str = "llama3",
+        provider: str = "internal",  # "internal", "openai", "anthropic", etc.
         dependencies: Optional[List[str]] = None,
         **kwargs
     ) -> Task:
-        """Convenience method to add a text task"""
+        """
+        Convenience method to add a text task.
+        
+        Routes to appropriate LLM service based on unified architecture setting.
+        """
         from .task import TaskType, TaskParameters
         
-        task = Task(
-            name=name,
-            task_type=TaskType.TEXT,
-            parameters=TaskParameters(
-                prompt=prompt,
-                model_name=model,
-                **kwargs
-            ),
-            dependencies=dependencies or []
-        )
+        # Check if using unified Socket.IO architecture
+        use_unified = getattr(self, '_use_unified_socketio_architecture', False)
+        
+        if use_unified:
+            # Route to appropriate LLM service via Socket.IO
+            service_name = self._get_llm_service_name(model, provider)
+            
+            task = Task(
+                name=name,
+                task_type=TaskType.EXTERNAL_CUSTOM,  # All tasks are external now
+                parameters=TaskParameters(
+                    service_name=service_name,
+                    external_task_type="llm_generation",
+                    external_parameters={
+                        "prompt": prompt,
+                        "model": model,
+                        "provider": provider,
+                        **kwargs
+                    }
+                ),
+                dependencies=dependencies or []
+            )
+        else:
+            # Legacy direct execution
+            task = Task(
+                name=name,
+                task_type=TaskType.TEXT,
+                parameters=TaskParameters(
+                    prompt=prompt,
+                    model_name=model,
+                    **kwargs
+                ),
+                dependencies=dependencies or []
+            )
+        
         self.add_task(task)
         return task
+    
+    def _get_llm_service_name(self, model: str, provider: str) -> str:
+        """Determine which LLM service to use based on model and provider"""
+        
+        # Provider-specific routing
+        if provider == "openai" or model.startswith("gpt"):
+            return "OpenAI Service"
+        elif provider == "anthropic" or model.startswith("claude"):
+            return "Anthropic Service"
+        elif provider == "mock":
+            return "Mock LLM Service"
+        else:
+            # Default to internal Ollama service
+            return "Internal LLM Service"
     
     def add_vision_task(
         self,
@@ -115,23 +159,50 @@ class Workflow(BaseModel):
         prompt: str,
         image_path: str,
         model: str = "llava",
+        provider: str = "internal",
         dependencies: Optional[List[str]] = None,
         **kwargs
     ) -> Task:
         """Convenience method to add a vision task"""
         from .task import TaskType, TaskParameters
         
-        task = Task(
-            name=name,
-            task_type=TaskType.VISION,
-            parameters=TaskParameters(
-                prompt=prompt,
-                image_path=image_path,
-                model_name=model,
-                **kwargs
-            ),
-            dependencies=dependencies or []
-        )
+        # Check if using unified Socket.IO architecture
+        use_unified = getattr(self, '_use_unified_socketio_architecture', False)
+        
+        if use_unified:
+            # Route to appropriate LLM service via Socket.IO
+            service_name = self._get_llm_service_name(model, provider)
+            
+            task = Task(
+                name=name,
+                task_type=TaskType.EXTERNAL_CUSTOM,
+                parameters=TaskParameters(
+                    service_name=service_name,
+                    external_task_type="vision",
+                    external_parameters={
+                        "prompt": prompt,
+                        "image_path": image_path,
+                        "model": model,
+                        "provider": provider,
+                        **kwargs
+                    }
+                ),
+                dependencies=dependencies or []
+            )
+        else:
+            # Legacy direct execution
+            task = Task(
+                name=name,
+                task_type=TaskType.VISION,
+                parameters=TaskParameters(
+                    prompt=prompt,
+                    image_path=image_path,
+                    model_name=model,
+                    **kwargs
+                ),
+                dependencies=dependencies or []
+            )
+        
         self.add_task(task)
         return task
     

@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 class ExternalServiceCapability(Enum):
     """Standard external service capabilities"""
+    LLM_GENERATION = "llm_generation"       # LLM text generation (internal/external)
     ML_TRAINING = "ml_training"
     ML_INFERENCE = "ml_inference"
     DATA_PROCESSING = "data_processing"

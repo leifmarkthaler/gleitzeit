@@ -54,7 +54,10 @@ class GleitzeitCluster:
         auto_recovery: bool = True,
         use_external_python_executor: bool = False,  # Feature flag for external Python execution
         auto_start_python_executor: bool = True,  # Auto-start Python executor service
-        python_executor_workers: int = 4  # Number of Python executor workers
+        python_executor_workers: int = 4,  # Number of Python executor workers
+        use_unified_socketio_architecture: bool = False,  # Route ALL tasks via Socket.IO
+        auto_start_internal_llm_service: bool = True,  # Auto-start internal LLM service
+        llm_service_workers: int = 20  # Number of concurrent LLM tasks
     ):
         """Initialize cluster connection"""
         self.redis_url = redis_url
@@ -77,6 +80,12 @@ class GleitzeitCluster:
         self.auto_start_python_executor = auto_start_python_executor
         self.python_executor_workers = python_executor_workers
         self.python_executor_process = None
+        
+        # Unified Socket.IO architecture configuration
+        self.use_unified_socketio_architecture = use_unified_socketio_architecture
+        self.auto_start_internal_llm_service = auto_start_internal_llm_service
+        self.llm_service_workers = llm_service_workers
+        self.internal_llm_process = None
         
         # Service manager for auto-starting services
         self.service_manager = ServiceManager() if auto_start_services else None
@@ -210,6 +219,16 @@ class GleitzeitCluster:
                 error_info = ErrorCategorizer.categorize_error(e, {"component": "python_executor"})
                 self.logger.log_error(error_info)
                 self.logger.logger.warning("Python executor service failed to start")
+        
+        # Start internal LLM service if using unified architecture
+        if self.use_unified_socketio_architecture and self.auto_start_internal_llm_service:
+            try:
+                await self._start_internal_llm_service()
+                self.logger.logger.info("✅ Internal LLM Service started")
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "internal_llm"})
+                self.logger.log_error(error_info)
+                self.logger.logger.warning("Internal LLM service failed to start")
         
         # Check for resumable workflows after startup
         await self._check_resumable_workflows()
@@ -478,11 +497,55 @@ if __name__ == "__main__":
             stdout, stderr = await self.python_executor_process.communicate()
             raise RuntimeError(f"Python executor failed to start: {stderr.decode()}")
     
+    async def _start_internal_llm_service(self):
+        """Start internal LLM service as a subprocess"""
+        import asyncio
+        import sys
+        import os
+        
+        # Create the internal LLM service script
+        llm_script = f'''
+import asyncio
+import sys
+from pathlib import Path
+sys.path.insert(0, "{os.getcwd()}")
+
+from services.internal_llm_service import InternalLLMService
+
+async def main():
+    llm_service = InternalLLMService(
+        service_name="Internal LLM Service (Auto)",
+        cluster_url="{self.socketio_url}",
+        ollama_url="{self.task_executor.ollama_client.base_url if self.task_executor and hasattr(self.task_executor, 'ollama_client') else 'http://localhost:11434'}",
+        max_concurrent_tasks={self.llm_service_workers}
+    )
+    await llm_service.start()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+'''
+        
+        # Start internal LLM service as subprocess
+        self.internal_llm_process = await asyncio.create_subprocess_exec(
+            sys.executable, '-c', llm_script,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        
+        # Give it a moment to start
+        await asyncio.sleep(2)
+        
+        # Check if process is still running
+        if self.internal_llm_process.returncode is not None:
+            stdout, stderr = await self.internal_llm_process.communicate()
+            raise RuntimeError(f"Internal LLM service failed to start: {stderr.decode()}")
+    
     def create_workflow(self, name: str, description: Optional[str] = None) -> Workflow:
         """Create a new workflow"""
         workflow = Workflow(name=name, description=description)
-        # Pass the external executor flag to the workflow
+        # Pass configuration flags to the workflow
         workflow._use_external_python_executor = self.use_external_python_executor
+        workflow._use_unified_socketio_architecture = self.use_unified_socketio_architecture
         self._workflows[workflow.id] = workflow
         return workflow
     
