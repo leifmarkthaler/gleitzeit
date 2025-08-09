@@ -1,743 +1,1026 @@
-# Gleitzeit MCP (Model Context Protocol) Tutorial
+# Gleitzeit Socket.IO Provider System Tutorial
 
 ## Table of Contents
 1. [Introduction](#introduction)
-2. [Installation](#installation)
-3. [Basic Concepts](#basic-concepts)
+2. [Architecture Overview](#architecture-overview)
+3. [Installation](#installation)
 4. [Quick Start](#quick-start)
-5. [Configuration Methods](#configuration-methods)
-6. [Working with Providers](#working-with-providers)
-7. [Model Routing](#model-routing)
-8. [Advanced Usage](#advanced-usage)
-9. [Best Practices](#best-practices)
-10. [Troubleshooting](#troubleshooting)
+5. [Creating Providers](#creating-providers)
+6. [Provider Manager](#provider-manager)
+7. [Provider Discovery & Routing](#provider-discovery--routing)
+8. [Streaming & Real-time Communication](#streaming--real-time-communication)
+9. [Integration with Cluster](#integration-with-cluster)
+10. [Best Practices](#best-practices)
+11. [Migration from MCP](#migration-from-mcp)
+12. [Troubleshooting](#troubleshooting)
 
 ## Introduction
 
-The Model Context Protocol (MCP) is a standard protocol for communication between AI applications and external tools/services. Gleitzeit's MCP integration allows you to:
+The Gleitzeit Provider System uses Socket.IO for all provider communication, creating a unified architecture consistent with the rest of the Gleitzeit cluster. This replaces the previous MCP (Model Context Protocol) stdio-based approach.
 
-- Connect to external LLM providers (OpenAI, Anthropic, Ollama, etc.)
-- Access tools and services via standardized protocol
-- Combine native Python extensions with MCP servers seamlessly
-- Route models automatically to the correct provider
+### Why Socket.IO?
 
-### MCP vs Native Extensions
-
-| Feature | Native Extensions | MCP Servers |
-|---------|------------------|-------------|
-| **Performance** | Fast (in-process) | Slower (IPC overhead) |
-| **Isolation** | Same process | Separate process |
-| **Language** | Python only | Any language |
-| **Integration** | Direct Python API | Standard protocol |
-| **Use Cases** | Gleitzeit-specific logic | LLM providers, external tools |
-
-## Installation
-
-### Prerequisites
-
-```bash
-# Install gleitzeit (if not already installed)
-pip install gleitzeit
-
-# Install MCP support
-pip install 'mcp[cli]'
-# or with uv:
-uv pip install 'mcp[cli]'
-```
-
-### Installing MCP Servers
-
-MCP servers are separate executables that implement specific functionality:
-
-```bash
-# Example: Install OpenAI MCP server
-npm install -g @modelcontextprotocol/server-openai
-
-# Example: Install filesystem MCP server
-npm install -g @modelcontextprotocol/server-filesystem
-
-# Example: Install web search MCP server  
-npm install -g @modelcontextprotocol/server-brave-search
-```
-
-## Basic Concepts
-
-### UnifiedProviderManager
-
-The `UnifiedProviderManager` is the central component that manages both native extensions and MCP servers:
-
-```python
-from gleitzeit_extensions import UnifiedProviderManager, create_unified_manager
-
-# Create the manager
-manager = create_unified_manager()
-```
+- **Unified Architecture**: All Gleitzeit components (cluster, executors, providers) use the same communication protocol
+- **Real-time Capabilities**: Bidirectional streaming perfect for LLM responses
+- **Better Monitoring**: Built-in health checks, heartbeats, and connection tracking
+- **Load Balancing**: Socket.IO rooms enable distributing requests across multiple provider instances
+- **Resilience**: Automatic reconnection and error recovery
 
 ### Provider Types
 
-1. **Native Extensions**: Python modules that extend Gleitzeit directly
-2. **MCP Servers**: External processes that communicate via MCP protocol
+| Type | Purpose | Examples |
+|------|---------|----------|
+| **LLM** | Language model providers | OpenAI, Anthropic, Ollama, Custom models |
+| **Tool** | External tools and services | Calculators, databases, APIs |
+| **Extension** | Gleitzeit-specific functionality | Custom processors, analyzers |
 
-Both types are accessed through the same unified interface.
+## Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                   Gleitzeit Server                       │
+│                                                          │
+│  ┌──────────────┐        ┌─────────────────────────┐   │
+│  │  Socket.IO   │        │   Provider Manager      │   │
+│  │   Server     │◄──────►│                         │   │
+│  │              │        │  • Provider Registry    │   │
+│  │ /cluster     │        │  • Model Routing        │   │
+│  │ /providers   │        │  • Health Monitoring    │   │
+│  └──────────────┘        └─────────────────────────┘   │
+└─────────────────────────────────────────────────────────┘
+         ▲                           ▲                ▲
+         │                           │                │
+    Socket.IO                   Socket.IO        Socket.IO
+    /providers                  /providers       /providers
+         │                           │                │
+    ┌─────────┐                ┌─────────┐      ┌─────────┐
+    │  OpenAI │                │  Tool   │      │ Custom  │
+    │ Provider│                │Provider │      │   LLM   │
+    └─────────┘                └─────────┘      └─────────┘
+```
+
+## Installation
+
+```bash
+# Install Gleitzeit with Socket.IO support
+pip install gleitzeit
+
+# Install additional dependencies for providers
+pip install python-socketio[asyncio_client]
+pip install aiohttp
+
+# For specific providers (optional)
+pip install openai  # For OpenAI provider
+pip install anthropic  # For Anthropic provider
+```
 
 ## Quick Start
 
-### Basic Example
+### 1. Start Server with Provider Support
 
 ```python
 import asyncio
-from gleitzeit_extensions import create_unified_manager, is_mcp_available
+from gleitzeit_extensions.socketio_provider_manager import SocketIOProviderManager
+from gleitzeit_cluster.communication.socketio_server import SocketIOServer
 
-async def main():
-    # Create unified manager
-    manager = create_unified_manager()
+async def start_server():
+    # Create Socket.IO server
+    server = SocketIOServer(
+        host="0.0.0.0",
+        port=8000,
+        cors_allowed_origins="*"
+    )
     
-    # Check if MCP is available
-    if is_mcp_available():
-        print("✅ MCP is available")
+    # Create and attach provider manager
+    provider_manager = SocketIOProviderManager()
+    provider_manager.attach_to_server(server.sio)
+    
+    # Start server
+    await server.start()
+    
+    # Start health monitoring
+    asyncio.create_task(provider_manager.monitor_health())
+    
+    print(f"✅ Server running with provider support on port 8000")
+    
+    # Keep running
+    await asyncio.Event().wait()
+
+asyncio.run(start_server())
+```
+
+### 2. Create and Connect a Provider
+
+```python
+import asyncio
+from gleitzeit_extensions.socketio_provider_client import SocketIOProviderClient
+
+class MyLLMProvider(SocketIOProviderClient):
+    def __init__(self):
+        super().__init__(
+            name="my-llm",
+            provider_type="llm",
+            server_url="http://localhost:8000",
+            models=["model-7b", "model-13b"],
+            capabilities=["text", "streaming"],
+            description="My custom LLM"
+        )
+    
+    async def invoke(self, method: str, **kwargs):
+        if method == "complete":
+            prompt = kwargs.get('prompt', '')
+            return f"Response to: {prompt}"
+        raise ValueError(f"Unknown method: {method}")
+    
+    async def get_health_status(self):
+        return {"healthy": True, "status": "ready"}
+
+# Run provider
+async def main():
+    provider = MyLLMProvider()
+    await provider.run()
+
+asyncio.run(main())
+```
+
+### 3. Use the Provider
+
+```python
+# From another client or within the cluster
+async def use_provider(provider_manager):
+    # Find provider for model
+    provider_name = provider_manager.find_provider_for_model("model-7b")
+    
+    # Invoke provider
+    result = await provider_manager.invoke_provider(
+        provider_name,
+        "complete",
+        prompt="Hello, world!",
+        model="model-7b"
+    )
+    
+    print(f"Response: {result}")
+```
+
+## Creating Providers
+
+### Base Provider Class
+
+All providers inherit from `SocketIOProviderClient`:
+
+```python
+from gleitzeit_extensions.socketio_provider_client import SocketIOProviderClient
+from typing import Any, Dict, List
+
+class CustomProvider(SocketIOProviderClient):
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(
+            name=config['name'],
+            provider_type=config['type'],  # "llm", "tool", or "extension"
+            server_url=config.get('server_url', 'http://localhost:8000'),
+            models=config.get('models', []),
+            capabilities=config.get('capabilities', []),
+            description=config.get('description', ''),
+            metadata=config.get('metadata', {})
+        )
         
-        # Add an MCP server programmatically
-        manager.add_mcp_server(
+        # Initialize your provider-specific resources
+        self.config = config
+    
+    async def invoke(self, method: str, **kwargs) -> Any:
+        """Handle method invocations - REQUIRED"""
+        pass
+    
+    async def get_health_status(self) -> Dict[str, Any]:
+        """Return health status - REQUIRED"""
+        return {"healthy": True}
+    
+    async def on_connected(self):
+        """Called when connected - OPTIONAL"""
+        pass
+    
+    async def on_disconnected(self):
+        """Called when disconnected - OPTIONAL"""
+        pass
+```
+
+### LLM Provider Example
+
+```python
+import openai
+from typing import AsyncGenerator
+
+class OpenAIProvider(SocketIOProviderClient):
+    def __init__(self, api_key: str):
+        super().__init__(
             name="openai",
-            command="mcp-server-openai",
-            env={"OPENAI_API_KEY": "your-api-key"},
-            models=["gpt-4", "gpt-3.5-turbo"],
-            capabilities=["text", "vision", "function_calling"],
+            provider_type="llm",
+            models=["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"],
+            capabilities=["text", "vision", "function_calling", "streaming"],
             description="OpenAI GPT models"
         )
-    else:
-        print("❌ MCP not available - install with: pip install 'mcp[cli]'")
+        self.client = openai.AsyncOpenAI(api_key=api_key)
     
-    # Discover native extensions
-    manager.discover_extensions(["path/to/extensions"])
+    async def invoke(self, method: str, **kwargs) -> Any:
+        if method == "complete":
+            return await self._complete(**kwargs)
+        elif method == "embed":
+            return await self._embed(**kwargs)
+        else:
+            raise ValueError(f"Unknown method: {method}")
     
-    # Start all providers
-    await manager.start_all_providers()
+    async def _complete(self, prompt: str, model: str = "gpt-4", **kwargs):
+        response = await self.client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            **kwargs
+        )
+        return response.choices[0].message.content
     
-    # Find provider for a model
-    provider = manager.find_provider_for_model("gpt-4")
-    if provider:
-        print(f"GPT-4 is available via {provider['name']} ({provider['type']})")
+    async def _embed(self, text: str, model: str = "text-embedding-3-small"):
+        response = await self.client.embeddings.create(
+            model=model,
+            input=text
+        )
+        return response.data[0].embedding
     
-    # Stop all providers
-    await manager.stop_all_providers()
-
-asyncio.run(main())
-```
-
-### Using Context Manager
-
-```python
-async def main():
-    manager = create_unified_manager()
-    
-    # Configure providers
-    manager.add_mcp_server(
-        name="ollama",
-        command="mcp-server-ollama",
-        args=["--host", "localhost:11434"],
-        models=["llama3", "codellama"],
-        capabilities=["text"]
-    )
-    
-    # Use context manager for automatic cleanup
-    async with manager:
-        # Providers are automatically started
-        providers = manager.get_all_providers()
-        print(f"Active providers: {len(providers)}")
+    async def stream(self, prompt: str, model: str = "gpt-4", **kwargs):
+        """Stream responses token by token"""
+        stream = await self.client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            stream=True,
+            **kwargs
+        )
         
-        # Use providers here...
+        async for chunk in stream:
+            if chunk.choices[0].delta.content:
+                yield {
+                    "token": chunk.choices[0].delta.content,
+                    "done": False
+                }
         
-    # Providers are automatically stopped
-
-asyncio.run(main())
+        yield {"token": "", "done": True}
+    
+    async def get_health_status(self) -> Dict[str, Any]:
+        try:
+            # Test API connectivity
+            models = await self.client.models.list()
+            return {
+                "healthy": True,
+                "models_available": len(models.data)
+            }
+        except Exception as e:
+            return {
+                "healthy": False,
+                "error": str(e)
+            }
 ```
 
-## Configuration Methods
-
-### Method 1: Programmatic Configuration
+### Tool Provider Example
 
 ```python
-from gleitzeit_extensions import create_unified_manager
-
-manager = create_unified_manager()
-
-# Add MCP server with full configuration
-manager.add_mcp_server(
-    name="custom-llm",
-    command="python",
-    args=["my_mcp_server.py"],
-    env={
-        "API_KEY": "secret-key",
-        "MODEL_PATH": "/path/to/models"
-    },
-    working_directory="/app/servers",
-    timeout=30,
-    models=["model-1", "model-2"],
-    capabilities=["text", "streaming"],
-    description="Custom LLM server"
-)
+class DatabaseProvider(SocketIOProviderClient):
+    def __init__(self, connection_string: str):
+        super().__init__(
+            name="database",
+            provider_type="tool",
+            capabilities=["sql", "query", "crud"],
+            description="Database operations"
+        )
+        self.connection_string = connection_string
+        self.connection = None
+    
+    async def on_connected(self):
+        """Initialize database connection"""
+        # self.connection = await create_db_connection(self.connection_string)
+        pass
+    
+    async def on_disconnected(self):
+        """Close database connection"""
+        # if self.connection:
+        #     await self.connection.close()
+        pass
+    
+    async def invoke(self, method: str, **kwargs) -> Any:
+        if method == "query":
+            return await self._query(**kwargs)
+        elif method == "insert":
+            return await self._insert(**kwargs)
+        elif method == "update":
+            return await self._update(**kwargs)
+        elif method == "delete":
+            return await self._delete(**kwargs)
+        else:
+            raise ValueError(f"Unknown method: {method}")
+    
+    async def _query(self, sql: str, params: List = None):
+        # Execute query and return results
+        return {"results": [], "count": 0}
+    
+    async def get_tools(self) -> List[Dict[str, Any]]:
+        """Return available database operations"""
+        return [
+            {
+                "name": "query",
+                "description": "Execute SQL query",
+                "parameters": {
+                    "sql": {"type": "string", "description": "SQL query"},
+                    "params": {"type": "array", "description": "Query parameters"}
+                }
+            },
+            {
+                "name": "insert",
+                "description": "Insert record",
+                "parameters": {
+                    "table": {"type": "string"},
+                    "data": {"type": "object"}
+                }
+            }
+        ]
+    
+    async def get_health_status(self) -> Dict[str, Any]:
+        return {
+            "healthy": self.connection is not None,
+            "connected": self.connection is not None
+        }
 ```
 
-### Method 2: Configuration File
+## Provider Manager
 
-Create a JSON configuration file (`mcp_servers.json`):
+The `SocketIOProviderManager` handles all provider operations on the server side:
 
-```json
-{
-  "servers": [
-    {
-      "name": "openai",
-      "command": "mcp-server-openai",
-      "env": {
-        "OPENAI_API_KEY": "${OPENAI_API_KEY}"
-      },
-      "models": ["gpt-4", "gpt-4-turbo", "gpt-3.5-turbo"],
-      "capabilities": ["text", "vision", "function_calling"],
-      "description": "OpenAI GPT models via MCP"
-    },
-    {
-      "name": "filesystem",
-      "command": "mcp-server-filesystem",
-      "args": ["--read-write", "/workspace"],
-      "capabilities": ["file_operations"],
-      "description": "File system operations"
-    }
-  ]
-}
-```
-
-Load the configuration:
+### Key Features
 
 ```python
-manager = create_unified_manager()
-manager.load_mcp_servers_from_file("mcp_servers.json")
-```
+from gleitzeit_extensions.socketio_provider_manager import SocketIOProviderManager
 
-### Method 3: Standard LLM Providers
+# Create manager
+manager = SocketIOProviderManager()
 
-Use the built-in helper for common LLM providers:
+# Attach to existing Socket.IO server
+manager.attach_to_server(sio_server)
 
-```python
-from gleitzeit_extensions import create_unified_manager, setup_standard_llm_providers
-
-manager = create_unified_manager()
-
-# Automatically configures OpenAI, Anthropic, and Ollama
-# Uses environment variables: OPENAI_API_KEY, ANTHROPIC_API_KEY
-setup_standard_llm_providers(manager)
-```
-
-## Working with Providers
-
-### Listing All Providers
-
-```python
-# Get all providers (extensions + MCP servers)
+# Get all providers
 providers = manager.get_all_providers()
+# Returns: {"provider_name": {"type": "llm", "models": [...], ...}}
 
-for name, provider in providers.items():
-    print(f"\n{name} ({provider.type}):")
-    print(f"  Description: {provider.description}")
-    print(f"  Models: {', '.join(provider.models)}")
-    print(f"  Capabilities: {', '.join(provider.capabilities)}")
-    print(f"  Connected: {'✅' if provider.connected else '❌'}")
+# Find provider for model
+provider = manager.find_provider_for_model("gpt-4")
+# Returns: "openai"
+
+# Find providers by capability
+providers = manager.find_providers_by_capability("streaming")
+# Returns: ["openai", "custom-llm"]
+
+# Invoke provider method
+result = await manager.invoke_provider(
+    "openai",
+    "complete",
+    prompt="Hello",
+    model="gpt-4"
+)
+
+# Start health monitoring
+await manager.monitor_health(interval=30)
 ```
 
-### Finding Providers by Capability
+### Provider Registration Flow
+
+1. Provider connects to Socket.IO server
+2. Provider sends registration with metadata
+3. Manager validates and stores provider info
+4. Manager adds provider to appropriate rooms
+5. Manager updates routing tables
+6. Provider sends periodic heartbeats
+
+## Provider Discovery & Routing
+
+### Model-based Routing
 
 ```python
-# Find all providers that support vision
-vision_providers = manager.find_providers_by_capability("vision")
-
-for provider in vision_providers:
-    print(f"{provider['name']} supports vision")
-    print(f"  Models: {', '.join(provider['models'])}")
-```
-
-### Getting Available Models
-
-```python
-# Get all available models from all providers
-models = manager.get_available_models()
-
-for model_name, model_info in models.items():
-    print(f"{model_name}:")
-    print(f"  Provider: {model_info['provider']}")
-    print(f"  Type: {model_info['provider_type']}")
-    print(f"  Connected: {model_info['connected']}")
-```
-
-## Model Routing
-
-### Automatic Model Routing
-
-```python
-# Find which provider handles a specific model
-provider_info = manager.find_provider_for_model("gpt-4")
-
-if provider_info:
-    print(f"Model: gpt-4")
-    print(f"Provider: {provider_info['name']}")
-    print(f"Type: {provider_info['type']}")
-    print(f"Connected: {provider_info['connected']}")
-else:
-    print("No provider found for gpt-4")
-```
-
-### Calling Provider Methods
-
-```python
-# Call a method on a provider (works for both extensions and MCP)
-async def use_provider():
-    # For native extensions
-    result = await manager.call_provider(
-        "my_extension",
-        "process_text",
-        text="Hello world"
-    )
+# Automatic routing based on model
+async def route_by_model(manager, model: str, prompt: str):
+    provider = manager.find_provider_for_model(model)
     
-    # For MCP servers (tools)
-    result = await manager.call_provider(
-        "filesystem",
-        "read_file",
-        path="/tmp/data.txt"
+    if not provider:
+        raise ValueError(f"No provider found for model: {model}")
+    
+    result = await manager.invoke_provider(
+        provider,
+        "complete",
+        prompt=prompt,
+        model=model
     )
     
     return result
+
+# Example usage
+response = await route_by_model(manager, "gpt-4", "Explain quantum computing")
 ```
 
-## Advanced Usage
+### Capability-based Discovery
 
-### Integration with Gleitzeit Cluster
+```python
+# Find all providers that support streaming
+streaming_providers = manager.find_providers_by_capability("streaming")
+
+# Find all providers that support vision
+vision_providers = manager.find_providers_by_capability("vision")
+
+# Use the first available provider with a capability
+async def use_any_streaming_provider(manager, prompt: str):
+    providers = manager.find_providers_by_capability("streaming")
+    
+    if not providers:
+        raise ValueError("No streaming providers available")
+    
+    # Use first available (could implement load balancing here)
+    provider = providers[0]
+    
+    # Stream response
+    async for chunk in manager.stream_from_provider(provider, prompt=prompt):
+        print(chunk['token'], end='')
+```
+
+### Dynamic Provider Selection
+
+```python
+class SmartRouter:
+    def __init__(self, manager: SocketIOProviderManager):
+        self.manager = manager
+    
+    async def route_request(self, request: Dict[str, Any]):
+        """Smart routing based on request characteristics"""
+        
+        # Check if specific model requested
+        if 'model' in request:
+            provider = self.manager.find_provider_for_model(request['model'])
+            if provider:
+                return provider
+        
+        # Check required capabilities
+        required_capabilities = request.get('capabilities', [])
+        if required_capabilities:
+            candidates = set()
+            for cap in required_capabilities:
+                providers = self.manager.find_providers_by_capability(cap)
+                if not candidates:
+                    candidates = set(providers)
+                else:
+                    candidates &= set(providers)
+            
+            if candidates:
+                # Could implement load balancing or cost optimization here
+                return list(candidates)[0]
+        
+        # Default to any available LLM provider
+        all_providers = self.manager.get_all_providers()
+        llm_providers = [
+            name for name, info in all_providers.items()
+            if info['type'] == 'llm'
+        ]
+        
+        if llm_providers:
+            return llm_providers[0]
+        
+        raise ValueError("No suitable provider found")
+```
+
+## Streaming & Real-time Communication
+
+### Implementing Streaming in Providers
+
+```python
+class StreamingProvider(SocketIOProviderClient):
+    async def stream(self, prompt: str, **kwargs):
+        """Implement streaming as an async generator"""
+        
+        # Simulate token generation
+        tokens = prompt.split()
+        
+        for token in tokens:
+            # Yield each token
+            yield {
+                "token": token + " ",
+                "done": False,
+                "metadata": {"timestamp": time.time()}
+            }
+            
+            # Simulate processing time
+            await asyncio.sleep(0.05)
+        
+        # Signal completion
+        yield {
+            "token": "",
+            "done": True,
+            "metadata": {"total_tokens": len(tokens)}
+        }
+```
+
+### Consuming Streams
+
+```python
+async def consume_stream(manager, provider_name: str, prompt: str):
+    """Consumer example for streaming responses"""
+    
+    stream_id = str(uuid.uuid4())
+    response_buffer = []
+    
+    # Setup stream listener
+    @manager.sio.on(f'stream:data', namespace='/providers')
+    async def on_stream_data(data):
+        if data['stream_id'] == stream_id:
+            token = data['data']['token']
+            response_buffer.append(token)
+            print(token, end='', flush=True)
+    
+    @manager.sio.on(f'stream:end', namespace='/providers')
+    async def on_stream_end(data):
+        if data['stream_id'] == stream_id:
+            print("\n✅ Stream completed")
+    
+    @manager.sio.on(f'stream:error', namespace='/providers')
+    async def on_stream_error(data):
+        if data['stream_id'] == stream_id:
+            print(f"\n❌ Stream error: {data['error']}")
+    
+    # Start streaming
+    await manager.sio.emit(
+        'provider:stream',
+        {
+            'provider': provider_name,
+            'stream_id': stream_id,
+            'args': {'prompt': prompt}
+        },
+        namespace='/providers'
+    )
+    
+    return ''.join(response_buffer)
+```
+
+## Integration with Cluster
+
+### Adding Provider Manager to Cluster
 
 ```python
 from gleitzeit_cluster.core.cluster import GleitzeitCluster
-from gleitzeit_extensions import create_unified_manager, setup_standard_llm_providers
+from gleitzeit_extensions.socketio_provider_manager import SocketIOProviderManager
 
-async def cluster_example():
+async def setup_cluster_with_providers():
     # Create cluster
     cluster = GleitzeitCluster(
         enable_real_execution=True,
-        auto_start_services=False
+        auto_start_services=True
     )
     
-    # Create and configure unified manager
-    manager = create_unified_manager()
-    manager.discover_extensions(["./extensions"])
-    setup_standard_llm_providers(manager)
+    # Create provider manager
+    provider_manager = SocketIOProviderManager()
     
-    # Attach to cluster
-    cluster.set_unified_provider_manager(manager)
+    # Attach to cluster's Socket.IO server
+    provider_manager.attach_to_server(cluster.socketio_server.sio)
     
-    # Use cluster with unified provider support
-    async with cluster:
-        # Find provider through cluster
-        provider = await cluster.find_provider_for_model("gpt-4")
+    # Store reference in cluster
+    cluster.provider_manager = provider_manager
+    
+    # Start cluster
+    await cluster.start()
+    
+    return cluster, provider_manager
+```
+
+### Using Providers in Workflows
+
+```python
+from gleitzeit_cluster.core.task import Task
+from gleitzeit_cluster.core.workflow import Workflow
+
+async def create_llm_workflow(cluster):
+    """Create workflow that uses LLM providers"""
+    
+    workflow = Workflow(workflow_id="llm-workflow")
+    
+    # Task that uses provider
+    async def generate_text(context):
+        provider_manager = context.get('provider_manager')
+        prompt = context.get('prompt')
         
-        # Get available models through cluster
-        models = await cluster.get_available_extension_models()
+        # Find provider for model
+        provider = provider_manager.find_provider_for_model("gpt-4")
         
-        # Process with model routing
-        result = await cluster.process_with_model(
-            "gpt-4",
-            "Analyze this text..."
+        # Generate text
+        result = await provider_manager.invoke_provider(
+            provider,
+            "complete",
+            prompt=prompt,
+            model="gpt-4"
         )
-```
-
-### Custom MCP Server Implementation
-
-Create a custom MCP server (`my_mcp_server.py`):
-
-```python
-from mcp import Server, Tool
-from mcp.server import stdio_server
-import asyncio
-
-# Create server
-server = Server("custom-server")
-
-# Define tools
-@server.tool()
-async def process_data(data: str) -> str:
-    """Process data with custom logic"""
-    return f"Processed: {data.upper()}"
-
-@server.tool()
-async def analyze_text(text: str, mode: str = "basic") -> dict:
-    """Analyze text with different modes"""
-    return {
-        "text": text,
-        "mode": mode,
-        "words": len(text.split()),
-        "chars": len(text)
-    }
-
-# Run server
-if __name__ == "__main__":
-    asyncio.run(stdio_server(server))
-```
-
-Register and use the custom server:
-
-```python
-manager.add_mcp_server(
-    name="custom",
-    command="python",
-    args=["my_mcp_server.py"],
-    capabilities=["text_processing", "analysis"]
-)
-
-# Connect and use
-await manager.connect_mcp_server("custom")
-result = await manager.call_provider(
-    "custom",
-    "analyze_text",
-    text="Hello world",
-    mode="detailed"
-)
-```
-
-### Managing Server Lifecycle
-
-```python
-# Connect individual servers
-success = await manager.connect_mcp_server("openai")
-if success:
-    print("✅ Connected to OpenAI server")
-
-# Disconnect individual servers
-await manager.disconnect_mcp_server("openai")
-
-# Get server status
-status = manager.mcp_manager.get_server_status("openai")
-print(f"Server: {status['name']}")
-print(f"Connected: {status['connected']}")
-print(f"Last error: {status.get('last_error', 'None')}")
-
-# Get summary of all MCP servers
-summary = manager.mcp_manager.get_summary()
-print(f"Total servers: {summary['total_servers']}")
-print(f"Connected: {summary['connected_servers']}")
-```
-
-### Error Handling
-
-```python
-from gleitzeit_extensions.exceptions import ExtensionError, ExtensionNotFound
-
-async def safe_provider_call():
-    try:
-        # Try to call a provider
-        result = await manager.call_provider(
-            "my_provider",
-            "some_method",
-            param="value"
-        )
-        return result
         
-    except ExtensionNotFound as e:
-        print(f"Provider not found: {e}")
-        
-    except ExtensionError as e:
-        print(f"Provider error: {e}")
-        
-    except Exception as e:
-        print(f"Unexpected error: {e}")
+        return {"generated_text": result}
+    
+    task = Task(
+        task_id="generate",
+        task_type="llm_generation",
+        handler=generate_text,
+        context={"provider_manager": cluster.provider_manager}
+    )
+    
+    workflow.add_task(task)
+    
+    return workflow
 ```
 
 ## Best Practices
 
-### 1. Choose the Right Provider Type
+### 1. Provider Implementation
 
-**Use Native Extensions for:**
-- Gleitzeit-specific business logic
-- Performance-critical operations
-- Tight integration with cluster state
-- Complex Python-based processing
-
-**Use MCP Servers for:**
-- LLM provider integrations
-- External tool access (databases, APIs)
-- Language-agnostic services
-- Isolated, reusable components
-
-### 2. Environment Variables
-
-Store sensitive data in environment variables:
-
-```bash
-# .env file
-export OPENAI_API_KEY="sk-..."
-export ANTHROPIC_API_KEY="sk-ant-..."
-export BRAVE_API_KEY="BSA..."
+```python
+class BestPracticeProvider(SocketIOProviderClient):
+    def __init__(self, config):
+        # Validate configuration
+        self._validate_config(config)
+        
+        super().__init__(
+            name=config['name'],
+            provider_type=config['type'],
+            **config
+        )
+        
+        # Initialize resources
+        self.resources = {}
+        self.metrics = {
+            'requests': 0,
+            'errors': 0,
+            'latency': []
+        }
+    
+    async def on_connected(self):
+        """Initialize resources on connection"""
+        try:
+            await self._initialize_resources()
+            logger.info(f"Provider {self.name} initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize: {e}")
+            raise
+    
+    async def on_disconnected(self):
+        """Cleanup resources on disconnection"""
+        await self._cleanup_resources()
+    
+    async def invoke(self, method: str, **kwargs):
+        """Handle invocations with error handling and metrics"""
+        start_time = time.time()
+        
+        try:
+            # Validate method
+            if method not in self.get_supported_methods():
+                raise ValueError(f"Unsupported method: {method}")
+            
+            # Execute method
+            result = await self._execute_method(method, **kwargs)
+            
+            # Update metrics
+            self.metrics['requests'] += 1
+            self.metrics['latency'].append(time.time() - start_time)
+            
+            return result
+            
+        except Exception as e:
+            self.metrics['errors'] += 1
+            logger.error(f"Method {method} failed: {e}")
+            raise
+    
+    async def get_health_status(self):
+        """Comprehensive health check"""
+        return {
+            "healthy": await self._check_health(),
+            "metrics": self.metrics,
+            "resources": await self._check_resources()
+        }
 ```
 
-Load in configuration:
+### 2. Connection Management
 
-```json
+```python
+class ResilientProvider(SocketIOProviderClient):
+    def __init__(self, config):
+        super().__init__(**config)
+        self.reconnect_attempts = 0
+        self.max_reconnect_attempts = 5
+        self.reconnect_delay = 5  # seconds
+    
+    async def run_with_reconnect(self):
+        """Run with automatic reconnection"""
+        while self.reconnect_attempts < self.max_reconnect_attempts:
+            try:
+                await self.connect()
+                self.reconnect_attempts = 0  # Reset on successful connection
+                
+                # Run normally
+                while self.connected:
+                    await asyncio.sleep(1)
+                    
+            except Exception as e:
+                logger.error(f"Connection failed: {e}")
+                self.reconnect_attempts += 1
+                
+                if self.reconnect_attempts < self.max_reconnect_attempts:
+                    wait_time = self.reconnect_delay * self.reconnect_attempts
+                    logger.info(f"Reconnecting in {wait_time} seconds...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    logger.error("Max reconnection attempts reached")
+                    raise
+```
+
+### 3. Load Balancing
+
+```python
+class LoadBalancedProviderManager(SocketIOProviderManager):
+    def __init__(self):
+        super().__init__()
+        self.request_counts = {}  # Track requests per provider
+    
+    async def invoke_provider_balanced(self, provider_type: str, method: str, **kwargs):
+        """Invoke with load balancing across providers of same type"""
+        
+        # Get all providers of the specified type
+        all_providers = self.get_all_providers()
+        candidates = [
+            name for name, info in all_providers.items()
+            if info['type'] == provider_type and info.get('health', {}).get('healthy', False)
+        ]
+        
+        if not candidates:
+            raise ValueError(f"No healthy {provider_type} providers available")
+        
+        # Select provider with least requests (simple round-robin)
+        provider = min(
+            candidates,
+            key=lambda p: self.request_counts.get(p, 0)
+        )
+        
+        # Update request count
+        self.request_counts[provider] = self.request_counts.get(provider, 0) + 1
+        
+        # Invoke provider
+        return await self.invoke_provider(provider, method, **kwargs)
+```
+
+### 4. Monitoring & Observability
+
+```python
+import prometheus_client
+
+class MonitoredProvider(SocketIOProviderClient):
+    def __init__(self, config):
+        super().__init__(**config)
+        
+        # Prometheus metrics
+        self.request_counter = prometheus_client.Counter(
+            'provider_requests_total',
+            'Total provider requests',
+            ['provider', 'method']
+        )
+        
+        self.request_duration = prometheus_client.Histogram(
+            'provider_request_duration_seconds',
+            'Provider request duration',
+            ['provider', 'method']
+        )
+        
+        self.error_counter = prometheus_client.Counter(
+            'provider_errors_total',
+            'Total provider errors',
+            ['provider', 'method', 'error_type']
+        )
+    
+    async def invoke(self, method: str, **kwargs):
+        """Invoke with monitoring"""
+        
+        with self.request_duration.labels(
+            provider=self.name,
+            method=method
+        ).time():
+            try:
+                self.request_counter.labels(
+                    provider=self.name,
+                    method=method
+                ).inc()
+                
+                result = await self._execute_method(method, **kwargs)
+                return result
+                
+            except Exception as e:
+                self.error_counter.labels(
+                    provider=self.name,
+                    method=method,
+                    error_type=type(e).__name__
+                ).inc()
+                raise
+```
+
+## Migration from MCP
+
+If you're migrating from the MCP-based system to Socket.IO providers:
+
+### 1. Convert MCP Server to Socket.IO Provider
+
+**Before (MCP):**
+```python
+# MCP server configuration
 {
-  "env": {
-    "OPENAI_API_KEY": "${OPENAI_API_KEY}"
-  }
+    "name": "openai",
+    "command": "mcp-server-openai",
+    "env": {"OPENAI_API_KEY": "..."},
+    "models": ["gpt-4"],
+    "capabilities": ["text"]
 }
 ```
 
-### 3. Connection Management
-
+**After (Socket.IO):**
 ```python
-# Always use context managers for automatic cleanup
-async with manager:
-    # Providers are started
-    await do_work()
-# Providers are stopped
+from gleitzeit_extensions.socketio_provider_client import SocketIOProviderClient
 
-# Or manage manually with try/finally
-try:
-    await manager.start_all_providers()
-    await do_work()
-finally:
-    await manager.stop_all_providers()
+class OpenAISocketIOProvider(SocketIOProviderClient):
+    def __init__(self, api_key: str):
+        super().__init__(
+            name="openai",
+            provider_type="llm",
+            models=["gpt-4"],
+            capabilities=["text"],
+            server_url="http://localhost:8000"
+        )
+        self.api_key = api_key
+    
+    async def invoke(self, method: str, **kwargs):
+        # Implement OpenAI API calls
+        pass
+    
+    async def get_health_status(self):
+        return {"healthy": True}
+
+# Run provider
+provider = OpenAISocketIOProvider(api_key="...")
+await provider.run()
 ```
 
-### 4. Caching and Performance
+### 2. Update Manager Usage
 
-The UnifiedProviderManager includes built-in caching:
-
+**Before (MCP):**
 ```python
-# Model routing is cached after first lookup
-model1 = manager.find_provider_for_model("gpt-4")  # Searches all providers
-model2 = manager.find_provider_for_model("gpt-4")  # Returns cached result
+from gleitzeit_extensions.mcp_client import MCPClientManager
 
-# Clear cache when providers change
-manager._model_routing_cache.clear()
+manager = MCPClientManager()
+manager.add_server(name="openai", command="mcp-server-openai")
+await manager.connect_server("openai")
+result = await manager.call_tool("openai", "complete", {"prompt": "..."})
 ```
 
-### 5. Health Monitoring
-
+**After (Socket.IO):**
 ```python
-async def monitor_providers():
-    while True:
-        providers = manager.get_all_providers()
-        
-        for name, provider in providers.items():
-            if provider.connected and provider.health_status:
-                health = provider.health_status
-                print(f"{name}: {health.get('status', 'unknown')}")
-        
-        await asyncio.sleep(30)  # Check every 30 seconds
+from gleitzeit_extensions.socketio_provider_manager import SocketIOProviderManager
+
+manager = SocketIOProviderManager()
+manager.attach_to_server(sio_server)
+# Providers connect automatically
+result = await manager.invoke_provider("openai", "complete", prompt="...")
 ```
+
+### 3. Migration Checklist
+
+- [ ] Replace MCP server executables with Socket.IO provider implementations
+- [ ] Update server to use `SocketIOProviderManager` instead of `MCPClientManager`
+- [ ] Convert MCP configuration files to provider initialization code
+- [ ] Update client code to use new provider invocation methods
+- [ ] Test streaming functionality with Socket.IO events
+- [ ] Verify health monitoring and heartbeats
+- [ ] Update deployment scripts to start Socket.IO providers
 
 ## Troubleshooting
 
-### MCP Not Available
+### Provider Won't Connect
 
-**Problem:** "MCP not available" error
-
-**Solution:**
-```bash
-# Install MCP with CLI support
-pip install 'mcp[cli]'
-# or
-uv pip install 'mcp[cli]'
-```
-
-### MCP Server Connection Failed
-
-**Problem:** "Failed to connect to MCP server"
-
-**Causes and Solutions:**
-
-1. **Server not installed:**
-   ```bash
-   npm install -g @modelcontextprotocol/server-name
-   ```
-
-2. **Wrong command path:**
-   ```python
-   # Specify full path if needed
-   manager.add_mcp_server(
-       name="server",
-       command="/usr/local/bin/mcp-server-name"
-   )
-   ```
-
-3. **Missing environment variables:**
-   ```python
-   import os
-   os.environ["API_KEY"] = "your-key"
-   ```
-
-### Model Not Found
-
-**Problem:** Model routing returns None
+**Problem:** Provider fails to connect to Socket.IO server
 
 **Solutions:**
 
-1. **Check provider configuration:**
+1. **Check server is running with provider support:**
    ```python
-   providers = manager.get_all_providers()
-   for name, p in providers.items():
-       print(f"{name}: {p.models}")
+   # Ensure provider manager is attached
+   manager = SocketIOProviderManager()
+   manager.attach_to_server(server.sio)
    ```
 
-2. **Ensure provider is connected:**
+2. **Verify correct server URL:**
    ```python
-   await manager.start_all_providers()
+   provider = MyProvider(server_url="http://localhost:8000")  # Correct port
+   ```
+
+3. **Check namespace handlers are registered:**
+   ```python
+   # Server should have /providers namespace
+   if '/providers' not in server.sio.namespace_handlers:
+       print("Provider namespace not registered!")
+   ```
+
+4. **Enable debug logging:**
+   ```python
+   import logging
+   logging.basicConfig(level=logging.DEBUG)
+   ```
+
+### Provider Not Found
+
+**Problem:** `find_provider_for_model()` returns None
+
+**Solutions:**
+
+1. **Check provider is connected:**
+   ```python
+   all_providers = manager.get_all_providers()
+   print(f"Connected providers: {list(all_providers.keys())}")
+   ```
+
+2. **Verify model list:**
+   ```python
+   provider_info = manager.get_all_providers().get('provider_name')
+   print(f"Models: {provider_info['models']}")
    ```
 
 3. **Clear routing cache:**
    ```python
-   manager._model_routing_cache.clear()
+   manager._model_routing.clear()
+   provider = manager.find_provider_for_model("model_name")
    ```
 
-### Import Errors
+### Streaming Not Working
 
-**Problem:** Cannot import MCP modules
+**Problem:** Stream events not received
 
-**Solution:**
-```bash
-# Check Python environment
-which python
-python --version
+**Solutions:**
 
-# Install in correct environment
-python -m pip install 'mcp[cli]'
-```
+1. **Implement streaming in provider:**
+   ```python
+   async def stream(self, **kwargs):
+       for chunk in data:
+           yield {"token": chunk, "done": False}
+       yield {"token": "", "done": True}
+   ```
 
-## Example: Complete Application
+2. **Handle stream events on client:**
+   ```python
+   @sio.on('stream:data', namespace='/providers')
+   async def on_stream_data(data):
+       print(f"Received: {data}")
+   ```
 
-Here's a complete example that demonstrates all features:
+3. **Check stream ID matching:**
+   ```python
+   # Ensure stream_id is consistent between start and data events
+   ```
 
-```python
-#!/usr/bin/env python3
-"""
-Complete MCP + Native Extension Example
-"""
+### Health Check Failures
 
-import asyncio
-import os
-from pathlib import Path
+**Problem:** Provider marked as unhealthy
 
-from gleitzeit_extensions import (
-    create_unified_manager,
-    setup_standard_llm_providers,
-    is_mcp_available
-)
+**Solutions:**
 
-async def main():
-    # Setup
-    manager = create_unified_manager()
-    
-    print("🚀 Gleitzeit Unified Provider Demo")
-    print("=" * 40)
-    
-    # 1. Discover native extensions
-    print("\n📦 Loading native extensions...")
-    extensions_found = manager.discover_extensions(["./extensions"])
-    print(f"Found {len(extensions_found)} native extensions")
-    
-    # 2. Setup MCP if available
-    if is_mcp_available():
-        print("\n📡 Setting up MCP servers...")
-        
-        # Add standard LLM providers
-        setup_standard_llm_providers(manager)
-        
-        # Add custom configuration from file
-        config_file = Path("mcp_servers.json")
-        if config_file.exists():
-            manager.load_mcp_servers_from_file(str(config_file))
-        
-        # Add a custom server programmatically
-        if os.getenv("CUSTOM_API_KEY"):
-            manager.add_mcp_server(
-                name="custom",
-                command="custom-mcp-server",
-                env={"API_KEY": os.getenv("CUSTOM_API_KEY")},
-                models=["custom-model"],
-                capabilities=["text", "analysis"]
-            )
-    else:
-        print("\n⚠️  MCP not available")
-        print("   Install with: pip install 'mcp[cli]'")
-    
-    # 3. Start all providers
-    print("\n🔌 Starting providers...")
-    async with manager:
-        results = await manager.start_all_providers()
-        connected = sum(1 for success in results.values() if success)
-        print(f"Connected: {connected}/{len(results)} providers")
-        
-        # 4. Show available resources
-        print("\n📋 Available Resources:")
-        
-        # List all providers
-        providers = manager.get_all_providers()
-        print(f"\nProviders ({len(providers)}):")
-        for name, provider in providers.items():
-            status = "🟢" if provider.connected else "🔴"
-            print(f"  {status} {name} ({provider.type})")
-        
-        # List all models
-        models = manager.get_available_models()
-        print(f"\nModels ({len(models)}):")
-        for model_name in list(models.keys())[:10]:  # Show first 10
-            info = models[model_name]
-            print(f"  - {model_name} via {info['provider']}")
-        if len(models) > 10:
-            print(f"  ... and {len(models) - 10} more")
-        
-        # 5. Test model routing
-        print("\n🎯 Testing Model Routing:")
-        test_models = ["gpt-4", "claude-3-opus", "llama3", "custom-model"]
-        
-        for model in test_models:
-            provider = manager.find_provider_for_model(model)
-            if provider:
-                print(f"  ✅ {model} → {provider['name']}")
-            else:
-                print(f"  ❌ {model} → not found")
-        
-        # 6. Test capability search
-        print("\n🔍 Testing Capability Search:")
-        test_capabilities = ["text", "vision", "function_calling"]
-        
-        for capability in test_capabilities:
-            providers_list = manager.find_providers_by_capability(capability)
-            if providers_list:
-                names = [p['name'] for p in providers_list]
-                print(f"  {capability}: {', '.join(names)}")
-            else:
-                print(f"  {capability}: none")
-        
-        # 7. Show summary
-        summary = manager.get_summary()
-        print("\n📊 Summary:")
-        print(f"  Total providers: {summary['total_providers']}")
-        print(f"  Extensions: {summary['extension_providers']}")
-        print(f"  MCP servers: {summary['mcp_providers']}")
-        print(f"  Connected: {summary['connected_providers']}")
-        print(f"  Total models: {summary['total_models']}")
-        
-        print("\n✅ Demo completed successfully!")
-    
-    # Providers are automatically stopped when exiting context
+1. **Implement proper health check:**
+   ```python
+   async def get_health_status(self):
+       try:
+           # Test actual functionality
+           await self.test_connection()
+           return {"healthy": True}
+       except Exception as e:
+           return {"healthy": False, "error": str(e)}
+   ```
 
-if __name__ == "__main__":
-    asyncio.run(main())
-```
+2. **Send regular heartbeats:**
+   ```python
+   # Heartbeats are sent automatically by base class
+   # Adjust interval if needed:
+   provider._heartbeat_interval = 15  # seconds
+   ```
+
+3. **Monitor stale connections:**
+   ```python
+   # Server-side monitoring
+   await manager.monitor_health(interval=30)
+   ```
 
 ## Conclusion
 
-The Gleitzeit MCP integration provides a powerful, unified interface for working with both native Python extensions and external MCP servers. This allows you to:
+The Socket.IO-based provider system offers a unified, real-time communication architecture for Gleitzeit. Key advantages:
 
-- Leverage existing MCP ecosystem tools
-- Build language-agnostic integrations
-- Maintain clean separation of concerns
-- Scale your system with external services
+- **Consistency**: All components use Socket.IO
+- **Real-time**: Perfect for streaming LLM responses
+- **Resilient**: Built-in reconnection and health monitoring
+- **Scalable**: Support for multiple provider instances
+- **Flexible**: Easy to add new provider types
 
 For more information:
-- [MCP Documentation](https://modelcontextprotocol.io)
+- [Socket.IO Documentation](https://socket.io/docs/v4/)
 - [Gleitzeit Documentation](https://github.com/leifk/gleitzeit)
-- [Example Code](https://github.com/leifk/gleitzeit/tree/main/examples)
+- [Example Providers](https://github.com/leifk/gleitzeit/tree/main/examples)
