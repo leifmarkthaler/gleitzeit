@@ -240,6 +240,11 @@ class SocketIOClient:
     def is_authenticated(self) -> bool:
         """Check if client is authenticated"""
         return self._authenticated
+    
+    @property
+    def connected(self) -> bool:
+        """Check if client is connected"""
+        return self._connected
 
 
 class ClusterSocketClient(SocketIOClient):

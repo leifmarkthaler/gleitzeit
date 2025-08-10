@@ -84,6 +84,7 @@ class SocketIOProviderManager:
         self.sio.on('provider:health', namespace='/providers')(self.handle_provider_health)
         
         # Provider capability events
+        self.sio.on('provider:list_all', namespace='/providers')(self.handle_list_all_providers)
         self.sio.on('provider:list_models', namespace='/providers')(self.handle_list_models)
         self.sio.on('provider:list_tools', namespace='/providers')(self.handle_list_tools)
         self.sio.on('provider:capabilities', namespace='/providers')(self.handle_capabilities)
@@ -193,6 +194,39 @@ class SocketIOProviderManager:
         return {"success": False, "error": "Provider not registered"}
     
     # === Provider Discovery ===
+    
+    async def handle_list_all_providers(self, sid, data):
+        """Handle request for all connected providers"""
+        try:
+            providers_info = {}
+            
+            for provider_sid, provider in self.providers.items():
+                providers_info[provider.name] = {
+                    'name': provider.name,
+                    'type': provider.type,
+                    'models': provider.models,
+                    'capabilities': provider.capabilities,
+                    'description': provider.description,
+                    'metadata': provider.metadata,
+                    'connected': True,  # If it's in self.providers, it's connected
+                    'connected_at': provider.connected_at.isoformat(),
+                    'last_heartbeat': provider.last_heartbeat.isoformat(),
+                    'health_status': provider.health_status
+                }
+            
+            return {
+                "success": True,
+                "providers": providers_info,
+                "total_count": len(providers_info)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error listing providers: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "providers": {}
+            }
     
     async def handle_list_models(self, sid, data):
         """Handle request for available models"""

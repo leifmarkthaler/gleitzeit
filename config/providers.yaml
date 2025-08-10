@@ -2,7 +2,7 @@ global:
   auto_restart: true
   auto_start: true
   connection_timeout: 10
-  default_server_url: http://localhost:8000
+  default_server_url: ${GLEITZEIT_SOCKETIO_URL:-http://localhost:8000}
   health_check_interval: 30
   max_retry_attempts: 3
 providers:
@@ -10,7 +10,7 @@ providers:
     class: providers.tool_provider.LocalToolsProvider
     config:
       name: local-tools
-      server_url: http://localhost:8000
+      server_url: ${GLEITZEIT_SOCKETIO_URL:-http://localhost:8000}
     description: Local utility tools
     enabled: false
     type: tool
@@ -20,7 +20,7 @@ providers:
     config:
       name: ollama
       ollama_url: http://localhost:11434
-      server_url: http://localhost:8000
+      server_url: ${GLEITZEIT_SOCKETIO_URL:-http://localhost:8000}
     description: Local Ollama LLM models
     enabled: true
     type: llm

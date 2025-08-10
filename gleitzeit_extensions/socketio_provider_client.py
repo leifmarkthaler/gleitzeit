@@ -9,6 +9,17 @@ import logging
 from typing import Dict, List, Optional, Any, Callable
 from abc import ABC, abstractmethod
 import socketio
+import sys
+from pathlib import Path
+
+# Ensure we can import service discovery
+try:
+    sys.path.append(str(Path(__file__).parent.parent))
+    from gleitzeit_cluster.communication.service_discovery import get_socketio_url
+except ImportError:
+    # Fallback if import fails
+    def get_socketio_url():
+        return "http://localhost:8000"
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +36,7 @@ class SocketIOProviderClient(ABC):
         self,
         name: str,
         provider_type: str = "unknown",
-        server_url: str = "http://localhost:8000",
+        server_url: str = None,  # Auto-discover if not provided
         models: Optional[List[str]] = None,
         capabilities: Optional[List[str]] = None,
         description: str = "",
@@ -45,7 +56,7 @@ class SocketIOProviderClient(ABC):
         """
         self.name = name
         self.provider_type = provider_type
-        self.server_url = server_url
+        self.server_url = server_url or get_socketio_url()  # Auto-discover
         self.models = models or []
         self.capabilities = capabilities or []
         self.description = description

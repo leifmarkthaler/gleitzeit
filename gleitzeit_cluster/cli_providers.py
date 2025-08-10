@@ -13,6 +13,7 @@ from datetime import datetime
 
 from .core.errors import GleitzeitError
 from .communication.provider_client import ProviderSocketClient
+from .communication.service_discovery import get_socketio_url
 
 
 logger = logging.getLogger(__name__)
@@ -42,7 +43,9 @@ async def list_providers(args) -> None:
     """List all connected providers"""
     
     try:
-        async with ProviderSocketClient(args.socketio_url) as client:
+        # Use service discovery if no explicit URL provided
+        socketio_url = getattr(args, 'socketio_url', None) or get_socketio_url()
+        async with ProviderSocketClient(socketio_url) as client:
             # Get all providers
             providers = await client.get_all_providers()
             
@@ -93,7 +96,9 @@ async def provider_status(args) -> None:
         return
     
     try:
-        async with ProviderSocketClient(args.socketio_url) as client:
+        # Use service discovery if no explicit URL provided
+        socketio_url = getattr(args, 'socketio_url', None) or get_socketio_url()
+        async with ProviderSocketClient(socketio_url) as client:
             # Get all providers to find the specific one
             providers = await client.get_all_providers()
             
@@ -155,7 +160,9 @@ async def list_models(args) -> None:
     """List all available models from all providers"""
     
     try:
-        async with ProviderSocketClient(args.socketio_url) as client:
+        # Use service discovery if no explicit URL provided
+        socketio_url = getattr(args, 'socketio_url', None) or get_socketio_url()
+        async with ProviderSocketClient(socketio_url) as client:
             models = await client.get_all_models()
             
             if not models:
@@ -190,7 +197,9 @@ async def list_capabilities(args) -> None:
     """List all available capabilities"""
     
     try:
-        async with ProviderSocketClient(args.socketio_url) as client:
+        # Use service discovery if no explicit URL provided
+        socketio_url = getattr(args, 'socketio_url', None) or get_socketio_url()
+        async with ProviderSocketClient(socketio_url) as client:
             capabilities = await client.get_all_capabilities()
             
             if not capabilities:
@@ -231,7 +240,9 @@ async def provider_health(args) -> None:
     """Check health of all providers or specific provider"""
     
     try:
-        async with ProviderSocketClient(args.socketio_url) as client:
+        # Use service discovery if no explicit URL provided
+        socketio_url = getattr(args, 'socketio_url', None) or get_socketio_url()
+        async with ProviderSocketClient(socketio_url) as client:
             if args.name:
                 # Check specific provider health
                 print(f"🏥 Health Check: {args.name}")
@@ -326,7 +337,9 @@ async def invoke_provider(args) -> None:
     print("=" * 50)
     
     try:
-        async with ProviderSocketClient(args.socketio_url) as client:
+        # Use service discovery if no explicit URL provided
+        socketio_url = getattr(args, 'socketio_url', None) or get_socketio_url()
+        async with ProviderSocketClient(socketio_url) as client:
             # Verify provider exists
             providers = await client.get_all_providers()
             if args.name not in providers:

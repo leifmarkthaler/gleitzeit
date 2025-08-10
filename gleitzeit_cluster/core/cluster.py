@@ -243,6 +243,9 @@ class GleitzeitCluster:
                 self.logger.log_error(error_info)
                 self.logger.logger.warning("Internal LLM service failed to start")
         
+        # Initialize provider management system (always enabled)
+        await self._setup_provider_system()
+        
         # Initialize and start configured providers
         await self._start_configured_providers()
         
@@ -1179,7 +1182,7 @@ if __name__ == "__main__":
             self.logger.logger.info(f"Loading provider configuration: {self.provider_config_file}")
             self.provider_manager = get_provider_manager(self.provider_config_file)
             
-            # Start configured providers
+            # Start configured providers (provider system is already setup)
             if self.socketio_server:
                 self.configured_providers = await start_configured_providers(
                     self.provider_config_file
@@ -1187,13 +1190,6 @@ if __name__ == "__main__":
                 
                 provider_names = list(self.configured_providers.keys())
                 self.logger.logger.info(f"✅ Started {len(provider_names)} provider(s): {', '.join(provider_names)}")
-                
-                # Create Socket.IO provider manager and attach to server
-                socketio_provider_manager = SocketIOProviderManager()
-                socketio_provider_manager.attach_to_server(self.socketio_server.sio)
-                self.unified_provider_manager = socketio_provider_manager
-                
-                self.logger.logger.info("✅ Provider management system initialized")
             else:
                 self.logger.logger.warning("Socket.IO server not available, cannot start providers")
                 
@@ -1201,6 +1197,30 @@ if __name__ == "__main__":
             error_info = ErrorCategorizer.categorize_error(e, {"component": "provider_config"})
             self.logger.log_error(error_info)
             self.logger.logger.warning(f"Failed to start configured providers: {e}")
+    
+    async def _setup_provider_system(self):
+        """Setup the Socket.IO provider management system (always enabled)"""
+        if not PROVIDER_CONFIG_AVAILABLE:
+            self.logger.logger.info("Provider system not available, skipping")
+            return
+        
+        if not self.socketio_server:
+            self.logger.logger.warning("Socket.IO server not available, cannot setup provider system")
+            return
+        
+        try:
+            # Create Socket.IO provider manager and attach to server
+            from gleitzeit_extensions.socketio_provider_manager import SocketIOProviderManager
+            socketio_provider_manager = SocketIOProviderManager()
+            socketio_provider_manager.attach_to_server(self.socketio_server.sio)
+            self.unified_provider_manager = socketio_provider_manager
+            
+            self.logger.logger.info("✅ Provider management system initialized")
+            
+        except Exception as e:
+            error_info = ErrorCategorizer.categorize_error(e, {"component": "provider_system"})
+            self.logger.log_error(error_info)
+            self.logger.logger.warning(f"Failed to setup provider system: {e}")
     
     def __str__(self) -> str:
         return f"GleitzeitCluster(workflows={len(self._workflows)}, nodes={len(self._nodes)})"

@@ -67,10 +67,20 @@ class ProviderSocketClient:
                 namespaces=['/providers']
             )
             
-            # Wait a moment for connection to establish
-            await asyncio.sleep(0.5)
+            # Wait for connection event to be triggered
+            max_wait = 5  # seconds
+            wait_time = 0.1  # seconds
+            elapsed = 0
             
-            return self.connected
+            while not self.connected and elapsed < max_wait:
+                await asyncio.sleep(wait_time)
+                elapsed += wait_time
+            
+            if not self.connected:
+                logger.error("Connection timeout - never received connect event")
+                return False
+            
+            return True
             
         except Exception as e:
             logger.error(f"Failed to connect: {e}")
@@ -123,68 +133,18 @@ class ProviderSocketClient:
         Returns:
             Dictionary of providers and their information
         """
-        # The provider manager doesn't have a direct "list all providers" event
-        # So we'll get models first, then get provider details for each
-        models_response = await self.call_with_timeout('provider:list_models')
-        
-        if not models_response.get('success'):
-            raise Exception(f"Failed to get models: {models_response.get('error')}")
-        
-        models = models_response.get('models', {})
-        
-        # Get unique provider names
-        provider_names = set(models.values())
-        
-        providers = {}
-        
-        # Get details for each provider by querying capabilities
-        for provider_name in provider_names:
-            try:
-                caps_response = await self.call_with_timeout(
-                    'provider:capabilities',
-                    {'capability': 'text'}  # Use a common capability to find providers
-                )
+        # Use the new direct provider list event
+        try:
+            response = await self.call_with_timeout('provider:list_all')
+            
+            if response.get('success'):
+                return response.get('providers', {})
+            else:
+                raise Exception(f"Failed to get providers: {response.get('error')}")
                 
-                if caps_response.get('success'):
-                    provider_list = caps_response.get('providers', [])
-                    
-                    # Find this provider in the list
-                    for provider_info in provider_list:
-                        if provider_info.get('name') == provider_name:
-                            providers[provider_name] = {
-                                'name': provider_name,
-                                'type': provider_info.get('type', 'unknown'),
-                                'models': [m for m, p in models.items() if p == provider_name],
-                                'capabilities': [],  # Will be filled by separate call
-                                'connected': provider_info.get('connected', True),
-                                'description': f"Provider: {provider_name}"
-                            }
-                            break
-                    
-                    if provider_name not in providers:
-                        # Provider not found in capabilities, create basic entry
-                        providers[provider_name] = {
-                            'name': provider_name,
-                            'type': 'unknown',
-                            'models': [m for m, p in models.items() if p == provider_name],
-                            'capabilities': [],
-                            'connected': True,
-                            'description': f"Provider: {provider_name}"
-                        }
-                        
-            except Exception as e:
-                logger.warning(f"Failed to get details for provider {provider_name}: {e}")
-                # Create basic entry
-                providers[provider_name] = {
-                    'name': provider_name,
-                    'type': 'unknown', 
-                    'models': [m for m, p in models.items() if p == provider_name],
-                    'capabilities': [],
-                    'connected': True,
-                    'description': f"Provider: {provider_name}"
-                }
-        
-        return providers
+        except Exception as e:
+            logger.error(f"Error getting providers: {e}")
+            raise ConnectionError(f"Failed to get provider list: {e}")
     
     async def get_all_models(self) -> Dict[str, str]:
         """

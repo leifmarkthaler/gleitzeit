@@ -90,6 +90,9 @@ class SocketIOServer:
         # Setup HTTP routes
         self._setup_routes()
         
+        # Initialize provider namespace support
+        self._setup_provider_namespace()
+        
         self.runner = None
         self.site = None
     
@@ -974,6 +977,23 @@ class SocketIOServer:
                     'task_metrics': task_metrics,
                     'timestamp': datetime.utcnow().isoformat()
                 })
+    
+    def _setup_provider_namespace(self):
+        """Setup basic handlers for the /providers namespace"""
+        # We need to register at least basic connect/disconnect handlers for the namespace to exist
+        # The actual provider management handlers will be added by SocketIOProviderManager
+        
+        @self.sio.on('connect', namespace='/providers')
+        async def handle_provider_connect(sid, environ):
+            logger.debug(f"Provider connected: {sid}")
+            # Basic connection handling - detailed handling done by ProviderManager
+        
+        @self.sio.on('disconnect', namespace='/providers') 
+        async def handle_provider_disconnect(sid):
+            logger.debug(f"Provider disconnected: {sid}")
+            # Basic disconnection handling - detailed handling done by ProviderManager
+        
+        logger.info("Provider namespace initialized (handlers will be added by ProviderManager)")
     
     def __str__(self) -> str:
         return f"SocketIOServer(http://{self.host}:{self.port})"
