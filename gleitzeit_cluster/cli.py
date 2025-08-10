@@ -40,6 +40,7 @@ from .cli_events import events_command_handler
 from .cli_status import status_command_handler
 from .cli_errors import errors_command_handler
 from .cli_providers import providers_command_handler, add_providers_parser
+from .cli_config import config_command_handler, add_config_parser
 
 
 class GleitzeitService:
@@ -932,6 +933,9 @@ def main():
     # Provider management commands (NEW - Socket.IO provider management)
     add_providers_parser(subparsers)
     
+    # Configuration management commands
+    add_config_parser(subparsers)
+    
     # Serve command
     serve = subparsers.add_parser('serve', help='Start Gleitzeit service')
     serve.add_argument('--host', default='localhost', help='Host (default: localhost)')
@@ -1080,6 +1084,8 @@ def main():
         sys.exit(exit_code)
     elif args.command == 'providers':
         asyncio.run(providers_command_handler(args))
+    elif args.command == 'config':
+        asyncio.run(config_command_handler(args))
     elif args.command == 'serve':
         asyncio.run(serve_command(args))
     elif args.command == 'version':

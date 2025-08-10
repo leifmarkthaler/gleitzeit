@@ -23,6 +23,14 @@ from ..storage.redis_client import RedisClient
 from ..communication.socketio_client import ClusterSocketClient
 from ..communication.socketio_server import SocketIOServer
 
+# Import provider configuration support
+try:
+    from gleitzeit_extensions.provider_config import get_provider_manager, start_configured_providers
+    from gleitzeit_extensions.socketio_provider_manager import SocketIOProviderManager
+    PROVIDER_CONFIG_AVAILABLE = True
+except ImportError:
+    PROVIDER_CONFIG_AVAILABLE = False
+
 
 class GleitzeitCluster:
     """
@@ -45,6 +53,10 @@ class GleitzeitCluster:
         enable_socketio: bool = True,
         socketio_host: str = "0.0.0.0",
         socketio_port: int = 8000,
+        
+        # Provider configuration
+        provider_config_file: Optional[str] = None,  # Path to providers.yaml
+        auto_start_providers: bool = True,  # Auto-start configured providers
         
         # Unified architecture (always enabled)
         auto_start_internal_llm_service: bool = True,
@@ -142,6 +154,12 @@ class GleitzeitCluster:
         else:
             self.task_executor = None
         
+        # Provider configuration
+        self.provider_config_file = provider_config_file
+        self.auto_start_providers = auto_start_providers
+        self.provider_manager = None
+        self.configured_providers = {}
+        
         # Extension manager integration
         self.extension_manager = None
         self.unified_provider_manager = None
@@ -224,6 +242,9 @@ class GleitzeitCluster:
                 error_info = ErrorCategorizer.categorize_error(e, {"component": "internal_llm"})
                 self.logger.log_error(error_info)
                 self.logger.logger.warning("Internal LLM service failed to start")
+        
+        # Initialize and start configured providers
+        await self._start_configured_providers()
         
         # Check for resumable workflows after startup
         await self._check_resumable_workflows()
@@ -1138,6 +1159,48 @@ if __name__ == "__main__":
         return await self.unified_provider_manager.call_provider(
             provider_name, method, *args, model=model, **kwargs
         )
+    
+    async def _start_configured_providers(self):
+        """Initialize and start providers from configuration file"""
+        if not PROVIDER_CONFIG_AVAILABLE:
+            self.logger.logger.info("Provider configuration not available, skipping")
+            return
+        
+        if not self.provider_config_file:
+            self.logger.logger.info("No provider configuration file specified, skipping")
+            return
+        
+        if not self.auto_start_providers:
+            self.logger.logger.info("Auto-start providers disabled, skipping")
+            return
+        
+        try:
+            # Load provider configuration
+            self.logger.logger.info(f"Loading provider configuration: {self.provider_config_file}")
+            self.provider_manager = get_provider_manager(self.provider_config_file)
+            
+            # Start configured providers
+            if self.socketio_server:
+                self.configured_providers = await start_configured_providers(
+                    self.provider_config_file
+                )
+                
+                provider_names = list(self.configured_providers.keys())
+                self.logger.logger.info(f"✅ Started {len(provider_names)} provider(s): {', '.join(provider_names)}")
+                
+                # Create Socket.IO provider manager and attach to server
+                socketio_provider_manager = SocketIOProviderManager()
+                socketio_provider_manager.attach_to_server(self.socketio_server.sio)
+                self.unified_provider_manager = socketio_provider_manager
+                
+                self.logger.logger.info("✅ Provider management system initialized")
+            else:
+                self.logger.logger.warning("Socket.IO server not available, cannot start providers")
+                
+        except Exception as e:
+            error_info = ErrorCategorizer.categorize_error(e, {"component": "provider_config"})
+            self.logger.log_error(error_info)
+            self.logger.logger.warning(f"Failed to start configured providers: {e}")
     
     def __str__(self) -> str:
         return f"GleitzeitCluster(workflows={len(self._workflows)}, nodes={len(self._nodes)})"
