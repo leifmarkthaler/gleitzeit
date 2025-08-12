@@ -29,6 +29,7 @@ class ProviderConfig:
     connection: Dict[str, Any]
     authentication: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
+    executor: Optional[str] = None  # Which executor to use for this provider
 
 
 class YAMLProtocolLoader:
@@ -274,7 +275,8 @@ class YAMLProtocolLoader:
             capabilities=data['capabilities'],
             connection=data['connection'],
             authentication=data.get('authentication'),
-            metadata=data.get('metadata')
+            metadata=data.get('metadata'),
+            executor=data.get('executor')
         )
         
         return provider

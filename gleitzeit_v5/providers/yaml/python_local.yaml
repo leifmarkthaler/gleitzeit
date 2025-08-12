@@ -2,6 +2,7 @@ name: python-local
 protocol: python
 version: v1
 description: Local Python code execution provider with sandboxed environment
+executor: python-local
 capabilities:
   - python_execution
   - code_execution

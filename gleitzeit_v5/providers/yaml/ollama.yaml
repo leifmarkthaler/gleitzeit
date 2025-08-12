@@ -2,6 +2,7 @@ name: ollama-provider
 protocol: llm
 version: v1
 description: Ollama local LLM provider for chat and completion tasks
+executor: ollama-llm
 capabilities:
   - llm_chat
   - llm_completion
