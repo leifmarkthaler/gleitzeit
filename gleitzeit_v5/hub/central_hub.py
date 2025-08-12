@@ -264,6 +264,19 @@ class CentralHub:
                 }, room=sid)
                 self.stats['errors'] += 1
         
+        @self.sio.on('task_completed')
+        async def handle_task_completed(sid, data):
+            """Broadcast task completion to all interested components"""
+            # Broadcast to all connected components - they can filter based on workflow_id
+            await self.sio.emit('task_completed', data)
+            logger.debug(f"Broadcasted task_completed for task {data.get('task_id')}")
+        
+        @self.sio.on('task_failed')
+        async def handle_task_failed(sid, data):
+            """Broadcast task failure to all interested components"""
+            await self.sio.emit('task_failed', data)
+            logger.debug(f"Broadcasted task_failed for task {data.get('task_id')}")
+        
         # Catch-all event handler for observability
         @self.sio.event
         async def catch_all_events(event_name, data):

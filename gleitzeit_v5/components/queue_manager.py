@@ -271,14 +271,18 @@ class QueueManagerClient(SocketIOComponent):
         # Update statistics
         self.stats['tasks_ready_for_execution'] += 1
         
-        # Notify execution engine
-        await self.emit_with_correlation('task_ready_for_execution', {
-            'task_id': task.task_id,
-            'workflow_id': task.workflow_id,
-            'task_type': task.task_type,
-            'method': task.method,
-            'parameters': task.parameters,
-            'priority': task.priority.value
+        # Route task ready notification to execution engine
+        await self.emit_with_correlation('route_event', {
+            'target_component_type': 'execution_engine',
+            'event_name': 'task_ready_for_execution',
+            'event_data': {
+                'task_id': task.task_id,
+                'workflow_id': task.workflow_id,
+                'task_type': task.task_type,
+                'method': task.method,
+                'parameters': task.parameters,
+                'priority': task.priority.value
+            }
         }, correlation_id)
         
         logger.info(f"Task {task.task_id} is ready for execution")
