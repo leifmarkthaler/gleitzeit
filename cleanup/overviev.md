@@ -1,8 +1,5 @@
 # Gleitzeit V4 - Event-Driven Distributed Task Execution
 
-## Project Status
-Still in **development**  
-
 ## Project Overview
 
 Gleitzeit V4 is a modern, event-driven distributed task execution system built on JSON-RPC 2.0 and Socket.IO. It provides protocol-based task routing, persistent queue management, sophisticated retry mechanisms, and dependency-aware workflow orchestration designed for distributed microservice architectures.
