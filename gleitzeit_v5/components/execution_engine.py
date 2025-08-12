@@ -280,10 +280,14 @@ class ExecutionEngineClient(SocketIOComponent):
         
         # Check if task parameters need resolution
         if self._needs_parameter_resolution(task.parameters):
-            # Request parameter resolution from DependencyResolver
-            await self.emit_with_correlation('resolve_parameters', {
-                'task_id': task.task_id,
-                'parameters': task.parameters
+            # Request parameter resolution from DependencyResolver via hub routing
+            await self.emit_with_correlation('route_event', {
+                'target_component_type': 'dependency_resolver',
+                'event_name': 'resolve_parameters',
+                'event_data': {
+                    'task_id': task.task_id,
+                    'parameters': task.parameters
+                }
             }, task.correlation_id)
         else:
             # Parameters are ready, execute immediately

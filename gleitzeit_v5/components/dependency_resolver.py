@@ -185,19 +185,27 @@ class DependencyResolverClient(SocketIOComponent):
                     task_id, parameters
                 )
                 
-                await self.emit_with_correlation('parameter_substitution_complete', {
-                    'task_id': task_id,
-                    'original_parameters': parameters,
-                    'resolved_parameters': resolved_params
+                await self.emit_with_correlation('route_event', {
+                    'target_component_type': 'execution_engine',
+                    'event_name': 'parameter_substitution_complete',
+                    'event_data': {
+                        'task_id': task_id,
+                        'original_parameters': parameters,
+                        'resolved_parameters': resolved_params
+                    }
                 }, correlation_id)
                 
                 self.stats['parameter_substitutions'] += 1
                 
             except Exception as e:
                 logger.error(f"Error resolving parameters: {e}")
-                await self.emit_with_correlation('parameter_resolution_failed', {
-                    'task_id': data.get('task_id'),
-                    'error': str(e)
+                await self.emit_with_correlation('route_event', {
+                    'target_component_type': 'execution_engine',
+                    'event_name': 'parameter_resolution_failed',
+                    'event_data': {
+                        'task_id': data.get('task_id'),
+                        'error': str(e)
+                    }
                 })
         
         @self.sio.on('clear_workflow_results')
