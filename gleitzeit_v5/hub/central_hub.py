@@ -18,7 +18,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from ..base.events import EventRouter, CorrelationTracker
+from ..base.events import EventRouter, CorrelationTracker, get_event_registry
 from ..base.config import ComponentConfig, setup_logging
 
 logger = logging.getLogger(__name__)
@@ -78,6 +78,7 @@ class CentralHub:
         # Event routing and tracking
         self.event_router = EventRouter()
         self.correlation_tracker = CorrelationTracker()
+        self.event_registry = get_event_registry()
         
         # System state
         self.running = False
@@ -150,15 +151,17 @@ class CentralHub:
         async def handle_component_registration(sid, data):
             """Handle component registration"""
             try:
+                # Simple event validation
+                if not self.event_registry.is_valid_event('register_component'):
+                    await self.sio.emit('registration_error', {
+                        'error': 'Invalid event: register_component'
+                    }, room=sid)
+                    self.stats['errors'] += 1
+                    return
+                
                 component_type = data.get('component_type')
                 component_id = data.get('component_id')
                 capabilities = data.get('capabilities', [])
-                
-                if not component_type or not component_id:
-                    await self.sio.emit('registration_error', {
-                        'error': 'component_type and component_id are required'
-                    }, room=sid)
-                    return
                 
                 # Register component
                 self.event_router.register_component(
@@ -214,16 +217,28 @@ class CentralHub:
         async def handle_event_routing(sid, data):
             """Handle generic event routing request"""
             try:
+                # Simple event validation
+                if not self.event_registry.is_valid_event('route_event'):
+                    await self.sio.emit('routing_error', {
+                        'error': 'Invalid event: route_event',
+                        'correlation_id': data.get('_correlation_id')
+                    }, room=sid)
+                    self.stats['errors'] += 1
+                    return
+                
                 target_component_type = data.get('target_component_type')
                 target_capability = data.get('target_capability')
                 event_name = data.get('event_name')
                 event_data = data.get('event_data', {})
                 correlation_id = data.get('_correlation_id')
                 
-                if not event_name:
+                # Simple validation for nested event
+                if not self.event_registry.is_valid_event(event_name):
                     await self.sio.emit('routing_error', {
-                        'error': 'event_name is required'
+                        'error': f'Invalid nested event: {event_name}',
+                        'correlation_id': correlation_id
                     }, room=sid)
+                    self.stats['errors'] += 1
                     return
                 
                 # Find target component

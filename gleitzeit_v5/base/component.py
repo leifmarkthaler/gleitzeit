@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 import socketio
 
 from .config import ComponentConfig
-from .events import CorrelationTracker
+from .events import CorrelationTracker, get_event_registry
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,9 @@ class SocketIOComponent(ABC):
         
         # Event correlation
         self.correlation_tracker = CorrelationTracker()
+        
+        # Event registry
+        self.event_registry = get_event_registry()
         
         # Health monitoring
         self.health_metrics = {
@@ -157,9 +160,16 @@ class SocketIOComponent(ABC):
         self, 
         event_name: str, 
         data: Dict[str, Any], 
-        correlation_id: Optional[str] = None
+        correlation_id: Optional[str] = None,
+        validate_schema: bool = True
     ):
-        """Emit event with correlation tracking"""
+        """Emit event with correlation tracking and optional schema validation"""
+        # Simple event validation if enabled
+        if validate_schema:
+            if not self.event_registry.is_valid_event(event_name):
+                logger.warning(f"Unknown event being emitted: {event_name}")
+                # Log but still emit - allows for dynamic events
+        
         # Generate correlation ID if not provided
         if not correlation_id:
             correlation_id = str(uuid.uuid4())

@@ -315,3 +315,70 @@ class EventRouter:
             events_processed = health_metrics.get('events_processed', 0)
             uptime = health_metrics.get('uptime_seconds', 1)
             component_info['load_score'] = events_processed / uptime if uptime > 0 else 0
+
+
+class EventRegistry:
+    """
+    Simple registry for valid internal Socket.IO events
+    
+    Replaces complex schema validation with simple event name validation.
+    Much lighter than the complex event_schemas.py approach.
+    """
+    
+    def __init__(self):
+        # Core internal events that are valid in the system
+        self.valid_events = {
+            # Component lifecycle
+            'register_component', 'component_registered', 'component_connected', 
+            'component_disconnected', 'component_disconnecting', 'provider_registered',
+            
+            # Generic routing
+            'route_event', 'routing_error',
+            
+            # Task lifecycle  
+            'queue_task', 'task_queued', 'task_completed', 'task_failed', 'execute_task',
+            'task_execution_result', 'task_execution_error', 'task_ready_for_execution',
+            'task_completion_processed', 'task_failure_processed', 'task_queue_error',
+            'cancel_task_execution',
+            
+            # Dependency management
+            'dependency_check_request', 'dependency_resolved', 'dependency_failed',
+            'resolve_parameters', 'parameters_resolved', 'parameter_substitution_complete',
+            'parameter_resolution_failed', 'circular_dependency_detected',
+            
+            # Health and monitoring
+            'heartbeat', 'heartbeat_response', 'health_check', 'health_status',
+            'queue_stats_response', 'execution_stats_response', 'dependency_stats_response',
+            
+            # System events
+            'shutdown_request', 'hub_shutting_down', 'connected', 
+            'disconnected', 'registration_error', 'no_components_available',
+        }
+    
+    def is_valid_event(self, event_name: str) -> bool:
+        """Check if event name is valid for internal use"""
+        return event_name in self.valid_events
+    
+    def register_event(self, event_name: str) -> None:
+        """Register a new valid event"""
+        self.valid_events.add(event_name)
+    
+    def unregister_event(self, event_name: str) -> None:
+        """Remove an event from valid events"""
+        self.valid_events.discard(event_name)
+    
+    def list_events(self) -> set:
+        """Get all valid events"""
+        return self.valid_events.copy()
+
+
+# Global instance
+_event_registry = EventRegistry()
+
+def get_event_registry() -> EventRegistry:
+    """Get the global event registry"""
+    return _event_registry
+
+def is_valid_event(event_name: str) -> bool:
+    """Check if event is valid (convenience function)"""
+    return _event_registry.is_valid_event(event_name)
