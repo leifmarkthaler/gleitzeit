@@ -17,6 +17,8 @@ import uuid
 
 from ..base.component import SocketIOComponent
 from ..base.config import ComponentConfig
+from ..core.protocol import get_protocol_registry
+from ..protocols import LLM_PROTOCOL_V1
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +115,10 @@ class DependencyResolverClient(SocketIOComponent):
             'parameter_substitutions': 0,
             'cached_results': 0
         }
+        
+        # Protocol registry for structured parameter substitution
+        self.protocol_registry = get_protocol_registry()
+        self.protocol_registry.register(LLM_PROTOCOL_V1)
         
         logger.info(f"Initialized Dependency Resolver: {self.component_id}")
     

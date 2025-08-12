@@ -16,6 +16,9 @@ import uuid
 
 from ..base.component import SocketIOComponent
 from ..base.config import ComponentConfig
+from ..core.protocol import get_protocol_registry, ProtocolSpec
+from ..core.jsonrpc import JSONRPCRequest, JSONRPCResponse
+from ..protocols import LLM_PROTOCOL_V1
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +133,12 @@ class ExecutionEngineClient(SocketIOComponent):
         # Execution history for calculating averages
         self.execution_times: List[float] = []
         self.max_history = 1000
+        
+        # Protocol registry
+        self.protocol_registry = get_protocol_registry()
+        
+        # Register standard protocols
+        self.protocol_registry.register(LLM_PROTOCOL_V1)
         
         logger.info(f"Initialized Execution Engine: {self.component_id}")
     
@@ -303,6 +312,17 @@ class ExecutionEngineClient(SocketIOComponent):
     
     async def _execute_task(self, task: ExecutionTask):
         """Execute a task by routing to appropriate provider"""
+        
+        # Validate task against protocol specification
+        try:
+            await self._validate_task_against_protocol(task)
+        except Exception as e:
+            await self._handle_task_failure(
+                task.task_id,
+                f"Protocol validation failed: {str(e)}",
+                retryable=False
+            )
+            return
         
         # Find suitable provider
         provider_id = await self._select_provider_for_task(task)
@@ -598,6 +618,30 @@ class ExecutionEngineClient(SocketIOComponent):
             'avg_execution_time_ms': self.stats['average_execution_time_ms'],
             'status': 'healthy' if self.stats['providers_available'] > 0 else 'degraded'
         }
+    
+    async def _validate_task_against_protocol(self, task: ExecutionTask):
+        """Validate task parameters against protocol specification"""
+        
+        # Extract protocol from method name (e.g., "llm/chat" -> "llm")
+        protocol_name = task.method.split('/')[0] if '/' in task.method else 'generic'
+        
+        # Find protocol specification
+        protocols = self.protocol_registry.find_by_method(task.method)
+        if not protocols:
+            logger.warning(f"No protocol found for method {task.method}, skipping validation")
+            return
+        
+        # Use the first matching protocol
+        protocol = protocols[0]
+        
+        try:
+            # Validate method call against protocol
+            protocol.validate_method_call(task.method, task.parameters)
+            logger.debug(f"Task {task.task_id} validated against protocol {protocol.protocol_id}")
+            
+        except Exception as e:
+            logger.error(f"Protocol validation failed for task {task.task_id}: {e}")
+            raise ValueError(f"Protocol validation failed: {e}")
     
 
 
