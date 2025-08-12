@@ -573,3 +573,22 @@ def get_error_severity(error: Union[Exception, GleitzeitError]) -> str:
     
     # Default to error for unknown exceptions
     return "error"
+
+
+# Validation Errors
+class ValidationError(GleitzeitError):
+    """Validation-related errors"""
+    
+    def __init__(
+        self,
+        message: str,
+        field: Optional[str] = None,
+        value: Optional[Any] = None,
+        **kwargs
+    ):
+        data = kwargs.pop("data", {})
+        if field:
+            data["field"] = field
+        if value is not None:
+            data["value"] = value
+        super().__init__(message, ErrorCode.TASK_VALIDATION_FAILED, data=data, **kwargs)

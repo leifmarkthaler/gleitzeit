@@ -78,7 +78,7 @@ examples:
       model: llama3.2
       messages:
         - role: user
-          content: Analyze this number: ${previous-task.result.value}
+          content: "Analyze this number: ${previous-task.result.value}"
     expected_response_fields:
       - response
       - model
