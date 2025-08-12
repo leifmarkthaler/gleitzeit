@@ -17,12 +17,12 @@ from .core.task import Task, TaskType, TaskParameters
 from .core.cluster import GleitzeitCluster
 
 
-async def run_function(cluster: GleitzeitCluster, function_name: str, **kwargs) -> Any:
+async def run_function(cluster: GleitzeitCluster, function_name: str, timeout: float = 90.0, **kwargs) -> Any:
     """Execute a single function task"""
     
     task = Task(
         name=f"Run {function_name}",
-        task_type=TaskType.FUNCTION,
+        task_type=TaskType.EXTERNAL_PROCESSING,
         parameters=TaskParameters(
             function_name=function_name,
             kwargs=kwargs
@@ -36,31 +36,38 @@ async def run_function(cluster: GleitzeitCluster, function_name: str, **kwargs) 
     workflow_id = await cluster.submit_workflow(workflow)
     print(f"⚡ Running function: {function_name}")
     
-    # Wait for completion
-    while True:
-        status = await cluster.get_workflow_status(workflow_id)
-        if status["status"] in ["completed", "failed"]:
-            break
-        await asyncio.sleep(0.5)
+    # Wait for completion using events (no polling!)
+    completion_result = await cluster.wait_for_workflow_completion(workflow_id, timeout=timeout)
     
-    if status["status"] == "completed":
-        results = status.get("task_results", {})
-        if task.id in results:
-            return results[task.id]
+    if completion_result['status'] == 'timeout':
+        print(f"⏱️  Workflow timed out after {completion_result['timeout']}s. You can check results later with:")
+        print(f"   gleitzeit results show {workflow_id}")
+        return f"Workflow timed out (ID: {workflow_id})"
+    
+    elif completion_result['status'] == 'completed':
+        # Get the task result from the completion data
+        workflow_result = completion_result.get('result')
+        if workflow_result and 'task_results' in workflow_result:
+            task_results = workflow_result['task_results']
+            if task.id in task_results:
+                return task_results[task.id]['result']
     else:
         error = status.get("error", "Unknown error")
         raise RuntimeError(f"Task failed: {error}")
 
 
-async def run_text(cluster: GleitzeitCluster, prompt: str, model: str = "llama3") -> str:
+async def run_text(cluster: GleitzeitCluster, prompt: str, model: str = "llama3", timeout: float = 90.0) -> str:
     """Execute a text generation task"""
     
     task = Task(
         name="Text generation",
-        task_type=TaskType.TEXT,
+        task_type=TaskType.EXTERNAL_CUSTOM,
         parameters=TaskParameters(
             prompt=prompt,
-            model_name=model
+            model=model,
+            service_name="ollama",
+            max_tokens=500,
+            temperature=0.7
         )
     )
     
@@ -70,32 +77,51 @@ async def run_text(cluster: GleitzeitCluster, prompt: str, model: str = "llama3"
     workflow_id = await cluster.submit_workflow(workflow)
     print(f"💬 Generating text with {model}...")
     
-    # Wait for completion
-    while True:
-        status = await cluster.get_workflow_status(workflow_id)
-        if status["status"] in ["completed", "failed"]:
-            break
-        await asyncio.sleep(0.5)
+    # Wait for completion using events with fallback to result checking
+    completion_result = await cluster.wait_for_workflow_completion(workflow_id, timeout=timeout)
     
-    if status["status"] == "completed":
-        results = status.get("task_results", {})
-        if task.id in results:
-            return results[task.id]
-    else:
-        error = status.get("error", "Unknown error")
+    if completion_result['status'] == 'timeout':
+        print(f"⏱️  Event timeout after {completion_result['timeout']}s, checking results directly...")
+        
+        # Fallback: check if task completed despite event timeout
+        workflow_result = await cluster.get_workflow_result(workflow_id)
+        if workflow_result and 'task_results' in workflow_result:
+            task_results = workflow_result['task_results']
+            if task.id in task_results:
+                task_result = task_results[task.id].get('result')
+                if task_result:
+                    return task_result
+        
+        print(f"   No results available yet. You can check later with:")
+        print(f"   gleitzeit results show {workflow_id}")
+        return f"Workflow may still be processing (ID: {workflow_id})"
+    
+    elif completion_result['status'] == 'completed':
+        # Get the task result from the completion data
+        workflow_result = completion_result.get('result')
+        if workflow_result and 'task_results' in workflow_result:
+            task_results = workflow_result['task_results']
+            if task.id in task_results:
+                return task_results[task.id]['result']
+    elif completion_result['status'] == 'failed':
+        error_data = completion_result.get('data', {})
+        error = error_data.get("error", "Unknown error")
         raise RuntimeError(f"Text generation failed: {error}")
+    else:
+        raise RuntimeError(f"Unexpected workflow status: {completion_result['status']}")
 
 
-async def run_vision(cluster: GleitzeitCluster, image_path: str, prompt: str, model: str = "llava") -> str:
+async def run_vision(cluster: GleitzeitCluster, image_path: str, prompt: str, model: str = "llava", timeout: float = 90.0) -> str:
     """Execute a vision analysis task"""
     
     task = Task(
         name="Vision analysis",
-        task_type=TaskType.VISION,
+        task_type=TaskType.EXTERNAL_CUSTOM,
         parameters=TaskParameters(
             image_path=image_path,
             prompt=prompt,
-            model_name=model
+            model=model,
+            service_name="ollama"
         )
     )
     
@@ -105,17 +131,21 @@ async def run_vision(cluster: GleitzeitCluster, image_path: str, prompt: str, mo
     workflow_id = await cluster.submit_workflow(workflow)
     print(f"👁️ Analyzing image with {model}...")
     
-    # Wait for completion
-    while True:
-        status = await cluster.get_workflow_status(workflow_id)
-        if status["status"] in ["completed", "failed"]:
-            break
-        await asyncio.sleep(0.5)
+    # Wait for completion using events (no polling!)
+    completion_result = await cluster.wait_for_workflow_completion(workflow_id, timeout=timeout)
     
-    if status["status"] == "completed":
-        results = status.get("task_results", {})
-        if task.id in results:
-            return results[task.id]
+    if completion_result['status'] == 'timeout':
+        print(f"⏱️  Workflow timed out after {completion_result['timeout']}s. You can check results later with:")
+        print(f"   gleitzeit results show {workflow_id}")
+        return f"Workflow timed out (ID: {workflow_id})"
+    
+    elif completion_result['status'] == 'completed':
+        # Get the task result from the completion data
+        workflow_result = completion_result.get('result')
+        if workflow_result and 'task_results' in workflow_result:
+            task_results = workflow_result['task_results']
+            if task.id in task_results:
+                return task_results[task.id]['result']
     else:
         error = status.get("error", "Unknown error")
         raise RuntimeError(f"Vision analysis failed: {error}")
@@ -176,11 +206,12 @@ async def run_batch_folder(cluster: GleitzeitCluster, folder_path: str, prompt: 
             task = Task(
                 id=f"process_{i}",
                 name=f"Analyze {relative_path}",
-                task_type=TaskType.VISION,
+                task_type=TaskType.EXTERNAL_CUSTOM,
                 parameters=TaskParameters(
                     image_path=str(file_path),
                     prompt=prompt,
-                    model_name=model
+                    model=model,
+                    service_name="ollama"
                 )
             )
         elif task_type == "text":
@@ -189,10 +220,11 @@ async def run_batch_folder(cluster: GleitzeitCluster, folder_path: str, prompt: 
             task = Task(
                 id=f"process_{i}",
                 name=f"Process {relative_path}",
-                task_type=TaskType.TEXT,
+                task_type=TaskType.EXTERNAL_CUSTOM,
                 parameters=TaskParameters(
                     prompt=file_prompt,
-                    model_name=model,
+                    model=model,
+                    service_name="ollama",
                     file_path=str(file_path)  # Will be read by executor
                 )
             )
@@ -201,7 +233,7 @@ async def run_batch_folder(cluster: GleitzeitCluster, folder_path: str, prompt: 
             task = Task(
                 id=f"process_{i}",
                 name=f"Process {relative_path}",
-                task_type=TaskType.FUNCTION,
+                task_type=TaskType.EXTERNAL_PROCESSING,
                 parameters=TaskParameters(
                     function_name=prompt,  # Function name passed as prompt
                     kwargs={"file_path": str(file_path)}
@@ -216,7 +248,7 @@ async def run_batch_folder(cluster: GleitzeitCluster, folder_path: str, prompt: 
     aggregation_task = Task(
         id="aggregate_results",
         name="Aggregate Batch Results",
-        task_type=TaskType.FUNCTION,
+        task_type=TaskType.EXTERNAL_PROCESSING,
         parameters=TaskParameters(
             function_name="aggregate",
             kwargs={
@@ -261,12 +293,17 @@ async def run_batch_folder(cluster: GleitzeitCluster, folder_path: str, prompt: 
         
         completed_files = current_completed
         
-        if status["status"] in ["completed", "failed"]:
+        if status.value in ["completed", "failed"]:
             break
         
         await asyncio.sleep(2)
     
-    if status["status"] == "completed":
+    if elapsed >= max_wait:
+        print(f"⏱️  Workflow timed out after {max_wait}s. You can check results later with:")
+        print(f"   gleitzeit results show {workflow_id}")
+        return f"Workflow timed out (ID: {workflow_id})"
+    
+    if status.value == "completed":
         results = status.get("task_results", {})
         
         # Extract individual file results
@@ -424,7 +461,12 @@ async def run_workflow_file(cluster: GleitzeitCluster, workflow_file: Path) -> D
         
         await asyncio.sleep(1)
     
-    if status["status"] == "completed":
+    if elapsed >= max_wait:
+        print(f"⏱️  Workflow timed out after {max_wait}s. You can check results later with:")
+        print(f"   gleitzeit results show {workflow_id}")
+        return f"Workflow timed out (ID: {workflow_id})"
+    
+    if status.value == "completed":
         print("✅ Workflow completed successfully")
         return status.get("task_results", {})
     else:
@@ -440,23 +482,25 @@ def create_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
     for task_def in data.get("tasks", []):
         # Determine task type
         if "function" in task_def:
-            task_type = TaskType.FUNCTION
+            task_type = TaskType.EXTERNAL_PROCESSING
             params = TaskParameters(
                 function_name=task_def["function"],
                 kwargs=task_def.get("args", {})
             )
         elif "prompt" in task_def and "image" in task_def:
-            task_type = TaskType.VISION
+            task_type = TaskType.EXTERNAL_CUSTOM
             params = TaskParameters(
                 prompt=task_def["prompt"],
                 image_path=task_def["image"],
-                model_name=task_def.get("model", "llava")
+                model=task_def.get("model", "llava"),
+                service_name="ollama"
             )
         elif "prompt" in task_def:
-            task_type = TaskType.TEXT
+            task_type = TaskType.EXTERNAL_CUSTOM
             params = TaskParameters(
                 prompt=task_def["prompt"],
-                model_name=task_def.get("model", "llama3")
+                model=task_def.get("model", "llama3"),
+                service_name="ollama"
             )
         elif "url" in task_def:
             task_type = TaskType.HTTP
@@ -523,11 +567,30 @@ async def run_command_handler(args):
         
         return
     
-    # Start cluster connection for execution tasks
-    cluster = GleitzeitCluster(
-        enable_redis=False,
-        enable_real_execution=True  # Enable real execution for CLI commands
-    )
+    # Try to connect to existing service first, otherwise start our own
+    import aiohttp
+    
+    try:
+        # Check if service is running
+        async with aiohttp.ClientSession() as session:
+            async with session.get("http://localhost:8000/health", timeout=aiohttp.ClientTimeout(total=2)) as response:
+                if response.status == 200:
+                    print("🔗 Connecting to existing Gleitzeit service...")
+                    from .core.cluster_client import GleitzeitClusterClient
+                    cluster = GleitzeitClusterClient(
+                        socketio_url="http://localhost:8000",
+                        enable_real_execution=False  # Don't run local executor - use server's providers
+                    )
+                else:
+                    raise aiohttp.ClientError("Service not healthy")
+    except (aiohttp.ClientError, asyncio.TimeoutError):
+        # Service not running, start our own cluster
+        print("🚀 Starting local Gleitzeit cluster...")
+        cluster = GleitzeitCluster(
+            enable_redis=True,  # Enable Redis for result storage
+            enable_real_execution=True,
+            enable_socketio=False  # Don't start server, just local execution
+        )
     
     try:
         await cluster.start()

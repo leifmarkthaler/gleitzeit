@@ -273,5 +273,85 @@ class GleitzeitClusterClient:
         
         return WorkflowStatus.UNKNOWN
     
+    async def get_workflow_result(self, workflow_id: str) -> Optional[Dict[str, Any]]:
+        """Get workflow execution result"""
+        if self.redis_client:
+            try:
+                return await self.redis_client.get_workflow_results(workflow_id)
+            except Exception as e:
+                self.logger.logger.warning(f"Failed to get workflow result from Redis: {e}")
+        return None
+    
+    async def wait_for_workflow_completion(self, workflow_id: str, timeout: float = 60.0) -> Dict[str, Any]:
+        """Wait for workflow completion using Socket.IO events (no polling!)"""
+        import asyncio
+        
+        completion_future = asyncio.Future()
+        
+        async def handle_workflow_completed(data):
+            """Handle workflow:completed event"""
+            if data.get('workflow_id') == workflow_id:
+                completion_future.set_result({
+                    'status': 'completed',
+                    'workflow_id': workflow_id,
+                    'data': data
+                })
+        
+        async def handle_workflow_failed(data):
+            """Handle workflow:failed event (if it exists)"""
+            if data.get('workflow_id') == workflow_id:
+                completion_future.set_result({
+                    'status': 'failed', 
+                    'workflow_id': workflow_id,
+                    'data': data
+                })
+        
+        # Subscribe to workflow completion events
+        if self.socketio_client:
+            self.socketio_client.sio.on('workflow:completed', handle_workflow_completed)
+            self.socketio_client.sio.on('workflow:failed', handle_workflow_failed)
+        
+        try:
+            # Check if already completed (race condition protection)
+            current_status = await self.get_workflow_status(workflow_id)
+            if current_status.value in ['completed', 'failed']:
+                result = await self.get_workflow_result(workflow_id)
+                return {
+                    'status': current_status.value,
+                    'workflow_id': workflow_id,
+                    'result': result
+                }
+            
+            # Wait for completion event with timeout
+            try:
+                result = await asyncio.wait_for(completion_future, timeout=timeout)
+                # Get the actual result data
+                workflow_result = await self.get_workflow_result(workflow_id)
+                result['result'] = workflow_result
+                return result
+                
+            except asyncio.TimeoutError:
+                return {
+                    'status': 'timeout',
+                    'workflow_id': workflow_id,
+                    'timeout': timeout
+                }
+        
+        finally:
+            # Cleanup event handlers
+            if self.socketio_client:
+                # Note: python-socketio doesn't have easy event unsubscription
+                # This is acceptable since cluster client is short-lived in CLI
+                pass
+    
+    async def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """Get task status and result"""
+        if self.redis_client:
+            try:
+                return await self.redis_client.get_task_result(task_id)
+            except Exception as e:
+                self.logger.logger.warning(f"Failed to get task status from Redis: {e}")
+        return None
+    
     def __str__(self) -> str:
         return f"GleitzeitClusterClient(socketio={self.socketio_url}, workflows={len(self._workflows)})"

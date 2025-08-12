@@ -1,0 +1,35 @@
+name: "Async Function Workflow Test"
+description: "Test workflow with async Python functions"
+
+tasks:
+  # Task 1: Generate data synchronously
+  - id: "generate-data"
+    name: "Generate Test Data"
+    protocol: "python/v1"
+    method: "execute"
+    priority: "high"
+    params:
+      function: "data_processing.calculate_fibonacci"
+      args: [5]
+
+  # Task 2: Process with async function (depends on Task 1)
+  - id: "async-process"
+    name: "Async Processing"
+    protocol: "python/v1"
+    method: "execute"
+    dependencies: ["generate-data"]
+    params:
+      function: "data_processing.async_process"
+      args: ["${generate-data.result.result}"]
+      kwargs:
+        delay: 0.5
+
+  # Task 3: Transform results with sync function
+  - id: "sync-analyze"
+    name: "Synchronous Analysis"
+    protocol: "python/v1"
+    method: "execute"
+    dependencies: ["async-process"]
+    params:
+      function: "data_processing.analyze_data"
+      args: ["${generate-data.result.result}"]  # Use original data for analysis

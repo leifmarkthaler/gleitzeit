@@ -58,11 +58,11 @@ class GleitzeitExecutorNode:
         if capabilities is None:
             capabilities = NodeCapabilities(
                 supported_task_types={
-                    TaskType.TEXT_PROMPT,
-                    TaskType.VISION_TASK,
-                    TaskType.PYTHON_FUNCTION,
-                    TaskType.HTTP_REQUEST,
-                    TaskType.FILE_OPERATION
+                    TaskType.EXTERNAL_CUSTOM,
+                    TaskType.EXTERNAL_PROCESSING,
+                    TaskType.EXTERNAL_API,
+                    TaskType.EXTERNAL_DATABASE,
+                    TaskType.EXTERNAL_ML
                 },
                 available_models=["llama3", "llava", "codellama"],
                 max_concurrent_tasks=max_concurrent_tasks,

@@ -145,14 +145,10 @@ class GleitzeitCluster:
         else:
             self.socketio_client = None
         
-        # Initialize task executor for real execution
+        # Initialize task executor for real execution (delay creation until after provider setup)
         self.enable_real_execution = enable_real_execution
-        if enable_real_execution:
-            self.task_executor = TaskExecutor(
-                ollama_url=ollama_url
-            )
-        else:
-            self.task_executor = None
+        self.ollama_url = ollama_url
+        self.task_executor = None
         
         # Provider configuration
         self.provider_config_file = provider_config_file
@@ -214,14 +210,20 @@ class GleitzeitCluster:
             try:
                 self.task_dispatcher = TaskDispatcher(
                     redis_client=self.redis_client,
-                    socketio_server=self.socketio_server
+                    socketio_server=self.socketio_server,
+                    local_task_executor=self.task_executor  # Pass local executor for direct execution
                 )
                 await self.task_dispatcher.start()
-                self.logger.logger.info("✅ Task Dispatcher started")
+                self.logger.logger.info("✅ Task Dispatcher started (with local executor fallback)")
             except Exception as e:
                 error_info = ErrorCategorizer.categorize_error(e, {"component": "task_dispatcher"})
                 self.logger.log_error(error_info)
                 self.logger.logger.warning("Task dispatcher failed to start, tasks won't be automatically assigned")
+                
+        # Update TaskDispatcher with TaskExecutor after all initialization is complete
+        if self.task_dispatcher and self.task_executor:
+            self.task_dispatcher.local_task_executor = self.task_executor
+            self.logger.logger.info("✅ TaskDispatcher updated with local TaskExecutor")
             
         # Start Python executor service (unified architecture)
         if self.auto_start_python_executor:
@@ -245,6 +247,26 @@ class GleitzeitCluster:
         
         # Initialize provider management system (always enabled)
         await self._setup_provider_system()
+        
+        # Initialize and start task executor with provider manager (after provider system setup)
+        if self.enable_real_execution:
+            self.task_executor = TaskExecutor(
+                ollama_url=self.ollama_url,
+                provider_manager=self.unified_provider_manager
+            )
+            try:
+                await self.task_executor.start()
+                self.logger.logger.info("✅ TaskExecutor with provider integration started")
+            except Exception as e:
+                error_info = ErrorCategorizer.categorize_error(e, {"component": "task_executor_start"})
+                self.logger.log_error(error_info)
+                self.logger.logger.warning(f"TaskExecutor failed to start: {e}")
+                self.task_executor = None
+                
+        # Update TaskDispatcher with the FINAL TaskExecutor after all initialization is complete
+        if self.task_dispatcher and self.task_executor:
+            self.task_dispatcher.local_task_executor = self.task_executor
+            self.logger.logger.info("✅ TaskDispatcher updated with FINAL local TaskExecutor")
         
         # Initialize and start configured providers
         await self._start_configured_providers()

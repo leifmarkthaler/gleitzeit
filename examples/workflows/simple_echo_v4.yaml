@@ -1,0 +1,42 @@
+# Simple V4 Workflow Example
+# Demonstrates basic task dependency and parameter substitution
+
+name: "Simple Echo Workflow"
+description: "A basic workflow with dependent echo tasks for testing"
+version: "1.0"
+
+tasks:
+  - id: "first-echo"
+    name: "First Echo Task"
+    protocol: "echo/v1"
+    method: "ping"
+    priority: "high"
+    params:
+      message: "Hello from the first task!"
+      delay: 1
+
+  - id: "second-echo" 
+    name: "Second Echo Task"
+    protocol: "echo/v1"
+    method: "ping"
+    dependencies: ["first-echo"]
+    priority: "normal"
+    params:
+      message: "Previous task said: ${first-echo.result.response}"
+      delay: 0.5
+
+  - id: "final-echo"
+    name: "Final Echo Task"  
+    protocol: "echo/v1"
+    method: "ping"
+    dependencies: ["first-echo", "second-echo"]
+    priority: "urgent"
+    params:
+      message: "Workflow complete! First: ${first-echo.result.response}, Second: ${second-echo.result.response}"
+      delay: 0
+
+# Workflow configuration
+metadata:
+  author: "Gleitzeit V4"
+  tags: ["echo", "testing", "basic"]
+  estimated_duration: "5 seconds"

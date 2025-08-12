@@ -27,11 +27,13 @@ class TaskDispatcher:
         self,
         redis_client: RedisClient,
         socketio_server: Optional[SocketIOServer] = None,
+        local_task_executor = None,  # Local TaskExecutor for direct execution
         dispatch_interval: float = 2.0,
         max_concurrent_assignments: int = 10
     ):
         self.redis_client = redis_client
         self.socketio_server = socketio_server
+        self.local_task_executor = local_task_executor
         self.dispatch_interval = dispatch_interval
         self.max_concurrent_assignments = max_concurrent_assignments
         
@@ -83,6 +85,12 @@ class TaskDispatcher:
                         # Dispatch tasks for each priority level
                         for priority in ["urgent", "high", "normal", "low"]:
                             await self._dispatch_tasks_by_priority(priority, available_executors)
+                    else:
+                        # No executors available - check why
+                        if self.local_task_executor:
+                            self.logger.logger.warning("Local task executor is available but not in executor list")
+                        else:
+                            self.logger.logger.warning("No local task executor available")
                     
                     # Wait before next dispatch cycle
                     await asyncio.sleep(self.dispatch_interval)
@@ -126,12 +134,34 @@ class TaskDispatcher:
                             'capabilities': service_info.get('capabilities', [])
                         })
                 
+                # Always add local executor if available 
+                if self.local_task_executor:
+                    executor_nodes.append({
+                        'node_id': 'local_executor',
+                        'sid': None,
+                        'node_type': 'local',
+                        'current_tasks': 0,
+                        'max_tasks': 4,
+                        'capabilities': {'llm': True, 'external_custom': True}
+                    })
+                    self.logger.logger.info(f"Added local executor to available executors")
+                
+                # Debug: Log all available executors
+                self.logger.logger.info(f"Available executors: {len(executor_nodes)} total")
+                for executor in executor_nodes:
+                    node_type = executor.get('node_type', 'unknown')
+                    node_id = executor.get('node_id', 'unknown')
+                    self.logger.logger.info(f"  - {node_type}: {node_id}")
+                
                 # Sort by current load (least loaded first)
                 executor_nodes.sort(key=lambda x: x['current_tasks'])
+                
                 return executor_nodes
             else:
-                # Fallback: get active nodes from Redis
+                # Fallback: get active nodes from Redis, or use local executor
                 active_node_ids = await self.redis_client.get_active_nodes()
+                if not active_node_ids and self.local_task_executor:
+                    return [{'node_id': 'local_executor', 'sid': None, 'node_type': 'local'}]
                 return [{'node_id': node_id, 'sid': None, 'node_type': 'executor'} for node_id in active_node_ids]
                 
         except Exception as e:
@@ -198,12 +228,32 @@ class TaskDispatcher:
             # Re-resolve task parameters before assignment
             await self._resolve_task_parameters(task_id, task_data)
             
-            # Check if this is an external task that needs routing to external service
+            # Check task type routing
             task_type = task_data.get('task_type', '')
             is_external_task = task_type.startswith('external_')
             
-            if is_external_task and node_type != 'external_service':
-                # External task should go to external service, skip regular executor
+            # FORCE LLM tasks (EXTERNAL_CUSTOM) to local executor if available
+            if task_type == 'external_custom':
+                if self.local_task_executor and node_type == 'local':
+                    # Perfect - this is the local executor for LLM tasks
+                    pass
+                elif self.local_task_executor and node_type != 'local':
+                    # We have a local executor but this is not it - skip other executors for LLM tasks
+                    self.logger.logger.debug(f"Skipping {node_type} executor for LLM task - prefer local executor")
+                    return False
+                elif not self.local_task_executor and node_type == 'external_service':
+                    # No local executor, check if external service can handle LLM
+                    task_types = executor.get('task_types', [])
+                    capabilities = executor.get('capabilities', [])
+                    if 'llm' not in str(capabilities).lower() and 'external_custom' not in task_types:
+                        return False
+                elif not self.local_task_executor and node_type != 'external_service':
+                    # No local executor and not external service - skip
+                    return False
+            
+            # Handle other external task types
+            elif is_external_task and node_type != 'external_service' and node_type != 'local':
+                # Other external tasks should go to external service, skip regular executor
                 return False
             elif not is_external_task and node_type == 'external_service':
                 # Regular task should not go to external service, skip
@@ -217,6 +267,11 @@ class TaskDispatcher:
                     external_task_type = task_data.get('external_task_type')
                     if external_task_type and external_task_type not in task_types:
                         return False
+            
+            # Handle local execution directly
+            if node_type == 'local' and self.local_task_executor:
+                await self._execute_task_locally(task_id, task_data)
+                return True
             
             # Assign task in Redis
             await self.redis_client.assign_task_to_node(task_id, node_id)
@@ -292,6 +347,101 @@ class TaskDispatcher:
                 
         except Exception as e:
             self.logger.logger.error(f"Failed to resolve parameters for task {task_id}: {e}")
+    
+    async def _execute_task_locally(self, task_id: str, task_data: Dict):
+        """Execute task using local TaskExecutor"""
+        try:
+            import json
+            from ..core.task import Task, TaskType
+            
+            self.logger.logger.info(f"Executing task {task_id[:8]}... locally")
+            
+            # Parse task data
+            parameters_json = task_data.get('parameters', '{}')
+            try:
+                parameters = json.loads(parameters_json)
+            except json.JSONDecodeError:
+                parameters = {}
+            
+            # Map task type string to enum
+            task_type_str = task_data.get('task_type', 'external_custom')
+            task_type_enum = TaskType.EXTERNAL_CUSTOM  # Default
+            try:
+                if task_type_str == 'external_custom':
+                    task_type_enum = TaskType.EXTERNAL_CUSTOM
+                elif task_type_str == 'external_ml':
+                    task_type_enum = TaskType.EXTERNAL_ML
+                # Add other mappings as needed
+            except:
+                pass
+            
+            # Create Task object
+            task = Task(
+                id=task_id,
+                workflow_id=task_data.get('workflow_id'),
+                name=task_data.get('name', f'Task_{task_id[:8]}'),
+                task_type=task_type_enum,
+                parameters=parameters
+            )
+            
+            # Execute task
+            result = await self.local_task_executor.execute_task(task)
+            
+            # Store result in Redis
+            await self.redis_client.complete_task(task_id, result=result)
+            await self.redis_client.store_workflow_result(
+                task_data.get('workflow_id'), task_id, result
+            )
+            
+            self.logger.logger.info(f"✅ Local task completed: {task_id[:8]}...")
+            
+            # IMPORTANT: Emit task:completed event to Socket.IO server
+            # This triggers workflow completion check and workflow:completed event
+            if self.socketio_server:
+                try:
+                    workflow_id = task_data.get('workflow_id')
+                    await self.socketio_server.broadcast_event('task:completed', {
+                        'task_id': task_id,
+                        'workflow_id': workflow_id,
+                        'result': result,
+                        'timestamp': datetime.utcnow().isoformat()
+                    }, room=f"workflow:{workflow_id}")
+                    
+                    # Trigger workflow completion check
+                    await self.socketio_server._check_workflow_completion(workflow_id)
+                    
+                    self.logger.logger.info(f"Emitted task:completed event for task {task_id[:8]}...")
+                except Exception as emit_error:
+                    self.logger.logger.warning(f"Failed to emit task:completed event: {emit_error}")
+            
+        except Exception as e:
+            self.logger.logger.error(f"❌ Local task failed: {task_id[:8]}... - {e}")
+            
+            # Store error in Redis
+            error_msg = str(e)
+            await self.redis_client.complete_task(task_id, error=error_msg)
+            await self.redis_client.store_workflow_error(
+                task_data.get('workflow_id'), task_id, error_msg
+            )
+            
+            # IMPORTANT: Emit task:failed event to Socket.IO server  
+            # This triggers workflow completion check
+            if self.socketio_server:
+                try:
+                    workflow_id = task_data.get('workflow_id')
+                    await self.socketio_server.broadcast_event('task:failed', {
+                        'task_id': task_id,
+                        'workflow_id': workflow_id,
+                        'error': error_msg,
+                        'timestamp': datetime.utcnow().isoformat()
+                    }, room=f"workflow:{workflow_id}")
+                    
+                    # Trigger workflow completion check
+                    await self.socketio_server._check_workflow_completion(workflow_id)
+                    
+                    self.logger.logger.info(f"Emitted task:failed event for task {task_id[:8]}...")
+                except Exception as emit_error:
+                    self.logger.logger.warning(f"Failed to emit task:failed event: {emit_error}")
             
     async def _notify_executor_via_socketio(self, sid: str, task_id: str, task_data: Dict, executor: Dict):
         """Notify executor about task assignment via Socket.IO"""

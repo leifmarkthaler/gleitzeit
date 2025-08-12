@@ -1,0 +1,56 @@
+{
+  "id": "02694b81-e3ba-4513-b5a4-2d8815f89acc",
+  "name": "Directory Analysis",
+  "description": "Get directory listing via MCP and generate description via LLM",
+  "tasks": [
+    {
+      "id": "5d2f2283-cbcd-4f80-9dc3-e4797a712325",
+      "name": "List Directory",
+      "task_type": "mcp_function",
+      "parameters": {
+        "server": "filesystem",
+        "function": "list_files",
+        "arguments": {
+          "path": "/Users/leifmarkthaler/github/gleitzeit"
+        }
+      },
+      "dependencies": [],
+      "priority": "normal",
+      "workflow_id": "02694b81-e3ba-4513-b5a4-2d8815f89acc",
+      "status": "pending",
+      "created_at": "2025-08-11T08:14:13.843011",
+      "max_retries": 3,
+      "timeout": 300
+    },
+    {
+      "id": "9a7e0b6e-8caf-43e2-8b6e-017d99825bd0",
+      "name": "Analyze Directory",
+      "task_type": "llm_generate",
+      "parameters": {
+        "prompt": "Based on the following directory listing, provide a concise description of this project.\n\nDirectory listing: ${task_5d2f2283-cbcd-4f80-9dc3-e4797a712325_result}\n\nPlease analyze the files and directories and describe:\n1. What type of project this appears to be\n2. The main technologies/languages used  \n3. The project's purpose or functionality\n\nKeep your response under 200 words.",
+        "model": "qwen2.5:latest",
+        "max_tokens": 300
+      },
+      "dependencies": [
+        "5d2f2283-cbcd-4f80-9dc3-e4797a712325"
+      ],
+      "priority": "normal",
+      "workflow_id": "02694b81-e3ba-4513-b5a4-2d8815f89acc",
+      "status": "pending",
+      "created_at": "2025-08-11T08:14:13.843125",
+      "max_retries": 3,
+      "timeout": 300
+    }
+  ],
+  "status": "pending",
+  "error_strategy": "stop",
+  "max_parallel": 10,
+  "completed_tasks": [],
+  "failed_tasks": [],
+  "task_results": {},
+  "created_at": "2025-08-11T08:14:13.843127",
+  "started_at": null,
+  "completed_at": null,
+  "tags": [],
+  "metadata": {}
+}

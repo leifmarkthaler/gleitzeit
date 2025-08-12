@@ -64,6 +64,10 @@ class OllamaProvider(SocketIOProviderClient):
         # Fallback to common models
         return ["llama2", "codellama", "mistral", "neural-chat"]
     
+    async def generate(self, **kwargs) -> Any:
+        """Generate text completion (required by SocketIOProviderClient)"""
+        return await self._generate(kwargs)
+    
     async def invoke(self, method: str, **kwargs) -> Any:
         """Invoke LLM methods"""
         

@@ -28,6 +28,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from gleitzeit_cluster.communication.socketio_server import SocketIOServer
 from gleitzeit_cluster.communication.service_discovery import register_socketio_service
 from gleitzeit_extensions.socketio_provider_manager import SocketIOProviderManager
+from gleitzeit_cluster.core.cluster import GleitzeitCluster
 
 # Configure logging
 log_level = os.getenv('GLEITZEIT_LOG_LEVEL', 'INFO')
@@ -63,17 +64,21 @@ class GleitzeitSocketIOService:
         self.port = int(port or os.getenv('GLEITZEIT_SOCKETIO_PORT', '8000'))
         self.redis_url = redis_url or os.getenv('GLEITZEIT_REDIS_URL', 'redis://localhost:6379')
         
-        # Create the central Socket.IO server
-        self.socketio_server = SocketIOServer(
-            host=self.host,
-            port=self.port,
+        # Create full Gleitzeit cluster with execution capabilities
+        self.cluster = GleitzeitCluster(
             redis_url=self.redis_url,
-            cors_allowed_origins="*"
+            socketio_url=f"http://{self.host}:{self.port}",
+            socketio_host=self.host,
+            socketio_port=self.port,
+            enable_redis=True,
+            enable_socketio=True,
+            enable_real_execution=True,  # Enable workflow execution
+            auto_start_services=False,   # Disable auto-start services
+            auto_start_python_executor=False,  # Don't start Python executor
+            auto_start_internal_llm_service=False,  # Don't start internal LLM service
+            auto_start_providers=False,  # Don't auto-start providers
+            auto_recovery=True
         )
-        
-        # Create and attach provider manager
-        self.provider_manager = SocketIOProviderManager()
-        self.provider_manager.attach_to_server(self.socketio_server.sio)
         
         # Service state
         self.running = False
@@ -93,8 +98,8 @@ class GleitzeitSocketIOService:
         logger.info("🚀 Starting Gleitzeit Socket.IO Service")
         
         try:
-            # Start the Socket.IO server
-            await self.socketio_server.start()
+            # Start the full cluster (includes Socket.IO server and execution)
+            await self.cluster.start()
             self.running = True
             
             # Register service for discovery
@@ -131,7 +136,7 @@ class GleitzeitSocketIOService:
         logger.info("🛑 Stopping Gleitzeit Socket.IO Service")
         
         try:
-            await self.socketio_server.stop()
+            await self.cluster.stop()
             self.running = False
             self._shutdown_event.set()
             logger.info("✅ Gleitzeit Socket.IO Service stopped")

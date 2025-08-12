@@ -176,56 +176,178 @@ class GleitzeitService:
 
 
 async def serve_command(args):
-    """Start the service"""
-    service = GleitzeitService(
+    """Start the unified Gleitzeit service with Ollama integration"""
+    
+    # Import the working central service
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from gleitzeit_socketio_service import GleitzeitSocketIOService
+    from my_local_llm_provider import OllamaProvider
+    
+    print("🚀 Starting Gleitzeit with Ollama Integration")
+    print("=" * 50)
+    print(f"   Host: {args.host}")
+    print(f"   Port: {args.port}")
+    print(f"   Redis: {'✅ Enabled' if not args.no_redis else '❌ Disabled'}")
+    print()
+    
+    # Start the central service
+    service = GleitzeitSocketIOService(
         host=args.host,
         port=args.port,
-        redis_url=args.redis_url,
-        enable_redis=not args.no_redis,
-        auto_open_browser=not args.no_browser,
-        log_level=args.log_level
+        redis_url=args.redis_url if not args.no_redis else None
     )
     
-    service.setup_signal_handlers()
+    provider = None
     
     try:
+        # Start the service
         await service.start()
-    except KeyboardInterrupt:
-        print("\n🛑 Interrupted by user")
+        
+        # Auto-start Ollama provider if available
+        try:
+            print("\n🤖 Auto-connecting Ollama provider...")
+            provider = OllamaProvider(name="ollama")
+            await provider.connect()
+            print(f"   ✅ Ollama connected ({len(provider.models)} models)")
+            print(f"   📋 Available models: {', '.join(provider.models[:3])}...")
+        except Exception as e:
+            print(f"   ⚠️  Ollama provider not available: {e}")
+            print("   💡 Make sure 'ollama serve' is running to enable LLM features")
+        
+        print(f"\n🌐 Gleitzeit is running at http://{args.host}:{args.port}")
+        print("   Press Ctrl+C to stop")
+        
+        # Keep running
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            print("\n🛑 Shutting down...")
+            
+    finally:
+        # Cleanup
+        if provider:
+            try:
+                await provider.disconnect()
+                print("   ✅ Ollama provider disconnected")
+            except:
+                pass
+        
+        try:
+            await service.stop()
+            print("   ✅ Service stopped")
+        except:
+            pass
+
+
+async def ask_command(args):
+    """Ask a question using Gleitzeit LLM integration"""
+    
+    # Import required modules
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from gleitzeit_cluster.core.task import Task, TaskType, TaskParameters
+    from gleitzeit_cluster.core.cluster_client import GleitzeitClusterClient
+    
+    print(f"🤖 Asking: {args.question}")
+    print()
+    
+    try:
+        # Connect to running Gleitzeit service
+        client = GleitzeitClusterClient(
+            socketio_url=f"http://{args.host}:{args.port}",
+            enable_real_execution=True
+        )
+        await client.start()
+        
+        # Create LLM task
+        task = Task(
+            name="cli_question",
+            task_type=TaskType.EXTERNAL_CUSTOM,
+            parameters=TaskParameters(
+                prompt=args.question,
+                model=args.model,
+                service_name="ollama",
+                max_tokens=args.max_tokens,
+                temperature=args.temperature
+            )
+        )
+        
+        # Submit task as a workflow (proper way)
+        from gleitzeit_cluster.core.workflow import Workflow
+        
+        workflow = Workflow(name="cli_ask_workflow")
+        workflow.add_task(task)
+        
+        print("⏳ Processing...")
+        
+        # Submit workflow
+        workflow_id = await client.submit_workflow(workflow)
+        print(f"   📋 Submitted workflow: {workflow_id}")
+        
+        # Wait for completion and get results
+        max_wait = 30
+        wait_interval = 1
+        elapsed = 0
+        
+        while elapsed < max_wait:
+            workflow_status = await client.get_workflow_status(workflow_id)
+            if workflow_status.value in ['completed', 'failed']:
+                break
+            await asyncio.sleep(wait_interval)
+            elapsed += wait_interval
+        
+        if workflow_status.value == 'completed':
+            # Get the result from workflow
+            try:
+                workflow_result = await client.get_workflow_result(workflow_id)
+                if workflow_result and 'task_results' in workflow_result:
+                    task_results = workflow_result['task_results']
+                    if task.id in task_results:
+                        result = task_results[task.id]['result']
+                    else:
+                        result = "Task completed but result not found"
+                else:
+                    result = "Workflow completed but no results available"
+            except Exception as e:
+                result = f"Workflow completed but couldn't retrieve result: {e}"
+        else:
+            result = f"Workflow {workflow_status.value} after {max_wait}s"
+        
+        # Show result
+        print("=" * 50)
+        if isinstance(result, dict):
+            response = result.get('response', str(result))
+            model = result.get('model', args.model)
+            print(f"🤖 {model}: {response}")
+        else:
+            print(f"🤖 Answer: {result}")
+        print("=" * 50)
+        
+        await client.stop()
+        
+    except asyncio.TimeoutError:
+        print("⏱️  Request timed out")
+    except ConnectionError:
+        print("❌ Cannot connect to Gleitzeit service")
+        print("💡 Start Gleitzeit first: gleitzeit serve")
+    except Exception as e:
+        print(f"❌ Error: {e}")
 
 
 async def results_command(args):
-    """Handle results commands"""
+    """Handle results commands with enhanced live data support"""
     
     if not args.results_command:
         print("❌ No results command specified. Use --help for options.")
         return
     
-    # Initialize cache
-    redis_client = RedisClient()
-    try:
-        await redis_client.connect()
-        cache = ResultCache(redis_client=redis_client)
-    except Exception:
-        print("⚠️  Redis not available, using file-only cache")
-        cache = ResultCache(redis_client=None)
-    
-    try:
-        if args.results_command == 'list':
-            await cmd_list_results(cache, args)
-        elif args.results_command == 'show':
-            await cmd_show_result(cache, args)
-        elif args.results_command == 'export':
-            await cmd_export_results(cache, args)
-        elif args.results_command == 'clear':
-            await cmd_clear_cache(cache, args)
-        elif args.results_command == 'stats':
-            await cmd_cache_stats(cache, args)
-    except Exception as e:
-        print(f"❌ Command failed: {e}")
-    finally:
-        if redis_client:
-            await redis_client.disconnect()
+    # Use the enhanced live results system
+    from .cli_results_live import live_results_command
+    await live_results_command(args)
 
 
 async def cmd_list_results(cache: ResultCache, args):
@@ -449,9 +571,9 @@ async def executor_command(args):
     # Configure capabilities based on arguments
     capabilities = NodeCapabilities(
         supported_task_types=[
-            TaskType.FUNCTION,
-            TaskType.TEXT,
-            TaskType.VISION,
+            TaskType.EXTERNAL_PROCESSING,
+            TaskType.EXTERNAL_CUSTOM,
+            TaskType.EXTERNAL_ML,
         ],
         available_models=["llama3.1", "codellama", "llava"],
         max_concurrent_tasks=args.tasks,
@@ -461,11 +583,11 @@ async def executor_command(args):
     
     # Filter task types if GPU/CPU only specified
     if args.gpu_only:
-        capabilities.supported_task_types = [TaskType.OLLAMA_VISION]
+        capabilities.supported_task_types = [TaskType.EXTERNAL_CUSTOM]  # LLM/Vision tasks
         capabilities.has_gpu = True
         print("   Mode: GPU tasks only")
     elif args.cpu_only:
-        capabilities.supported_task_types = [TaskType.FUNCTION, TaskType.TEXT]
+        capabilities.supported_task_types = [TaskType.EXTERNAL_PROCESSING]  # Function tasks
         capabilities.has_gpu = False
         print("   Mode: CPU tasks only")
     
@@ -937,13 +1059,22 @@ def main():
     add_config_parser(subparsers)
     
     # Serve command
-    serve = subparsers.add_parser('serve', help='Start Gleitzeit service')
+    serve = subparsers.add_parser('serve', help='Start Gleitzeit service with Ollama integration')
     serve.add_argument('--host', default='localhost', help='Host (default: localhost)')
     serve.add_argument('--port', type=int, default=8000, help='Port (default: 8000)')
     serve.add_argument('--redis-url', default='redis://localhost:6379', help='Redis URL')
     serve.add_argument('--no-redis', action='store_true', help='Disable Redis')
     serve.add_argument('--no-browser', action='store_true', help='No auto-open browser')
     serve.add_argument('--log-level', default='INFO', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'])
+    
+    # Ask command - Quick LLM queries
+    ask = subparsers.add_parser('ask', help='Ask a question using local LLM')
+    ask.add_argument('question', help='Question to ask')
+    ask.add_argument('--model', default='phi3:mini', help='LLM model to use (default: phi3:mini)')
+    ask.add_argument('--host', default='localhost', help='Gleitzeit host (default: localhost)')
+    ask.add_argument('--port', type=int, default=8000, help='Gleitzeit port (default: 8000)')
+    ask.add_argument('--max-tokens', type=int, default=200, help='Maximum tokens (default: 200)')
+    ask.add_argument('--temperature', type=float, default=0.7, help='Temperature (default: 0.7)')
     
     # Version
     subparsers.add_parser('version', help='Show version')
@@ -965,7 +1096,8 @@ def main():
     
     # Show result
     show_cmd = results_sub.add_parser('show', help='Show specific result')
-    show_cmd.add_argument('workflow_id', help='Workflow ID to show')
+    show_cmd.add_argument('workflow_id', nargs='?', help='Workflow ID to show')
+    show_cmd.add_argument('--name', help='Search by workflow name instead of ID')
     show_cmd.add_argument('--tasks', action='store_true', help='Show individual task results')
     
     # Export results
@@ -1088,6 +1220,8 @@ def main():
         asyncio.run(config_command_handler(args))
     elif args.command == 'serve':
         asyncio.run(serve_command(args))
+    elif args.command == 'ask':
+        asyncio.run(ask_command(args))
     elif args.command == 'version':
         print("Gleitzeit v0.0.1")
     elif args.command == 'auth':

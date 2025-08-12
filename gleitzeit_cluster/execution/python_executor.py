@@ -68,7 +68,7 @@ class PythonExecutor:
         Returns:
             Function execution result
         """
-        if task.task_type != TaskType.FUNCTION:
+        if task.task_type != TaskType.EXTERNAL_PROCESSING:
             raise PythonExecutionError(f"Invalid task type: {task.task_type}")
         
         params = task.parameters

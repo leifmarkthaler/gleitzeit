@@ -33,7 +33,8 @@ class TaskExecutor:
         ollama_timeout: int = 300,
         python_max_workers: int = 4,
         ollama_endpoints: Optional[List[EndpointConfig]] = None,
-        ollama_strategy: LoadBalancingStrategy = LoadBalancingStrategy.LEAST_LOADED
+        ollama_strategy: LoadBalancingStrategy = LoadBalancingStrategy.LEAST_LOADED,
+        provider_manager: Optional[Any] = None  # SocketIOProviderManager
     ):
         """
         Initialize task executor
@@ -70,6 +71,9 @@ class TaskExecutor:
         
         # Register secure functions from function registry
         self._register_secure_functions()
+        
+        # Provider manager for external tasks
+        self.provider_manager = provider_manager
         
         # Error handling and retry
         self.logger = GleitzeitLogger("TaskExecutor")
@@ -154,16 +158,19 @@ class TaskExecutor:
         async def execute():
             print(f"🔄 Executing task: {task.name} ({task.task_type.value})")
             
-            if task.task_type == TaskType.TEXT:
-                return await self._execute_text_task(task)
-            elif task.task_type == TaskType.VISION:
-                return await self._execute_vision_task(task)
-            elif task.task_type == TaskType.FUNCTION:
-                return await self._execute_python_task(task)
-            elif task.task_type == TaskType.HTTP:
-                return await self._execute_http_task(task)
-            elif task.task_type == TaskType.FILE:
-                return await self._execute_file_task(task)
+            # Route all task types through the provider system
+            if task.task_type == TaskType.EXTERNAL_CUSTOM:
+                return await self._execute_provider_task(task)
+            elif task.task_type == TaskType.EXTERNAL_ML:
+                return await self._execute_provider_task(task)
+            elif task.task_type == TaskType.EXTERNAL_API:
+                return await self._execute_provider_task(task)
+            elif task.task_type == TaskType.EXTERNAL_PROCESSING:
+                return await self._execute_provider_task(task)
+            elif task.task_type == TaskType.EXTERNAL_DATABASE:
+                return await self._execute_provider_task(task)
+            elif task.task_type == TaskType.EXTERNAL_WEBHOOK:
+                return await self._execute_provider_task(task)
             else:
                 raise TaskExecutionError(f"Unsupported task type: {task.task_type}")
         
@@ -181,24 +188,24 @@ class TaskExecutor:
     
     def _get_retry_config_for_task(self, task: Task) -> RetryConfig:
         """Get retry configuration based on task type"""
-        # LLM tasks: more retries, longer delays
-        if task.task_type in [TaskType.TEXT, TaskType.VISION]:
+        # ML/LLM tasks: more retries, longer delays
+        if task.task_type in [TaskType.EXTERNAL_ML, TaskType.EXTERNAL_CUSTOM]:
             return RetryConfig(
                 max_attempts=task.max_retries or 3,
                 base_delay=2.0,
                 max_delay=30.0
             )
         
-        # Python/HTTP tasks: fewer retries, shorter delays  
-        elif task.task_type in [TaskType.FUNCTION, TaskType.HTTP]:
+        # Processing/API tasks: fewer retries, shorter delays  
+        elif task.task_type in [TaskType.EXTERNAL_PROCESSING, TaskType.EXTERNAL_API]:
             return RetryConfig(
                 max_attempts=task.max_retries or 2,
                 base_delay=1.0,
                 max_delay=10.0
             )
         
-        # File tasks: minimal retries
-        elif task.task_type == TaskType.FILE:
+        # Database/Webhook tasks: minimal retries
+        elif task.task_type in [TaskType.EXTERNAL_DATABASE, TaskType.EXTERNAL_WEBHOOK]:
             return RetryConfig(
                 max_attempts=task.max_retries or 1,
                 base_delay=0.5,
@@ -459,6 +466,64 @@ class TaskExecutor:
             
         except Exception as e:
             print(f"⚠️ Warning: Failed to register secure functions: {e}")
+    
+    async def _execute_provider_task(self, task: Task) -> Any:
+        """Execute task using provider system"""
+        params = task.parameters
+        
+        # Get provider name from task parameters
+        provider_name = None
+        if hasattr(params, 'provider') and params.provider:
+            provider_name = params.provider
+        elif hasattr(params, 'service_name') and params.service_name:
+            provider_name = params.service_name
+        else:
+            # Check external_parameters for provider info
+            if hasattr(params, 'external_parameters') and params.external_parameters:
+                provider_name = params.external_parameters.get('provider')
+        
+        # Final fallback
+        if not provider_name:
+            provider_name = 'ollama'
+        
+        # Provider manager should be available from the cluster/server
+        if not hasattr(self, 'provider_manager') or not self.provider_manager:
+            raise TaskExecutionError("Provider manager not available - TaskExecutor should be initialized with provider_manager from cluster")
+        
+        # Prepare provider parameters
+        provider_params = {
+            'prompt': params.prompt if hasattr(params, 'prompt') else None,
+            'model': params.model if hasattr(params, 'model') else None,
+            'temperature': params.temperature if hasattr(params, 'temperature') else 0.7,
+            'max_tokens': params.max_tokens if hasattr(params, 'max_tokens') else None,
+        }
+        
+        # Add any external parameters
+        if hasattr(params, 'external_parameters') and params.external_parameters:
+            provider_params.update(params.external_parameters)
+        
+        # Remove None values
+        provider_params = {k: v for k, v in provider_params.items() if v is not None}
+        
+        try:
+            print(f"🔗 Routing task to provider: {provider_name}")
+            print(f"   📝 Method: generate")
+            print(f"   🤖 Model: {provider_params.get('model', 'default')}")
+            
+            # Route to provider via provider manager
+            result = await self.provider_manager.invoke_provider(
+                provider_name=provider_name,
+                method="generate",
+                **provider_params
+            )
+            
+            print(f"✅ Provider task completed: {provider_name}")
+            return result
+            
+        except Exception as e:
+            error_msg = f"Provider task failed ({provider_name}): {e}"
+            print(f"❌ {error_msg}")
+            raise TaskExecutionError(error_msg)
     
     def __str__(self) -> str:
         return f"TaskExecutor(started={self._is_started}, ollama={self.ollama_client.base_url})"

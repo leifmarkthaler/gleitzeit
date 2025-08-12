@@ -326,10 +326,11 @@ class SocketIOServer:
     async def handle_workflow_submit(self, sid, data):
         """Handle workflow submission"""
         workflow_id = data.get('workflow_id')
+        workflow_data = data.get('workflow_data', {})
         
         logger.info(f"Workflow submitted: {workflow_id}")
         
-        # Create workflow room
+        # Create workflow room for progress tracking
         room_id = f"workflow:{workflow_id}"
         await self.sio.enter_room(sid, room_id, namespace='/cluster')
         
@@ -340,13 +341,15 @@ class SocketIOServer:
         # Broadcast workflow started event
         await self.broadcast_event('workflow:started', {
             'workflow_id': workflow_id,
-            'name': data.get('name'),
-            'total_tasks': len(data.get('tasks', [])),
+            'name': workflow_data.get('name'),
+            'total_tasks': len(workflow_data.get('tasks', [])),
             'timestamp': datetime.utcnow().isoformat()
         }, room=room_id)
         
-        # Assign tasks to executors
-        await self._assign_workflow_tasks(workflow_id, data.get('tasks', []))
+        # DO NOT assign tasks directly - let TaskDispatcher handle queued tasks
+        # Tasks are already queued in Redis by the cluster's submit_workflow method
+        # The TaskDispatcher will pick them up and assign them properly
+        logger.info(f"Workflow {workflow_id} acknowledged - TaskDispatcher will handle task assignment")
     
     async def handle_workflow_cancel(self, sid, data):
         """Handle workflow cancellation"""
@@ -386,49 +389,9 @@ class SocketIOServer:
                 namespace='/cluster'
             )
     
-    async def _assign_workflow_tasks(self, workflow_id: str, tasks: List[Dict[str, Any]]):
-        """Assign workflow tasks to available executors"""
-        for task in tasks:
-            # Find suitable executor
-            executor_sid = await self._find_executor_for_task(task)
-            
-            if executor_sid:
-                # Assign task to executor
-                await self.sio.emit(
-                    'task:assign',
-                    {
-                        'task_id': task['task_id'],
-                        'workflow_id': workflow_id,
-                        'task_type': task['task_type'],
-                        'parameters': task.get('parameters', {}),
-                        'timeout': task.get('timeout', 300)
-                    },
-                    room=executor_sid,
-                    namespace='/cluster'
-                )
-                
-                logger.info(f"Task {task['task_id']} assigned to executor {executor_sid}")
-            else:
-                logger.warning(f"No executor available for task {task['task_id']}")
-    
-    async def _find_executor_for_task(self, task: Dict[str, Any]) -> Optional[str]:
-        """Find suitable executor for task"""
-        task_type = task.get('task_type')
-        
-        # Find executor with matching capabilities
-        for sid, node_info in self.executor_nodes.items():
-            capabilities = node_info.get('capabilities', {})
-            supported_types = capabilities.get('task_types', [])
-            
-            if task_type in supported_types:
-                # Check if node is not overloaded
-                current_tasks = node_info.get('current_tasks', 0)
-                max_tasks = capabilities.get('max_concurrent_tasks', 1)
-                
-                if current_tasks < max_tasks:
-                    return sid
-        
-        return None
+    # Note: Removed _assign_workflow_tasks and _find_executor_for_task methods
+    # Task assignment is now handled by the TaskDispatcher which properly 
+    # manages Redis queues and load balancing
     
     # ========================
     # Task Handlers
@@ -532,6 +495,13 @@ class SocketIOServer:
                 if completed_tasks + failed_tasks >= total_tasks:
                     # Workflow complete
                     status = 'completed' if failed_tasks == 0 else 'failed'
+                    
+                    # Update workflow status in Redis
+                    if self.redis_client:
+                        await self.redis_client.update_workflow_status(
+                            workflow_id,
+                            WorkflowStatus.COMPLETED if status == 'completed' else WorkflowStatus.FAILED
+                        )
                     
                     room_id = f"workflow:{workflow_id}"
                     await self.broadcast_event('workflow:completed', {
