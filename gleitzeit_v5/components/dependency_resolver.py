@@ -334,11 +334,15 @@ class DependencyResolverClient(SocketIOComponent):
     ):
         """Resolve a single dependency for a task"""
         
-        await self.emit_with_correlation('dependency_resolved', {
-            'dependent_task_id': request.task_id,
-            'dependency_task_id': dep_id,
-            'result': result.result,
-            'workflow_id': request.workflow_id
+        await self.emit_with_correlation('route_event', {
+            'target_component_type': 'queue_manager',
+            'event_name': 'dependency_resolved',
+            'event_data': {
+                'dependent_task_id': request.task_id,
+                'dependency_task_id': dep_id,
+                'result': result.result,
+                'workflow_id': request.workflow_id
+            }
         }, request.correlation_id)
         
         logger.debug(f"Resolved dependency {dep_id} for task {request.task_id}")
@@ -360,10 +364,14 @@ class DependencyResolverClient(SocketIOComponent):
         request.status = DependencyStatus.FAILED
         self.stats['dependencies_failed'] += 1
         
-        await self.emit_with_correlation('dependency_failed', {
-            'task_id': request.task_id,
-            'workflow_id': request.workflow_id,
-            'error': error
+        await self.emit_with_correlation('route_event', {
+            'target_component_type': 'queue_manager',
+            'event_name': 'dependency_failed',
+            'event_data': {
+                'task_id': request.task_id,
+                'workflow_id': request.workflow_id,
+                'error': error
+            }
         }, request.correlation_id)
         
         logger.error(f"Dependencies failed for task {request.task_id}: {error}")

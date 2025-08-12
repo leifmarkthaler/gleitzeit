@@ -245,11 +245,15 @@ class QueueManagerClient(SocketIOComponent):
         
         # Check dependencies
         if task.dependencies:
-            # Request dependency resolution
-            await self.emit_with_correlation('dependency_check_request', {
-                'task_id': task.task_id,
-                'dependencies': task.dependencies,
-                'workflow_id': task.workflow_id
+            # Route dependency check request to dependency resolver
+            await self.emit_with_correlation('route_event', {
+                'target_component_type': 'dependency_resolver',
+                'event_name': 'dependency_check_request',
+                'event_data': {
+                    'task_id': task.task_id,
+                    'dependencies': task.dependencies,
+                    'workflow_id': task.workflow_id
+                }
             }, correlation_id)
             
             # Track pending dependencies
@@ -329,7 +333,7 @@ class QueueManagerClient(SocketIOComponent):
         self.stats['tasks_completed'] += 1
         
         # Remove from queues if still there
-        for priority_queue in self.queues.values():
+        for priority, priority_queue in self.queues.items():
             self.queues[priority] = [t for t in priority_queue if t.task_id != task_id]
         
         # Remove from pending
@@ -355,7 +359,7 @@ class QueueManagerClient(SocketIOComponent):
         self.stats['tasks_failed'] += 1
         
         # Remove from queues and pending
-        for priority_queue in self.queues.values():
+        for priority, priority_queue in self.queues.items():
             self.queues[priority] = [t for t in priority_queue if t.task_id != task_id]
         
         if task_id in self.pending_tasks:

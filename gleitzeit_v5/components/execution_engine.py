@@ -405,8 +405,7 @@ class ExecutionEngineClient(SocketIOComponent):
         
         self.stats['average_execution_time_ms'] = sum(self.execution_times) / len(self.execution_times)
         
-        # Broadcast task completion to all components (queue manager, dependency resolver, workflow clients)
-        # Note: In a production system, this might be more targeted based on workflow ownership
+        # Broadcast task completion to all components via hub's broadcast mechanism
         await self.emit_with_correlation('task_completed', {
             'task_id': task_id,
             'workflow_id': task.workflow_id,
