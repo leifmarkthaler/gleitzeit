@@ -6,13 +6,17 @@ Each component implements specific functionality while communicating
 purely through events.
 """
 
-# Component imports will be added as we implement them
-# from .queue_manager import QueueManagerClient
-# from .dependency_resolver import DependencyResolverClient
+from .queue_manager import QueueManagerClient, run_queue_manager
+from .dependency_resolver import DependencyResolverClient, run_dependency_resolver
+from .execution_engine import ExecutionEngineClient, run_execution_engine
 # from .protocol_registry import ProtocolRegistryClient
-# from .execution_engine import ExecutionEngineClient
 # from .provider import ProviderClient
 
 __all__ = [
-    # Will be populated as components are implemented
+    "QueueManagerClient",
+    "run_queue_manager", 
+    "DependencyResolverClient",
+    "run_dependency_resolver",
+    "ExecutionEngineClient", 
+    "run_execution_engine"
 ]
