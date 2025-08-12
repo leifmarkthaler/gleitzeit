@@ -18,7 +18,7 @@ from ..base.component import SocketIOComponent
 from ..base.config import ComponentConfig
 from ..core.protocol import get_protocol_registry, ProtocolSpec
 from ..core.jsonrpc import JSONRPCRequest, JSONRPCResponse
-from ..protocols import LLM_PROTOCOL_V1
+from ..protocols import LLM_PROTOCOL_V1, PYTHON_PROTOCOL_V1
 
 logger = logging.getLogger(__name__)
 
@@ -139,6 +139,7 @@ class ExecutionEngineClient(SocketIOComponent):
         
         # Register standard protocols
         self.protocol_registry.register(LLM_PROTOCOL_V1)
+        self.protocol_registry.register(PYTHON_PROTOCOL_V1)
         
         logger.info(f"Initialized Execution Engine: {self.component_id}")
     

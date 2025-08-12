@@ -1,0 +1,82 @@
+name: python
+version: v1
+description: Python code execution protocol with sandboxed execution and parameter substitution
+author: Gleitzeit Team
+license: MIT
+tags:
+  - python
+  - code-execution
+  - scripting
+  - computation
+
+methods:
+  python/execute:
+    description: Execute Python code with parameter substitution support
+    parameters:
+      code:
+        type: string
+        description: Python code to execute (supports parameter substitution)
+        required: true
+        min_length: 1
+      context:
+        type: object
+        description: Context variables available to the code
+        required: false
+        default: {}
+        additional_properties: true
+      timeout:
+        type: integer
+        description: Execution timeout in seconds
+        required: false
+        default: 30
+        minimum: 1
+        maximum: 300
+    returns:
+      type: object
+      description: Python execution response
+      properties:
+        result:
+          type: string
+          description: String representation of the execution result
+          required: true
+        output:
+          type: string
+          description: Standard output captured during execution
+          required: false
+        error:
+          type: string
+          description: Error message if execution failed
+          required: false
+        execution_time:
+          type: number
+          description: Execution time in seconds
+          required: false
+        success:
+          type: boolean
+          description: Whether execution was successful
+          required: true
+      additional_properties: true
+    examples:
+      - description: Simple calculation
+        request:
+          code: |
+            result = 2 + 3
+            print(f'Sum: {result}')
+          context: {}
+        response:
+          result: "5"
+          output: "Sum: 5\n"
+          success: true
+          execution_time: 0.001
+      - description: Calculation with parameter substitution
+        request:
+          code: |
+            number = ${task1.result}
+            result = number * number
+            print(f'Square of {number} is {result}')
+          context: {}
+        response:
+          result: "49"
+          output: "Square of 7 is 49\n"
+          success: true
+          execution_time: 0.002
