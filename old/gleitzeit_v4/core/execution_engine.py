@@ -30,9 +30,9 @@ from .events import (
     create_task_failed_event, create_workflow_started_event,
     create_workflow_completed_event
 )
-from ..registry import ProtocolProviderRegistry
-from ..queue import TaskQueue, QueueManager, DependencyResolver
-from ..persistence.base import PersistenceBackend, InMemoryBackend
+from registry import ProtocolProviderRegistry
+from task_queue import TaskQueue, QueueManager, DependencyResolver
+from persistence.base import PersistenceBackend, InMemoryBackend
 
 logger = logging.getLogger(__name__)
 
@@ -366,9 +366,8 @@ class ExecutionEngine:
                 task.status = TaskStatus.EXECUTING
                 task.started_at = task_start_time
                 
-                # Increment retry count in persistence (event-driven way)
-                if self.persistence:
-                    current_attempt = await self.persistence.increment_retry_count(task.id)
+                # Increment retry count using retry manager
+                current_attempt = await self.retry_manager.increment_retry_count(task.id)
                 
                 # Emit structured task started event
                 task_event = create_task_started_event(
@@ -425,6 +424,15 @@ class ExecutionEngine:
                 # Mark as completed in queue
                 await self.queue_manager.mark_task_completed(task.id)
                 
+                # In event-driven mode, check for newly available tasks after completion
+                if (hasattr(self, '_execution_mode') and 
+                    self._execution_mode == ExecutionMode.EVENT_DRIVEN and
+                    len(self.active_tasks) < self.max_concurrent_tasks):
+                    # Try to execute any newly available dependent tasks
+                    ready_task = await self.queue_manager.dequeue_next_task()
+                    if ready_task:
+                        asyncio.create_task(self._execute_task(ready_task))
+                
                 # Update stats
                 self.stats.tasks_processed += 1
                 self.stats.tasks_succeeded += 1
@@ -480,7 +488,7 @@ class ExecutionEngine:
                 error_message = str(structured_error)
                 
                 # Emit task:failed event for event-driven retry handling
-                from ..core.events import EventType, create_task_failed_event
+                from .events import EventType, create_task_failed_event
                 failed_event = create_task_failed_event(
                     task_id=task.id,
                     workflow_id=task.workflow_id,
@@ -493,19 +501,16 @@ class ExecutionEngine:
                 await self.emit_structured_event(failed_event)
                 logger.debug(f"Task {task.id} failed, emitted task:failed event")
                 
-                # Get current retry count from persistence
-                if self.persistence:
-                    retry_info = await self.persistence.get_task_retry_info(task.id)
-                    current_retry_count = retry_info.get('count', 0)
-                    max_attempts = task.retry_config.max_attempts if task.retry_config else 3
-                    
-                    logger.debug(f"Task {task.id} retry info: count={current_retry_count}, max={max_attempts}")
-                    
-                    # Check if we can retry based on database retry count and retryable error
-                    should_retry = (current_retry_count < max_attempts and 
-                                  is_retryable_error(structured_error))
-                else:
-                    should_retry = False
+                # Get current retry count from retry manager
+                retry_info = await self.retry_manager.get_task_retry_info(task.id)
+                current_retry_count = retry_info.get('count', 0)
+                max_attempts = task.retry_config.max_attempts if task.retry_config else 3
+                
+                logger.debug(f"Task {task.id} retry info: count={current_retry_count}, max={max_attempts}")
+                
+                # Check if we can retry based on database retry count and retryable error
+                should_retry = (current_retry_count < max_attempts and 
+                              is_retryable_error(structured_error))
             
             if should_retry:
                 # Schedule retry via retry manager
@@ -534,11 +539,9 @@ class ExecutionEngine:
                 task.completed_at = datetime.utcnow()
                 task.error_message = error_message
                 
-                # Get final retry count from persistence
-                total_attempts = 1  # Default if no persistence
-                if self.persistence:
-                    retry_info = await self.persistence.get_task_retry_info(task.id)
-                    total_attempts = retry_info.get('count', 1)
+                # Get final retry count from retry manager
+                retry_info = await self.retry_manager.get_task_retry_info(task.id)
+                total_attempts = retry_info.get('count', 1)
                 
                 # Create error result
                 task_result = TaskResult(
@@ -608,27 +611,39 @@ class ExecutionEngine:
                 for match in matches:
                     parts = match.split('.')
                     ref_task_id = parts[0]
-                    ref_field = parts[1] if len(parts) > 1 else 'result'
+                    field_path = parts[1:] if len(parts) > 1 else ['result']
+                    
+                    # Try to resolve task name to task ID if it's not already an ID
+                    actual_task_id = ref_task_id
+                    if hasattr(self, 'task_name_to_id_map') and ref_task_id in self.task_name_to_id_map:
+                        actual_task_id = self.task_name_to_id_map[ref_task_id]
+                        logger.debug(f"Resolved task name '{ref_task_id}' to ID '{actual_task_id}'")
                     
                     # Get referenced result
-                    logger.debug(f"Looking for task {ref_task_id} in results: {list(self.task_results.keys())}")
-                    if ref_task_id in self.task_results:
-                        ref_result = self.task_results[ref_task_id]
+                    logger.debug(f"Looking for task {actual_task_id} in results: {list(self.task_results.keys())}")
+                    if actual_task_id in self.task_results:
+                        ref_result = self.task_results[actual_task_id]
                         
-                        if ref_field == 'result':
-                            ref_value = ref_result.result
-                        elif hasattr(ref_result, ref_field):
-                            ref_value = getattr(ref_result, ref_field)
-                        else:
-                            logger.warning(f"Field {ref_field} not found in task {ref_task_id} result")
-                            continue
+                        # Navigate through the field path
+                        ref_value = ref_result
+                        for field in field_path:
+                            if field == 'result' and hasattr(ref_value, 'result'):
+                                ref_value = ref_value.result
+                            elif isinstance(ref_value, dict) and field in ref_value:
+                                ref_value = ref_value[field]
+                            elif hasattr(ref_value, field):
+                                ref_value = getattr(ref_value, field)
+                            else:
+                                logger.warning(f"Field {field} not found in task {actual_task_id} result")
+                                ref_value = None
+                                break
                         
                         # Replace the reference
                         if ref_value is not None:
-                            replacement = json.dumps(ref_value) if not isinstance(ref_value, str) else ref_value
+                            replacement = str(ref_value) if not isinstance(ref_value, str) else ref_value
                             obj = obj.replace(f"${{{match}}}", replacement)
                     else:
-                        logger.warning(f"Referenced task {ref_task_id} not found in results")
+                        logger.warning(f"Referenced task {actual_task_id} not found in results")
                 
                 return obj
             
@@ -1045,9 +1060,12 @@ class ExecutionEngine:
         if errors:
             raise ValueError(f"Workflow validation failed: {'; '.join(errors)}")
         
-        # Submit workflow tasks to queue
+        # Build name-to-ID mapping for parameter substitution
+        self._build_name_to_id_mapping(workflow)
+        
+        # Submit workflow tasks using submit_task to trigger automatic execution
         for task in workflow.tasks:
-            await self.queue_manager.enqueue_task(task, queue_name)
+            await self.submit_task(task, queue_name)
         
         self.workflow_states[workflow.id] = workflow
         
@@ -1066,6 +1084,15 @@ class ExecutionEngine:
         )
         
         await self.emit_structured_event(workflow_submitted_event)
+    
+    def _build_name_to_id_mapping(self, workflow: Workflow) -> None:
+        """Build mapping from task names to task IDs for parameter substitution"""
+        if not hasattr(self, 'task_name_to_id_map'):
+            self.task_name_to_id_map: Dict[str, str] = {}
+        
+        for task in workflow.tasks:
+            self.task_name_to_id_map[task.name] = task.id
+            logger.debug(f"Mapped task name '{task.name}' to ID '{task.id}'")
     
     async def get_retry_stats(self) -> Dict[str, Any]:
         """Get retry statistics from the centralized retry manager"""

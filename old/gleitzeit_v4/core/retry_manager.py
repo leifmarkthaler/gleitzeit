@@ -13,8 +13,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 
 from .models import Task, TaskStatus, RetryConfig
-from ..persistence.base import PersistenceBackend
-from ..queue.task_queue import QueueManager
+from persistence.base import PersistenceBackend
+from task_queue.task_queue import QueueManager
 
 logger = logging.getLogger(__name__)
 
@@ -70,17 +70,13 @@ class RetryManager:
             logger.debug(f"Task {task.id} cannot be retried (no retry config)")
             return False
             
-        # Get current retry count from persistence instead of task object
-        if self.persistence:
-            retry_info = await self.persistence.get_task_retry_info(task.id)
-            current_count = retry_info.get('count', 0)
-            max_attempts = task.retry_config.max_attempts
-            
-            if current_count >= max_attempts:
-                logger.debug(f"Task {task.id} cannot be retried (count={current_count}, max={max_attempts})")
-                return False
-        else:
-            logger.warning(f"No persistence backend available for retry tracking")
+        # Get current retry count from our own retry tracking
+        retry_info = await self.get_task_retry_info(task.id)
+        current_count = retry_info.get('count', 0)
+        max_attempts = task.retry_config.max_attempts
+        
+        if current_count >= max_attempts:
+            logger.debug(f"Task {task.id} cannot be retried (count={current_count}, max={max_attempts})")
             return False
         
         # Calculate retry delay
@@ -247,13 +243,26 @@ class RetryManager:
             
             for task_id in old_tasks:
                 del self._retry_tasks[task_id]
-                
-                # Mark task as permanently failed
-                task = await self.persistence.get_task(task_id)
-                if task:
-                    task.status = TaskStatus.FAILED
-                    task.error_message = f"Retry expired (past cutoff: {cutoff_date})"
-                    await self.persistence.save_task(task)
         
-        logger.info(f"Cleaned up {len(old_tasks)} expired retry tasks")
         return len(old_tasks)
+    
+    # Methods needed by ExecutionEngine for retry tracking
+    async def increment_retry_count(self, task_id: str) -> int:
+        """Increment retry count for a task and return current attempt number"""
+        # In-memory tracking of retry attempts
+        if not hasattr(self, '_task_attempts'):
+            self._task_attempts: Dict[str, int] = {}
+        
+        current_attempt = self._task_attempts.get(task_id, 0) + 1
+        self._task_attempts[task_id] = current_attempt
+        
+        logger.debug(f"Incremented retry count for task {task_id} to {current_attempt}")
+        return current_attempt
+    
+    async def get_task_retry_info(self, task_id: str) -> Dict[str, int]:
+        """Get retry information for a task"""
+        if not hasattr(self, '_task_attempts'):
+            self._task_attempts: Dict[str, int] = {}
+        
+        count = self._task_attempts.get(task_id, 0)
+        return {"count": count, "task_id": task_id}

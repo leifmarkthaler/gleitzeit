@@ -19,7 +19,7 @@ from .models import (
     TaskResult, RetryConfig
 )
 from .execution_engine import ExecutionEngine
-from ..queue import DependencyResolver
+from task_queue import DependencyResolver
 
 logger = logging.getLogger(__name__)
 
@@ -268,6 +268,7 @@ class WorkflowManager:
             
             task = Task(
                 id=task_data.get("id", f"{workflow_id}-task-{len(tasks)}"),
+                name=task_data.get("name", f"Task {len(tasks) + 1}"),
                 protocol=task_data["protocol"],
                 method=task_data["method"],
                 params=task_data.get("params", {}),

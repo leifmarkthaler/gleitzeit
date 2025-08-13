@@ -12,9 +12,9 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 import redis.asyncio as redis
 
-from .base import PersistenceBackend
-from ..core.models import Task, Workflow, TaskResult, WorkflowExecution
-from ..core.errors import (
+from persistence.base import PersistenceBackend
+from core.models import Task, Workflow, TaskResult, WorkflowExecution
+from core.errors import (
     ErrorCode, PersistenceError, PersistenceConnectionError,
     SystemError
 )
@@ -221,7 +221,7 @@ class RedisBackend(PersistenceBackend):
     
     def _dict_to_task(self, task_data: Dict[str, Any]) -> Task:
         """Convert dict to Task object"""
-        from ..core.models import RetryConfig
+        from core.models import RetryConfig
         
         # Convert ISO strings back to datetime objects
         for field in ['created_at', 'started_at', 'completed_at']:

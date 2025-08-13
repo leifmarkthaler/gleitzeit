@@ -12,8 +12,8 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 from dataclasses import dataclass, field
 
-from ..core.models import Task, Workflow, TaskStatus, Priority
-from ..persistence.base import PersistenceBackend, InMemoryBackend
+from core.models import Task, Workflow, TaskStatus, Priority
+from persistence.base import PersistenceBackend, InMemoryBackend
 
 logger = logging.getLogger(__name__)
 

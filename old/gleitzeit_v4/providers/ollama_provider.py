@@ -93,21 +93,17 @@ class OllamaProvider(ProtocolProvider):
     
     def get_supported_methods(self) -> List[str]:
         """Get supported protocol methods"""
-        return ["generate", "chat", "vision", "embed"]
+        return ["llm/chat", "llm/complete"]
     
     async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
         """Handle protocol request"""
         logger.info(f"Handling Ollama request: {method}")
         logger.debug(f"Parameters: {params}")
         
-        if method == "generate":
-            return await self._generate_text(params)
-        elif method == "chat":
+        if method == "llm/chat":
             return await self._chat(params)
-        elif method == "vision":
-            return await self._analyze_vision(params)
-        elif method == "embed":
-            return await self._embed_text(params)
+        elif method == "llm/complete":
+            return await self._generate_text(params)
         else:
             raise ValueError(f"Unsupported method: {method}")
     

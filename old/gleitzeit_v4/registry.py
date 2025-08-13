@@ -12,9 +12,9 @@ import logging
 import asyncio
 from enum import Enum
 
-from .core.protocol import ProtocolSpec, get_protocol_registry
-from .core.jsonrpc import JSONRPCRequest, JSONRPCResponse
-from .core.errors import ErrorCode
+from core.protocol import ProtocolSpec, get_protocol_registry
+from core.jsonrpc import JSONRPCRequest, JSONRPCResponse
+from core.errors import ErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -306,7 +306,7 @@ class ProtocolProviderRegistry:
             
             # Event-driven health check on failure
             asyncio.create_task(
-                self._check_provider_health_on_event(provider_id, f"method_failure: {str(e)[:100]}")
+                self._check_provider_health_on_event(provider_info.provider_id, f"method_failure: {str(e)[:100]}")
             )
             
             # Determine appropriate error code

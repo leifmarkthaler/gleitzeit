@@ -13,9 +13,9 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 from pathlib import Path
 
-from .base import PersistenceBackend
-from ..core.models import Task, Workflow, TaskResult, WorkflowExecution, TaskStatus, WorkflowStatus
-from ..core.errors import (
+from persistence.base import PersistenceBackend
+from core.models import Task, Workflow, TaskResult, WorkflowExecution, TaskStatus, WorkflowStatus
+from core.errors import (
     ErrorCode, PersistenceError, PersistenceConnectionError,
     SystemError
 )
@@ -236,7 +236,7 @@ class SQLiteBackend(PersistenceBackend):
     
     def _row_to_task(self, row) -> Task:
         """Convert database row to Task object"""
-        from ..core.models import RetryConfig  # Import here to avoid circular imports
+        from core.models import RetryConfig  # Import here to avoid circular imports
         
         return Task(
             id=row['id'],
@@ -300,7 +300,15 @@ class SQLiteBackend(PersistenceBackend):
     # Workflow operations
     async def save_workflow(self, workflow: Workflow) -> None:
         """Save or update a workflow"""
-        tasks_data = [task.dict() for task in workflow.tasks]
+        # Convert tasks to dict and handle datetime serialization
+        tasks_data = []
+        for task in workflow.tasks:
+            task_dict = task.dict()
+            # Convert datetime objects to ISO format strings
+            for field in ['created_at', 'started_at', 'completed_at']:
+                if task_dict.get(field):
+                    task_dict[field] = task_dict[field].isoformat()
+            tasks_data.append(task_dict)
         
         await self.db.execute("""
             INSERT OR REPLACE INTO workflows (
@@ -327,7 +335,13 @@ class SQLiteBackend(PersistenceBackend):
             return None
         
         tasks_data = json.loads(row['tasks'])
-        tasks = [Task(**task_data) for task_data in tasks_data]
+        tasks = []
+        for task_data in tasks_data:
+            # Convert ISO format strings back to datetime objects
+            for field in ['created_at', 'started_at', 'completed_at']:
+                if task_data.get(field):
+                    task_data[field] = datetime.fromisoformat(task_data[field])
+            tasks.append(Task(**task_data))
         
         return Workflow(
             id=row['id'],

@@ -10,7 +10,7 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 from collections import defaultdict, deque
 from dataclasses import dataclass
 
-from ..core.models import Task, Workflow, TaskStatus
+from core.models import Task, Workflow, TaskStatus
 
 logger = logging.getLogger(__name__)
 

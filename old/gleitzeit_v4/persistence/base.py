@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any, Set
 from datetime import datetime
 
-from ..core.models import Task, Workflow, TaskResult, WorkflowExecution
+from core.models import Task, Workflow, TaskResult, WorkflowExecution
 
 
 class PersistenceBackend(ABC):
@@ -61,22 +61,6 @@ class PersistenceBackend(ABC):
     @abstractmethod
     async def get_task_result(self, task_id: str) -> Optional[TaskResult]:
         """Get task result by task ID"""
-        pass
-    
-    # Retry tracking
-    @abstractmethod
-    async def get_retry_count(self, task_id: str) -> int:
-        """Get current retry count for a task"""
-        pass
-    
-    @abstractmethod
-    async def increment_retry_count(self, task_id: str) -> int:
-        """Increment retry count for a task and return new count"""
-        pass
-    
-    @abstractmethod
-    async def get_task_retry_info(self, task_id: str) -> Dict[str, Any]:
-        """Get retry information for a task (count, last_error, etc.)"""
         pass
     
     # Workflow operations
@@ -148,7 +132,6 @@ class InMemoryBackend(PersistenceBackend):
         self.workflows: Dict[str, Workflow] = {}
         self.workflow_executions: Dict[str, WorkflowExecution] = {}
         self.queue_states: Dict[str, Dict[str, Any]] = {}
-        self.task_retry_info: Dict[str, Dict[str, Any]] = {}  # task_id -> retry info
     
     async def initialize(self) -> None:
         """No initialization needed for in-memory"""
@@ -187,21 +170,6 @@ class InMemoryBackend(PersistenceBackend):
     
     async def get_task_result(self, task_id: str) -> Optional[TaskResult]:
         return self.task_results.get(task_id)
-    
-    # Retry tracking implementation
-    async def get_retry_count(self, task_id: str) -> int:
-        retry_info = self.task_retry_info.get(task_id, {})
-        return retry_info.get('count', 0)
-    
-    async def increment_retry_count(self, task_id: str) -> int:
-        if task_id not in self.task_retry_info:
-            self.task_retry_info[task_id] = {'count': 0, 'last_error': None, 'first_failed_at': None}
-        
-        self.task_retry_info[task_id]['count'] += 1
-        return self.task_retry_info[task_id]['count']
-    
-    async def get_task_retry_info(self, task_id: str) -> Dict[str, Any]:
-        return self.task_retry_info.get(task_id, {'count': 0, 'last_error': None, 'first_failed_at': None})
     
     # Workflow operations
     async def save_workflow(self, workflow: Workflow) -> None:

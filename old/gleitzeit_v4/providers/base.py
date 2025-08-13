@@ -11,7 +11,7 @@ import asyncio
 import logging
 from datetime import datetime
 
-from ..core.errors import (
+from core.errors import (
     ErrorCode, GleitzeitError, ProviderError, ProviderNotFoundError,
     ProviderTimeoutError, SystemError, ConnectionTimeoutError,
     AuthenticationError, NetworkError, is_retryable_error

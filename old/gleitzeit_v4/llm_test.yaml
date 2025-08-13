@@ -1,0 +1,16 @@
+description: 'LLM workflow: llm_test'
+name: llm_test
+tasks:
+- method: llm/chat
+  name: Generate Text
+  parameters:
+    messages:
+    - content: Write a short poem about workflow automation
+      role: user
+    model: llama3.2:latest
+    temperature: 0.7
+  priority: normal
+  protocol: llm/v1
+  retry:
+    base_delay: 5.0
+    max_attempts: 2

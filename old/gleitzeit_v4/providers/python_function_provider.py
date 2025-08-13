@@ -163,7 +163,10 @@ class PythonFunctionProvider(ProtocolProvider):
     async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
         """Handle JSON-RPC method calls"""
         
-        if method == "execute":
+        if method == "python/execute":
+            # Execute Python code directly
+            return await self._execute_code(params)
+        elif method == "execute":
             # Execute a registered function
             return await self._execute_function(params)
         
@@ -244,6 +247,109 @@ class PythonFunctionProvider(ProtocolProvider):
                 "success": False,
                 "timestamp": datetime.utcnow().isoformat()
             }
+    
+    async def _execute_code(self, params: Dict[str, Any]) -> Any:
+        """Execute arbitrary Python code"""
+        import sys
+        from io import StringIO
+        import json
+        
+        code = params.get("code", "")
+        timeout = params.get("timeout", 30)
+        context = params.get("context", {})
+        
+        if not code:
+            return {
+                "result": None,
+                "output": "",
+                "error": "No code provided",
+                "success": False,
+                "execution_time": 0
+            }
+        
+        # Prepare execution environment
+        exec_globals = {
+            "__builtins__": {
+                # Safe builtins
+                "print": print,
+                "len": len,
+                "str": str,
+                "int": int,
+                "float": float,
+                "bool": bool,
+                "list": list,
+                "dict": dict,
+                "set": set,
+                "tuple": tuple,
+                "range": range,
+                "enumerate": enumerate,
+                "zip": zip,
+                "sum": sum,
+                "min": min,
+                "max": max,
+                "abs": abs,
+                "round": round,
+                "sorted": sorted,
+                "reversed": reversed,
+                "any": any,
+                "all": all,
+                "isinstance": isinstance,
+                "type": type,
+                "hasattr": hasattr,
+                "getattr": getattr,
+                "setattr": setattr,
+            },
+            # Safe modules
+            "json": json,
+            "math": __import__("math"),
+            "random": __import__("random"),
+            "datetime": __import__("datetime"),
+            "time": __import__("time"),
+        }
+        
+        # Add context variables
+        exec_globals.update(context)
+        
+        exec_locals = {}
+        
+        # Capture stdout
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = StringIO()
+        
+        start_time = __import__("time").time()
+        
+        try:
+            # Execute the code
+            exec(code, exec_globals, exec_locals)
+            
+            execution_time = __import__("time").time() - start_time
+            output = captured_output.getvalue()
+            
+            # Get result variable if it exists
+            result = exec_locals.get('result', None)
+            
+            return {
+                "result": result,
+                "output": output,
+                "success": True,
+                "execution_time": execution_time,
+                "variables": {k: v for k, v in exec_locals.items() if not k.startswith('_')}
+            }
+            
+        except Exception as e:
+            execution_time = __import__("time").time() - start_time
+            output = captured_output.getvalue()
+            
+            return {
+                "result": None,
+                "output": output,
+                "error": str(e),
+                "success": False,
+                "execution_time": execution_time
+            }
+            
+        finally:
+            sys.stdout = old_stdout
     
     async def _register_dynamic_function(self, params: Dict[str, Any]) -> Any:
         """Dynamically register a new function"""
@@ -334,7 +440,7 @@ class PythonFunctionProvider(ProtocolProvider):
     
     def get_supported_methods(self) -> List[str]:
         """Get list of supported methods"""
-        return ["execute", "register", "list", "info", "eval"]
+        return ["python/execute"]
 
 
 class CustomFunctionProvider(PythonFunctionProvider):

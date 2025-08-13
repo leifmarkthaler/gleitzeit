@@ -89,11 +89,30 @@ def _yaml_to_workflow(data: Dict[str, Any]) -> Workflow:
     # Generate workflow ID if not provided
     workflow_id = data.get('id', f"workflow-{uuid4().hex[:8]}")
     
-    # Parse tasks
+    # Parse tasks with name-to-ID mapping for dependency resolution
     tasks = []
+    name_to_id_map = {}
+    
+    # First pass: create tasks and build name-to-ID mapping
     for task_data in data.get('tasks', []):
-        task = _yaml_to_task(task_data, workflow_id)
+        task = _yaml_to_task(task_data, workflow_id, resolve_dependencies=False)
         tasks.append(task)
+        name_to_id_map[task.name] = task.id
+    
+    # Second pass: resolve dependencies (map task names to task IDs)
+    for i, task_data in enumerate(data.get('tasks', [])):
+        dependencies = task_data.get('dependencies', [])
+        resolved_dependencies = []
+        
+        for dep_name in dependencies:
+            if dep_name in name_to_id_map:
+                resolved_dependencies.append(name_to_id_map[dep_name])
+            else:
+                logger.warning(f"Task '{tasks[i].name}' depends on unknown task '{dep_name}'")
+                # Keep original dependency name for error reporting
+                resolved_dependencies.append(dep_name)
+        
+        tasks[i].dependencies = resolved_dependencies
     
     # Create workflow
     workflow = Workflow(
@@ -111,7 +130,7 @@ def _yaml_to_workflow(data: Dict[str, Any]) -> Workflow:
     return workflow
 
 
-def _yaml_to_task(data: Dict[str, Any], workflow_id: str) -> Task:
+def _yaml_to_task(data: Dict[str, Any], workflow_id: str, resolve_dependencies: bool = True) -> Task:
     """Convert YAML task data to Task model"""
     
     # Generate task ID if not provided
@@ -137,6 +156,12 @@ def _yaml_to_task(data: Dict[str, Any], workflow_id: str) -> Task:
         logger.warning(f"Invalid priority '{priority_str}', using 'normal'")
         priority = Priority.NORMAL
     
+    # Handle dependencies - standardize on 'dependencies' key only
+    dependencies = []
+    if resolve_dependencies:
+        # Support both 'dependencies' (preferred) and legacy 'depends_on'
+        dependencies = data.get('dependencies', data.get('depends_on', []))
+    
     # Create task
     task = Task(
         id=task_id,
@@ -144,7 +169,7 @@ def _yaml_to_task(data: Dict[str, Any], workflow_id: str) -> Task:
         protocol=data.get('protocol', ''),
         method=data.get('method', ''),
         params=data.get('params', {}),
-        dependencies=data.get('depends_on', []),
+        dependencies=dependencies,
         priority=priority,
         timeout=data.get('timeout'),
         workflow_id=workflow_id,
@@ -225,7 +250,7 @@ def create_workflow_template(name: str, template_type: str) -> Dict[str, Any]:
                     'params': {
                         'input': '${fetch-data.result}'
                     },
-                    'depends_on': ['fetch-data'],
+                    'dependencies': ['fetch-data'],
                     'retry': {
                         'max_attempts': 3,
                         'backoff': 'exponential'
@@ -240,7 +265,7 @@ def create_workflow_template(name: str, template_type: str) -> Dict[str, Any]:
                         'path': '/path/to/output.json',
                         'content': '${process-data.result}'
                     },
-                    'depends_on': ['process-data']
+                    'dependencies': ['process-data']
                 }
             ]
         }
@@ -305,7 +330,7 @@ def create_workflow_template(name: str, template_type: str) -> Dict[str, Any]:
                         'path': '/tmp/search_results.json',
                         'content': '${search-query.result}'
                     },
-                    'depends_on': ['search-query']
+                    'dependencies': ['search-query']
                 }
             ]
         }
