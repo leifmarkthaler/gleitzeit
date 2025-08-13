@@ -17,7 +17,7 @@ Gleitzeit is a modern, Socket.IO-based workflow orchestration system designed fo
 ### Installation
 
 ```bash
-cd gleitzeit_v5
+cd gleitzeit
 pip install -e .
 ```
 
@@ -25,10 +25,10 @@ pip install -e .
 
 ```bash
 # One command to start everything
-gleitzeit5 start
+gleitzeit start
 
 # One command to run a complete workflow  
-gleitzeit5 run examples/simple_llm_workflow.yaml
+gleitzeit run examples/simple_llm_workflow.yaml
 ```
 
 ### Auto-Start Features
@@ -37,49 +37,49 @@ The CLI automatically starts the hub when needed:
 
 ```bash
 # These commands auto-start the hub if it's not running
-gleitzeit5 submit examples/simple_llm_workflow.yaml  # ← Hub starts automatically
-gleitzeit5 monitor                                   # ← Hub starts automatically  
-gleitzeit5 components all                           # ← Hub starts automatically
+gleitzeit submit examples/simple_llm_workflow.yaml  # ← Hub starts automatically
+gleitzeit monitor                                   # ← Hub starts automatically  
+gleitzeit components all                           # ← Hub starts automatically
 ```
 
 ### Manual Control (If Preferred)
 
 ```bash
 # 1. Start the hub manually
-gleitzeit5 hub --port 8001
+gleitzeit hub --port 8001
 
 # 2. In another terminal, start components
-gleitzeit5 components all
+gleitzeit components all
 
 # 3. Check status
-gleitzeit5 status
+gleitzeit status
 
 # 4. Submit a workflow
-gleitzeit5 submit examples/simple_llm_workflow.yaml
+gleitzeit submit examples/simple_llm_workflow.yaml
 ```
 
 ## 📋 CLI Commands
 
 ### Core Commands
 
-- `gleitzeit5 start` - Quick start everything (hub + components)
-- `gleitzeit5 run <workflow.yaml>` - One command: start + submit workflow
-- `gleitzeit5 status` - Show system status
-- `gleitzeit5 monitor` - Real-time monitoring (auto-starts hub)
+- `gleitzeit start` - Quick start everything (hub + components)
+- `gleitzeit run <workflow.yaml>` - One command: start + submit workflow
+- `gleitzeit status` - Show system status
+- `gleitzeit monitor` - Real-time monitoring (auto-starts hub)
 
 ### Workflow Commands
 
-- `gleitzeit5 submit <workflow.yaml>` - Submit workflow (auto-starts hub)
-- `gleitzeit5 providers` - List available providers
+- `gleitzeit submit <workflow.yaml>` - Submit workflow (auto-starts hub)
+- `gleitzeit providers` - List available providers
 
 ### Component Commands
 
-- `gleitzeit5 hub` - Start just the central hub
-- `gleitzeit5 components <names>` - Start specific components (auto-starts hub)
+- `gleitzeit hub` - Start just the central hub
+- `gleitzeit components <names>` - Start specific components (auto-starts hub)
 
 ### Management Commands
 
-- `gleitzeit5 version` - Show version info
+- `gleitzeit version` - Show version info
 
 ## 📁 Workflow Examples
 
@@ -174,7 +174,7 @@ tasks:
 pip install -e .[dev]
 
 # Run tests
-pytest gleitzeit_v5/
+pytest gleitzeit/
 ```
 
 ### Available Providers
@@ -196,10 +196,10 @@ Real-time monitoring with beautiful terminal output:
 
 ```bash
 # Monitor system status
-gleitzeit5 monitor
+gleitzeit monitor
 
 # Check component health
-gleitzeit5 status
+gleitzeit status
 ```
 
 ## 🚨 Prerequisites
@@ -213,19 +213,19 @@ gleitzeit5 status
 ### Simple LLM Task
 ```bash
 # One command does everything
-gleitzeit5 run examples/simple_llm_workflow.yaml
+gleitzeit run examples/simple_llm_workflow.yaml
 ```
 
 ### Dependent Tasks
 ```bash
 # Auto-starts hub and components, then submits workflow
-gleitzeit5 run examples/dependent_workflow.yaml
+gleitzeit run examples/dependent_workflow.yaml
 ```
 
 ### Mixed Providers
 ```bash
 # Starts entire system and runs complex workflow
-gleitzeit5 run examples/mixed_workflow.yaml
+gleitzeit run examples/mixed_workflow.yaml
 ```
 
 ## 🤝 Contributing
