@@ -34,9 +34,9 @@ except ImportError:
 
 # Import components
 try:
-    from gleitzeit_v5.hub.central_hub import CentralHub
-    from gleitzeit_v5.base.config import ComponentConfig
-    from gleitzeit_v5.components import (
+    from hub.central_hub import CentralHub
+    from base.config import ComponentConfig
+    from components import (
         QueueManagerClient,
         DependencyResolverClient,
         ExecutionEngineClient

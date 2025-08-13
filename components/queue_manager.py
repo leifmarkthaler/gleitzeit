@@ -13,8 +13,8 @@ from dataclasses import dataclass
 from enum import Enum
 import uuid
 
-from ..base.component import SocketIOComponent
-from ..base.config import ComponentConfig
+from base.component import SocketIOComponent
+from base.config import ComponentConfig
 
 logger = logging.getLogger(__name__)
 
