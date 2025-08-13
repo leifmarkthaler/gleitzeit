@@ -42,7 +42,7 @@ setup(
     author="Leif Markthaler",
     author_email="leif.markthaler@gmail.com",
     url="https://github.com/leifmarkthaler/gleitzeit",
-    packages=find_packages(include=["gleitzeit_v5*"]),
+    py_modules=['cli'],  # Include CLI module
     include_package_data=True,
     package_data={
         'gleitzeit_v5': [
@@ -69,8 +69,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'gleitzeit=gleitzeit_v5.cli:run',
-            'gz=gleitzeit_v5.cli:run',  # Short alias
+            'gleitzeit=cli:run',
+            'gz=cli:run',  # Short alias
         ],
     },
     classifiers=[

@@ -1,0 +1,28 @@
+# Simple Python-only workflow for testing
+name: "Simple Python Test Workflow"
+description: "A basic workflow that only uses Python tasks"
+version: "1.0"
+
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - id: "math_task"
+    method: "python/execute"
+    priority: 2
+    parameters:
+      code: |
+        import math
+        result = 2 + 2
+        print(f"2 + 2 = {result}")
+        print(f"Square root of 16 = {math.sqrt(16)}")
+
+  - id: "string_task"
+    method: "python/execute"
+    priority: 2
+    parameters:
+      code: |
+        text = "Hello from Gleitzeit!"
+        print(f"Text: {text}")
+        print(f"Length: {len(text)}")
+        print(f"Uppercase: {text.upper()}")
