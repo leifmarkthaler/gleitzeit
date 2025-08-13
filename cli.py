@@ -129,6 +129,74 @@ class GleitzeitCLI:
         
         return True
     
+    async def start_providers(self, hub_url: str = "http://localhost:8001", 
+                             providers: List[str] = None, auto_start_hub: bool = True):
+        """Start providers"""
+        if providers is None:
+            providers = ["python-local"]  # Default to Python provider from YAML
+        
+        # Auto-start hub if needed
+        if auto_start_hub:
+            from urllib.parse import urlparse
+            parsed = urlparse(hub_url)
+            host = parsed.hostname or "127.0.0.1"
+            port = parsed.port or 8001
+            
+            if not await self.ensure_hub_running(host, port):
+                self._print_error("Failed to start or connect to hub")
+                return False
+        
+        started = []
+        
+        try:
+            # Load YAML configurations first
+            self._print_info("Loading YAML configurations...")
+            from core.registry_manager import get_registry_manager
+            from pathlib import Path
+            
+            registry_manager = get_registry_manager()
+            protocol_dirs = [Path("protocols/yaml")]
+            provider_dirs = [Path("providers/yaml")]
+            
+            status = await registry_manager.scan_and_register_all(protocol_dirs, provider_dirs)
+            if status.protocols_failed > 0 or status.providers_failed > 0:
+                self._print_error(f"Failed to load YAML configurations: {len(status.errors)} errors")
+                for error in status.errors[:3]:  # Show first 3 errors
+                    self._print_error(f"  {error}")
+                return False
+            
+            self._print_success(f"Loaded {status.protocols_loaded} protocols and {status.providers_loaded} providers")
+            
+            # Load providers from YAML using the working YAMLProvider approach
+            for provider_name in providers:
+                try:
+                    self._print_info(f"Starting YAML provider: {provider_name}")
+                    from providers.yaml_provider import YAMLProvider
+                    from base.config import ComponentConfig
+                    
+                    config = ComponentConfig()
+                    config.hub_url = hub_url
+                    
+                    provider = YAMLProvider(provider_name, config=config)
+                    asyncio.create_task(provider.start())
+                    started.append(provider_name)
+                    
+                except Exception as e:
+                    self._print_error(f"Failed to create provider {provider_name}: {e}")
+                    import traceback
+                    self._print_error(f"Error details: {traceback.format_exc()}")
+            
+            await asyncio.sleep(5)  # Give providers more time to connect and register
+            
+            self._print_success(f"Started providers: {', '.join(started)}")
+            return True
+            
+        except Exception as e:
+            self._print_error(f"Failed to start providers: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
     async def start_components(self, hub_url: str = "http://localhost:8001",
                              components: List[str] = None, auto_start_hub: bool = True):
         """Start core components"""
@@ -351,8 +419,8 @@ class GleitzeitCLI:
             self._print_info("Monitoring stopped")
     
     async def quick_start(self, host: str = "127.0.0.1", port: int = 8001, 
-                         start_components: bool = True, keep_running: bool = False):
-        """Quick start: Hub + components in one command"""
+                         start_components: bool = True, start_providers: bool = True, keep_running: bool = False):
+        """Quick start: Hub + components + providers in one command"""
         self._print_info("🚀 Quick starting Gleitzeit...")
         
         # Start hub
@@ -360,17 +428,25 @@ class GleitzeitCLI:
             self._print_error("Failed to start hub")
             return False
         
+        hub_url = f"http://{host}:{port}"
+        
         # Start components if requested
         if start_components:
-            hub_url = f"http://{host}:{port}"
             success = await self.start_components(hub_url, auto_start_hub=False)
             if not success:
                 self._print_error("Failed to start some components")
                 return False
         
+        # Start providers if requested
+        if start_providers:
+            success = await self.start_providers(hub_url, auto_start_hub=False)
+            if not success:
+                self._print_error("Failed to start some providers")
+                return False
+        
         self._print_success(f"✅ Gleitzeit is ready at http://{host}:{port}")
-        self._print_info("💡 Try: gleitzeit5 status")
-        self._print_info("💡 Try: gleitzeit5 submit examples/simple_llm_workflow.yaml")
+        self._print_info("💡 Try: gleitzeit status")
+        self._print_info("💡 Try: gleitzeit run test_python_workflow.yaml")
         
         if keep_running:
             try:
@@ -387,8 +463,8 @@ class GleitzeitCLI:
         """Run a workflow from start to finish - one command does everything"""
         self._print_info(f"🚀 Running workflow: {workflow_file}")
         
-        # Start everything
-        if not await self.quick_start(host, port, start_components=True, keep_running=False):
+        # Start everything including providers
+        if not await self.quick_start(host, port, start_components=True, start_providers=True, keep_running=False):
             return False
         
         # Submit workflow

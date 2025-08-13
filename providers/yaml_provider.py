@@ -10,13 +10,13 @@ import logging
 import aiohttp
 import subprocess
 import json
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from pathlib import Path
 
-from ..base.component import SocketIOComponent
-from ..core.yaml_loader import ProviderConfig, get_yaml_loader
-from ..core.protocol import get_protocol_registry
-from ..core.errors import ProviderError, ErrorCode
+from base.component import SocketIOComponent
+from core.yaml_loader import ProviderConfig, get_yaml_loader
+from core.protocol import get_protocol_registry
+from core.errors import ProviderError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +32,32 @@ class YAMLProvider(SocketIOComponent):
     4. Integrates with the SocketIO event system
     """
     
-    def __init__(self, provider_name: str):
+    def __init__(self, provider_name: str, config=None):
         super().__init__(
             component_type="provider",
-            component_id=f"yaml-provider-{provider_name}"
+            component_id=f"yaml-provider-{provider_name}",
+            config=config
         )
         self.provider_name = provider_name
         self.provider_config: Optional[ProviderConfig] = None
         self.protocol_spec = None
         self.session = None  # For HTTP providers
     
+    def setup_events(self):
+        """Setup component-specific Socket.IO event handlers"""
+        # Event handlers are set up in _register_handlers method after initialization
+        logger.info(f"🔧 YAMLProvider {self.provider_name} setup_events() called")
+        pass
+    
+    def get_capabilities(self) -> List[str]:
+        """Return list of capabilities this component provides"""
+        if self.provider_config:
+            return self.provider_config.capabilities
+        return []
+    
     async def on_ready(self):
         """Initialize after connecting to hub"""
-        logger.info(f"YAML Provider {self.provider_name} is ready")
+        logger.info(f"🔥 YAML Provider {self.provider_name} on_ready() called!")
         
         # Load provider configuration
         await self._load_provider_config()
@@ -54,6 +67,9 @@ class YAMLProvider(SocketIOComponent):
         
         # Register event handlers
         await self._register_handlers()
+        
+        # Register provider with hub
+        await self._register_provider()
         
         logger.info(f"Provider {self.provider_name} fully initialized")
     
@@ -178,6 +194,30 @@ class YAMLProvider(SocketIOComponent):
                 )
         
         logger.info(f"Event handlers registered for {self.provider_name}")
+    
+    async def _register_provider(self):
+        """Register this provider with the central hub"""
+        # Get supported methods from protocol
+        supported_methods = []
+        if self.protocol_spec:
+            supported_methods = list(self.protocol_spec.methods.keys())
+        
+        registration_data = {
+            'component_id': self.provider_name,  # This is what execution engine expects
+            'protocol': f"{self.provider_config.protocol}/{self.provider_config.version}",
+            'capabilities': self.provider_config.capabilities,
+            'supported_methods': supported_methods,
+            'connection_type': self.provider_config.connection.get('type'),
+            'metadata': self.provider_config.metadata or {}
+        }
+        
+        # Route provider registration to execution engine like the test shows
+        await self.emit_with_correlation('route_event', {
+            'target_component_type': 'execution_engine',
+            'event_name': 'provider_registered',
+            'event_data': registration_data
+        })
+        logger.info(f"Registered provider {self.provider_name} with hub")
     
     async def _execute_task_request(self, request_data: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a task request"""

@@ -10,7 +10,7 @@ import asyncio
 import aiohttp
 import subprocess
 import json
-from typing import Dict, Any, Optional, Type
+from typing import Dict, Any, Optional, Type, List
 from pathlib import Path
 from abc import ABC, abstractmethod
 
@@ -331,6 +331,39 @@ class LocalProvider(BaseProvider):
                 ErrorCode.PROVIDER_INITIALIZATION_FAILED,
                 provider_id=self.config.name
             )
+    
+    def setup_events(self):
+        """Setup component-specific Socket.IO event handlers"""
+        # LocalProvider uses the base component event handling
+        pass
+    
+    def get_capabilities(self) -> List[str]:
+        """Return list of capabilities this component provides"""
+        return self.config.capabilities if self.config else []
+    
+    async def on_ready(self):
+        """Called when component is registered and ready"""
+        await super().on_ready()  # Call BaseProvider's on_ready
+    
+    async def on_shutdown(self):
+        """Called during graceful shutdown for component-specific cleanup"""
+        logger.info(f"LocalProvider {self.config.name if self.config else 'unknown'} shutting down")
+    
+    async def initialize(self, hub):
+        """Initialize the provider with the hub URL"""
+        # Set the hub URL for the component to connect to
+        if hasattr(self, 'config') and hasattr(self.config, 'hub_url'):
+            self.config.hub_url = hub
+        # Initialize any provider-specific resources
+        await self.initialize_provider()
+    
+    async def initialize_provider(self):
+        """Initialize local provider resources"""
+        # Create working directory if it doesn't exist
+        from pathlib import Path
+        working_dir = Path(self.working_directory)
+        working_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"LocalProvider {self.config.name} initialized with working directory: {working_dir}")
 
 
 class ProviderFactory:
