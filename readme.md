@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Gleitzeit is a modern, Socket.IO-based distributed workflow orchestration system designed for real-time task execution. 
+Gleitzeit is a modern, Socket.IO-based distributed workflow orchestration system designed for task scheduling and real-time execution. 
 
 **Key Characteristics:**
 - Pure Socket.IO event-driven communication
