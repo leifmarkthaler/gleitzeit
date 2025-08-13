@@ -18,8 +18,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from ..base.events import EventRouter, CorrelationTracker, get_event_registry
-from ..base.config import ComponentConfig, setup_logging
+from base.events import EventRouter, CorrelationTracker, get_event_registry
+from base.config import ComponentConfig, setup_logging
 
 logger = logging.getLogger(__name__)
 

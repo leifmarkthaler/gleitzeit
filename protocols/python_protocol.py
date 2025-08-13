@@ -5,7 +5,7 @@ Defines the standard Python protocol with JSON-RPC 2.0 compliance
 and proper parameter substitution support for code execution.
 """
 
-from ..core.protocol import ProtocolSpec, MethodSpec, ParameterSpec, ParameterType
+from core.protocol import ProtocolSpec, MethodSpec, ParameterSpec, ParameterType
 
 # Python code parameter
 CODE_PARAM = ParameterSpec(

@@ -15,10 +15,10 @@ from dataclasses import dataclass
 from enum import Enum
 import uuid
 
-from ..base.component import SocketIOComponent
-from ..base.config import ComponentConfig
-from ..core.protocol import get_protocol_registry
-from ..protocols import LLM_PROTOCOL_V1, PYTHON_PROTOCOL_V1
+from base.component import SocketIOComponent
+from base.config import ComponentConfig
+from core.protocol import get_protocol_registry
+from protocols import LLM_PROTOCOL_V1, PYTHON_PROTOCOL_V1
 
 logger = logging.getLogger(__name__)
 

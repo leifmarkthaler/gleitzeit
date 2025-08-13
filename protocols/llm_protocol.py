@@ -5,7 +5,7 @@ Defines the standard LLM protocol with JSON-RPC 2.0 compliance
 and proper parameter substitution support.
 """
 
-from ..core.protocol import ProtocolSpec, MethodSpec, ParameterSpec, ParameterType
+from core.protocol import ProtocolSpec, MethodSpec, ParameterSpec, ParameterType
 
 # Message parameter for chat method
 MESSAGE_PARAM = ParameterSpec(

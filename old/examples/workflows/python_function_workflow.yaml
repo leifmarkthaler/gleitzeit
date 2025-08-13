@@ -1,0 +1,67 @@
+# Python Function Workflow Example
+# Demonstrates using custom Python functions in workflows
+
+name: "Python Function Processing Workflow"
+description: "Process data using custom Python functions"
+version: "1.0"
+
+tasks:
+  - id: "generate-data"
+    name: "Generate Test Data"
+    protocol: "python/v1"
+    method: "execute"
+    priority: "high"
+    params:
+      function: "calculate_fibonacci"
+      args: [10]
+
+  - id: "analyze-data"
+    name: "Analyze Generated Data"
+    protocol: "python/v1"
+    method: "execute"
+    dependencies: ["generate-data"]
+    priority: "normal"
+    params:
+      function: "analyze_data"
+      args: ["${generate-data.result.result}"]
+
+  - id: "process-text"
+    name: "Process Text"
+    protocol: "python/v1"
+    method: "execute"
+    priority: "normal"
+    params:
+      function: "process_text"
+      args: ["Hello World from Gleitzeit V4", ["lower", "reverse"]]
+
+  - id: "generate-hash"
+    name: "Generate Hash"
+    protocol: "python/v1"
+    method: "execute"
+    dependencies: ["process-text"]
+    priority: "low"
+    params:
+      function: "generate_hash"
+      args: ["${process-text.result.result}"]
+      kwargs:
+        algorithm: "sha256"
+
+  - id: "merge-all"
+    name: "Merge All Results"
+    protocol: "python/v1"
+    method: "execute"
+    dependencies: ["generate-data", "analyze-data", "process-text", "generate-hash"]
+    priority: "high"
+    params:
+      function: "merge_results"
+      args: [
+        "${generate-data.result.result}",
+        "${analyze-data.result.result}",
+        "${process-text.result.result}",
+        "${generate-hash.result.result}"
+      ]
+
+metadata:
+  author: "Gleitzeit V4"
+  tags: ["python", "functions", "data-processing"]
+  estimated_duration: "10 seconds"

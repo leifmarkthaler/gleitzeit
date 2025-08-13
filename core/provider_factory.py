@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from .yaml_loader import ProviderConfig, get_yaml_loader
 from .protocol import get_protocol_registry, ProtocolSpec
 from .errors import ProviderError, ErrorCode
-from ..base.component import SocketIOComponent
+from base.component import SocketIOComponent
 
 logger = logging.getLogger(__name__)
 
