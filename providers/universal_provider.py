@@ -10,16 +10,16 @@ import logging
 import time
 from typing import Dict, Any, Optional
 
-from ..base.component import SocketIOComponent
-from ..core.yaml_loader import ProviderConfig, get_yaml_loader
-from ..core.protocol import get_protocol_registry
-from ..core.executor_base import (
+from base.component import SocketIOComponent
+from core.yaml_loader import ProviderConfig, get_yaml_loader
+from core.protocol import get_protocol_registry
+from core.executor_base import (
     get_executor_registry, 
     ExecutionContext, 
     ExecutionResult,
     MethodExecutor
 )
-from ..core.errors import ProviderError, ErrorCode
+from core.errors import ProviderError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
