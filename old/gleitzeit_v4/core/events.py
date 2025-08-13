@@ -415,7 +415,9 @@ def create_task_failed_event(
     task_id: str,
     error_message: str,
     workflow_id: Optional[str] = None,
-    source: str = "execution_engine"
+    source: str = "execution_engine",
+    error_type: Optional[str] = None,
+    is_retryable: Optional[bool] = None
 ) -> GleitzeitEvent:
     """Create a task failed event"""
     task_data = TaskEventData(
@@ -424,13 +426,27 @@ def create_task_failed_event(
         status=TaskStatus.FAILED,
         error_message=error_message
     )
-    return GleitzeitEvent.create_task_event(
+    
+    # Add additional metadata if provided
+    tags = {}
+    if error_type:
+        tags["error_type"] = error_type
+    if is_retryable is not None:
+        tags["is_retryable"] = str(is_retryable)
+    
+    event = GleitzeitEvent.create_task_event(
         EventType.TASK_FAILED,
         task_data,
         severity=EventSeverity.ERROR,
         source=source,
         correlation_id=workflow_id
     )
+    
+    # Add custom tags
+    if tags:
+        event.tags.update(tags)
+    
+    return event
 
 
 def create_workflow_started_event(

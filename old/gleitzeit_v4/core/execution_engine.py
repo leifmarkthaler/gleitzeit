@@ -209,6 +209,9 @@ class ExecutionEngine:
         
         logger.info(f"Started ExecutionEngine in {mode.value} mode")
         
+        # Store execution mode for task submission logic
+        self._execution_mode = mode
+        
         try:
             if mode == ExecutionMode.SINGLE_SHOT:
                 await self._execute_single_task()
@@ -1023,6 +1026,16 @@ class ExecutionEngine:
         )
         
         await self.emit_structured_event(task_submitted_event)
+        
+        # In event-driven mode, immediately try to assign and execute the task if capacity allows
+        if (self.running and 
+            len(self.active_tasks) < self.max_concurrent_tasks and
+            hasattr(self, '_execution_mode') and self._execution_mode == ExecutionMode.EVENT_DRIVEN):
+            # Try to dequeue and execute this task if it's ready
+            ready_task = await self.queue_manager.dequeue_next_task(queue_name)
+            if ready_task and ready_task.id == task.id:
+                # Create a background task for execution
+                asyncio.create_task(self._execute_task(ready_task))
         
     
     async def submit_workflow(self, workflow: Workflow, queue_name: Optional[str] = None) -> None:
