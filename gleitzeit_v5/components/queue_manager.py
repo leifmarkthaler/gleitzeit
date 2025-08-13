@@ -1,5 +1,5 @@
 """
-Queue Manager Client for Gleitzeit V5
+Queue Manager Client for Gleitzeit
 
 Distributed queue management component that handles task queuing,
 priority scheduling, and dependency tracking through pure Socket.IO events.

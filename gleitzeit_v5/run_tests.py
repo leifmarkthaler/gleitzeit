@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test runner for Gleitzeit V5
+Test runner for Gleitzeit
 
 Provides different test run configurations:
 - Unit tests only (fast)
@@ -32,7 +32,7 @@ def run_command(cmd, description):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Gleitzeit V5 Test Runner")
+    parser = argparse.ArgumentParser(description="Gleitzeit Test Runner")
     parser.add_argument(
         '--type', 
         choices=['unit', 'integration', 'all', 'examples'],
@@ -97,7 +97,7 @@ def main():
     print(f"\n{'='*50}")
     if success:
         print("🎉 ALL TESTS PASSED!")
-        print("✅ Your Gleitzeit V5 CLI is working correctly!")
+        print("✅ Your Gleitzeit CLI is working correctly!")
     else:
         print("💥 SOME TESTS FAILED!")
         print("❌ Please check the output above for details.")

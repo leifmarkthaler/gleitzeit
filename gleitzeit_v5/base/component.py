@@ -1,5 +1,5 @@
 """
-Base SocketIOComponent class for all Gleitzeit V5 components
+Base SocketIOComponent class for all Gleitzeit components
 
 Provides common functionality like connection management, event correlation,
 health checks, and graceful shutdown.
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 class SocketIOComponent(ABC):
     """
-    Base class for all Gleitzeit V5 Socket.IO components
+    Base class for all Gleitzeit Socket.IO components
     
     Provides:
     - Connection management to central hub
@@ -148,7 +148,7 @@ class SocketIOComponent(ABC):
             'component_type': self.component_type,
             'component_id': self.component_id,
             'capabilities': self.get_capabilities(),
-            'version': '5.0.0-alpha',
+            'version': '0.0.1',
             'hostname': socket.gethostname(),
             'process_id': asyncio.current_task().get_name() if asyncio.current_task() else 'unknown'
         }

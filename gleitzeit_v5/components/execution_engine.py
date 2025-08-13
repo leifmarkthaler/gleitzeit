@@ -1,5 +1,5 @@
 """
-Execution Engine Client for Gleitzeit V5
+Execution Engine Client for Gleitzeit
 
 Distributed execution component that handles task execution coordination,
 provider communication, and result management through pure Socket.IO events.

@@ -30,7 +30,7 @@ tasks:
 #    ollama pull llava:latest
 #    ollama pull llama3.2
 # 2. Start a provider that supports both llm/vision and llm/chat methods
-# 3. Submit: gleitzeit5 submit examples/mixed_vision_text_workflow.yaml
+# 3. Submit: gleitzeit submit examples/mixed_vision_text_workflow.yaml
 #
 # Expected flow:
 # 1. LLaVa analyzes the image and describes the colorful scene

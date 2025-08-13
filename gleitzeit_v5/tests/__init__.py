@@ -1,1 +1,1 @@
-# Tests for Gleitzeit V5
+# Tests for Gleitzeit

@@ -1,5 +1,5 @@
 """
-Gleitzeit V5 Core Module
+Gleitzeit Core Module
 
 Core functionality for distributed task execution with protocol-based providers
 and JSON-RPC 2.0 compliance.

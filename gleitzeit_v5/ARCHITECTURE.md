@@ -1,8 +1,8 @@
-# Gleitzeit V5 - Pure Socket.IO Distributed Architecture
+# Gleitzeit - Pure Socket.IO Distributed Architecture
 
 ## Design Philosophy
 
-Gleitzeit V5 is a **pure event-driven distributed system** where **every component is a Socket.IO client** connecting to a central event hub. No component has direct dependencies on others - all communication happens through Socket.IO events.
+Gleitzeit is a **pure event-driven distributed system** where **every component is a Socket.IO client** connecting to a central event hub. No component has direct dependencies on others - all communication happens through Socket.IO events.
 
 ## Core Principles
 
@@ -292,7 +292,7 @@ services:
     depends_on: [central-hub]
 ```
 
-## Benefits of V5 Architecture
+## Benefits of Architecture
 
 ### 1. True Horizontal Scaling
 - Add more instances of any component type

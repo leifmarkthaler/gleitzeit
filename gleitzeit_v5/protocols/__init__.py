@@ -1,5 +1,5 @@
 """
-Gleitzeit V5 Protocol Specifications
+Gleitzeit Protocol Specifications
 
 Standard protocol definitions for various provider types.
 """

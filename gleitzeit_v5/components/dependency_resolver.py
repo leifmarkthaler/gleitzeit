@@ -1,5 +1,5 @@
 """
-Dependency Resolver Client for Gleitzeit V5
+Dependency Resolver Client for Gleitzeit
 
 Distributed component that handles task dependency resolution,
 parameter substitution, and workflow coordination through pure Socket.IO events.

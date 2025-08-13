@@ -20,31 +20,31 @@ ollama list
 #### Option 1: One-Command Execution
 ```bash
 # Start everything and run the mixed workflow
-gleitzeit5 run examples/mixed_vision_text_workflow.yaml
+gleitzeit run examples/mixed_vision_text_workflow.yaml
 ```
 
 #### Option 2: Step-by-Step
 ```bash
 # 1. Start the hub and components
-gleitzeit5 start
+gleitzeit start
 
 # 2. Submit the workflow (in another terminal)
-gleitzeit5 submit examples/mixed_vision_text_workflow.yaml
+gleitzeit submit examples/mixed_vision_text_workflow.yaml
 
 # 3. Monitor progress
-gleitzeit5 status
+gleitzeit status
 ```
 
 #### Option 3: With Custom Provider
 ```bash
 # 1. Start hub only
-gleitzeit5 hub --port 8001
+gleitzeit hub --port 8001
 
 # 2. Start your vision-enabled provider (custom script)
 python test_vision_extension.py
 
 # 3. Submit workflow
-gleitzeit5 submit examples/mixed_vision_text_workflow.yaml --hub-url http://localhost:8001
+gleitzeit submit examples/mixed_vision_text_workflow.yaml --hub-url http://localhost:8001
 ```
 
 ### Available Vision Workflows
@@ -61,22 +61,22 @@ gleitzeit5 submit examples/mixed_vision_text_workflow.yaml --hub-url http://loca
 
 #### Submit Workflow
 ```bash
-gleitzeit5 submit examples/mixed_vision_text_workflow.yaml
+gleitzeit submit examples/mixed_vision_text_workflow.yaml
 ```
 
 #### Check Status
 ```bash
-gleitzeit5 status
+gleitzeit status
 ```
 
 #### Monitor Real-time
 ```bash
-gleitzeit5 monitor
+gleitzeit monitor
 ```
 
 #### List Available Providers
 ```bash
-gleitzeit5 providers
+gleitzeit providers
 ```
 
 ### Expected Output
@@ -105,7 +105,7 @@ ollama pull llava:latest
 #### Issue: "Hub not running"
 **Solution**: Start the hub:
 ```bash
-gleitzeit5 start --hub-only
+gleitzeit start --hub-only
 ```
 
 ### Custom Usage
@@ -135,7 +135,7 @@ tasks:
 
 2. **Submit it**:
 ```bash
-gleitzeit5 submit my_workflow.yaml
+gleitzeit submit my_workflow.yaml
 ```
 
 ### Integration Examples
@@ -147,7 +147,7 @@ import json
 
 # Submit workflow
 result = subprocess.run([
-    'gleitzeit5', 'submit', 'examples/mixed_vision_text_workflow.yaml'
+    'gleitzeit', 'submit', 'examples/mixed_vision_text_workflow.yaml'
 ], capture_output=True, text=True)
 
 print(f"Workflow submitted: {result.returncode == 0}")
@@ -157,25 +157,25 @@ print(f"Workflow submitted: {result.returncode == 0}")
 ```bash
 #!/bin/bash
 echo "Starting vision workflow..."
-gleitzeit5 start --background
+gleitzeit start --background
 sleep 5
-gleitzeit5 submit examples/mixed_vision_text_workflow.yaml
-gleitzeit5 status
+gleitzeit submit examples/mixed_vision_text_workflow.yaml
+gleitzeit status
 ```
 
 ### Performance Tips
 
 1. **Use background mode** for faster iteration:
 ```bash
-gleitzeit5 start --background
+gleitzeit start --background
 ```
 
 2. **Monitor with intervals**:
 ```bash
-gleitzeit5 monitor --interval 1
+gleitzeit monitor --interval 1
 ```
 
 3. **Use specific hub URL** for multiple instances:
 ```bash
-gleitzeit5 submit workflow.yaml --hub-url http://localhost:8002
+gleitzeit submit workflow.yaml --hub-url http://localhost:8002
 ```

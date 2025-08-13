@@ -1,5 +1,5 @@
 name: "Vision Analysis Workflow"
-description: "Demonstrates vision analysis using LLaVa with Gleitzeit V5"
+description: "Demonstrates vision analysis using LLaVa with Gleitzeit"
 timeout: 60
 wait_for_completion: true
 
@@ -37,7 +37,7 @@ tasks:
 # 1. Replace the base64 image data with your actual image
 # 2. Ensure LLaVa is available: ollama pull llava:latest
 # 3. Start a vision-enabled provider that supports llm/vision method
-# 4. Submit this workflow: gleitzeit5 submit examples/vision_workflow.yaml
+# 4. Submit this workflow: gleitzeit submit examples/vision_workflow.yaml
 
 # Example image creation (Python):
 # from PIL import Image

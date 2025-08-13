@@ -1,5 +1,5 @@
 """
-Event routing and correlation tracking for Gleitzeit V5
+Event routing and correlation tracking for Gleitzeit
 
 Provides utilities for tracking event flows across distributed components
 and routing events efficiently.

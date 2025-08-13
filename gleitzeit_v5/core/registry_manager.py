@@ -1,5 +1,5 @@
 """
-Protocol and Provider Registry Manager for Gleitzeit V5
+Protocol and Provider Registry Manager for Gleitzeit
 
 Manages dynamic loading, validation, and registration of protocols and providers
 from YAML files, ensuring they meet system requirements.

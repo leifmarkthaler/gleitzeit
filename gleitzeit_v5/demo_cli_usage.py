@@ -51,25 +51,25 @@ async def demo_cli_usage():
         {
             "title": "Option 1: One-Command Execution",
             "commands": [
-                "gleitzeit5 run examples/mixed_vision_text_workflow.yaml"
+                "gleitzeit run examples/mixed_vision_text_workflow.yaml"
             ],
             "description": "Starts everything and runs the workflow in one command"
         },
         {
             "title": "Option 2: Step-by-Step",
             "commands": [
-                "gleitzeit5 start",
-                "gleitzeit5 submit examples/mixed_vision_text_workflow.yaml",
-                "gleitzeit5 status"
+                "gleitzeit start",
+                "gleitzeit submit examples/mixed_vision_text_workflow.yaml",
+                "gleitzeit status"
             ],
             "description": "Manual control over each step"
         },
         {
             "title": "Option 3: Background Mode",
             "commands": [
-                "gleitzeit5 start --background",
-                "gleitzeit5 submit examples/mixed_vision_text_workflow.yaml",
-                "gleitzeit5 monitor"
+                "gleitzeit start --background",
+                "gleitzeit submit examples/mixed_vision_text_workflow.yaml",
+                "gleitzeit monitor"
             ],
             "description": "Non-blocking startup with real-time monitoring"
         }
@@ -107,10 +107,10 @@ When you run the mixed workflow, you'll see output like:
     print_header("Status and Monitoring Commands")
     
     monitoring_commands = [
-        ("gleitzeit5 status", "Show current hub and component status"),
-        ("gleitzeit5 monitor", "Real-time monitoring of workflow execution"),
-        ("gleitzeit5 providers", "List available providers (including vision)"),
-        ("gleitzeit5 submit --help", "Show all submission options")
+        ("gleitzeit status", "Show current hub and component status"),
+        ("gleitzeit monitor", "Real-time monitoring of workflow execution"),
+        ("gleitzeit providers", "List available providers (including vision)"),
+        ("gleitzeit submit --help", "Show all submission options")
     ]
     
     for cmd, desc in monitoring_commands:
@@ -144,7 +144,7 @@ To create your own vision workflow:
              content: "Based on: ${analyze.response}, tell me more."
 
 2. Submit it:
-   $ gleitzeit5 submit my_vision_workflow.yaml
+   $ gleitzeit submit my_vision_workflow.yaml
 """)
     
     print_header("Troubleshooting")
@@ -152,7 +152,7 @@ To create your own vision workflow:
     troubleshooting = [
         ("No providers available", "Start vision provider: python test_vision_extension.py"),
         ("LLaVa model not found", "Install model: ollama pull llava:latest"),
-        ("Hub connection failed", "Start hub: gleitzeit5 start --hub-only"),
+        ("Hub connection failed", "Start hub: gleitzeit start --hub-only"),
         ("Workflow timeout", "Increase timeout in YAML or use --wait flag"),
     ]
     
@@ -167,7 +167,7 @@ To create your own vision workflow:
 🎉 The mixed vision + text workflow is ready for CLI usage!
 
 Quick test:
-$ gleitzeit5 run examples/mixed_vision_text_workflow.yaml
+$ gleitzeit run examples/mixed_vision_text_workflow.yaml
 
 This will:
 1. Analyze the test image with LLaVa

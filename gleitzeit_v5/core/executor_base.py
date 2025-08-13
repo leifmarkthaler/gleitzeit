@@ -1,5 +1,5 @@
 """
-Base Executor Classes for Gleitzeit V5 Provider Architecture
+Base Executor Classes for Gleitzeit Provider Architecture
 
 Defines the interface and base implementations for protocol executors that can be
 dynamically loaded and integrated with YAML-defined protocols and providers.

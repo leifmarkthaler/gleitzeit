@@ -1,5 +1,5 @@
 """
-Central Event Hub for Gleitzeit V5
+Central Event Hub for Gleitzeit
 
 A pure Socket.IO event router that coordinates distributed components.
 Contains no business logic - only routes events and manages component registry.
@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class CentralHub:
     """
-    Central Event Hub for distributed Gleitzeit V5 system
+    Central Event Hub for distributed Gleitzeit system
     
     Responsibilities:
     - Route events between components
@@ -61,9 +61,9 @@ class CentralHub:
         
         # FastAPI app for HTTP endpoints (health, metrics)
         self.app = FastAPI(
-            title="Gleitzeit V5 Central Hub",
+            title="Gleitzeit Central Hub",
             description="Central event router for distributed task execution",
-            version="5.0.0-alpha"
+            version="0.0.1"
         )
         
         # Add CORS middleware
@@ -121,8 +121,8 @@ class CentralHub:
             
             # Send welcome message
             await self.sio.emit('connected', {
-                'message': 'Connected to Gleitzeit V5 Central Hub',
-                'hub_version': '5.0.0-alpha',
+                'message': 'Connected to Gleitzeit Central Hub',
+                'hub_version': '0.0.1',
                 'server_time': datetime.utcnow().isoformat()
             }, room=sid)
         
@@ -313,7 +313,7 @@ class CentralHub:
                 "status": "healthy" if self.running else "stopped",
                 "uptime": (datetime.utcnow() - self.started_at).total_seconds() if self.started_at else 0,
                 "components_connected": self.stats['components_connected'],
-                "version": "5.0.0-alpha"
+                "version": "0.0.1"
             }
         
         @self.app.get("/stats")
@@ -410,7 +410,7 @@ class CentralHub:
         self.running = True
         self.started_at = datetime.utcnow()
         
-        logger.info(f"Starting Gleitzeit V5 Central Hub on {self.host}:{self.port}")
+        logger.info(f"Starting Gleitzeit Central Hub on {self.host}:{self.port}")
         
         # Setup signal handlers
         self._setup_signal_handlers()

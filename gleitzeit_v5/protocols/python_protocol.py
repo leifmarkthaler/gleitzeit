@@ -1,5 +1,5 @@
 """
-Python Execution Protocol Specification for Gleitzeit V5
+Python Execution Protocol Specification for Gleitzeit
 
 Defines the standard Python protocol with JSON-RPC 2.0 compliance
 and proper parameter substitution support for code execution.

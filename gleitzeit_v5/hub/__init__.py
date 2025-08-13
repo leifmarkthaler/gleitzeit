@@ -1,5 +1,5 @@
 """
-Central Event Hub for Gleitzeit V5
+Central Event Hub for Gleitzeit
 
 The central event hub acts as a pure event router and coordinator,
 managing connections from distributed components and routing events

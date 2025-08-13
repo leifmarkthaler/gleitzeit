@@ -1,5 +1,5 @@
 """
-Base classes and utilities for Gleitzeit V5 components
+Base classes and utilities for Gleitzeit components
 """
 
 from .component import SocketIOComponent

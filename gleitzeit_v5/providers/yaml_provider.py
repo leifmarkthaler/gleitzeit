@@ -1,5 +1,5 @@
 """
-YAML-based Provider Component for Gleitzeit V5
+YAML-based Provider Component for Gleitzeit
 
 A SocketIO component that can execute any protocol method based on YAML configurations.
 This bridges YAML protocol definitions with actual provider execution.

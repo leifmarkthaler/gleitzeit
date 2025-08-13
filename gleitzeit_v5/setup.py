@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Setup script for Gleitzeit V5 - Modern workflow orchestration
+Setup script for Gleitzeit - Modern workflow orchestration
 """
 
 from setuptools import setup, find_packages
@@ -34,9 +34,9 @@ else:
     ]
 
 setup(
-    name="gleitzeit-v5",
-    version="5.0.0-alpha",
-    description="Gleitzeit V5 - Modern workflow orchestration with Socket.IO",
+    name="gleitzeit",
+    version="0.0.1",
+    description="Gleitzeit - Modern workflow orchestration with Socket.IO",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Leif Markthaler",
@@ -69,8 +69,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'gleitzeit5=gleitzeit_v5.cli:run',
-            'gv5=gleitzeit_v5.cli:run',  # Short alias
+            'gleitzeit=gleitzeit_v5.cli:run',
+            'gz=gleitzeit_v5.cli:run',  # Short alias
         ],
     },
     classifiers=[

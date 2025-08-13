@@ -1,5 +1,5 @@
 """
-YAML Protocol and Provider Loader for Gleitzeit V5
+YAML Protocol and Provider Loader for Gleitzeit
 
 Enables dynamic loading of protocols and providers from YAML files,
 making the system extensible without code changes.

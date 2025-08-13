@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Gleitzeit V5 CLI - Modern workflow orchestration interface
+Gleitzeit CLI - Modern workflow orchestration interface
 
-A clean, intuitive command-line interface for managing Gleitzeit V5 components,
+A clean, intuitive command-line interface for managing Gleitzeit components,
 workflows, and distributed execution.
 """
 
@@ -32,7 +32,7 @@ except ImportError:
     RICH_AVAILABLE = False
     print("⚠️  Install 'rich' for better terminal output: pip install rich")
 
-# Import V5 components
+# Import components
 try:
     from gleitzeit_v5.hub.central_hub import CentralHub
     from gleitzeit_v5.base.config import ComponentConfig
@@ -60,7 +60,7 @@ console = Console() if RICH_AVAILABLE else None
 
 
 class GleitzeitCLI:
-    """Main CLI handler for Gleitzeit V5"""
+    """Main CLI handler for Gleitzeit"""
     
     def __init__(self):
         self.hub = None
@@ -106,7 +106,7 @@ class GleitzeitCLI:
         config = ComponentConfig()
         config.log_level = log_level
         
-        self._print_info(f"Starting Gleitzeit V5 Hub on {host}:{port}")
+        self._print_info(f"Starting Gleitzeit Hub on {host}:{port}")
         
         self.hub = CentralHub(host=host, port=port, config=config)
         
@@ -131,7 +131,7 @@ class GleitzeitCLI:
     
     async def start_components(self, hub_url: str = "http://localhost:8001",
                              components: List[str] = None, auto_start_hub: bool = True):
-        """Start core V5 components"""
+        """Start core components"""
         if components is None:
             components = ["queue", "deps", "engine"]
         
@@ -353,7 +353,7 @@ class GleitzeitCLI:
     async def quick_start(self, host: str = "127.0.0.1", port: int = 8001, 
                          start_components: bool = True, keep_running: bool = False):
         """Quick start: Hub + components in one command"""
-        self._print_info("🚀 Quick starting Gleitzeit V5...")
+        self._print_info("🚀 Quick starting Gleitzeit...")
         
         # Start hub
         if not await self.ensure_hub_running(host, port):
@@ -368,7 +368,7 @@ class GleitzeitCLI:
                 self._print_error("Failed to start some components")
                 return False
         
-        self._print_success(f"✅ Gleitzeit V5 is ready at http://{host}:{port}")
+        self._print_success(f"✅ Gleitzeit is ready at http://{host}:{port}")
         self._print_info("💡 Try: gleitzeit5 status")
         self._print_info("💡 Try: gleitzeit5 submit examples/simple_llm_workflow.yaml")
         
@@ -406,7 +406,7 @@ class GleitzeitCLI:
         """Display hub status in a nice format"""
         if RICH_AVAILABLE and self.console:
             # Create status table
-            table = Table(title="Gleitzeit V5 Hub Status", show_header=True)
+            table = Table(title="Gleitzeit Hub Status", show_header=True)
             table.add_column("Metric", style="cyan")
             table.add_column("Value", style="green")
             
@@ -436,7 +436,7 @@ class GleitzeitCLI:
                 self.console.print(comp_table)
         else:
             # Plain text output
-            print("\n=== Gleitzeit V5 Hub Status ===")
+            print("\n=== Gleitzeit Hub Status ===")
             hub_stats = stats.get('hub_stats', {})
             print(f"Version: {hub_stats.get('version', 'Unknown')}")
             print(f"Uptime: {self._format_uptime(hub_stats.get('uptime_seconds', 0))}")
@@ -504,7 +504,7 @@ class GleitzeitCLI:
 async def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
-        description="Gleitzeit V5 - Modern workflow orchestration",
+        description="Gleitzeit - Modern workflow orchestration",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -549,7 +549,7 @@ Examples:
     hub_parser.add_argument('--background', action='store_true', help='Run in background')
     
     # Components command
-    comp_parser = subparsers.add_parser('components', help='Start V5 components')
+    comp_parser = subparsers.add_parser('components', help='Start components')
     comp_parser.add_argument('names', nargs='+', choices=['queue', 'deps', 'engine', 'all'],
                            help='Components to start')
     comp_parser.add_argument('--hub-url', default='http://localhost:8001',
@@ -628,7 +628,7 @@ Examples:
         await cli.run_workflow(args.workflow, args.host, args.port)
     
     elif args.command == 'version':
-        print("Gleitzeit V5 - Version 5.0.0-alpha")
+        print("Gleitzeit - Version 0.0.1")
         print("Modern workflow orchestration with Socket.IO")
     
     else:

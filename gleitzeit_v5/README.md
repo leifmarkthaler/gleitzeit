@@ -1,6 +1,6 @@
-# Gleitzeit V5 - Modern Workflow Orchestration
+# Gleitzeit - Modern Workflow Orchestration
 
-Gleitzeit V5 is a modern, Socket.IO-based workflow orchestration system designed for real-time distributed task execution. It features a clean component-based architecture with beautiful CLI tooling.
+Gleitzeit is a modern, Socket.IO-based workflow orchestration system designed for real-time distributed task execution. It features a clean component-based architecture with beautiful CLI tooling.
 
 ## ✨ Features
 
@@ -241,4 +241,4 @@ MIT License - see LICENSE file for details.
 
 ---
 
-**Gleitzeit V5** - Modern workflow orchestration made simple! 🚀
+**Gleitzeit** - Modern workflow orchestration made simple! 🚀

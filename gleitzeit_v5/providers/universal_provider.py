@@ -1,5 +1,5 @@
 """
-Universal Provider for Gleitzeit V5
+Universal Provider for Gleitzeit
 
 A SocketIO component that can execute any protocol method using executor-based architecture.
 Integrates YAML configurations with executor implementations for maximum flexibility.

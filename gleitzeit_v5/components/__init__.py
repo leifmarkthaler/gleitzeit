@@ -1,5 +1,5 @@
 """
-Distributed components for Gleitzeit V5
+Distributed components for Gleitzeit
 
 All components are Socket.IO clients that connect to the Central Hub.
 Each component implements specific functionality while communicating

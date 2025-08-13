@@ -1,5 +1,5 @@
 """
-Configuration management for Gleitzeit V5 components
+Configuration management for Gleitzeit components
 
 Provides environment-based configuration with sensible defaults.
 """
@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 @dataclass
 class ComponentConfig:
-    """Configuration for Gleitzeit V5 components"""
+    """Configuration for Gleitzeit components"""
     
     # Central Hub connection
     hub_url: str = "http://localhost:8000"

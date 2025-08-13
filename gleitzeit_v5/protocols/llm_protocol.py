@@ -1,5 +1,5 @@
 """
-LLM Protocol Specification for Gleitzeit V5
+LLM Protocol Specification for Gleitzeit
 
 Defines the standard LLM protocol with JSON-RPC 2.0 compliance
 and proper parameter substitution support.
