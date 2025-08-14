@@ -25,16 +25,16 @@ pip install -e .
 
 ```bash
 # Submit a workflow
-python cli.py workflow submit examples/llm_workflow.yaml
+gleitzeit workflow submit examples/llm_workflow.yaml
 
 # Check workflow status
-python cli.py workflow status WORKFLOW_ID
+gleitzeit workflow status WORKFLOW_ID
 
 # View system status  
-python cli.py system status
+gleitzeit system status
 
 # View help
-python cli.py --help
+gleitzeit --help
 ```
 
 ## LLM Workflow Example
@@ -77,7 +77,7 @@ tasks:
 
 Run it:
 ```bash
-python cli.py workflow submit research_workflow.yaml
+gleitzeit workflow submit research_workflow.yaml
 ```
 
 ## Provider Support
@@ -85,7 +85,7 @@ python cli.py workflow submit research_workflow.yaml
 ### LLM Provider (Ollama)
 Coordinate LLM interactions:
 ```bash
-python cli.py task submit llm/chat --model "llama3" --messages '[{"role":"user","content":"Explain async programming"}]'
+gleitzeit task submit llm/chat --model "llama3" --messages '[{"role":"user","content":"Explain async programming"}]'
 ```
 
 ### Python Provider
@@ -120,40 +120,40 @@ Easy integration of Model Context Protocol providers:
 ### Workflow Management
 ```bash
 # Submit workflow from YAML
-python cli.py workflow submit workflow.yaml
+gleitzeit workflow submit workflow.yaml
 
 # List workflows
-python cli.py workflow list
+gleitzeit workflow list
 
 # Get workflow status and results
-python cli.py workflow status WORKFLOW_ID
+gleitzeit workflow status WORKFLOW_ID
 ```
 
 ### Task Management
 ```bash
 # List submitted tasks
-python cli.py task list
+gleitzeit task list
 
 # Get task result
-python cli.py task result TASK_ID
+gleitzeit task result TASK_ID
 ```
 
 ### Provider Management
 ```bash
 # List available providers
-python cli.py provider list
+gleitzeit provider list
 
 # Check provider health
-python cli.py provider health PROVIDER_ID
+gleitzeit provider health PROVIDER_ID
 ```
 
 ### Backend Operations
 ```bash
 # View system statistics
-python cli.py backend get-stats
+gleitzeit backend get-stats
 
 # Get workflow results
-python cli.py backend get-results-by-workflow WORKFLOW_NAME
+gleitzeit backend get-results-by-workflow WORKFLOW_NAME
 ```
 
 ## Configuration
