@@ -11,9 +11,10 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-# Add current directory to path
+# Add parent directory to path (since we're in tests/ subdirectory)
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
 
 
 class TestRunner:
@@ -37,7 +38,7 @@ class TestRunner:
             # Run the test file
             result = subprocess.run(
                 [sys.executable, test_file],
-                cwd=current_dir,
+                cwd=parent_dir,
                 capture_output=True,
                 text=True,
                 timeout=timeout

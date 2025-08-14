@@ -13,9 +13,10 @@ import subprocess
 import time
 from datetime import datetime
 
-# Add current directory to path
+# Add parent directory to path (since we're in tests/ subdirectory)
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
 
 
 def print_header(title: str, level: int = 1):
@@ -41,7 +42,7 @@ def run_test(test_file: str, description: str) -> tuple[bool, str, float]:
     try:
         result = subprocess.run(
             [sys.executable, test_file],
-            cwd=current_dir,
+            cwd=parent_dir,
             env={**os.environ, 'PYTHONPATH': '.'},
             capture_output=True,
             text=True,
@@ -124,7 +125,7 @@ def main():
     # Run core tests
     print_header("Core System Tests", 2)
     for test_file, description in core_tests:
-        test_path = os.path.join(current_dir, test_file)
+        test_path = os.path.join(parent_dir, test_file)
         if os.path.exists(test_path):
             success, summary, exec_time = run_test(test_file, description)
             results.append((description, success, summary, exec_time))
@@ -135,7 +136,7 @@ def main():
     # Run optional tests
     print_header("Optional Tests", 2)
     for test_file, description in optional_tests:
-        test_path = os.path.join(current_dir, test_file)
+        test_path = os.path.join(parent_dir, test_file)
         if os.path.exists(test_path):
             success, summary, exec_time = run_test(test_file, description)
             results.append((description, success, summary, exec_time))
