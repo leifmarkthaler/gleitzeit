@@ -239,8 +239,8 @@ MCP providers integrate seamlessly due to the JSON-RPC 2.0 foundation:
 
 ### Project Structure
 ```
-├── core/                 # Core execution engine, models, protocols
-├── providers/           # Provider implementations (LLM, Python, MCP)
+├── core/               # Core execution engine, models, protocols
+├── providers/          # Provider implementations (LLM, Python, MCP)
 ├── persistence/        # Backend storage implementations  
 ├── task_queue/         # Queue management and scheduling
 ├── tests/              # Test suite
