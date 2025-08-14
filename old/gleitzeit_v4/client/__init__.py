@@ -2,7 +2,7 @@
 Socket.IO client components for Gleitzeit V4
 """
 
-from .socketio_provider import (
+from client.socketio_provider import (
     SocketIOProviderClient, 
     SocketIOEchoProvider,
     SocketIOWebSearchProvider, 
@@ -14,7 +14,7 @@ from .socketio_provider import (
     run_ollama_provider
 )
 
-from .socketio_engine import (
+from client.socketio_engine import (
     SocketIOEngineClient,
     run_workflow_engine
 )

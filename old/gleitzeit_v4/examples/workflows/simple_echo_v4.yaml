@@ -1,0 +1,28 @@
+name: "Simple Echo Workflow"
+description: "A basic workflow with dependent echo tasks for testing"
+tasks:
+  - id: "first-echo"
+    name: "First Echo Task"
+    protocol: "echo/v1"
+    method: "echo"
+    params:
+      message: "Hello from the first task!"
+    priority: "high"
+    
+  - id: "second-echo"
+    name: "Second Echo Task"
+    protocol: "echo/v1"
+    method: "echo"
+    params:
+      message: "Previous task said: ${first-echo.result.response}"
+    dependencies: ["first-echo"]
+    priority: "normal"
+    
+  - id: "final-echo"
+    name: "Final Echo Task"
+    protocol: "echo/v1"
+    method: "echo"
+    params:
+      message: "Workflow complete! First: ${first-echo.result.response}, Second: ${second-echo.result.response}"
+    dependencies: ["first-echo", "second-echo"]
+    priority: "urgent"

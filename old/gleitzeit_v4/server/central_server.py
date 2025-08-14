@@ -15,11 +15,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from ..core import Task, Workflow, TaskStatus, WorkflowStatus, Priority, TaskResult
-from ..core.models import RetryConfig
-from ..core.protocol import ProtocolSpec, MethodSpec
-from ..registry import ProtocolProviderRegistry
-from ..queue import QueueManager, DependencyResolver
+from core import Task, Workflow, TaskStatus, WorkflowStatus, Priority, TaskResult
+from core.models import RetryConfig
+from core.protocol import ProtocolSpec, MethodSpec
+from registry import ProtocolProviderRegistry
+from task_queue import QueueManager, DependencyResolver
 
 logger = logging.getLogger(__name__)
 

@@ -243,8 +243,8 @@ MCP providers integrate seamlessly due to the JSON-RPC 2.0 foundation:
 ├── providers/          # Provider implementations (LLM, Python, MCP)
 ├── persistence/        # Backend storage implementations  
 ├── task_queue/         # Queue management and scheduling
-├── tests/              # Test suite
-├── examples/           # Workflow examples
+├── tests/              # Test suite and test runners
+├── docs/               # Documentation and architecture guides
 ├── cli.py              # Main CLI interface
 └── registry.py         # Provider registry and management
 ```
@@ -258,9 +258,9 @@ See the `examples/` directory for workflow templates:
 
 ## Documentation
 
-- `CLI_COMMANDS.md` - Complete CLI reference
-- `PROVIDER_LIFECYCLE_MANAGEMENT.md` - Provider development guide
-- `GLEITZEIT_V4_DESIGN.md` - Architecture overview
+- `docs/CLI_COMMANDS.md` - Complete CLI reference
+- `docs/PROVIDER_LIFECYCLE_MANAGEMENT.md` - Provider development guide
+- `docs/GLEITZEIT_V4_DESIGN.md` - Architecture overview
 
 ## License
 

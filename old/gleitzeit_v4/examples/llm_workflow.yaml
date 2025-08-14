@@ -1,0 +1,13 @@
+name: "LLM Workflow Example"
+description: "Basic LLM workflow using Ollama"
+tasks:
+  - id: "llm_task"
+    name: "Generate Text"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Explain what a workflow orchestration system does in one sentence."
+    priority: "normal"

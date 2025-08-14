@@ -1,0 +1,37 @@
+name: "Dependent Task Workflow"
+description: "Workflow demonstrating task dependencies"
+tasks:
+  - id: "step1"
+    name: "Initialize Data"
+    protocol: "python/v1"
+    method: "python/execute"
+    params:
+      code: |
+        result = {"initialized": True, "data": [1, 2, 3, 4, 5]}
+    priority: "high"
+    
+  - id: "step2"
+    name: "Process Data"
+    protocol: "python/v1"
+    method: "python/execute"
+    params:
+      code: |
+        import json
+        data = ${step1.result}["data"]
+        result = {"processed": True, "sum": sum(data), "count": len(data)}
+    dependencies: ["step1"]
+    priority: "normal"
+    
+  - id: "step3"
+    name: "Finalize Results"
+    protocol: "python/v1"
+    method: "python/execute"
+    params:
+      code: |
+        processing_result = ${step2.result}
+        result = {
+          "final": True,
+          "summary": f"Processed {processing_result['count']} items with sum {processing_result['sum']}"
+        }
+    dependencies: ["step2"]
+    priority: "normal"

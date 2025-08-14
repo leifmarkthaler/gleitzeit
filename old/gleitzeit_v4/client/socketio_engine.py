@@ -12,8 +12,8 @@ from datetime import datetime
 import socketio
 import json
 
-from ..core import Task, TaskStatus, TaskResult, Priority
-from ..core.models import RetryConfig
+from core import Task, TaskStatus, TaskResult, Priority
+from core.models import RetryConfig
 
 logger = logging.getLogger(__name__)
 
@@ -127,9 +127,9 @@ class SocketIOEngineClient:
         @self.sio.event
         async def task_available(data):
             """Handle notification of new task availability"""
-            # Immediately request task if we have capacity
-            if len(self.active_tasks) < self.max_concurrent_tasks:
-                await self._request_task()
+            # In push-based system, server will assign tasks directly
+            # No need to request - just wait for task_assigned event
+            logger.debug("Task available notification received - waiting for task assignment")
         
         @self.sio.event
         async def task_result(data):

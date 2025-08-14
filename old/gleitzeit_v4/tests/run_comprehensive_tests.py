@@ -38,7 +38,8 @@ class TestRunner:
             # Run the test file
             result = subprocess.run(
                 [sys.executable, test_file],
-                cwd=parent_dir,
+                cwd=current_dir,
+                env={**os.environ, 'PYTHONPATH': parent_dir},
                 capture_output=True,
                 text=True,
                 timeout=timeout
@@ -98,23 +99,23 @@ class TestRunner:
         
         self.start_time = time.time()
         
-        # Define test suites
+        # Define test suites (files are now in the same directory)
         test_suites = [
             # Core functionality tests
             {
-                'file': 'tests/test_comprehensive_cli.py',
+                'file': 'test_comprehensive_cli.py',
                 'name': 'Comprehensive CLI Tests',
                 'description': 'Complete CLI command coverage and functionality',
                 'timeout': 300
             },
             {
-                'file': 'tests/test_cli_integration.py', 
+                'file': 'test_cli_integration.py', 
                 'name': 'CLI Integration Tests',
                 'description': 'Real workflow execution through CLI',
                 'timeout': 180
             },
             {
-                'file': 'tests/test_redis_full_execution.py',
+                'file': 'test_redis_full_execution.py',
                 'name': 'Redis Full Execution Tests', 
                 'description': 'Complete workflow execution with Redis persistence',
                 'timeout': 120
@@ -128,7 +129,7 @@ class TestRunner:
             
             # Backend and persistence tests
             {
-                'file': 'tests/test_sqlite_backend.py',
+                'file': 'test_sqlite_backend.py',
                 'name': 'SQLite Backend Tests',
                 'description': 'SQLite persistence backend functionality',
                 'timeout': 60
@@ -136,7 +137,7 @@ class TestRunner:
             
             # Provider tests
             {
-                'file': 'tests/test_ollama_integration.py',
+                'file': 'test_ollama_integration.py',
                 'name': 'Ollama Integration Tests',
                 'description': 'Ollama LLM provider integration',
                 'timeout': 120
@@ -144,7 +145,7 @@ class TestRunner:
             
             # Workflow tests
             {
-                'file': 'tests/test_yaml_workflows.py',
+                'file': 'test_yaml_workflows.py',
                 'name': 'YAML Workflow Tests',
                 'description': 'YAML workflow parsing and execution',
                 'timeout': 90
@@ -174,7 +175,7 @@ class TestRunner:
             self.results[test['name']] = result
         
         # Generate final report
-        self.generate_final_report()
+        return self.generate_final_report()
     
     def generate_final_report(self):
         """Generate comprehensive final report"""

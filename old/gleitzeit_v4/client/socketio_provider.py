@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 import socketio
 
-from ..providers.base import ProtocolProvider
+from providers.base import ProtocolProvider
 
 logger = logging.getLogger(__name__)
 
@@ -228,7 +228,7 @@ class SocketIOEchoProvider(SocketIOProviderClient):
         )
         
         # Import and set provider instance
-        from ..providers.echo_provider import EchoProvider
+        from providers.echo_provider import EchoProvider
         echo_provider = EchoProvider(provider_id)
         self.set_provider_instance(echo_provider)
 
@@ -247,7 +247,7 @@ class SocketIOPythonFunctionProvider(SocketIOProviderClient):
         )
         
         # Import and set provider instance
-        from ..providers.python_function_provider import CustomFunctionProvider
+        from providers.python_function_provider import CustomFunctionProvider
         python_provider = CustomFunctionProvider(provider_id, functions_dir)
         self.set_provider_instance(python_provider)
 
@@ -265,7 +265,7 @@ class SocketIOWebSearchProvider(SocketIOProviderClient):
         )
         
         # Import and set provider instance
-        from ..providers.mock_web_search_provider import MockWebSearchProvider
+        from providers.mock_web_search_provider import MockWebSearchProvider
         search_provider = MockWebSearchProvider(provider_id)
         self.set_provider_instance(search_provider)
 
@@ -283,7 +283,7 @@ class SocketIOTextProcessingProvider(SocketIOProviderClient):
         )
         
         # Import and set provider instance
-        from ..providers.mock_text_processing_provider import MockTextProcessingProvider
+        from providers.mock_text_processing_provider import MockTextProcessingProvider
         text_provider = MockTextProcessingProvider(provider_id)
         self.set_provider_instance(text_provider)
 
@@ -301,7 +301,7 @@ class SocketIOOllamaProvider(SocketIOProviderClient):
         )
         
         # Import and set provider instance
-        from ..providers.ollama_provider import OllamaProvider
+        from providers.ollama_provider import OllamaProvider
         ollama_provider = OllamaProvider(provider_id, ollama_url)
         self.set_provider_instance(ollama_provider)
 

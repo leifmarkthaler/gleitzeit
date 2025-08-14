@@ -1,0 +1,29 @@
+name: "Mixed Task Workflow"
+description: "Workflow combining LLM and Python tasks"
+tasks:
+  - id: "llm_analysis"
+    name: "LLM Analysis"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "List 5 important programming concepts"
+    priority: "normal"
+    
+  - id: "process_results"
+    name: "Process LLM Results"
+    protocol: "python/v1"
+    method: "python/execute"
+    params:
+      code: |
+        # Process the LLM output
+        llm_response = "${llm_analysis.content}"
+        result = {
+          "original_length": len(llm_response),
+          "word_count": len(llm_response.split()),
+          "processed": True
+        }
+    dependencies: ["llm_analysis"]
+    priority: "normal"
