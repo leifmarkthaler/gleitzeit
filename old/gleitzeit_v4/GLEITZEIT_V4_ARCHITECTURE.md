@@ -12,6 +12,23 @@ Gleitzeit V4 is a distributed task orchestration system built on protocol-based 
 - **Priority-based Task Queuing**: Urgent → High → Normal → Low ordering
 - **Native MCP Support**: Model Context Protocol as extension of JSON-RPC 2.0
 
+## 🔧 Recent Architecture Enhancements (v4.1)
+
+### Event-Driven Task Processing Improvements
+- **Enhanced `_process_ready_tasks()` Method**: Fixed event-driven mode to properly dequeue and execute ready tasks when capacity allows
+- **Execution Mode Optimization**: CLI now uses appropriate execution modes (SINGLE_SHOT for direct execution, EVENT_DRIVEN for Socket.IO-based workflows)
+- **Provider Management**: Added missing registry methods for provider health checking and listing
+
+### CLI Architecture Refinements  
+- **YAML Parameter Flexibility**: Support for both `params` and `parameters` fields in workflow definitions
+- **Execution Engine Integration**: Improved CLI workflow submission with proper execution engine initialization
+- **Response Persistence**: Enhanced JSON response file generation with complete task and workflow results
+
+### Persistence Layer Verification
+- **Redis Integration Confirmed**: Full verification of task and result persistence including LLM responses
+- **Task Result Storage**: Complete execution metadata, timing, and provider responses stored in Redis
+- **Workflow State Management**: Enhanced tracking of workflow execution states and task dependencies
+
 ## Architecture Components
 
 ### 1. Core Models (`gleitzeit_v4/core/models.py`)

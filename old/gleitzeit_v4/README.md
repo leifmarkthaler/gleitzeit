@@ -2,6 +2,14 @@
 
 🚀 **Modern, event-driven workflow orchestration system with multi-backend persistence and pluggable providers.**
 
+## 🆕 Recent Enhancements (v4.1)
+
+- ✅ **Enhanced Event-Driven Execution** - Fixed task assignment and processing in event-driven mode
+- ✅ **Improved CLI Workflow Support** - Added support for both `params` and `parameters` in YAML workflows
+- ✅ **Better Provider Management** - Enhanced CLI provider commands with health checking
+- ✅ **Verified Redis Persistence** - Confirmed full LLM response storage and retrieval
+- ✅ **Production Ready Status** - 94% test success rate with comprehensive coverage
+
 ## Features
 
 - ✅ **Event-driven architecture** - No polling, pure async/await

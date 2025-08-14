@@ -379,6 +379,61 @@ class ProtocolProviderRegistry:
             if provider_id in self.providers:
                 self.providers[provider_id].status = ProviderStatus.UNHEALTHY
     
+    async def list_providers(self) -> Dict[str, Dict[str, Any]]:
+        """List all registered providers with their status and metrics"""
+        result = {}
+        for provider_id, info in self.providers.items():
+            result[provider_id] = {
+                "protocol_id": info.protocol_id,
+                "status": info.status.value,
+                "health_status": info.status.value,
+                "success_rate": info.success_rate,
+                "avg_response_time": info.average_response_time,
+                "total_requests": info.total_requests,
+                "supported_methods": list(info.supported_methods),
+                "last_seen": info.last_seen.isoformat(),
+                "consecutive_failures": info.consecutive_failures
+            }
+        return result
+    
+    async def check_provider_health(self, provider_id: str) -> Dict[str, Any]:
+        """Check health of a specific provider"""
+        if provider_id not in self.providers:
+            raise ValueError(f"Provider not found: {provider_id}")
+        
+        provider_info = self.providers[provider_id]
+        provider_instance = self.provider_instances.get(provider_id)
+        
+        # Trigger health check
+        await self._check_provider_health_on_event(provider_id, "manual_health_check")
+        
+        # Get updated status
+        provider_info = self.providers[provider_id]
+        
+        health_details = {
+            "provider_id": provider_id,
+            "status": provider_info.status.value,
+            "details": {
+                "success_rate": f"{provider_info.success_rate:.1f}%",
+                "avg_response_time": f"{provider_info.average_response_time:.3f}s",
+                "total_requests": provider_info.total_requests,
+                "consecutive_failures": provider_info.consecutive_failures,
+                "last_seen": provider_info.last_seen.isoformat(),
+                "is_connected": provider_instance is not None,
+                "supported_methods": list(provider_info.supported_methods)
+            }
+        }
+        
+        # Additional health check if provider supports it
+        if provider_instance and hasattr(provider_instance, 'health_check'):
+            try:
+                health_result = await provider_instance.health_check()
+                health_details["details"]["provider_health"] = health_result
+            except Exception as e:
+                health_details["details"]["health_check_error"] = str(e)
+        
+        return health_details
+
     def get_registry_stats(self) -> Dict[str, Any]:
         """Get registry statistics"""
         total_providers = len(self.providers)

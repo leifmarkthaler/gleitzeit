@@ -13,9 +13,9 @@ from typing import Dict, Any, List, Optional
 import subprocess
 import sys
 
-from ..providers.base import ProtocolProvider
-from ..core.jsonrpc import JSONRPCRequest, JSONRPCResponse, JSONRPCError
-from ..core.errors import (
+from providers.base import ProtocolProvider
+from core.jsonrpc import JSONRPCRequest, JSONRPCResponse, JSONRPCError
+from core.errors import (
     ErrorCode, ProviderError, ProviderTimeoutError, SystemError, 
     ConfigurationError, is_retryable_error
 )

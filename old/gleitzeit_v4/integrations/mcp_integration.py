@@ -9,9 +9,9 @@ import logging
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
-from ..providers.mcp_provider import MCPProvider, create_mcp_provider
-from ..core.protocol import ProtocolSpec, MethodSpec
-from ..registry import ProtocolProviderRegistry
+from providers.mcp_provider import MCPProvider, create_mcp_provider
+from core.protocol import ProtocolSpec, MethodSpec
+from registry import ProtocolProviderRegistry
 
 logger = logging.getLogger(__name__)
 

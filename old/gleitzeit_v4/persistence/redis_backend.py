@@ -276,13 +276,12 @@ class RedisBackend(PersistenceBackend):
     # Workflow operations
     async def save_workflow(self, workflow: Workflow) -> None:
         """Save or update a workflow"""
-        workflow_data = workflow.dict()
-        if workflow_data.get('created_at'):
-            workflow_data['created_at'] = workflow_data['created_at'].isoformat()
+        # Use json() method which handles datetime serialization properly
+        workflow_json = workflow.json()
         
         await self.redis_client.hset(
             self._key(f"workflow:{workflow.id}"),
-            mapping={"data": json.dumps(workflow_data)}
+            mapping={"data": workflow_json}
         )
     
     async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
@@ -294,15 +293,8 @@ class RedisBackend(PersistenceBackend):
         if not data:
             return None
         
-        workflow_data = json.loads(data)
-        if workflow_data.get('created_at'):
-            workflow_data['created_at'] = datetime.fromisoformat(workflow_data['created_at'])
-        
-        # Reconstruct Task objects
-        tasks = [Task(**task_data) for task_data in workflow_data['tasks']]
-        workflow_data['tasks'] = tasks
-        
-        return Workflow(**workflow_data)
+        # Parse JSON directly into Workflow object (handles datetime parsing)
+        return Workflow.parse_raw(data)
     
     async def save_workflow_execution(self, execution: WorkflowExecution) -> None:
         """Save workflow execution state"""

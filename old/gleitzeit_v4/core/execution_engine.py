@@ -282,6 +282,27 @@ class ExecutionEngine:
         
         return await self._execute_task(task)
     
+    async def _process_ready_tasks(self, queue_name: Optional[str] = None) -> None:
+        """Process any ready tasks up to capacity limit - used in event-driven mode"""
+        if not self.running:
+            return
+            
+        while len(self.active_tasks) < self.max_concurrent_tasks:
+            # Try to dequeue the next ready task
+            if queue_name:
+                task = await self.queue_manager.dequeue_next_task(queue_name)
+            else:
+                task = await self.queue_manager.dequeue_next_task()
+            
+            if not task:
+                # No more ready tasks available
+                break
+                
+            # Execute task in background
+            asyncio.create_task(self._execute_task(task))
+            
+        logger.debug(f"Event-driven processing: {len(self.active_tasks)}/{self.max_concurrent_tasks} active tasks")
+    
     async def _execute_event_driven(self) -> None:
         """Event-driven execution mode - only respond to Socket.IO events"""
         logger.info("Starting event-driven execution mode")
@@ -1016,6 +1037,30 @@ class ExecutionEngine:
     
     async def submit_task(self, task: Task, queue_name: Optional[str] = None) -> None:
         """Submit a single task for execution (idempotent)"""
+        
+        # Auto-create single-task workflow if task has no workflow_id
+        if not task.workflow_id:
+            from datetime import datetime
+            from .models import Workflow
+            
+            # Generate workflow ID for single task
+            workflow_id = f"single-task-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}-{task.id[:8]}"
+            task.workflow_id = workflow_id
+            
+            # Create and persist the single-task workflow
+            workflow = Workflow(
+                id=workflow_id,
+                name=f"Single Task: {task.name}",
+                description=f"Auto-generated workflow for task {task.id}",
+                tasks=[task]
+            )
+            
+            # Save workflow to persistence if available
+            if self.persistence:
+                await self.persistence.save_workflow(workflow)
+            
+            logger.debug(f"Auto-created workflow {workflow_id} for task {task.id}")
+        
         # Check if task was already submitted (idempotency)
         if not await self.dependency_tracker.mark_task_submitted(task.id, task.workflow_id):
             logger.debug(f"Task {task.id} already submitted, skipping duplicate submission")
@@ -1042,15 +1087,12 @@ class ExecutionEngine:
         
         await self.emit_structured_event(task_submitted_event)
         
-        # In event-driven mode, immediately try to assign and execute the task if capacity allows
+        # In event-driven mode, immediately try to process ready tasks if capacity allows
         if (self.running and 
             len(self.active_tasks) < self.max_concurrent_tasks and
             hasattr(self, '_execution_mode') and self._execution_mode == ExecutionMode.EVENT_DRIVEN):
-            # Try to dequeue and execute this task if it's ready
-            ready_task = await self.queue_manager.dequeue_next_task(queue_name)
-            if ready_task and ready_task.id == task.id:
-                # Create a background task for execution
-                asyncio.create_task(self._execute_task(ready_task))
+            # Try to dequeue and execute any ready tasks (not just the one we submitted)
+            await self._process_ready_tasks(queue_name)
         
     
     async def submit_workflow(self, workflow: Workflow, queue_name: Optional[str] = None) -> None:

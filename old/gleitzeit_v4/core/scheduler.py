@@ -215,10 +215,10 @@ class EventScheduler:
         while self._running:
             try:
                 await self._process_due_events()
-                await asyncio.sleep(0.1)  # Check every 100ms for better precision
+                await asyncio.sleep(0.01)  # Check every 10ms for better precision
             except Exception as e:
                 logger.error(f"Error in scheduler loop: {e}")
-                await asyncio.sleep(1.0)
+                await asyncio.sleep(0.1)  # Shorter sleep on error
     
     async def _process_due_events(self) -> None:
         """Process events that are due for emission"""
@@ -244,10 +244,11 @@ class EventScheduler:
                 await self._emit_scheduled_event(event)
             except Exception as e:
                 logger.error(f"Failed to emit scheduled event {event.event_id}: {e}")
+                # Continue processing other events even if one fails
     
     async def _emit_scheduled_event(self, event: ScheduledEvent) -> None:
         """Emit a scheduled event through the callback"""
-        logger.info(f"Emitting scheduled event: {event.event_type} ({event.event_id})")
+        logger.debug(f"Emitting scheduled event: {event.event_type} ({event.event_id})")
         
         # Add scheduler metadata
         event_data = event.event_data.copy()
@@ -259,4 +260,14 @@ class EventScheduler:
         })
         
         # Emit through the callback (should be execution engine's emit_event)
-        await self.emit_callback(event.event_type.value, event_data)
+        try:
+            if asyncio.iscoroutinefunction(self.emit_callback):
+                await self.emit_callback(event.event_type.value, event_data)
+            else:
+                # Handle sync callbacks
+                result = self.emit_callback(event.event_type.value, event_data)
+                if asyncio.iscoroutine(result):
+                    await result
+        except Exception as e:
+            logger.error(f"Failed to emit event {event.event_id}: {e}")
+            raise
