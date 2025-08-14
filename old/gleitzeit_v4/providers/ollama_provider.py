@@ -71,6 +71,10 @@ class OllamaProvider(ProtocolProvider):
         
         logger.info("Ollama provider shutdown")
     
+    async def cleanup(self):
+        """Cleanup method for compatibility with pooling system"""
+        await self.shutdown()
+    
     async def health_check(self) -> Dict[str, Any]:
         """Check Ollama provider health"""
         try:

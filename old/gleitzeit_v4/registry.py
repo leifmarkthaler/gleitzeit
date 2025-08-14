@@ -111,9 +111,21 @@ class ProtocolProviderRegistry:
         """Stop the registry and health monitoring"""
         self._running = False
         
-        # No health check task to cancel - using event-driven health monitoring
+        # Cleanup all provider instances
+        await self._cleanup_all_providers()
         
         logger.info("Protocol Provider Registry stopped")
+    
+    async def _cleanup_all_providers(self):
+        """Cleanup all registered provider instances"""
+        logger.info("Cleaning up all provider instances...")
+        
+        for provider_id, provider_instance in self.provider_instances.items():
+            await self._cleanup_provider(provider_id, provider_instance)
+        
+        # Clear the instances after cleanup
+        self.provider_instances.clear()
+        logger.info("Provider cleanup completed")
     
     def register_protocol(self, protocol: ProtocolSpec) -> None:
         """Register a protocol specification"""
@@ -174,22 +186,43 @@ class ProtocolProviderRegistry:
         
         logger.info(f"Registered provider: {provider_id} for protocol {protocol_id}")
     
-    def unregister_provider(self, provider_id: str) -> None:
-        """Unregister a provider"""
+    async def unregister_provider(self, provider_id: str) -> None:
+        """Unregister a provider and cleanup its resources"""
         if provider_id not in self.providers:
             return
         
         provider_info = self.providers[provider_id]
         protocol_id = provider_info.protocol_id
         
+        # Cleanup provider instance before removing
+        if provider_id in self.provider_instances:
+            provider_instance = self.provider_instances[provider_id]
+            await self._cleanup_provider(provider_id, provider_instance)
+        
         # Remove from mappings
         del self.providers[provider_id]
-        del self.provider_instances[provider_id]
+        self.provider_instances.pop(provider_id, None)
         
         if protocol_id in self.protocol_providers:
             self.protocol_providers[protocol_id].discard(provider_id)
         
         logger.info(f"Unregistered provider: {provider_id}")
+    
+    async def _cleanup_provider(self, provider_id: str, provider_instance: Any):
+        """Cleanup a single provider instance"""
+        try:
+            # Try cleanup method first (for pooling compatibility)
+            if hasattr(provider_instance, 'cleanup'):
+                await provider_instance.cleanup()
+                logger.debug(f"✅ Cleaned up provider {provider_id}")
+            # Fall back to shutdown method
+            elif hasattr(provider_instance, 'shutdown'):
+                await provider_instance.shutdown()
+                logger.debug(f"✅ Shut down provider {provider_id}")
+            else:
+                logger.debug(f"⚠️  Provider {provider_id} has no cleanup/shutdown method")
+        except Exception as e:
+            logger.warning(f"❌ Failed to cleanup provider {provider_id}: {e}")
     
     def get_providers_for_protocol(self, protocol_id: str, method: str = None) -> List[ProviderInfo]:
         """

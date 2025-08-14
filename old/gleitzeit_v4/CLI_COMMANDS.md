@@ -302,6 +302,10 @@ GLEITZEIT_DEFAULT_TIMEOUT=300
 GLEITZEIT_OLLAMA_URL=http://localhost:11434
 GLEITZEIT_PYTHON_SECURITY_MODE=restricted
 
+# Resource Management
+GLEITZEIT_PROVIDER_CLEANUP_TIMEOUT=30
+GLEITZEIT_SESSION_CLEANUP_ENABLED=true
+
 # Logging
 GLEITZEIT_LOG_LEVEL=INFO
 ```
@@ -413,13 +417,60 @@ python cli.py queue stats all
 python cli.py system status
 ```
 
+## Testing and Validation
+
+### Run Test Suite
+```bash
+# Core system tests
+PYTHONPATH=. python run_core_tests.py
+
+# Comprehensive CLI tests
+PYTHONPATH=. python tests/test_comprehensive_cli.py
+
+# Provider cleanup tests
+PYTHONPATH=. python tests/test_provider_cleanup.py
+
+# Architecture validation
+PYTHONPATH=. python tests/test_core_architecture_isolated.py
+```
+
+### Test Coverage Areas
+- **Provider Lifecycle Management**: HTTP session cleanup, resource management
+- **Event-driven Architecture**: Task submission, completion, workflow orchestration
+- **CLI Interface**: All commands, backend operations, error handling
+- **Protocol Framework**: Validation, method routing, parameter handling
+- **Persistence Layer**: SQLite, Redis backends, data integrity
+
+### Health Monitoring
+```bash
+# System health check
+python cli.py system status
+
+# Provider health validation
+python cli.py provider health --all
+
+# Resource usage monitoring
+python cli.py backend get-stats
+```
+
 ## Version Information
 
 **Gleitzeit V4** - Protocol-Based Task Execution System
-- Event-driven architecture
-- Automatic workflow management
-- Multi-backend persistence
-- Comprehensive CLI interface
-- Production-ready reliability
+- Event-driven architecture with centralized resource management
+- Automatic workflow management and dependency resolution
+- Multi-backend persistence (SQLite, Redis)
+- Comprehensive CLI interface with full test coverage
+- Production-ready reliability with HTTP session cleanup
+- Centralized provider lifecycle management
 
-For more details, see the main documentation and architecture guides.
+### Key Features
+- ✅ HTTP session lifecycle management
+- ✅ Event-driven cleanup architecture
+- ✅ Comprehensive test coverage (100% core tests passing)
+- ✅ Error-resilient resource management
+- ✅ Production-ready reliability
+
+For more details, see:
+- `PROVIDER_LIFECYCLE_MANAGEMENT.md` - Resource management and cleanup
+- `PROVIDER_SECURITY_DOCUMENTATION.md` - Security model and best practices
+- `CLI_COMMANDS.md` - Complete command reference

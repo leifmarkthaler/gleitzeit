@@ -99,6 +99,7 @@ def main():
         # High-confidence tests
         ("tests/test_events.py", "Event System Architecture"),
         ("tests/test_provider_registry.py", "Provider Registry & Load Balancing"),
+        ("tests/test_provider_cleanup.py", "Provider Cleanup & Session Management"),
         ("tests/test_protocol_provider_executor_simple.py", "Protocol/Provider Framework"),
         
         # CLI tests (working well)
@@ -183,6 +184,7 @@ def main():
     capabilities = [
         ("Event-driven Architecture", "tests/test_events.py" in [t[0] for t in core_tests]),
         ("Provider Registry System", "tests/test_provider_registry.py" in [t[0] for t in core_tests]),
+        ("Provider Cleanup & Sessions", "tests/test_provider_cleanup.py" in [t[0] for t in core_tests]),
         ("Protocol Framework", "tests/test_protocol_provider_executor_simple.py" in [t[0] for t in core_tests]),
         ("CLI Interface", any("cli" in t[0] for t in core_tests)),
         ("Workflow Orchestration", any("workflow" in description.lower() for description, _, _, _ in results)),

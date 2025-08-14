@@ -62,6 +62,8 @@ class EventType(str, Enum):
     PROVIDER_HEALTH_CHECK = "provider:health_check"
     PROVIDER_ERROR = "provider:error"
     PROVIDER_OVERLOADED = "provider:overloaded"
+    PROVIDER_CLEANUP_REQUESTED = "provider:cleanup_requested"
+    PROVIDER_SESSION_CLEANUP = "provider:session_cleanup"
     
     # Pool Events
     POOL_SCALED = "pool:scaled"

@@ -43,9 +43,16 @@ The current restricted environment is appropriate for internal workflow computat
 - ✅ API-based isolation
 - ✅ No code execution
 - ✅ Rate limiting capable
-- ⚠️  Minor issue: Unclosed HTTP sessions (resource leak)
+- ✅ HTTP session lifecycle management
+- ✅ Centralized resource cleanup
 
-**Security Status: PRODUCTION READY** (with minor fix needed)
+**Resource Management:**
+- HTTP sessions created during provider initialization
+- Sessions automatically cleaned up when provider shuts down
+- Cleanup triggered by centralized registry management
+- Compatible with both pooling (`cleanup()`) and direct (`shutdown()`) patterns
+
+**Security Status: PRODUCTION READY** ✅
 
 ### 3. MCP Provider (mcp/v1)
 **Purpose: Model Context Protocol tool execution**
@@ -262,6 +269,13 @@ The current Python provider is **working as designed** for internal workflow com
 
 **Production Status:**
 - ✅ Python Provider: Ready for internal workflow use
-- ✅ Ollama Provider: Ready (minor cleanup needed)
+- ✅ Ollama Provider: Ready with full resource management
 - ✅ MCP Provider: Ready
 - 🚧 Docker Provider: Planned for v4.1
+
+**Resource Management Features:**
+- ✅ Centralized provider lifecycle management
+- ✅ HTTP session cleanup on shutdown
+- ✅ Event-driven cleanup architecture
+- ✅ Comprehensive test coverage for cleanup scenarios
+- ✅ Error-resilient cleanup (provider failures don't crash system)

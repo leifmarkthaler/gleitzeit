@@ -271,6 +271,10 @@ class ExecutionEngine:
         
         await self.emit_structured_event(engine_stopped_event)
         
+        # Stop registry and cleanup all providers
+        if hasattr(self.registry, 'stop'):
+            await self.registry.stop()
+        
         logger.info("Stopped ExecutionEngine")
     
     async def _execute_single_task(self) -> Optional[TaskResult]:
