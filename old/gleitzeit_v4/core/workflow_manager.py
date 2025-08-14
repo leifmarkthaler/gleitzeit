@@ -325,6 +325,50 @@ class WorkflowManager:
         else:
             return template_data
     
+    def load_workflow_from_yaml(self, yaml_data: Dict[str, Any]) -> Workflow:
+        """Load workflow from YAML data"""
+        import yaml
+        from uuid import uuid4
+        
+        # Parse tasks
+        tasks = []
+        for task_data in yaml_data.get('tasks', []):
+            task = Task(
+                id=task_data.get('id', f"task-{uuid4().hex[:8]}"),
+                name=task_data.get('name', task_data.get('id', 'unnamed')),
+                protocol=task_data.get('protocol', ''),
+                method=task_data.get('method', ''),
+                params=task_data.get('parameters', {}),
+                dependencies=task_data.get('dependencies', []),
+                priority=Priority.NORMAL
+            )
+            tasks.append(task)
+        
+        # Create workflow
+        workflow = Workflow(
+            id=yaml_data.get('id', f"workflow-{uuid4().hex[:8]}"),
+            name=yaml_data.get('name', 'Unnamed Workflow'),
+            description=yaml_data.get('description', ''),
+            tasks=tasks,
+            timeout=yaml_data.get('timeout', None)
+        )
+        
+        return workflow
+    
+    async def load_workflow_from_yaml_file(self, yaml_file_path: str) -> Workflow:
+        """Load workflow from YAML file"""
+        import yaml
+        from pathlib import Path
+        
+        path = Path(yaml_file_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Workflow file not found: {yaml_file_path}")
+        
+        with open(path, 'r') as f:
+            yaml_data = yaml.safe_load(f)
+        
+        return self.load_workflow_from_yaml(yaml_data)
+    
     async def execute_workflow(
         self,
         workflow: Workflow,

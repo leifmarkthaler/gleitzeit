@@ -12,7 +12,6 @@ wait_for_completion: true
 # Tasks using different providers
 tasks:
   - id: "generate_numbers"
-    protocol: "llm/v1"
     method: "llm/chat"
     priority: 3
     parameters:
@@ -22,7 +21,6 @@ tasks:
           content: "Generate 5 random numbers between 1 and 100. Reply with just the numbers separated by commas, nothing else."
 
   - id: "calculate_stats"
-    protocol: "python/v1"
     method: "python/execute"
     priority: 2
     dependencies: ["generate_numbers"]
@@ -55,7 +53,6 @@ tasks:
       timeout: 30
 
   - id: "summarize_results"
-    protocol: "llm/v1"
     method: "llm/chat"
     priority: 1
     dependencies: ["calculate_stats"]

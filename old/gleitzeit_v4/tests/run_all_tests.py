@@ -160,6 +160,12 @@ class TestSuite:
                 ("tests/test_ollama_integration.py", "Ollama LLM Integration"),
                 ("tests/test_python_functions.py", "Python Function Execution"),
             ],
+            
+            "YAML Workflow Tests": [
+                ("tests/test_yaml_workflows.py", "YAML Workflow Parsing & Execution"),
+                ("tests/test_dependent_essay_workflow.py", "Dependent LLM Essay Workflow"),
+                ("tests/test_mixed_numbers_workflow.py", "Mixed LLM + Python Numbers Workflow"),
+            ],
         }
         
         # Run tests by category

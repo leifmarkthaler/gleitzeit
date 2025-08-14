@@ -12,7 +12,6 @@ wait_for_completion: true
 # Task definitions with dependencies
 tasks:
   - id: "generate_topic"
-    protocol: "llm/v1"
     method: "llm/chat"
     priority: 3
     parameters:
@@ -22,7 +21,6 @@ tasks:
           content: "Generate a random interesting topic for a short essay. Reply with just the topic, nothing else."
 
   - id: "write_outline"
-    protocol: "llm/v1"
     method: "llm/chat"
     priority: 2
     dependencies: ["generate_topic"]
@@ -33,7 +31,6 @@ tasks:
           content: "Create a 3-point outline for an essay about: ${generate_topic.response}"
 
   - id: "write_essay"
-    protocol: "llm/v1"
     method: "llm/chat"
     priority: 1
     dependencies: ["write_outline"]
