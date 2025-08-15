@@ -318,16 +318,22 @@ class ProtocolProviderRegistry:
         # Execute request
         start_time = asyncio.get_event_loop().time()
         try:
-            # Validate request against protocol
+            # Preprocess parameters first (handles directory/file_pattern -> files conversion)
+            processed_params = request.params or {}
+            if hasattr(provider_instance, '_preprocess_params'):
+                processed_params = await provider_instance._preprocess_params(request.method, processed_params)
+            
+            # Validate processed parameters against protocol
             protocol = self.protocol_registry.get(protocol_id)
             if protocol:
-                protocol.validate_method_call(request.method, request.params or {})
+                protocol.validate_method_call(request.method, processed_params)
             
-            # Execute via provider (use execute_with_stats for preprocessing)
+            # Execute via provider with processed parameters
+            # Note: execute_with_stats will also call _preprocess_params, but it's idempotent
             if hasattr(provider_instance, 'execute_with_stats'):
                 result = await provider_instance.execute_with_stats(request.method, request.params or {})
             else:
-                result = await provider_instance.handle_request(request.method, request.params or {})
+                result = await provider_instance.handle_request(request.method, processed_params)
             
             # Update success stats
             response_time = asyncio.get_event_loop().time() - start_time

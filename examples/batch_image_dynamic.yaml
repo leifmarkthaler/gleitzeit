@@ -1,0 +1,19 @@
+# Dynamic Batch Image Analysis
+# This workflow dynamically discovers and analyzes images
+
+name: "Dynamic Batch Image Analysis"
+description: "Dynamically discover and analyze images"
+type: "batch"
+
+# Batch configuration
+batch:
+  directory: "examples/images"
+  pattern: "*.png"
+  
+# Template task to apply to each image
+template:
+  method: "llm/vision"
+  model: "llava:latest"
+  messages:
+    - role: "user"
+      content: "Describe what you see in this image in detail."

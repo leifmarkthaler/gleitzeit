@@ -672,8 +672,13 @@ class ExecutionEngine:
                         
                         # Replace the reference
                         if ref_value is not None:
-                            replacement = str(ref_value) if not isinstance(ref_value, str) else ref_value
-                            obj = obj.replace(f"${{{match}}}", replacement)
+                            # If the entire string is just the reference, return the actual value
+                            if obj == f"${{{match}}}":
+                                return ref_value
+                            # Otherwise, do string replacement (which requires converting to string)
+                            else:
+                                replacement = str(ref_value) if not isinstance(ref_value, str) else ref_value
+                                obj = obj.replace(f"${{{match}}}", replacement)
                     else:
                         logger.warning(f"Referenced task {actual_task_id} not found in results")
                 

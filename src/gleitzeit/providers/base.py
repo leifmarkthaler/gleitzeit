@@ -174,10 +174,29 @@ class ProtocolProvider(ABC):
             Processed parameters with file contents included
         """
         import copy
+        import glob
         from pathlib import Path
         
         # Create a copy to avoid modifying original params
         processed = copy.deepcopy(params)
+        
+        # Handle directory + file_pattern for batch processing
+        if 'directory' in processed and 'file_pattern' in processed:
+            directory = processed.pop('directory')
+            file_pattern = processed.pop('file_pattern')
+            
+            # Discover files matching the pattern
+            pattern_path = Path(directory) / file_pattern
+            matching_files = glob.glob(str(pattern_path))
+            
+            if matching_files:
+                # Add discovered files to the files list
+                if 'files' not in processed:
+                    processed['files'] = []
+                processed['files'].extend(matching_files)
+                logger.debug(f"Discovered {len(matching_files)} files matching {pattern_path}")
+            else:
+                logger.warning(f"No files found matching pattern: {pattern_path}")
         
         # Handle file_path for text files
         if 'file_path' in processed:
@@ -217,19 +236,19 @@ class ProtocolProvider(ABC):
         
         # Handle image_path for vision tasks
         if 'image_path' in processed and not processed.get('image_data') and not processed.get('images'):
-            image_path = processed['image_path']
+            image_path = processed.pop('image_path')  # Remove image_path after reading
             if image_path and Path(image_path).exists():
                 try:
                     import base64
                     with open(image_path, 'rb') as f:
                         image_data = base64.b64encode(f.read()).decode('utf-8')
-                    processed['image_data'] = image_data
-                    # Also add to images array for compatibility
-                    if 'images' not in processed:
-                        processed['images'] = [image_data]
-                    logger.debug(f"Read image from {image_path}")
+                    # Only add to images array (not image_data) to avoid validation issues
+                    processed['images'] = [image_data]
+                    logger.debug(f"Read image from {image_path} and converted to base64")
                 except Exception as e:
                     logger.warning(f"Could not read image {image_path}: {e}")
+                    # If reading fails, restore image_path
+                    processed['image_path'] = image_path
         
         return processed
     

@@ -9,9 +9,16 @@ from gleitzeit.core.protocol import ProtocolSpec, MethodSpec, ParameterSpec, Par
 
 
 def create_mcp_protocol() -> ProtocolSpec:
-    """Create MCP protocol specification"""
+    """
+    Create MCP protocol specification
     
-    # Define common MCP methods
+    MCP is a dynamic protocol that supports:
+    - Tools: Dynamic tool execution via tool.{name}
+    - Resources: Dynamic resource access via resource.{uri}
+    - Prompts: Dynamic prompt generation via prompt.{name}
+    """
+    
+    # Define core MCP methods
     methods = {
         # Core MCP methods
         "initialize": MethodSpec(
@@ -156,6 +163,77 @@ def create_mcp_protocol() -> ProtocolSpec:
                 type=ParameterType.STRING,
                 description="Ping response"
             )
+        ),
+        
+        # Generic tool execution (for SimpleMCPProvider)
+        "mcp/tool.echo": MethodSpec(
+            name="mcp/tool.echo",
+            description="Echo tool",
+            parameters={
+                "message": ParameterSpec(
+                    name="message",
+                    type=ParameterType.STRING,
+                    description="Message to echo",
+                    required=False
+                )
+            }
+        ),
+        
+        "mcp/tool.add": MethodSpec(
+            name="mcp/tool.add",
+            description="Add two numbers",
+            parameters={
+                "a": ParameterSpec(
+                    name="a",
+                    type=ParameterType.NUMBER,
+                    description="First number",
+                    required=False
+                ),
+                "b": ParameterSpec(
+                    name="b",
+                    type=ParameterType.NUMBER,
+                    description="Second number",
+                    required=False
+                )
+            }
+        ),
+        
+        "mcp/tool.multiply": MethodSpec(
+            name="mcp/tool.multiply",
+            description="Multiply two numbers",
+            parameters={
+                "a": ParameterSpec(
+                    name="a",
+                    type=ParameterType.NUMBER,
+                    description="First number",
+                    required=False
+                ),
+                "b": ParameterSpec(
+                    name="b",
+                    type=ParameterType.NUMBER,
+                    description="Second number",
+                    required=False
+                )
+            }
+        ),
+        
+        "mcp/tool.concat": MethodSpec(
+            name="mcp/tool.concat",
+            description="Concatenate strings",
+            parameters={
+                "strings": ParameterSpec(
+                    name="strings",
+                    type=ParameterType.ARRAY,
+                    description="Strings to concatenate",
+                    required=False
+                ),
+                "separator": ParameterSpec(
+                    name="separator",
+                    type=ParameterType.STRING,
+                    description="Separator string",
+                    required=False
+                )
+            }
         )
     }
     

@@ -410,7 +410,7 @@ python cli.py task submit --protocol llm/v1 --method llm/chat \
 ### Protocol-Based Providers
 - **LLM Provider**: Ollama integration for language models
 - **Python Provider**: Secure Python code execution
-- **MCP Provider**: Model Context Protocol support
+- **MCP Provider**: SimpleMCPProvider with built-in tools (echo, add, multiply, concat)
 - **Extensible**: Easy addition of custom providers
 
 ## Troubleshooting

@@ -9,6 +9,7 @@ across CLI, tests, and other parts of the system.
 import yaml
 import json
 import logging
+import glob
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from uuid import uuid4
@@ -49,7 +50,12 @@ def load_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
     - Dependency resolution (name -> ID mapping)
     - Retry configuration
     - Priority parsing
+    - Batch workflows with dynamic file discovery
     """
+    # Check if this is a batch workflow
+    if data.get('type') == 'batch' or 'batch' in data:
+        return create_batch_workflow_from_dict(data)
+    
     # Generate workflow ID if not provided
     workflow_id = data.get('id', f"workflow-{uuid4().hex[:8]}")
     
@@ -166,6 +172,105 @@ def create_task_from_dict(data: Dict[str, Any], workflow_id: str,
     )
     
     return task
+
+
+def create_batch_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
+    """
+    Create a batch workflow with dynamic file discovery.
+    
+    Batch workflows have:
+    - A 'batch' section with directory and pattern
+    - A 'template' section defining the task to apply to each file
+    """
+    batch_config = data.get('batch', {})
+    template = data.get('template', {})
+    
+    # Get batch configuration
+    directory = batch_config.get('directory')
+    pattern = batch_config.get('pattern', '*')
+    
+    if not directory:
+        raise ValueError("Batch workflow requires 'batch.directory' to be specified")
+    
+    if not template:
+        raise ValueError("Batch workflow requires 'template' section to define task parameters")
+    
+    # Discover files
+    dir_path = Path(directory)
+    if not dir_path.exists():
+        raise ValueError(f"Directory not found: {directory}")
+    
+    if not dir_path.is_dir():
+        raise ValueError(f"Not a directory: {directory}")
+    
+    # Use glob to find matching files
+    file_pattern = str(dir_path / pattern)
+    files = glob.glob(file_pattern)
+    
+    # Filter out directories
+    files = [f for f in files if Path(f).is_file()]
+    
+    if not files:
+        logger.warning(f"No files found matching '{pattern}' in {directory}")
+    
+    logger.info(f"Found {len(files)} files matching '{pattern}' in {directory}")
+    
+    # Generate workflow ID
+    workflow_id = data.get('id', f"batch-{uuid4().hex[:8]}")
+    workflow_name = data.get('name', f"Batch Processing ({len(files)} files)")
+    
+    # Create tasks for each file
+    tasks = []
+    for i, file_path in enumerate(files):
+        file_name = Path(file_path).name
+        task_id = f"process-{file_name.replace('.', '-')}-{i}"
+        
+        # Determine if this is an image file
+        is_image = Path(file_path).suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
+        
+        # Build task parameters from template
+        params = {}
+        
+        # Copy template parameters
+        for key, value in template.items():
+            if key != 'method':
+                params[key] = value
+        
+        # Add file path
+        if is_image and template.get('method') == 'llm/vision':
+            params['image_path'] = file_path
+        else:
+            params['file_path'] = file_path
+        
+        # Create task
+        task_data = {
+            'id': task_id,
+            'name': f"Process {file_name}",
+            'protocol': data.get('protocol', 'llm/v1'),
+            'method': template.get('method', 'llm/chat'),
+            'params': params,
+            'priority': template.get('priority', 'normal')
+        }
+        
+        task = create_task_from_dict(task_data, workflow_id, resolve_dependencies=False)
+        tasks.append(task)
+    
+    # Create workflow
+    workflow = Workflow(
+        id=workflow_id,
+        name=workflow_name,
+        description=data.get('description', f"Batch processing of {len(files)} files"),
+        tasks=tasks,
+        metadata={
+            'batch': True,
+            'file_count': len(files),
+            'directory': directory,
+            'pattern': pattern,
+            'template': template
+        }
+    )
+    
+    return workflow
 
 
 def validate_workflow(workflow: Workflow) -> List[str]:

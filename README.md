@@ -7,12 +7,15 @@ A protocol-based orchestration system designed for coordinating LLM workflows wi
 ## Core Features
 
 - **LLM Workflow Coordination** - Orchestrate complex LLM interactions and chains
-- **Multi-Task Workflows** - Combine different task types (LLM, Python, MCP) in workflows
-- **Protocol-Based** - JSON-RPC 2.0 foundation with native MCP support
+- **Multi-Task Workflows** - Combine different task types (LLM, Python, vision) in workflows
+- **Dynamic Batch Processing** - Automatically discover and process files with glob patterns
+- **Protocol-Based** - JSON-RPC 2.0 foundation with extensible provider system
 - **Multiple Backends** - SQLite, Redis, or in-memory persistence
 - **Dependency Management** - Tasks can depend on outputs from previous tasks
 - **YAML Workflows** - Define complex workflows declaratively
-- **Batch Processing** - Process multiple files (text, images) in parallel with a single command
+- **Parameter Substitution** - Pass data between tasks with type preservation
+- **Vision Support** - Process images with vision models (llava)
+- **Python Integration** - Execute Python scripts with context passing
 
 ## Quick Start
 
@@ -50,47 +53,84 @@ gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe th
 ## Documentation
 
 ### Core Documentation
+- [Architecture Overview](docs/GLEITZEIT_V4_ARCHITECTURE.md) - System architecture and design
+- [Batch Processing Guide](docs/BATCH_PROCESSING_DESIGN.md) - Dynamic batch processing implementation
+- [Batch Quick Reference](docs/BATCH_QUICK_REFERENCE.md) - Quick guide for batch workflows
 - [Provider Implementation Guide](docs/PROVIDER_IMPLEMENTATION_GUIDE.md) - How to implement providers correctly
 - [Workflow Parameter Substitution](docs/WORKFLOW_PARAMETER_SUBSTITUTION.md) - Using task results in subsequent tasks
-- [Architecture Overview](docs/GLEITZEIT_V4_ARCHITECTURE.md) - System architecture and design
 - [Protocols and Providers](docs/PROTOCOLS_PROVIDERS_EXECUTION.md) - Protocol-based execution system
 
-## LLM Workflow Example
+## Dynamic Batch Processing
 
-Create an LLM workflow (`research_workflow.yaml`):
+Process multiple files automatically with pattern matching:
 
 ```yaml
-name: "LLM Research Workflow"
-description: "Multi-step research with LLM coordination"
+# batch_analysis.yaml
+name: "Dynamic Batch Analysis"
+type: "batch"  # Enables dynamic file discovery
+
+batch:
+  directory: "documents"
+  pattern: "*.txt"  # Glob pattern for files
+
+template:
+  method: "llm/chat"
+  model: "llama3.2:latest"
+  messages:
+    - role: "user"
+      content: "Summarize this document"
+```
+
+Run it:
+```bash
+# Using YAML workflow
+gleitzeit run batch_analysis.yaml
+
+# Or using CLI directly
+gleitzeit batch documents --pattern "*.txt" --prompt "Summarize"
+```
+
+## Workflow Examples
+
+### Dependent Tasks
+```yaml
+name: "Research Pipeline"
 tasks:
-  - name: "initial_research"
-    protocol: "llm/v1"
+  - id: "generate_topic"
     method: "llm/chat"
-    params:
-      model: "llama3"
+    parameters:
+      model: "llama3.2"
       messages:
         - role: "user"
-          content: "Research the latest developments in async programming"
+          content: "Generate a research topic"
 
-  - name: "analyze_findings"
-    protocol: "llm/v1"
+  - id: "research_topic"
     method: "llm/chat"
-    params:
-      model: "llama3"
+    dependencies: ["generate_topic"]
+    parameters:
+      model: "llama3.2"
       messages:
         - role: "user"
-          content: "Analyze these findings: ${initial_research.content}"
-    dependencies: ["initial_research"]
+          content: "Research: ${generate_topic.response}"
+```
 
-  - name: "process_data"
-    protocol: "python/v1"
+### Mixed Providers
+```yaml
+name: "Data Processing Pipeline"
+tasks:
+  - id: "generate_data"
     method: "python/execute"
-    params:
-      code: |
-        # Process LLM output for next step
-        analysis = "${analyze_findings.content}"
-        result = {"processed": len(analysis.split()), "summary": analysis[:100]}
-    dependencies: ["analyze_findings"]
+    parameters:
+      file: "scripts/generate_data.py"
+
+  - id: "analyze_data"
+    method: "llm/chat"
+    dependencies: ["generate_data"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Analyze this data: ${generate_data.result}"
 ```
 
 Run it:
@@ -112,16 +152,27 @@ Add computational steps to workflows:
 - Transform data between workflow steps
 - Implement custom logic within workflow chains
 
-### MCP Providers
-Easy integration of Model Context Protocol providers:
+### MCP Provider
+Built-in Model Context Protocol support with SimpleMCPProvider:
 
 ```yaml
-# MCP provider in workflow
-- name: "mcp_task"
-  protocol: "mcp/v1"  
-  method: "tool.function_name"
-  params:
-    input: "${previous_task.output}"
+# MCP tools in workflows
+- id: "echo_message"
+  method: "mcp/tool.echo"
+  parameters:
+    message: "Hello MCP!"
+
+- id: "calculate"
+  method: "mcp/tool.add"
+  parameters:
+    a: 10
+    b: 20
+    
+# Available built-in tools:
+# - mcp/tool.echo    # Echo messages with metadata
+# - mcp/tool.add     # Add two numbers
+# - mcp/tool.multiply # Multiply two numbers
+# - mcp/tool.concat  # Concatenate strings
 ```
 
 ## Architecture
@@ -189,8 +240,11 @@ export GLEITZEIT_SQLITE_PATH=~/.gleitzeit/gleitzeit.db
 # LLM Provider settings
 export GLEITZEIT_OLLAMA_URL=http://localhost:11434
 
-# MCP Provider settings
-export GLEITZEIT_MCP_SERVER_PATH=/path/to/mcp/server
+# Logging
+export GLEITZEIT_LOG_LEVEL=INFO
+
+# MCP Provider settings (enabled by default)
+# SimpleMCPProvider with built-in tools is automatically registered
 ```
 
 ## Workflow Patterns
@@ -345,30 +399,42 @@ Results include:
 - Individual file results
 - Processing time metrics
 
-## Development
+## Testing
 
-### Running Tests
+### Workflow Test Suite
 ```bash
-# Core system tests
-PYTHONPATH=. python run_core_tests.py
+# Run validation tests only (fast)
+python tests/workflow_test_suite.py
 
-# Workflow tests
-PYTHONPATH=. python tests/test_comprehensive_cli.py
-
-# Batch processing tests  
-PYTHONPATH=. python tests/run_batch_tests.py
-# Or run individual batch tests
-PYTHONPATH=. python tests/test_batch_simple.py
-PYTHONPATH=. python tests/test_batch_runner.py
+# Run full execution tests
+python tests/workflow_test_suite.py --execute
 ```
 
-### Adding MCP Providers
+The test suite validates and executes all example workflows:
+- ✅ Simple LLM workflows
+- ✅ Dependent task workflows
+- ✅ Parallel execution
+- ✅ Mixed provider workflows (LLM + Python)
+- ✅ Vision/image processing
+- ✅ Dynamic batch processing
+- ✅ Python workflows with context passing
+- ✅ Parameter substitution
 
-MCP providers integrate via the JSON-RPC 2.0 foundation:
+See [Test Report](tests/TEST_REPORT.md) for detailed results.
 
-1. Register MCP server endpoint
-2. Define protocol specification
-3. Use in workflows like any other provider
+## Development
+
+### MCP Provider Implementation
+
+The SimpleMCPProvider offers built-in MCP functionality:
+
+1. **Built-in Tools**: Echo, add, multiply, and concat operations
+2. **Protocol Integration**: Full compatibility with Gleitzeit's protocol system  
+3. **Backend Persistence**: Results automatically saved to SQLite/Redis
+4. **Parameter Substitution**: Use results from previous tasks with `${task_id.field}`
+
+Example workflow: `examples/simple_mcp_workflow.yaml`  
+Full documentation: [MCP Usage Guide](docs/MCP_USAGE_GUIDE.md)
 
 ### Project Structure
 ```
@@ -385,9 +451,14 @@ MCP providers integrate via the JSON-RPC 2.0 foundation:
 ## Examples
 
 See the `examples/` directory for workflow templates:
-- `llm_workflow.yaml` - LLM coordination patterns
-- `mixed_workflow.yaml` - LLM + Python + MCP workflows
-- `dependent_workflow.yaml` - Complex dependency chains
+- `simple_llm_workflow.yaml` - Basic LLM text generation
+- `dependent_workflow.yaml` - Tasks with dependencies
+- `parallel_workflow.yaml` - Parallel task execution
+- `mixed_workflow.yaml` - LLM + Python workflows
+- `vision_workflow.yaml` - Image analysis with vision models
+- `batch_text_dynamic.yaml` - Dynamic batch text processing
+- `batch_image_dynamic.yaml` - Dynamic batch image processing
+- `python_only_workflow.yaml` - Python execution with data passing
 
 ## Documentation
 

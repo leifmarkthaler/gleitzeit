@@ -36,7 +36,7 @@ class MCPProvider(ProtocolProvider):
     
     def __init__(self, provider_id: str, server_config: Dict[str, Any]):
         self.provider_id = provider_id
-        self.protocol_id = f"mcp/{server_config.get('name', 'unknown')}/v1"
+        self.protocol_id = "mcp/v1"  # Use generic MCP protocol
         self.name = f"MCP Provider ({server_config.get('name', 'Unknown')})"
         self.description = server_config.get('description', 'MCP server integration')
         
@@ -74,7 +74,7 @@ class MCPProvider(ProtocolProvider):
                 stderr=subprocess.PIPE,
                 env=env,
                 text=True,
-                bufsize=0
+                bufsize=1  # Line buffered for text mode
             )
             
             # Start message handling task

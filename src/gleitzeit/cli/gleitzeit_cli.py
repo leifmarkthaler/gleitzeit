@@ -28,7 +28,8 @@ from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.python_function_provider import CustomFunctionProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
-from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1
+from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 from gleitzeit.persistence.redis_backend import RedisBackend
 from gleitzeit.persistence.sqlite_backend import SQLiteBackend
 from gleitzeit.core.batch_processor import BatchProcessor, BatchResult
@@ -156,6 +157,18 @@ class GleitzeitCLI:
                     click.echo("✓ Ollama provider registered")
                 except Exception as e:
                     click.echo(f"⚠️  Ollama provider failed to initialize: {e}")
+            
+            # MCP provider
+            mcp_config = provider_config.get('mcp', {})
+            if mcp_config.get('enabled', True):
+                try:
+                    registry.register_protocol(MCP_PROTOCOL_V1)
+                    mcp_provider = SimpleMCPProvider("cli-mcp-provider")
+                    await mcp_provider.initialize()
+                    registry.register_provider("cli-mcp-provider", "mcp/v1", mcp_provider)
+                    click.echo("✓ MCP provider registered")
+                except Exception as e:
+                    click.echo(f"⚠️  MCP provider failed to initialize: {e}")
             
             return True
             

@@ -1,14 +1,39 @@
 name: "Batch Text Analysis"
 description: "Analyze multiple text documents in batch"
 tasks:
-  - name: "batch_analyze_documents"
+  - id: "analyze_meeting_notes"
+    name: "Analyze meeting notes"
     protocol: "llm/v1"
     method: "llm/chat"
     params:
       model: "llama3.2:latest"
-      directory: "examples/documents"
-      file_pattern: "*.txt"
-      batch_mode: true
+      file_path: "examples/documents/meeting_notes.txt"
+      messages:
+        - role: "system"
+          content: "You are a helpful document analyzer."
+        - role: "user"
+          content: "Provide a 2-3 sentence summary of this document, highlighting the main points."
+  
+  - id: "analyze_story"
+    name: "Analyze story"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:latest"
+      file_path: "examples/documents/sample_story.txt"
+      messages:
+        - role: "system"
+          content: "You are a helpful document analyzer."
+        - role: "user"
+          content: "Provide a 2-3 sentence summary of this document, highlighting the main points."
+  
+  - id: "analyze_spec"
+    name: "Analyze technical spec"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:latest"
+      file_path: "examples/documents/technical_spec.txt"
       messages:
         - role: "system"
           content: "You are a helpful document analyzer."

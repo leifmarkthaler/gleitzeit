@@ -3,6 +3,20 @@
 ## Overview
 Add batch processing capabilities to Gleitzeit v0.0.4 for processing multiple files (text, images) in a single operation.
 
+## Key Features (NEW)
+
+### Dynamic Batch Workflows
+- **Automatic File Discovery**: Workflows can discover files at runtime using directory and glob patterns
+- **Template-Based Processing**: Define a single task template that gets applied to all discovered files
+- **Universal Provider Support**: Works with any provider through base provider preprocessing
+- **File Type Detection**: Automatically handles text vs image files based on extension
+
+### Implementation Highlights
+1. **No Provider Changes Required**: Batch processing works through base provider preprocessing
+2. **YAML Workflow Support**: Simple YAML syntax with `type: "batch"` for dynamic workflows  
+3. **Backward Compatible**: Existing static batch workflows continue to work
+4. **Parallel Execution**: Files are processed as parallel tasks for optimal performance
+
 ## CLI Commands
 
 ### 1. Basic Batch Command
@@ -47,29 +61,60 @@ gleitzeit batch-export <batch-id> --format [json|csv|markdown]
 - Add `files` parameter (array) to `llm/chat` and `llm/vision` methods
 - Add `directory` and `file_pattern` parameters for directory scanning
 
-### 2. Provider Updates
+### 2. Base Provider Updates (NEW)
+The base provider now handles universal file discovery and preprocessing:
+
 ```python
-class OllamaProvider:
-    async def _handle_batch(self, params):
-        """Process multiple files"""
-        files = params.get('files', [])
-        directory = params.get('directory')
-        pattern = params.get('file_pattern', '*')
+# In providers/base.py
+async def _preprocess_params(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
+    """Pre-process parameters to handle file discovery"""
+    processed = copy.deepcopy(params)
+    
+    # Handle directory + file_pattern for batch processing
+    if 'directory' in processed and 'file_pattern' in processed:
+        directory = processed.pop('directory')
+        file_pattern = processed.pop('file_pattern')
         
-        # Collect files
-        if directory:
-            files.extend(self._scan_directory(directory, pattern))
+        # Discover files matching the pattern
+        pattern_path = Path(directory) / file_pattern
+        matching_files = glob.glob(str(pattern_path))
         
-        # Process each file
-        results = {}
-        for file_path in files:
-            try:
-                result = await self._process_single_file(file_path, params)
-                results[file_path] = {'status': 'success', 'result': result}
-            except Exception as e:
-                results[file_path] = {'status': 'failed', 'error': str(e)}
-        
-        return results
+        # Add discovered files to the files list
+        if 'files' not in processed:
+            processed['files'] = []
+        processed['files'].extend(matching_files)
+    
+    # Handle file_path preprocessing (reads file content)
+    # Handle image_path preprocessing (converts to base64)
+    return processed
+```
+
+### 3. Workflow Loader Updates (NEW)
+The workflow loader now supports dynamic batch workflows:
+
+```python
+# In workflow_loader.py
+def load_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
+    # Check if this is a batch workflow
+    if data.get('type') == 'batch' or 'batch' in data:
+        return create_batch_workflow_from_dict(data)
+    # ... regular workflow processing
+
+def create_batch_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
+    """Create a batch workflow with dynamic file discovery"""
+    batch_config = data.get('batch', {})
+    template = data.get('template', {})
+    
+    # Discover files
+    files = glob.glob(str(Path(directory) / pattern))
+    
+    # Create tasks for each file
+    tasks = []
+    for file_path in files:
+        task = create_task_from_template(template, file_path)
+        tasks.append(task)
+    
+    return Workflow(tasks=tasks, ...)
 ```
 
 ### 3. Batch Result Storage
@@ -86,26 +131,26 @@ class BatchResult:
 
 ## Implementation Phases
 
-### Phase 1: Core Batch Support ✅ (This PR)
-- [ ] Update LLM protocol to accept `files` array
-- [ ] Update Ollama provider to handle multiple files
-- [ ] Create BatchResult model
-- [ ] Add basic `gleitzeit batch` command
+### Phase 1: Core Batch Support ✅ (Completed)
+- [x] Update LLM protocol to accept `files` array
+- [x] Update base provider to handle directory/file_pattern preprocessing
+- [x] Create BatchResult model
+- [x] Add basic `gleitzeit batch` command
 
-### Phase 2: Directory Scanning
-- [ ] Add directory scanning with patterns
-- [ ] Support recursive directory traversal
-- [ ] Add file filtering by size/date
+### Phase 2: Directory Scanning ✅ (Completed)
+- [x] Add directory scanning with patterns
+- [x] Support glob patterns for file discovery
+- [x] Add file filtering by extension
 
-### Phase 3: Workflow Generation
-- [ ] Implement `gleitzeit generate batch` command
-- [ ] Create workflow templates for batch processing
-- [ ] Add customization options
+### Phase 3: Dynamic Batch Workflows ✅ (Completed)
+- [x] Implement dynamic batch workflow support in YAML
+- [x] Create workflow templates for batch processing
+- [x] Add automatic file discovery from directory/pattern
 
-### Phase 4: Results Management
-- [ ] Implement batch result storage
+### Phase 4: Results Management (Partial)
+- [x] Implement batch result storage
 - [ ] Add batch-list, batch-show commands
-- [ ] Add export functionality
+- [x] Add export functionality (JSON, Markdown)
 - [ ] Implement resume capability
 
 ## Data Flow
@@ -221,24 +266,50 @@ Elapsed: 23s | ETA: 6s
 
 ## Example Workflows
 
-### Batch Document Analysis
+### Dynamic Batch Document Analysis (NEW)
 ```yaml
-name: "Batch Document Analysis"
-tasks:
-  - name: "analyze_all_documents"
-    protocol: "llm/v1"
-    method: "llm/chat"
-    params:
-      model: "llama3.2:latest"
-      directory: "examples/documents"
-      file_pattern: "*.txt"
-      messages:
-        - role: "user"
-          content: "Provide a 2-sentence summary of this document"
+# Dynamic batch workflow with automatic file discovery
+name: "Dynamic Batch Text Analysis"
+description: "Dynamically discover and analyze text documents"
+type: "batch"  # Indicates this is a batch workflow
+
+# Batch configuration - discovers files at runtime
+batch:
+  directory: "examples/documents"
+  pattern: "*.txt"  # Glob pattern for file discovery
+  
+# Template task to apply to each discovered file
+template:
+  method: "llm/chat"
+  model: "llama3.2:latest"
+  messages:
+    - role: "system"
+      content: "You are a helpful document analyzer."
+    - role: "user"
+      content: "Provide a 2-sentence summary of this document"
 ```
 
-### Batch Image Description
+### Dynamic Batch Image Analysis (NEW)
 ```yaml
+name: "Dynamic Batch Image Analysis"
+description: "Dynamically discover and analyze images"
+type: "batch"
+
+batch:
+  directory: "examples/images"
+  pattern: "*.png"  # Will find all PNG images
+  
+template:
+  method: "llm/vision"
+  model: "llava:latest"
+  messages:
+    - role: "user"
+      content: "Describe what you see in this image in detail."
+```
+
+### Static Batch Processing (Legacy)
+```yaml
+# Static batch with predefined file list
 name: "Batch Image Processing"
 tasks:
   - name: "describe_images"

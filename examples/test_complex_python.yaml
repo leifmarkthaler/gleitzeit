@@ -1,0 +1,34 @@
+name: "Test Complex Python Data Passing"
+description: "Test passing complex data structures between Python tasks"
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - id: "create_data"
+    method: "python/execute"
+    priority: 3
+    parameters:
+      file: "examples/scripts/generate_numbers.py"
+      timeout: 5
+
+  - id: "process_data"
+    method: "python/execute"
+    priority: 2
+    dependencies: ["create_data"]
+    parameters:
+      file: "examples/scripts/calculate_sum.py"
+      context:
+        numbers: "${create_data.result.numbers}"  # Should be a list
+        count: "${create_data.result.count}"      # Should be an integer
+      timeout: 5
+
+  - id: "final_report"
+    method: "python/execute"
+    priority: 1
+    dependencies: ["create_data", "process_data"]
+    parameters:
+      file: "examples/scripts/format_report.py"
+      context:
+        number_data: "${create_data.result}"     # Should be a dict
+        sum_data: "${process_data.result}"       # Should be a dict
+      timeout: 5

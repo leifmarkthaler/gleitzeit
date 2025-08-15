@@ -10,7 +10,7 @@ Gleitzeit V4 is a distributed task orchestration system built on protocol-based 
 - **Distributed by Design**: Socket.IO-based communication between components
 - **Advanced Dependency Resolution**: Topological sorting, circular dependency detection
 - **Priority-based Task Queuing**: Urgent → High → Normal → Low ordering
-- **Native MCP Support**: Model Context Protocol as extension of JSON-RPC 2.0
+- **Native MCP Support**: SimpleMCPProvider with built-in tools for Model Context Protocol
 
 ## 🔧 Recent Architecture Enhancements (v4.1)
 

@@ -1,17 +1,40 @@
 name: "MCP Test Workflow"
 description: "Test workflow using MCP provider for JSON response testing"
+
 tasks:
   - id: "health_check"
     name: "MCP Health Check"
-    protocol: "mcp/v1"
-    method: "ping"
-    params: {}
+    method: "mcp/ping"
+    parameters: {}
     priority: "normal"
   
   - id: "discover_tools"
     name: "Discover Tools"
-    protocol: "mcp/v1"
-    method: "tools/list"
-    params: {}
+    method: "mcp/tools/list"
+    parameters: {}
     priority: "normal"
     dependencies: ["health_check"]
+    
+  - id: "server_info"
+    name: "Get Server Info"
+    method: "mcp/server_info"
+    parameters: {}
+    priority: "normal"
+    dependencies: ["health_check"]
+    
+  - id: "test_echo"
+    name: "Test Echo Tool"
+    method: "mcp/tool.echo"
+    parameters:
+      message: "Testing MCP provider"
+    priority: "normal"
+    dependencies: ["discover_tools"]
+    
+  - id: "test_math"
+    name: "Test Math Tools"
+    method: "mcp/tool.add"
+    parameters:
+      a: 10
+      b: 20
+    priority: "normal"
+    dependencies: ["test_echo"]

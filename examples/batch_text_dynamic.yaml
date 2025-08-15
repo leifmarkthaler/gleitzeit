@@ -1,0 +1,23 @@
+# Dynamic Batch Text Analysis
+# This workflow demonstrates true batch processing with dynamic file discovery
+# NOTE: This is a proposed format - it would need implementation support
+
+name: "Dynamic Batch Text Analysis"
+description: "Dynamically discover and analyze text documents"
+type: "batch"  # Indicates this is a batch workflow
+
+# Batch configuration
+batch:
+  directory: "examples/documents"
+  pattern: "*.txt"
+  
+# Template task to apply to each file
+# The ${file_path} will be replaced with each discovered file
+template:
+  method: "llm/chat"
+  model: "llama3.2:latest"
+  messages:
+    - role: "system"
+      content: "You are a helpful document analyzer."
+    - role: "user"
+      content: "Provide a 2-3 sentence summary of this document, highlighting the main points."

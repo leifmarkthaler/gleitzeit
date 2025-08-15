@@ -1,0 +1,39 @@
+name: "Simple MCP Workflow"
+description: "Workflow using the simple MCP provider"
+
+tasks:
+  - id: "echo_test"
+    name: "Echo Message"
+    method: "mcp/tool.echo"
+    parameters:
+      message: "Hello from Simple MCP!"
+    priority: "normal"
+
+  - id: "calculate_sum"
+    name: "Add Numbers"
+    method: "mcp/tool.add"
+    parameters:
+      a: 42
+      b: 58
+    priority: "normal"
+
+  - id: "calculate_product"
+    name: "Multiply Numbers"
+    method: "mcp/tool.multiply"
+    dependencies: ["calculate_sum"]
+    parameters:
+      a: "${calculate_sum.result}"
+      b: 2
+    priority: "normal"
+
+  - id: "combine_results"
+    name: "Combine All Results"
+    method: "mcp/tool.concat"
+    dependencies: ["echo_test", "calculate_product"]
+    parameters:
+      strings:
+        - "${echo_test.response}"
+        - "Sum was ${calculate_sum.result}"
+        - "Product is ${calculate_product.result}"
+      separator: " | "
+    priority: "normal"

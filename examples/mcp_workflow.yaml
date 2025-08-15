@@ -1,0 +1,40 @@
+name: "MCP Test Workflow"
+description: "Test workflow using MCP provider for tool execution"
+
+tasks:
+  - id: "echo_test"
+    name: "Echo Test"
+    method: "mcp/tool.echo"
+    parameters:
+      message: "Hello from MCP workflow!"
+    priority: "normal"
+
+  - id: "add_numbers"
+    name: "Add Numbers"
+    method: "mcp/tool.add"
+    dependencies: ["echo_test"]
+    parameters:
+      a: 100
+      b: 23
+    priority: "normal"
+
+  - id: "multiply_result"
+    name: "Multiply Result"
+    method: "mcp/tool.multiply"
+    dependencies: ["add_numbers"]
+    parameters:
+      a: "${add_numbers.result}"
+      b: 10
+    priority: "normal"
+    
+  - id: "final_concat"
+    name: "Concatenate Results"
+    method: "mcp/tool.concat"
+    dependencies: ["multiply_result"]
+    parameters:
+      strings:
+        - "Echo said: ${echo_test.response}"
+        - "Addition result: ${add_numbers.result}"
+        - "Final multiplication: ${multiply_result.result}"
+      separator: " | "
+    priority: "normal"

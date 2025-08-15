@@ -1,0 +1,48 @@
+name: "Test Mixed Parameter Substitution"
+description: "Test different types of parameter substitution"
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - id: "generate_topic"
+    method: "llm/chat"
+    priority: 3
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Generate a single word topic for an article. Reply with just the word."
+
+  - id: "generate_data"
+    method: "python/execute"
+    priority: 3
+    parameters:
+      file: "examples/scripts/generate_numbers.py"
+      timeout: 5
+
+  - id: "combine_results"
+    method: "llm/chat"
+    priority: 1
+    dependencies: ["generate_topic", "generate_data"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          # This tests embedding substitution in a larger string
+          content: "Write a sentence about the topic '${generate_topic.response}' using exactly ${generate_data.result.count} words."
+
+  - id: "process_with_context"
+    method: "python/execute"
+    priority: 1
+    dependencies: ["generate_data", "generate_topic"]
+    parameters:
+      file: "examples/scripts/test_context.py"
+      context:
+        # This tests direct object substitution
+        numbers: "${generate_data.result.numbers}"
+        count: "${generate_data.result.count}"
+        # This tests string substitution
+        topic: "${generate_topic.response}"
+        # This tests literal values
+        test_string: "hello world"
+        test_number: 42
