@@ -1,0 +1,9 @@
+name: "Simple Test Workflow"
+description: "Test workflow with echo for JSON response testing"
+tasks:
+  - name: "Echo Task"
+    protocol: "echo/v1"
+    method: "echo"
+    params:
+      message: "Hello from test workflow"
+    priority: "high"

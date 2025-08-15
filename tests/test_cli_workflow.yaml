@@ -1,0 +1,23 @@
+name: "Test CLI Workflow"
+description: "Testing if CLI returns results"
+tasks:
+  - name: "generate_number"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Generate a random number between 1 and 10. Reply with just the number."
+    priority: "normal"
+      
+  - name: "double_number"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["generate_number"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Double this number: ${generate_number.result.content}. Reply with just the result."
+    priority: "normal"

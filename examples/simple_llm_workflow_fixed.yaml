@@ -1,0 +1,22 @@
+name: "Simple LLM Workflow"
+description: "A basic workflow that generates content using an LLM"
+tasks:
+  - name: "greeting_task"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "high"
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Generate a friendly greeting message for a new user joining our workflow system. Be enthusiastic but professional."
+
+  - name: "explanation_task"
+    protocol: "llm/v1"
+    method: "llm/chat" 
+    priority: "normal"
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Explain in 2-3 sentences what a workflow orchestration system does and why it's useful."

@@ -1,0 +1,35 @@
+name: "Vision File Analysis Workflow"
+description: "Demonstrates vision analysis using image files instead of base64"
+tasks:
+  - name: "analyze_image_file"
+    protocol: "llm/v1"
+    method: "llm/vision"
+    priority: "normal"
+    params:
+      model: "llava:latest"
+      image_path: "examples/images/test_colors.png"
+      messages:
+        - role: "user"
+          content: "Analyze this image and describe what you see. Be specific about colors, shapes, and any text you can identify."
+
+  - name: "extract_colors"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    dependencies: ["analyze_image_file"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Based on this image analysis: '${analyze_image_file.result.content}', extract just the main colors mentioned. List them separated by commas."
+
+  - name: "generate_summary"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    dependencies: ["analyze_image_file", "extract_colors"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Create a brief summary of this image analysis. The analysis was: '${analyze_image_file.result.content}' and the main colors are: '${extract_colors.result.content}'. Write a 1-sentence summary."

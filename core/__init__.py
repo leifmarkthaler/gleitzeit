@@ -1,46 +1,30 @@
 """
-Gleitzeit Core Module
-
-Core functionality for distributed task execution with protocol-based providers
-and JSON-RPC 2.0 compliance.
+Core components for Gleitzeit V4
 """
 
-from .protocol import (
-    ParameterType,
-    ParameterSpec, 
-    MethodSpec,
-    ProtocolSpec,
-    ProtocolRegistry,
-    get_protocol_registry,
-    register_protocol,
-    get_protocol
-)
-
-from .jsonrpc import (
-    JSONRPCError,
-    JSONRPCRequest,
-    JSONRPCResponse,
-    JSONRPCBatch,
-    parse_jsonrpc_request,
-    parse_jsonrpc_response
-)
+from .models import Task, Workflow, TaskStatus, WorkflowStatus, TaskResult, Priority, RetryConfig, WorkflowExecution
+from .protocol import ProtocolSpec, MethodSpec
+from .jsonrpc import JSONRPCRequest, JSONRPCResponse, JSONRPCError
+from .execution_engine import ExecutionEngine, ExecutionMode
+from .workflow_manager import WorkflowManager, WorkflowTemplate, WorkflowExecutionPolicy
 
 __all__ = [
-    # Protocol system
-    'ParameterType',
-    'ParameterSpec',
-    'MethodSpec', 
-    'ProtocolSpec',
-    'ProtocolRegistry',
-    'get_protocol_registry',
-    'register_protocol',
-    'get_protocol',
-    
-    # JSON-RPC system
-    'JSONRPCError',
-    'JSONRPCRequest',
-    'JSONRPCResponse', 
-    'JSONRPCBatch',
-    'parse_jsonrpc_request',
-    'parse_jsonrpc_response'
+    "Task",
+    "Workflow", 
+    "TaskStatus",
+    "WorkflowStatus",
+    "TaskResult",
+    "Priority",
+    "RetryConfig",
+    "WorkflowExecution",
+    "ProtocolSpec",
+    "MethodSpec",
+    "JSONRPCRequest",
+    "JSONRPCResponse",
+    "JSONRPCError",
+    "ExecutionEngine",
+    "ExecutionMode",
+    "WorkflowManager",
+    "WorkflowTemplate",
+    "WorkflowExecutionPolicy"
 ]

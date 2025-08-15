@@ -1,0 +1,57 @@
+name: "Meeting Notes Analysis"
+description: "Process and analyze meeting notes to extract key information"
+tasks:
+  - name: "extract_action_items"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "high"
+    params:
+      model: "llama3.2:latest"
+      file_path: "examples/documents/meeting_notes.txt"
+      messages:
+        - role: "user"
+          content: "Extract all action items from these meeting notes and list them with the responsible person and any deadlines mentioned."
+
+  - name: "identify_risks"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "high"
+    params:
+      model: "llama3.2:latest"
+      file_path: "examples/documents/meeting_notes.txt"
+      messages:
+        - role: "user"
+          content: "Identify any risks, challenges, or blockers mentioned in these meeting notes. List them with their potential impact."
+
+  - name: "create_summary"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    params:
+      model: "llama3.2:latest"
+      file_path: "examples/documents/meeting_notes.txt"
+      messages:
+        - role: "user"
+          content: "Create a concise executive summary of this meeting in 3-4 sentences, highlighting the most important decisions and updates."
+
+  - name: "generate_followup_email"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "low"
+    dependencies: ["extract_action_items", "identify_risks", "create_summary"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "system"
+          content: "You are a professional project manager writing clear, concise follow-up emails."
+        - role: "user"
+          content: |
+            Based on this meeting information:
+            
+            Summary: ${create_summary.result.content}
+            
+            Action Items: ${extract_action_items.result.content}
+            
+            Risks: ${identify_risks.result.content}
+            
+            Write a professional follow-up email to send to the team after this meeting.

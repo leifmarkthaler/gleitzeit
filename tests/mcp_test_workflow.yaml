@@ -1,0 +1,17 @@
+name: "MCP Test Workflow"
+description: "Test workflow using MCP provider for JSON response testing"
+tasks:
+  - id: "health_check"
+    name: "MCP Health Check"
+    protocol: "mcp/v1"
+    method: "ping"
+    params: {}
+    priority: "normal"
+  
+  - id: "discover_tools"
+    name: "Discover Tools"
+    protocol: "mcp/v1"
+    method: "tools/list"
+    params: {}
+    priority: "normal"
+    dependencies: ["health_check"]
