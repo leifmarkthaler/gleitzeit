@@ -1,12 +1,8 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -20,190 +16,73 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
-MANIFEST
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-cover/
-
-# Translations
-*.mo
-*.pot
-
-# Django stuff:
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask stuff:
-instance/
-.webassets-cache
-
-# Scrapy stuff:
-.scrapy
-
-# Sphinx documentation
-docs/_build/
-
-# PyBuilder
-.pybuilder/
-target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# pipenv
-Pipfile.lock
-
-# poetry
-poetry.lock
-
-# pdm
-.pdm.toml
-
-# PEP 582
-__pypackages__/
-
-# Celery stuff
-celerybeat-schedule
-celerybeat.pid
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.env.*
-.venv
-env/
+# Virtual Environment
 venv/
 ENV/
-env.bak/
-venv.bak/
+env/
+.venv
 
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyPI & Twine sensitive files
-.pypirc
-*.token
-api-tokens.txt
-tokens/
-
-# IDE specific files
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
-# macOS
 .DS_Store
-.AppleDouble
-.LSOverride
 
-# Windows
-Thumbs.db
-ehthumbs.db
-Desktop.ini
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.coverage.*
+*.cover
+.hypothesis/
 
-# Gleitzeit specific
-workflow_cache/
-*.cache
-.gleitzeit/
+# Logs
+*.log
 logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Redis
+dump.rdb
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
 temp/
 tmp/
 
-# Test files and data
-test_data/
-test_batch_folder/
-*.test.json
-*.test.yaml
-test_*.py
-*_test.py
+# Output files
+batch_results/
+output/
+results/
+*.output
 
-# Documentation artifacts
-*_ANALYSIS.md
-*_SUMMARY.md
-*_STATUS.md
-*_RESULTS.md
-ARCHITECTURE_*.md
-STREAMLINING_*.md
-CONSISTENCY_*.md
-UNIFIED_*.md
-FINAL_*.md
+# Local configuration
+.env
+.env.local
+config.local.yaml
 
-# Local configuration files
-config.local.*
-settings.local.*
-local_config.*
+# Gleitzeit specific
+.gleitzeit/
+batch_results.md
+batch_results.json
+test_results.json
 
-# Secrets and credentials
-secrets.json
-credentials.json
-auth_config.json
-*.key
-*.pem
-*.p12
+# Documentation build
+docs/_build/
+docs/.doctrees/
 
-# Docker
-.dockerignore
-docker-compose.override.yml
-
-# Backup files
-*.bak
-*.backup
-*.old
+# Package files
+*.tar.gz
+*.zip

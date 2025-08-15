@@ -7,10 +7,10 @@ and proper parameter substitution support for code execution.
 
 from core.protocol import ProtocolSpec, MethodSpec, ParameterSpec, ParameterType
 
-# Python code parameter
-CODE_PARAM = ParameterSpec(
+# Python file parameter
+FILE_PARAM = ParameterSpec(
     type=ParameterType.STRING,
-    description="Python code to execute (supports parameter substitution)",
+    description="Path to Python file to execute (relative to scripts directory)",
     required=True,
     min_length=1
 )
@@ -71,32 +71,32 @@ PYTHON_RESPONSE_SCHEMA = ParameterSpec(
 # Python/Execute method
 PYTHON_EXECUTE_METHOD = MethodSpec(
     name="python/execute",
-    description="Execute Python code with parameter substitution support",
+    description="Execute Python file with parameter substitution support",
     params_schema={
-        "code": CODE_PARAM,
+        "file": FILE_PARAM,
         "context": CONTEXT_PARAM,
         "timeout": TIMEOUT_PARAM
     },
     returns_schema=PYTHON_RESPONSE_SCHEMA,
     examples=[
         {
-            "description": "Simple calculation",
+            "description": "Execute calculation script",
             "request": {
-                "code": "result = 2 + 3\nprint(f'Sum: {result}')",
-                "context": {}
+                "file": "scripts/calculate.py",
+                "context": {"x": 5, "y": 3}
             },
             "response": {
-                "result": "5",
-                "output": "Sum: 5\n",
+                "result": "8",
+                "output": "Sum: 8\n",
                 "success": True,
                 "execution_time": 0.001
             }
         },
         {
-            "description": "Calculation with parameter substitution",
+            "description": "Script with parameter substitution",
             "request": {
-                "code": "number = ${task1.result}\nresult = number * number\nprint(f'Square of {number} is {result}')",
-                "context": {}
+                "file": "scripts/process_data.py",
+                "context": {"input_value": "${task1.result}"}
             },
             "response": {
                 "result": "49",

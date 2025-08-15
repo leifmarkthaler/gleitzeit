@@ -138,7 +138,27 @@ LLM_CHAT_METHOD = MethodSpec(
         "model": MODEL_PARAM,
         "messages": MESSAGES_PARAM,
         "temperature": TEMPERATURE_PARAM,
-        "max_tokens": MAX_TOKENS_PARAM
+        "max_tokens": MAX_TOKENS_PARAM,
+        "file_path": ParameterSpec(
+            type=ParameterType.STRING,
+            description="Path to text file to include in the conversation",
+            required=False
+        ),
+        "files": ParameterSpec(
+            type=ParameterType.ARRAY,
+            description="Array of file paths for batch processing",
+            required=False,
+            items=ParameterSpec(
+                type=ParameterType.STRING,
+                description="File path"
+            )
+        ),
+        "batch_mode": ParameterSpec(
+            type=ParameterType.BOOLEAN,
+            description="Enable batch mode to process files separately",
+            required=False,
+            default=False
+        )
     },
     returns_schema=CHAT_RESPONSE_SCHEMA,
     examples=[
@@ -217,16 +237,169 @@ LLM_COMPLETE_METHOD = MethodSpec(
     ]
 )
 
+# Vision message parameter for vision method
+VISION_MESSAGE_PARAM = ParameterSpec(
+    type=ParameterType.OBJECT,
+    description="A vision message with text and optional images",
+    required=True,
+    properties={
+        "role": ParameterSpec(
+            type=ParameterType.STRING,
+            description="Message role",
+            required=True,
+            enum=["system", "user", "assistant"]
+        ),
+        "content": ParameterSpec(
+            type=ParameterType.STRING,
+            description="Message content (supports parameter substitution)",
+            required=True,
+            min_length=1
+        ),
+        "images": ParameterSpec(
+            type=ParameterType.ARRAY,
+            description="Array of base64 encoded images",
+            required=False,
+            items=ParameterSpec(
+                type=ParameterType.STRING,
+                description="Base64 encoded image data"
+            )
+        )
+    },
+    additional_properties=False
+)
+
+# Vision messages array parameter
+VISION_MESSAGES_PARAM = ParameterSpec(
+    type=ParameterType.ARRAY,
+    description="Array of vision messages",
+    required=True,
+    min_length=1,
+    items=VISION_MESSAGE_PARAM
+)
+
+# Vision response schema
+VISION_RESPONSE_SCHEMA = ParameterSpec(
+    type=ParameterType.OBJECT,
+    description="Vision analysis response",
+    properties={
+        "response": ParameterSpec(
+            type=ParameterType.STRING,
+            description="Vision analysis result",
+            required=True
+        ),
+        "model": ParameterSpec(
+            type=ParameterType.STRING,
+            description="Model used for vision analysis",
+            required=True
+        ),
+        "done": ParameterSpec(
+            type=ParameterType.BOOLEAN,
+            description="Whether analysis is complete",
+            required=True
+        ),
+        "total_duration": ParameterSpec(
+            type=ParameterType.INTEGER,
+            description="Total duration in nanoseconds",
+            required=False
+        )
+    },
+    additional_properties=True
+)
+
+# LLM/Vision method
+LLM_VISION_METHOD = MethodSpec(
+    name="llm/vision",
+    description="Vision analysis with multimodal LLM models",
+    params_schema={
+        "model": ParameterSpec(
+            type=ParameterType.STRING,
+            description="Vision model name to use",
+            required=False,
+            default="llava",
+            min_length=1
+        ),
+        "messages": VISION_MESSAGES_PARAM,
+        "temperature": TEMPERATURE_PARAM,
+        "max_tokens": MAX_TOKENS_PARAM,
+        "images": ParameterSpec(
+            type=ParameterType.ARRAY,
+            description="Array of base64 encoded images (alternative to embedding in messages)",
+            required=False,
+            items=ParameterSpec(
+                type=ParameterType.STRING,
+                description="Base64 encoded image data"
+            )
+        ),
+        "image_path": ParameterSpec(
+            type=ParameterType.STRING,
+            description="Path to image file (alternative to base64 data)",
+            required=False
+        ),
+        "image_paths": ParameterSpec(
+            type=ParameterType.ARRAY,
+            description="Array of image file paths for batch processing",
+            required=False,
+            items=ParameterSpec(
+                type=ParameterType.STRING,
+                description="Image file path"
+            )
+        ),
+        "batch_mode": ParameterSpec(
+            type=ParameterType.BOOLEAN,
+            description="Enable batch mode to process images separately",
+            required=False,
+            default=False
+        )
+    },
+    returns_schema=VISION_RESPONSE_SCHEMA,
+    examples=[
+        {
+            "description": "Vision analysis with embedded image",
+            "request": {
+                "model": "llava",
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": "What do you see in this image?",
+                        "images": ["base64_image_data_here"]
+                    }
+                ]
+            },
+            "response": {
+                "response": "I see a colorful geometric pattern with four distinct quadrants.",
+                "model": "llava",
+                "done": True
+            }
+        },
+        {
+            "description": "Vision analysis with separate images array",
+            "request": {
+                "model": "llava",
+                "messages": [
+                    {"role": "user", "content": "Describe the colors in this image"}
+                ],
+                "images": ["base64_image_data_here"]
+            },
+            "response": {
+                "response": "The image contains red, blue, green, and yellow colors.",
+                "model": "llava",
+                "done": True
+            }
+        }
+    ]
+)
+
 # Complete LLM Protocol Specification
 LLM_PROTOCOL_V1 = ProtocolSpec(
     name="llm",
     version="v1",
-    description="Large Language Model protocol with chat and completion capabilities",
+    description="Large Language Model protocol with chat, completion, and vision capabilities",
     methods={
         "llm/chat": LLM_CHAT_METHOD,
-        "llm/complete": LLM_COMPLETE_METHOD
+        "llm/complete": LLM_COMPLETE_METHOD,
+        "llm/vision": LLM_VISION_METHOD
     },
     author="Gleitzeit Team",
     license="MIT",
-    tags=["llm", "ai", "language-model", "chat", "completion"]
+    tags=["llm", "ai", "language-model", "chat", "completion", "vision", "multimodal"]
 )

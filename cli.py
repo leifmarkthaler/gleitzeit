@@ -1,651 +1,1150 @@
-#!/usr/bin/env python3
 """
-Gleitzeit CLI - Modern workflow orchestration interface
+Command Line Interface for Gleitzeit V4
 
-A clean, intuitive command-line interface for managing Gleitzeit components,
-workflows, and distributed execution.
+Provides user-friendly commands for task submission, workflow management,
+provider registration, and system monitoring.
 """
 
-import argparse
 import asyncio
+import click
 import json
-import logging
-import signal
-import sys
-import time
-from pathlib import Path
-from typing import Optional, Dict, Any, List
-from datetime import datetime
 import yaml
+import logging
+import sys
+from pathlib import Path
+from typing import Dict, Any, Optional
+from datetime import datetime, timedelta
 
-# Rich for beautiful terminal output
-try:
-    from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich.progress import Progress, SpinnerColumn, TextColumn
-    from rich.syntax import Syntax
-    from rich.live import Live
-    from rich.layout import Layout
-    RICH_AVAILABLE = True
-except ImportError:
-    RICH_AVAILABLE = False
-    print("⚠️  Install 'rich' for better terminal output: pip install rich")
+from core.models import (
+    Task, Workflow, Priority, RetryConfig
+)
+from core.execution_engine import ExecutionEngine, ExecutionMode
+from core.workflow_manager import WorkflowManager, WorkflowExecutionPolicy
+from registry import ProtocolProviderRegistry
+from task_queue.task_queue import QueueManager
+from task_queue.dependency_resolver import DependencyResolver
 
-# Import components
-try:
-    from gleitzeit_v5.hub.central_hub import CentralHub
-    from gleitzeit_v5.base.config import ComponentConfig
-    from gleitzeit_v5.components import (
-        QueueManagerClient,
-        DependencyResolverClient,
-        ExecutionEngineClient
-    )
-except ImportError:
-    # Try relative imports when running as script
-    import sys
-    import os
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    
-    from hub.central_hub import CentralHub
-    from base.config import ComponentConfig
-    from components import (
-        QueueManagerClient,
-        DependencyResolverClient,
-        ExecutionEngineClient
-    )
-
-# Initialize console for rich output
-console = Console() if RICH_AVAILABLE else None
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
 
 
-class GleitzeitCLI:
-    """Main CLI handler for Gleitzeit"""
+class GleitzeitV4CLI:
+    """Main CLI application for Gleitzeit V4"""
     
     def __init__(self):
-        self.hub = None
-        self.components = {}
-        self.running = False
-        self.console = console
-        self.hub_auto_started = False
+        self.registry: Optional[ProtocolProviderRegistry] = None
+        self.queue_manager: Optional[QueueManager] = None
+        self.dependency_resolver: Optional[DependencyResolver] = None
+        self.execution_engine: Optional[ExecutionEngine] = None
+        self.workflow_manager: Optional[WorkflowManager] = None
+        self.config_file = Path.home() / ".gleitzeit" / "v4_config.json"
+        self.config = self._load_config()
     
-    async def check_hub_running(self, hub_url: str = "http://localhost:8001") -> bool:
-        """Check if hub is already running"""
-        try:
-            import httpx
-            async with httpx.AsyncClient() as client:
-                response = await client.get(f"{hub_url}/stats", timeout=2.0)
-                return response.status_code == 200
-        except Exception:
-            return False
-    
-    async def ensure_hub_running(self, host: str = "127.0.0.1", port: int = 8001, 
-                                 log_level: str = "INFO") -> bool:
-        """Ensure hub is running, start it if needed"""
-        hub_url = f"http://{host}:{port}"
-        
-        if await self.check_hub_running(hub_url):
-            return True
-        
-        self._print_info(f"Hub not detected, starting automatically on {host}:{port}")
-        success = await self.start_hub(host, port, log_level, background=True)
-        if success:
-            self.hub_auto_started = True
-            # Wait a bit more for hub to be ready
-            await asyncio.sleep(3)
-            return await self.check_hub_running(hub_url)
-        return False
-    
-    async def start_hub(self, host: str = "127.0.0.1", port: int = 8001, 
-                        log_level: str = "INFO", background: bool = False):
-        """Start the central hub"""
-        if self.hub and self.running:
-            self._print_error("Hub is already running")
-            return False
-        
-        config = ComponentConfig()
-        config.log_level = log_level
-        
-        self._print_info(f"Starting Gleitzeit Hub on {host}:{port}")
-        
-        self.hub = CentralHub(host=host, port=port, config=config)
-        
-        if background:
-            # Start hub in background
-            asyncio.create_task(self.hub.start())
-            await asyncio.sleep(2)  # Give it time to start
-            self.running = True
-            self._print_success(f"Hub started in background on http://{host}:{port}")
-            return True
-        else:
-            # Run hub in foreground
+    def _load_config(self) -> Dict[str, Any]:
+        """Load configuration from file"""
+        if self.config_file.exists():
             try:
-                self.running = True
-                await self.hub.start()
-            except KeyboardInterrupt:
-                self._print_info("Shutting down hub...")
-                await self.hub.shutdown()
-                self.running = False
+                with open(self.config_file) as f:
+                    return json.load(f)
+            except Exception as e:
+                click.echo(f"Warning: Failed to load config: {e}")
         
-        return True
+        # Default configuration
+        return {
+            "max_concurrent_tasks": 10,
+            "queue_names": ["default"],
+            "template_directory": str(Path.home() / ".gleitzeit" / "templates"),
+            "log_level": "INFO",
+            "persistence_backend": "none",  # Options: "redis", "sqlite", "none"
+            "redis_url": "redis://localhost:6379/0",
+            "sqlite_path": str(Path.home() / ".gleitzeit" / "gleitzeit.db")
+        }
     
-    async def start_components(self, hub_url: str = "http://localhost:8001",
-                             components: List[str] = None, auto_start_hub: bool = True):
-        """Start core components"""
-        if components is None:
-            components = ["queue", "deps", "engine"]
-        
-        # Auto-start hub if needed
-        if auto_start_hub:
-            from urllib.parse import urlparse
-            parsed = urlparse(hub_url)
-            host = parsed.hostname or "127.0.0.1"
-            port = parsed.port or 8001
-            
-            if not await self.ensure_hub_running(host, port):
-                self._print_error("Failed to start or connect to hub")
-                return False
-        
-        config = ComponentConfig()
-        config.hub_url = hub_url
-        
-        started = []
-        
+    def _save_config(self) -> None:
+        """Save configuration to file"""
         try:
-            if "queue" in components:
-                self._print_info("Starting Queue Manager...")
-                queue = QueueManagerClient(
-                    component_id="cli-queue",
-                    config=config,
-                    hub_url=hub_url
-                )
-                asyncio.create_task(queue.start())
-                self.components["queue"] = queue
-                started.append("Queue Manager")
-            
-            if "deps" in components:
-                self._print_info("Starting Dependency Resolver...")
-                deps = DependencyResolverClient(
-                    component_id="cli-deps",
-                    config=config,
-                    hub_url=hub_url
-                )
-                asyncio.create_task(deps.start())
-                self.components["deps"] = deps
-                started.append("Dependency Resolver")
-            
-            if "engine" in components:
-                self._print_info("Starting Execution Engine...")
-                engine = ExecutionEngineClient(
-                    component_id="cli-engine",
-                    config=config,
-                    hub_url=hub_url
-                )
-                asyncio.create_task(engine.start())
-                self.components["engine"] = engine
-                started.append("Execution Engine")
-            
-            await asyncio.sleep(2)  # Give components time to connect
-            
-            self._print_success(f"Started components: {', '.join(started)}")
-            return True
-            
+            self.config_file.parent.mkdir(parents=True, exist_ok=True)
+            with open(self.config_file, 'w') as f:
+                json.dump(self.config, f, indent=2)
         except Exception as e:
-            self._print_error(f"Failed to start components: {e}")
-            return False
+            click.echo(f"Warning: Failed to save config: {e}")
     
-    async def status(self, hub_url: str = "http://localhost:8001", auto_start_hub: bool = False):
-        """Show status of hub and components"""
-        # Check if hub is running, optionally start it
-        if auto_start_hub:
-            from urllib.parse import urlparse
-            parsed = urlparse(hub_url)
-            host = parsed.hostname or "127.0.0.1"
-            port = parsed.port or 8001
+    async def _initialize_components(self) -> None:
+        """Initialize all system components"""
+        if self.registry is None:
+            self.registry = ProtocolProviderRegistry()
+            self.queue_manager = QueueManager()
+            self.dependency_resolver = DependencyResolver()
             
-            if not await self.ensure_hub_running(host, port):
-                self._print_error("Hub is not running and failed to start")
-                return
+            # Initialize persistence backend if configured
+            persistence = await self._initialize_persistence()
+            
+            self.execution_engine = ExecutionEngine(
+                registry=self.registry,
+                queue_manager=self.queue_manager,
+                dependency_resolver=self.dependency_resolver,
+                max_concurrent_tasks=self.config["max_concurrent_tasks"],
+                persistence=persistence
+            )
+            self.workflow_manager = WorkflowManager(
+                execution_engine=self.execution_engine,
+                dependency_resolver=self.dependency_resolver,
+                template_directory=Path(self.config["template_directory"])
+            )
+            
+            # Load workflow templates
+            self.workflow_manager.load_templates_from_directory()
+            
+            # Register protocols and providers
+            await self._register_protocols_and_providers()
+    
+    async def _initialize_persistence(self):
+        """Initialize persistence backend based on configuration"""
+        backend_type = self.config.get("persistence_backend", "none")
         
+        if backend_type == "redis":
+            try:
+                from persistence.redis_backend import RedisBackend
+                # Parse Redis URL or use defaults
+                redis_url = self.config.get("redis_url", "redis://localhost:6379/0")
+                # For now, use default connection parameters
+                redis_backend = RedisBackend()
+                await redis_backend.initialize()
+                logger.info(f"✅ Redis persistence backend initialized: {redis_url}")
+                return redis_backend
+            except Exception as e:
+                logger.warning(f"Failed to initialize Redis backend: {e}")
+                logger.info("Falling back to in-memory persistence")
+        
+        elif backend_type == "sqlite":
+            try:
+                from persistence.sqlite_backend import SQLiteBackend
+                sqlite_backend = SQLiteBackend(db_path=self.config["sqlite_path"])
+                await sqlite_backend.initialize()
+                logger.info(f"✅ SQLite persistence backend initialized: {self.config['sqlite_path']}")
+                return sqlite_backend
+            except Exception as e:
+                logger.warning(f"Failed to initialize SQLite backend: {e}")
+                logger.info("Falling back to in-memory persistence")
+        
+        # Default to in-memory backend
+        from persistence.base import InMemoryBackend
+        in_memory_backend = InMemoryBackend()
+        await in_memory_backend.initialize()
+        if backend_type != "none":
+            logger.info("✅ In-memory persistence backend initialized (fallback)")
+        else:
+            logger.info("✅ In-memory persistence backend initialized")
+        return in_memory_backend
+    
+    async def _register_protocols_and_providers(self) -> None:
+        """Register built-in protocols and providers"""
         try:
-            import httpx
-            async with httpx.AsyncClient() as client:
-                response = await client.get(f"{hub_url}/stats", timeout=2.0)
-                if response.status_code == 200:
-                    stats = response.json()
-                    self._display_status(stats)
-                else:
-                    self._print_error(f"Hub returned status {response.status_code}")
+            # Register LLM protocol
+            from protocols import LLM_PROTOCOL_V1
+            self.registry.register_protocol(LLM_PROTOCOL_V1)
+            
+            # Register Ollama provider if available
+            try:
+                from providers.ollama_provider import OllamaProvider
+                ollama_provider = OllamaProvider(provider_id="cli-ollama")
+                await ollama_provider.initialize()
+                self.registry.register_provider(
+                    provider_id="cli-ollama",
+                    protocol_id="llm/v1",
+                    provider_instance=ollama_provider
+                )
+                logger.info("✅ Ollama provider registered successfully")
+            except Exception as e:
+                logger.warning(f"Ollama provider not available: {e}")
+            
+            # Register MCP protocol and provider if available
+            try:
+                from protocols.mcp_protocol import mcp_protocol
+                self.registry.register_protocol(mcp_protocol)
+                logger.info("✅ MCP protocol registered")
+            except Exception as e:
+                logger.warning(f"MCP protocol not available: {e}")
+                
         except Exception as e:
-            self._print_error(f"Cannot connect to hub at {hub_url}")
-            self._print_info("Tip: Use 'gleitzeit5 start --all' to start everything automatically")
+            logger.warning(f"Error registering protocols/providers: {e}")
+
+
+cli_app = GleitzeitV4CLI()
+
+
+# Main CLI Group
+@click.group(invoke_without_command=True)
+@click.option('--config', help='Configuration file path')
+@click.option('--verbose', '-v', is_flag=True, help='Verbose output')
+@click.pass_context
+def cli(ctx, config, verbose):
+    """Gleitzeit V4 - Protocol-Based Task Execution System"""
+    if verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
     
-    async def submit_workflow(self, workflow_file: str, hub_url: str = "http://localhost:8001", 
-                             auto_start_hub: bool = True):
-        """Submit a workflow from a YAML/JSON file"""
-        path = Path(workflow_file)
-        if not path.exists():
-            self._print_error(f"Workflow file not found: {workflow_file}")
-            return False
-        
-        # Auto-start hub if needed
-        if auto_start_hub:
-            from urllib.parse import urlparse
-            parsed = urlparse(hub_url)
-            host = parsed.hostname or "127.0.0.1"
-            port = parsed.port or 8001
-            
-            if not await self.ensure_hub_running(host, port):
-                self._print_error("Failed to start or connect to hub")
-                return False
+    if config:
+        cli_app.config_file = Path(config)
+        cli_app.config = cli_app._load_config()
+    
+    if ctx.invoked_subcommand is None:
+        click.echo("Gleitzeit V4 - Protocol-Based Task Execution System")
+        click.echo("Use --help to see available commands")
+
+
+# Task Management Commands
+@cli.group()
+def task():
+    """Task management commands"""
+    pass
+
+
+@task.command()
+@click.option('--protocol', required=True, help='Protocol identifier (e.g., web-search/v1)')
+@click.option('--method', required=True, help='Method name')
+@click.option('--params', default='{}', help='JSON parameters')
+@click.option('--priority', type=click.Choice(['urgent', 'high', 'normal', 'low']), default='normal')
+@click.option('--timeout', type=int, help='Task timeout in seconds')
+@click.option('--depends-on', multiple=True, help='Task dependencies')
+@click.option('--queue', default='default', help='Target queue')
+@click.option('--wait', is_flag=True, help='Wait for task completion')
+@click.option('--output-file', help='Save response to JSON file')
+def submit(protocol, method, params, priority, timeout, depends_on, queue, wait, output_file):
+    """Submit a single task for execution"""
+    async def _submit_task():
+        await cli_app._initialize_components()
         
         try:
-            # Load workflow definition
-            with open(path) as f:
-                if path.suffix in ['.yaml', '.yml']:
-                    workflow = yaml.safe_load(f)
-                else:
-                    workflow = json.load(f)
+            params_dict = json.loads(params)
+        except json.JSONDecodeError:
+            click.echo("Error: Invalid JSON in params", err=True)
+            return
+        
+        task = Task(
+            name=f"CLI Task {protocol}::{method}",  # Provide task name
+            protocol=protocol,
+            method=method,
+            params=params_dict,
+            priority=Priority(priority),
+            dependencies=list(depends_on),
+            timeout=timeout
+        )
+        
+        click.echo(f"Submitting task {task.id}...")
+        
+        await cli_app.execution_engine.submit_task(task, queue)
+        
+        # Prepare response data
+        response_data = {
+            "submission_type": "task",
+            "task_id": task.id,
+            "task_name": task.name,
+            "protocol": task.protocol,
+            "method": task.method,
+            "priority": task.priority,
+            "queue": queue,
+            "submitted_at": datetime.utcnow().isoformat(),
+            "status": "submitted"
+        }
+        
+        if wait or output_file:
+            click.echo("Waiting for completion...")
             
-            # Connect to hub and submit
-            import socketio
-            sio = socketio.AsyncClient()
+            # Start execution engine if not running
+            if not cli_app.execution_engine.running:
+                await cli_app.execution_engine.start(ExecutionMode.SINGLE_SHOT)
             
-            workflow_id = f"cli-workflow-{int(time.time())}"
-            results = {}
+            # Wait for result
+            while task.id not in cli_app.execution_engine.task_results:
+                await asyncio.sleep(0.5)
             
-            @sio.on('task_completed')
-            async def handle_task_completed(data):
-                task_id = data['task_id']
-                results[task_id] = data['result']
-                self._print_info(f"Task {task_id} completed")
-            
-            await sio.connect(hub_url)
-            
-            # Submit tasks from workflow
-            for task in workflow.get('tasks', []):
-                await sio.emit('route_event', {
-                    'target_component_type': 'queue_manager',
-                    'event_name': 'queue_task',
-                    'event_data': {
-                        'task_id': task['id'],
-                        'workflow_id': workflow_id,
-                        'method': task['method'],
-                        'parameters': task.get('parameters', {}),
-                        'dependencies': task.get('dependencies', []),
-                        'priority': task.get('priority', 2)
-                    }
+            result = cli_app.execution_engine.get_task_result(task.id)
+            if result:
+                # Handle status field (might be string from Redis or TaskStatus enum)
+                status_str = result.status.value if hasattr(result.status, 'value') else str(result.status)
+                click.echo(f"Task completed with status: {status_str}")
+                
+                # Update response data with results
+                response_data.update({
+                    "status": status_str,
+                    "completed_at": result.completed_at.isoformat() if result.completed_at else None,
+                    "execution_time": (result.completed_at - result.started_at).total_seconds() if result.completed_at and result.started_at else None,
+                    "result": result.result,
+                    "error": result.error
                 })
-                self._print_info(f"Submitted task: {task['id']}")
-            
-            self._print_success(f"Workflow {workflow_id} submitted successfully")
-            
-            # Wait for completion if requested
-            if workflow.get('wait_for_completion', False):
-                self._print_info("Waiting for workflow completion...")
-                await asyncio.sleep(workflow.get('timeout', 30))
-            
-            await sio.disconnect()
-            return True
-            
-        except Exception as e:
-            self._print_error(f"Failed to submit workflow: {e}")
-            return False
-    
-    async def list_providers(self, hub_url: str = "http://localhost:8001", auto_start_hub: bool = False):
-        """List available providers"""
-        # Auto-start hub if requested
-        if auto_start_hub:
-            from urllib.parse import urlparse
-            parsed = urlparse(hub_url)
-            host = parsed.hostname or "127.0.0.1"
-            port = parsed.port or 8001
-            
-            if not await self.ensure_hub_running(host, port):
-                self._print_error("Hub is not running and failed to start")
-                return
+                
+                if result.result:
+                    click.echo(f"Result: {json.dumps(result.result, indent=2)}")
+                if result.error:
+                    click.echo(f"Error: {result.error}", err=True)
+        else:
+            click.echo(f"Task {task.id} submitted successfully")
         
-        try:
-            import httpx
-            async with httpx.AsyncClient() as client:
-                response = await client.get(f"{hub_url}/stats", timeout=2.0)
-                if response.status_code == 200:
-                    stats = response.json()
-                    components = stats.get('components', {})
-                    
-                    providers = [c for c in components.values() 
-                                if c.get('component_type') == 'provider']
-                    
-                    if providers:
-                        self._display_providers(providers)
-                    else:
-                        self._print_info("No providers currently connected")
-                        self._print_info("Tip: Start some providers to see them here")
-                else:
-                    self._print_error(f"Hub returned status {response.status_code}")
-        except Exception as e:
-            self._print_error(f"Cannot connect to hub at {hub_url}")
-            self._print_info("Tip: Use 'gleitzeit5 start --all' to start everything automatically")
-    
-    async def monitor(self, hub_url: str = "http://localhost:8001", interval: int = 2, 
-                     auto_start_hub: bool = False):
-        """Monitor hub activity in real-time"""
-        # Auto-start hub if requested
-        if auto_start_hub:
-            from urllib.parse import urlparse
-            parsed = urlparse(hub_url)
-            host = parsed.hostname or "127.0.0.1"
-            port = parsed.port or 8001
-            
-            if not await self.ensure_hub_running(host, port):
-                self._print_error("Hub is not running and failed to start")
-                return
-        
-        self._print_info(f"Monitoring hub at {hub_url} (Ctrl+C to stop)")
-        
-        try:
-            while True:
-                await self.status(hub_url)
-                await asyncio.sleep(interval)
-        except KeyboardInterrupt:
-            self._print_info("Monitoring stopped")
-    
-    async def quick_start(self, host: str = "127.0.0.1", port: int = 8001, 
-                         start_components: bool = True, keep_running: bool = False):
-        """Quick start: Hub + components in one command"""
-        self._print_info("🚀 Quick starting Gleitzeit...")
-        
-        # Start hub
-        if not await self.ensure_hub_running(host, port):
-            self._print_error("Failed to start hub")
-            return False
-        
-        # Start components if requested
-        if start_components:
-            hub_url = f"http://{host}:{port}"
-            success = await self.start_components(hub_url, auto_start_hub=False)
-            if not success:
-                self._print_error("Failed to start some components")
-                return False
-        
-        self._print_success(f"✅ Gleitzeit is ready at http://{host}:{port}")
-        self._print_info("💡 Try: gleitzeit5 status")
-        self._print_info("💡 Try: gleitzeit5 submit examples/simple_llm_workflow.yaml")
-        
-        if keep_running:
+        # Save response to file if requested
+        if output_file:
             try:
-                self._print_info("Press Ctrl+C to stop")
-                await asyncio.Event().wait()
-            except KeyboardInterrupt:
-                self._print_info("Shutting down...")
-                if self.hub_auto_started and self.hub:
-                    await self.hub.shutdown()
-        
-        return True
+                with open(output_file, 'w') as f:
+                    json.dump(response_data, f, indent=2, default=str)
+                click.echo(f"Response saved to: {output_file}")
+            except Exception as e:
+                click.echo(f"Failed to save response file: {e}", err=True)
     
-    async def run_workflow(self, workflow_file: str, host: str = "127.0.0.1", port: int = 8001):
-        """Run a workflow from start to finish - one command does everything"""
-        self._print_info(f"🚀 Running workflow: {workflow_file}")
-        
-        # Start everything
-        if not await self.quick_start(host, port, start_components=True, keep_running=False):
-            return False
-        
-        # Submit workflow
-        hub_url = f"http://{host}:{port}"
-        success = await self.submit_workflow(workflow_file, hub_url, auto_start_hub=False)
-        
-        if success:
-            self._print_success("✅ Workflow submitted successfully!")
-            self._print_info("💡 Use 'gleitzeit5 monitor' to watch progress")
-        
-        return success
-    
-    # Display helper methods
-    def _display_status(self, stats: Dict[str, Any]):
-        """Display hub status in a nice format"""
-        if RICH_AVAILABLE and self.console:
-            # Create status table
-            table = Table(title="Gleitzeit Hub Status", show_header=True)
-            table.add_column("Metric", style="cyan")
-            table.add_column("Value", style="green")
-            
-            hub_stats = stats.get('hub_stats', {})
-            table.add_row("Hub Version", hub_stats.get('version', 'Unknown'))
-            table.add_row("Uptime", self._format_uptime(hub_stats.get('uptime_seconds', 0)))
-            table.add_row("Connected Components", str(hub_stats.get('connected_components', 0)))
-            table.add_row("Total Events", str(hub_stats.get('total_events_routed', 0)))
-            
-            self.console.print(table)
-            
-            # Show components
-            components = stats.get('components', {})
-            if components:
-                comp_table = Table(title="Connected Components", show_header=True)
-                comp_table.add_column("ID", style="yellow")
-                comp_table.add_column("Type", style="cyan")
-                comp_table.add_column("Status", style="green")
-                
-                for comp_id, comp_data in components.items():
-                    comp_table.add_row(
-                        comp_id,
-                        comp_data.get('component_type', 'unknown'),
-                        comp_data.get('status', 'unknown')
-                    )
-                
-                self.console.print(comp_table)
-        else:
-            # Plain text output
-            print("\n=== Gleitzeit Hub Status ===")
-            hub_stats = stats.get('hub_stats', {})
-            print(f"Version: {hub_stats.get('version', 'Unknown')}")
-            print(f"Uptime: {self._format_uptime(hub_stats.get('uptime_seconds', 0))}")
-            print(f"Connected Components: {hub_stats.get('connected_components', 0)}")
-            print(f"Total Events: {hub_stats.get('total_events_routed', 0)}")
-            
-            components = stats.get('components', {})
-            if components:
-                print("\n=== Connected Components ===")
-                for comp_id, comp_data in components.items():
-                    print(f"  {comp_id}: {comp_data.get('component_type')} - {comp_data.get('status')}")
-    
-    def _display_providers(self, providers: List[Dict[str, Any]]):
-        """Display provider list in a nice format"""
-        if RICH_AVAILABLE and self.console:
-            table = Table(title="Available Providers", show_header=True)
-            table.add_column("ID", style="yellow")
-            table.add_column("Protocol", style="cyan")
-            table.add_column("Capabilities", style="green")
-            table.add_column("Status", style="blue")
-            
-            for provider in providers:
-                table.add_row(
-                    provider.get('component_id', 'unknown'),
-                    provider.get('protocol', 'generic'),
-                    ', '.join(provider.get('capabilities', [])),
-                    provider.get('status', 'unknown')
-                )
-            
-            self.console.print(table)
-        else:
-            print("\n=== Available Providers ===")
-            for provider in providers:
-                print(f"  {provider.get('component_id')}: {provider.get('protocol')} - {provider.get('capabilities')}")
-    
-    def _format_uptime(self, seconds: float) -> str:
-        """Format uptime seconds to human readable"""
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        secs = int(seconds % 60)
-        return f"{hours:02d}:{minutes:02d}:{secs:02d}"
-    
-    def _print_info(self, message: str):
-        """Print info message"""
-        if RICH_AVAILABLE and self.console:
-            self.console.print(f"[blue]ℹ️  {message}[/blue]")
-        else:
-            print(f"ℹ️  {message}")
-    
-    def _print_success(self, message: str):
-        """Print success message"""
-        if RICH_AVAILABLE and self.console:
-            self.console.print(f"[green]✅ {message}[/green]")
-        else:
-            print(f"✅ {message}")
-    
-    def _print_error(self, message: str):
-        """Print error message"""
-        if RICH_AVAILABLE and self.console:
-            self.console.print(f"[red]❌ {message}[/red]")
-        else:
-            print(f"❌ {message}")
+    asyncio.run(_submit_task())
 
 
-async def main():
-    """Main CLI entry point"""
-    parser = argparse.ArgumentParser(
-        description="Gleitzeit - Modern workflow orchestration",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  # Quick start: Everything automatically (recommended)
-  gleitzeit5 start
-  
-  # One command to run a workflow (starts everything needed)
-  gleitzeit5 run examples/simple_llm_workflow.yaml
-  
-  # Submit workflow (auto-starts hub if needed)
-  gleitzeit5 submit workflow.yaml
-  
-  # Monitor in real-time (auto-starts hub if needed)
-  gleitzeit5 monitor
-  
-  # Start just the hub
-  gleitzeit5 hub --port 8001
-  
-  # Check status
-  gleitzeit5 status
-"""
-    )
-    
-    subparsers = parser.add_subparsers(dest='command', help='Available commands')
-    
-    # Start command - quick start everything
-    start_parser = subparsers.add_parser('start', help='Quick start hub and components')
-    start_parser.add_argument('--all', action='store_true', help='Start hub and all core components')
-    start_parser.add_argument('--hub-only', action='store_true', help='Start only the hub')
-    start_parser.add_argument('--components', nargs='+', choices=['queue', 'deps', 'engine'],
-                            help='Start specific components')
-    start_parser.add_argument('--host', default='127.0.0.1', help='Hub host')
-    start_parser.add_argument('--port', type=int, default=8001, help='Hub port')
-    start_parser.add_argument('--background', action='store_true', help='Run in background')
-    
-    # Hub command
-    hub_parser = subparsers.add_parser('hub', help='Start the central hub')
-    hub_parser.add_argument('--host', default='127.0.0.1', help='Host to bind to')
-    hub_parser.add_argument('--port', type=int, default=8001, help='Port to bind to')
-    hub_parser.add_argument('--log-level', choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
-                          default='INFO', help='Logging level')
-    hub_parser.add_argument('--background', action='store_true', help='Run in background')
-    
-    # Components command
-    comp_parser = subparsers.add_parser('components', help='Start components')
-    comp_parser.add_argument('names', nargs='+', choices=['queue', 'deps', 'engine', 'all'],
-                           help='Components to start')
-    comp_parser.add_argument('--hub-url', default='http://localhost:8001',
-                           help='Hub URL to connect to')
-    
-    # Status command
-    status_parser = subparsers.add_parser('status', help='Show hub and component status')
-    status_parser.add_argument('--hub-url', default='http://localhost:8001',
-                             help='Hub URL to check')
-    
-    # Submit command
-    submit_parser = subparsers.add_parser('submit', help='Submit a workflow')
-    submit_parser.add_argument('workflow', help='Workflow file (YAML or JSON)')
-    submit_parser.add_argument('--hub-url', default='http://localhost:8001',
-                             help='Hub URL to submit to')
-    
-    # Monitor command
-    monitor_parser = subparsers.add_parser('monitor', help='Monitor hub in real-time')
-    monitor_parser.add_argument('--hub-url', default='http://localhost:8001',
-                              help='Hub URL to monitor')
-    monitor_parser.add_argument('--interval', type=int, default=2,
-                              help='Update interval in seconds')
-    
-    # Providers command
-    providers_parser = subparsers.add_parser('providers', help='List available providers')
-    providers_parser.add_argument('--hub-url', default='http://localhost:8001',
-                                help='Hub URL to query')
-    
-    # Run command - one-shot workflow execution
-    run_parser = subparsers.add_parser('run', help='Start everything and run a workflow (one command)')
-    run_parser.add_argument('workflow', help='Workflow file to run')
-    run_parser.add_argument('--host', default='127.0.0.1', help='Hub host')
-    run_parser.add_argument('--port', type=int, default=8001, help='Hub port')
-    
-    # Version command
-    version_parser = subparsers.add_parser('version', help='Show version information')
-    
-    args = parser.parse_args()
-    
-    # Initialize CLI
-    cli = GleitzeitCLI()
-    
-    # Handle commands
-    if args.command == 'start':
-        if args.all:
-            # Quick start everything
-            await cli.quick_start(args.host, args.port, start_components=True, keep_running=not args.background)
-        elif args.hub_only:
-            await cli.start_hub(args.host, args.port, background=args.background)
-        elif args.components:
-            await cli.start_components(f"http://{args.host}:{args.port}", args.components)
+@task.command()
+@click.argument('task_id')
+def status(task_id):
+    """Get task status and result"""
+    async def _get_status():
+        await cli_app._initialize_components()
+        
+        result = cli_app.execution_engine.get_task_result(task_id)
+        if result:
+            click.echo(f"Task ID: {result.task_id}")
+            click.echo(f"Status: {result.status.value}")
+            click.echo(f"Started: {result.started_at}")
+            click.echo(f"Completed: {result.completed_at}")
+            
+            if result.result:
+                click.echo("Result:")
+                click.echo(json.dumps(result.result, indent=2))
+            
+            if result.error:
+                click.echo(f"Error: {result.error}")
         else:
-            # Default: quick start everything
-            await cli.quick_start(args.host, args.port, start_components=True, keep_running=not args.background)
+            click.echo(f"Task {task_id} not found")
     
-    elif args.command == 'hub':
-        await cli.start_hub(args.host, args.port, args.log_level, args.background)
+    asyncio.run(_get_status())
+
+
+# Workflow Management Commands
+@cli.group()
+def workflow():
+    """Workflow management commands"""
+    pass
+
+
+@workflow.command()
+@click.argument('workflow_file', type=click.Path(exists=True))
+@click.option('--params', default='{}', help='JSON parameters for workflow')
+@click.option('--wait', is_flag=True, help='Wait for workflow completion')
+@click.option('--output-file', help='Save response to JSON file')
+def submit(workflow_file, params, wait, output_file):
+    """Submit a workflow from JSON or YAML file"""
+    async def _submit_workflow():
+        await cli_app._initialize_components()
+        
+        try:
+            # Load workflow file (support both JSON and YAML)
+            workflow_path = Path(workflow_file)
+            with open(workflow_path) as f:
+                content = f.read()
+            
+            if workflow_path.suffix.lower() in ['.yaml', '.yml']:
+                workflow_data = yaml.safe_load(content)
+            else:
+                workflow_data = json.loads(content)
+            
+            params_dict = json.loads(params)
+        except (json.JSONDecodeError, yaml.YAMLError, FileNotFoundError) as e:
+            click.echo(f"Error: {e}", err=True)
+            return
+        
+        # Create workflow from data
+        tasks = []
+        for task_data in workflow_data.get("tasks", []):
+            # Only set id if provided in YAML, otherwise let Task generate it
+            # Support both 'params' and 'parameters' for backward compatibility
+            task_params = task_data.get("params") or task_data.get("parameters", {})
+            
+            task_kwargs = {
+                "name": task_data.get("name", f"Task {len(tasks) + 1}"),  # Provide default name
+                "protocol": task_data["protocol"],
+                "method": task_data["method"],
+                "params": task_params,
+                "dependencies": task_data.get("dependencies", []),
+                "priority": Priority(task_data.get("priority", "normal"))
+            }
+            
+            # Only add optional fields if they're provided
+            if task_data.get("id"):
+                task_kwargs["id"] = task_data["id"]
+            if task_data.get("timeout"):
+                task_kwargs["timeout"] = task_data["timeout"]
+            
+            task = Task(**task_kwargs)
+            tasks.append(task)
+        
+        workflow = Workflow(
+            name=workflow_data.get("name", "CLI Workflow"),
+            description=workflow_data.get("description"),
+            tasks=tasks
+        )
+        
+        click.echo(f"Submitting workflow {workflow.id} with {len(tasks)} tasks...")
+        
+        execution = await cli_app.workflow_manager.execute_workflow(workflow)
+        
+        # Prepare response data
+        response_data = {
+            "submission_type": "workflow",
+            "workflow_id": workflow.id,
+            "workflow_name": workflow.name,
+            "execution_id": execution.execution_id,
+            "task_count": len(tasks),
+            "task_ids": [task.id for task in tasks],
+            "workflow_file": workflow_file,
+            "submitted_at": datetime.utcnow().isoformat(),
+            "status": "submitted",
+            "tasks": [
+                {
+                    "task_id": task.id,
+                    "task_name": task.name,
+                    "protocol": task.protocol,
+                    "method": task.method,
+                    "priority": task.priority
+                }
+                for task in tasks
+            ]
+        }
+        
+        if wait or output_file:
+            click.echo("Waiting for completion...")
+            
+            # Start execution engine in single-shot mode for CLI workflows
+            if not cli_app.execution_engine.running:
+                await cli_app.execution_engine.start(ExecutionMode.SINGLE_SHOT)
+            
+            # Wait for completion with timeout
+            timeout_seconds = 30 if not wait else 300  # Longer timeout if explicitly waiting
+            waited = 0
+            while execution.execution_id in cli_app.workflow_manager.active_executions and waited < timeout_seconds:
+                await asyncio.sleep(1.0)
+                waited += 1
+        
+        if wait or output_file:
+            status = cli_app.workflow_manager.get_execution_status(execution.execution_id)
+            if status:
+                click.echo(f"Workflow completed with status: {status['status']}")
+                click.echo(f"Tasks: {status['completed_tasks']}/{status['total_tasks']} completed")
+                
+                # Get task results for JSON output
+                task_results = []
+                for task in tasks:
+                    task_result = cli_app.execution_engine.get_task_result(task.id)
+                    if task_result:
+                        task_results.append({
+                            "task_id": task.id,
+                            "task_name": task.name,
+                            "status": task_result.status.value,
+                            "result": task_result.result,
+                            "error": task_result.error,
+                            "execution_time": (task_result.completed_at - task_result.started_at).total_seconds() if task_result.completed_at and task_result.started_at else None
+                        })
+                
+                # Update response data with completion status and results
+                response_data.update({
+                    "status": status["status"],
+                    "completed_at": status.get("completed_at"),
+                    "total_tasks": status["total_tasks"],
+                    "completed_tasks": status["completed_tasks"],
+                    "failed_tasks": status["failed_tasks"],
+                    "progress": status["progress"],
+                    "retry_count": status["retry_count"],
+                    "task_results": task_results
+                })
+                
+                # Show detailed results if wait flag was used
+                if wait:
+                    for task_result in task_results:
+                        if task_result.get("result"):
+                            click.echo(f"Task {task_result['task_name']} result: {json.dumps(task_result['result'], indent=2)}")
+        else:
+            click.echo(f"Workflow {workflow.id} submitted successfully")
+        
+        # Save response to file if requested
+        if output_file:
+            try:
+                with open(output_file, 'w') as f:
+                    json.dump(response_data, f, indent=2, default=str)
+                click.echo(f"Response saved to: {output_file}")
+            except Exception as e:
+                click.echo(f"Failed to save response file: {e}", err=True)
     
-    elif args.command == 'components':
-        components = ['queue', 'deps', 'engine'] if 'all' in args.names else args.names
-        await cli.start_components(args.hub_url, components, auto_start_hub=True)
+    asyncio.run(_submit_workflow())
+
+
+@workflow.command()
+@click.argument('template_id')
+@click.option('--params', default='{}', help='JSON parameters for template')
+@click.option('--wait', is_flag=True, help='Wait for workflow completion')
+def from_template(template_id, params, wait):
+    """Create and submit workflow from template"""
+    async def _from_template():
+        await cli_app._initialize_components()
+        
+        try:
+            params_dict = json.loads(params)
+        except json.JSONDecodeError:
+            click.echo("Error: Invalid JSON in params", err=True)
+            return
+        
+        try:
+            workflow = await cli_app.workflow_manager.create_workflow_from_template(
+                template_id=template_id,
+                parameters=params_dict
+            )
+            
+            click.echo(f"Created workflow {workflow.id} from template {template_id}")
+            
+            execution = await cli_app.workflow_manager.execute_workflow(workflow)
+            
+            if wait:
+                click.echo("Waiting for completion...")
+                
+                if not cli_app.execution_engine.running:
+                    await cli_app.execution_engine.start(ExecutionMode.SINGLE_SHOT)
+                
+                while execution.execution_id in cli_app.workflow_manager.active_executions:
+                    await asyncio.sleep(1.0)
+                
+                status = cli_app.workflow_manager.get_execution_status(execution.execution_id)
+                if status:
+                    click.echo(f"Workflow completed with status: {status['status']}")
+            else:
+                click.echo(f"Workflow {workflow.id} submitted successfully")
+                
+        except ValueError as e:
+            click.echo(f"Error: {e}", err=True)
     
-    elif args.command == 'status':
-        await cli.status(args.hub_url, auto_start_hub=False)
+    asyncio.run(_from_template())
+
+
+@workflow.command()
+def list_templates():
+    """List available workflow templates"""
+    async def _list_templates():
+        await cli_app._initialize_components()
+        
+        templates = cli_app.workflow_manager.list_templates()
+        
+        if not templates:
+            click.echo("No workflow templates found")
+            return
+        
+        click.echo("Available workflow templates:")
+        for template in templates:
+            click.echo(f"  {template['id']}: {template['name']} (v{template['version']})")
+            if template['description']:
+                click.echo(f"    {template['description']}")
+            click.echo(f"    Tasks: {template['task_count']}, Parameters: {', '.join(template['parameters'])}")
     
-    elif args.command == 'submit':
-        await cli.submit_workflow(args.workflow, args.hub_url, auto_start_hub=True)
+    asyncio.run(_list_templates())
+
+
+@workflow.command()
+def list_active():
+    """List active workflow executions"""
+    async def _list_active():
+        await cli_app._initialize_components()
+        
+        executions = cli_app.workflow_manager.list_active_executions()
+        
+        if not executions:
+            click.echo("No active workflows")
+            return
+        
+        click.echo("Active workflow executions:")
+        for execution in executions:
+            click.echo(f"  {execution['execution_id']}: {execution['workflow_id']}")
+            click.echo(f"    Status: {execution['status']}, Progress: {execution['progress']:.1%}")
     
-    elif args.command == 'monitor':
-        await cli.monitor(args.hub_url, args.interval, auto_start_hub=True)
+    asyncio.run(_list_active())
+
+
+# Queue Management Commands
+@cli.group()
+def queue():
+    """Queue management commands"""
+    pass
+
+
+@queue.command()
+@click.option('--queue', default='default', help='Queue name')
+def stats(queue):
+    """Show queue statistics"""
+    async def _queue_stats():
+        await cli_app._initialize_components()
+        
+        if queue == 'all':
+            stats = await cli_app.queue_manager.get_global_stats()
+            click.echo("Global Queue Statistics:")
+            click.echo(f"  Total queues: {stats['total_queues']}")
+            click.echo(f"  Total size: {stats['total_size']}")
+            click.echo(f"  Total enqueued: {stats['total_enqueued']}")
+            click.echo(f"  Total dequeued: {stats['total_dequeued']}")
+            
+            click.echo("\nPer-queue details:")
+            for name, queue_stats in stats['queue_details'].items():
+                click.echo(f"  {name}: {queue_stats['current_size']} tasks")
+        else:
+            queue_obj = cli_app.queue_manager.get_queue(queue)
+            if queue_obj:
+                stats = await queue_obj.get_stats()
+                click.echo(f"Queue '{queue}' Statistics:")
+                click.echo(f"  Current size: {stats['current_size']}")
+                click.echo(f"  Total enqueued: {stats['total_enqueued']}")
+                click.echo(f"  Total dequeued: {stats['total_dequeued']}")
+                click.echo(f"  Completed tasks: {stats['completed_tasks']}")
+                click.echo(f"  Failed tasks: {stats['failed_tasks']}")
+            else:
+                click.echo(f"Queue '{queue}' not found")
     
-    elif args.command == 'providers':
-        await cli.list_providers(args.hub_url, auto_start_hub=False)
+    asyncio.run(_queue_stats())
+
+
+# Provider Management Commands  
+@cli.group()
+def provider():
+    """Provider management commands"""
+    pass
+
+
+@provider.command(name="list")
+def list_providers():
+    """List registered providers"""
+    async def _list_providers():
+        await cli_app._initialize_components()
+        
+        providers = await cli_app.registry.list_providers()
+        
+        if not providers:
+            click.echo("No providers registered")
+            return
+        
+        click.echo("Registered providers:")
+        for provider_id, info in providers.items():
+            click.echo(f"  {provider_id}: {info['protocol_id']}")
+            click.echo(f"    Status: {info['status']}, Health: {info['health_status']}")
+            click.echo(f"    Success rate: {info['success_rate']:.1f}%")
     
-    elif args.command == 'run':
-        await cli.run_workflow(args.workflow, args.host, args.port)
+    asyncio.run(_list_providers())
+
+
+@provider.command()
+@click.argument('provider_id')
+def health(provider_id):
+    """Check provider health"""
+    async def _check_health():
+        await cli_app._initialize_components()
+        
+        try:
+            health_info = await cli_app.registry.check_provider_health(provider_id)
+            click.echo(f"Provider {provider_id} health:")
+            click.echo(f"  Status: {health_info['status']}")
+            click.echo(f"  Details: {health_info['details']}")
+        except Exception as e:
+            click.echo(f"Health check failed: {e}", err=True)
     
-    elif args.command == 'version':
-        print("Gleitzeit - Version 0.0.1")
-        print("Modern workflow orchestration with Socket.IO")
+    asyncio.run(_check_health())
+
+
+# Backend Commands
+@cli.group()
+def backend():
+    """Persistence backend management commands"""
+    pass
+
+
+@backend.command(name="get-task")
+@click.argument('task_id')
+def get_task(task_id):
+    """Get task details from persistence backend"""
+    async def _get_task():
+        await cli_app._initialize_components()
+        
+        # Check if persistence is configured
+        if not cli_app.execution_engine.persistence:
+            click.echo("Error: No persistence backend configured", err=True)
+            return
+        
+        task = await cli_app.execution_engine.persistence.get_task(task_id)
+        if task:
+            click.echo(f"Task ID: {task.id}")
+            click.echo(f"Name: {task.name}")
+            click.echo(f"Protocol: {task.protocol}")
+            click.echo(f"Method: {task.method}")
+            click.echo(f"Status: {task.status}")
+            click.echo(f"Priority: {task.priority}")
+            click.echo(f"Created: {task.created_at}")
+            click.echo(f"Started: {task.started_at}")
+            click.echo(f"Completed: {task.completed_at}")
+            if task.params:
+                click.echo("Parameters:")
+                click.echo(json.dumps(task.params, indent=2))
+            if task.dependencies:
+                click.echo(f"Dependencies: {', '.join(task.dependencies)}")
+        else:
+            click.echo(f"Task {task_id} not found in backend")
     
+    asyncio.run(_get_task())
+
+
+@backend.command(name="get-result")
+@click.argument('task_id')
+def get_result(task_id):
+    """Get task result from persistence backend"""
+    async def _get_result():
+        await cli_app._initialize_components()
+        
+        if not cli_app.execution_engine.persistence:
+            click.echo("Error: No persistence backend configured", err=True)
+            return
+        
+        result = await cli_app.execution_engine.persistence.get_task_result(task_id)
+        if result:
+            click.echo(f"Task ID: {result.task_id}")
+            
+            # Handle status field (might be string from Redis or TaskStatus enum)
+            status_str = result.status.value if hasattr(result.status, 'value') else str(result.status)
+            click.echo(f"Status: {status_str}")
+            
+            click.echo(f"Started: {result.started_at}")
+            click.echo(f"Completed: {result.completed_at}")
+            if result.completed_at and result.started_at:
+                duration = (result.completed_at - result.started_at).total_seconds()
+                click.echo(f"Duration: {duration:.3f}s")
+            
+            if result.result:
+                click.echo("Result:")
+                click.echo(json.dumps(result.result, indent=2))
+            
+            if result.error:
+                click.echo(f"Error: {result.error}")
+        else:
+            click.echo(f"Task result for {task_id} not found in backend")
+    
+    asyncio.run(_get_result())
+
+
+@backend.command(name="list-tasks")
+@click.option('--status', help='Filter by task status')
+@click.option('--workflow-id', help='Filter by workflow ID')
+@click.option('--workflow-name', help='Filter by workflow name')
+@click.option('--limit', type=int, default=20, help='Limit number of results')
+def list_tasks(status, workflow_id, workflow_name, limit):
+    """List tasks from persistence backend"""
+    async def _list_tasks():
+        await cli_app._initialize_components()
+        
+        if not cli_app.execution_engine.persistence:
+            click.echo("Error: No persistence backend configured", err=True)
+            return
+        
+        tasks = []
+        filter_desc = ""
+        
+        if status:
+            tasks = await cli_app.execution_engine.persistence.get_tasks_by_status(status)
+            filter_desc = f"with status '{status}'"
+        elif workflow_id:
+            tasks = await cli_app.execution_engine.persistence.get_tasks_by_workflow(workflow_id)
+            filter_desc = f"in workflow ID '{workflow_id}'"
+        elif workflow_name:
+            # Need to find workflow ID by name first, then get tasks
+            # This requires getting all workflows and filtering by name
+            try:
+                # Get all tasks and filter by workflow name
+                all_tasks = await cli_app.execution_engine.persistence.get_all_queued_tasks()
+                # Also get completed tasks by trying different statuses
+                for task_status in ["completed", "failed", "running"]:
+                    try:
+                        status_tasks = await cli_app.execution_engine.persistence.get_tasks_by_status(task_status)
+                        all_tasks.extend(status_tasks)
+                    except:
+                        pass
+                
+                # Filter by workflow name by checking workflow_id and getting workflow details
+                filtered_tasks = []
+                workflow_cache = {}
+                
+                for task in all_tasks:
+                    if task.workflow_id and task.workflow_id not in workflow_cache:
+                        try:
+                            wf = await cli_app.execution_engine.persistence.get_workflow(task.workflow_id)
+                            workflow_cache[task.workflow_id] = wf.name if wf else None
+                        except:
+                            workflow_cache[task.workflow_id] = None
+                    
+                    workflow_task_name = workflow_cache.get(task.workflow_id)
+                    if workflow_task_name and workflow_name.lower() in workflow_task_name.lower():
+                        filtered_tasks.append(task)
+                
+                tasks = filtered_tasks
+                filter_desc = f"in workflow name containing '{workflow_name}'"
+                
+            except Exception as e:
+                click.echo(f"Error filtering by workflow name: {e}", err=True)
+                return
+        else:
+            # Get all queued tasks as a reasonable default
+            tasks = await cli_app.execution_engine.persistence.get_all_queued_tasks()
+        
+        if not tasks:
+            click.echo(f"No tasks found {filter_desc}")
+            return
+        
+        # Limit results and sort by creation time
+        tasks = sorted(tasks, key=lambda t: t.created_at or datetime.min, reverse=True)[:limit]
+        
+        click.echo(f"Found {len(tasks)} task(s) {filter_desc}:")
+        
+        # Build workflow name cache for display
+        workflow_name_cache = {}
+        for task in tasks:
+            if task.workflow_id and task.workflow_id not in workflow_name_cache:
+                try:
+                    wf = await cli_app.execution_engine.persistence.get_workflow(task.workflow_id)
+                    workflow_name_cache[task.workflow_id] = wf.name if wf else f"Workflow-{task.workflow_id[:8]}"
+                except:
+                    workflow_name_cache[task.workflow_id] = f"Workflow-{task.workflow_id[:8]}"
+        
+        for task in tasks:
+            created = task.created_at.strftime("%Y-%m-%d %H:%M:%S") if task.created_at else "Unknown"
+            
+            # Add workflow info if available
+            workflow_info = ""
+            if task.workflow_id:
+                wf_name = workflow_name_cache.get(task.workflow_id, f"Workflow-{task.workflow_id[:8]}")
+                workflow_info = f" [Workflow: {wf_name}]"
+            
+            # Handle status display
+            status_str = task.status.value if hasattr(task.status, 'value') else str(task.status)
+            
+            click.echo(f"  {task.id[:8]}... - {task.name} ({status_str}) - {created}{workflow_info}")
+    
+    asyncio.run(_list_tasks())
+
+
+@backend.command(name="stats")
+def backend_stats():
+    """Show persistence backend statistics"""
+    async def _backend_stats():
+        await cli_app._initialize_components()
+        
+        if not cli_app.execution_engine.persistence:
+            click.echo("Error: No persistence backend configured", err=True)
+            return
+        
+        # Get backend type
+        backend_type = type(cli_app.execution_engine.persistence).__name__
+        click.echo(f"Backend Type: {backend_type}")
+        
+        # Get task counts by status
+        try:
+            counts = await cli_app.execution_engine.persistence.get_task_count_by_status()
+            click.echo("\nTask Counts by Status:")
+            total = 0
+            for status, count in sorted(counts.items()):
+                click.echo(f"  {status}: {count}")
+                total += count
+            click.echo(f"  Total: {total}")
+        except Exception as e:
+            click.echo(f"Could not retrieve statistics: {e}")
+    
+    asyncio.run(_backend_stats())
+
+
+@backend.command(name="get-workflow")
+@click.argument('workflow_id')
+def get_workflow(workflow_id):
+    """Get workflow details from persistence backend"""
+    async def _get_workflow():
+        await cli_app._initialize_components()
+        
+        if not cli_app.execution_engine.persistence:
+            click.echo("Error: No persistence backend configured", err=True)
+            return
+        
+        workflow = await cli_app.execution_engine.persistence.get_workflow(workflow_id)
+        if workflow:
+            click.echo(f"Workflow ID: {workflow.id}")
+            click.echo(f"Name: {workflow.name}")
+            click.echo(f"Description: {workflow.description or 'None'}")
+            click.echo(f"Status: {workflow.status}")
+            click.echo(f"Priority: {workflow.priority}")
+            click.echo(f"Tasks: {len(workflow.tasks)}")
+            
+            click.echo("\nTasks:")
+            for task in workflow.tasks:
+                click.echo(f"  - {task.name} ({task.id[:8]}...): {task.protocol}/{task.method}")
+        else:
+            click.echo(f"Workflow {workflow_id} not found in backend")
+    
+    asyncio.run(_get_workflow())
+
+
+@backend.command(name="list-workflows")
+@click.option('--name-filter', help='Filter workflows by name (case-insensitive substring match)')
+@click.option('--limit', type=int, default=20, help='Limit number of results')
+def list_workflows(name_filter, limit):
+    """List workflows from persistence backend"""
+    async def _list_workflows():
+        await cli_app._initialize_components()
+        
+        if not cli_app.execution_engine.persistence:
+            click.echo("Error: No persistence backend configured", err=True)
+            return
+        
+        try:
+            # Get workflows by looking at unique workflow IDs from tasks
+            all_tasks = []
+            for task_status in ["queued", "completed", "failed", "running"]:
+                try:
+                    status_tasks = await cli_app.execution_engine.persistence.get_tasks_by_status(task_status)
+                    all_tasks.extend(status_tasks)
+                except:
+                    pass
+            
+            # Get unique workflow IDs
+            workflow_ids = set()
+            for task in all_tasks:
+                if task.workflow_id:
+                    workflow_ids.add(task.workflow_id)
+            
+            # Get workflow details
+            workflows = []
+            for wf_id in workflow_ids:
+                try:
+                    wf = await cli_app.execution_engine.persistence.get_workflow(wf_id)
+                    if wf:
+                        workflows.append(wf)
+                except:
+                    pass
+            
+            # Filter by name if specified
+            if name_filter:
+                workflows = [wf for wf in workflows if name_filter.lower() in wf.name.lower()]
+            
+            # Sort by name and limit
+            workflows = sorted(workflows, key=lambda w: w.name)[:limit]
+            
+            if not workflows:
+                filter_desc = f" matching '{name_filter}'" if name_filter else ""
+                click.echo(f"No workflows found{filter_desc}")
+                return
+            
+            click.echo(f"Found {len(workflows)} workflow(s):")
+            for wf in workflows:
+                # Count tasks for this workflow
+                wf_tasks = [t for t in all_tasks if t.workflow_id == wf.id]
+                completed_tasks = len([t for t in wf_tasks if str(t.status) == "completed"])
+                total_tasks = len(wf_tasks)
+                
+                status_display = wf.status.value if hasattr(wf.status, 'value') else str(wf.status)
+                
+                click.echo(f"  {wf.id[:8]}... - {wf.name}")
+                click.echo(f"    Status: {status_display}, Tasks: {completed_tasks}/{total_tasks} completed")
+                if wf.description:
+                    click.echo(f"    Description: {wf.description}")
+                
+        except Exception as e:
+            click.echo(f"Error listing workflows: {e}", err=True)
+    
+    asyncio.run(_list_workflows())
+
+
+@backend.command(name="get-results-by-workflow")
+@click.argument('workflow_name')
+def get_results_by_workflow(workflow_name):
+    """Get all task results from a workflow by name"""
+    async def _get_results_by_workflow():
+        await cli_app._initialize_components()
+        
+        if not cli_app.execution_engine.persistence:
+            click.echo("Error: No persistence backend configured", err=True)
+            return
+        
+        try:
+            # First, find workflows matching the name
+            all_tasks = []
+            for task_status in ["queued", "completed", "failed", "running", "retry_pending"]:
+                try:
+                    status_tasks = await cli_app.execution_engine.persistence.get_tasks_by_status(task_status)
+                    all_tasks.extend(status_tasks)
+                except:
+                    pass
+            
+            # Get unique workflow IDs
+            workflow_ids = set()
+            for task in all_tasks:
+                if task.workflow_id:
+                    workflow_ids.add(task.workflow_id)
+            
+            # Find workflows matching the name
+            matching_workflows = []
+            for wf_id in workflow_ids:
+                try:
+                    wf = await cli_app.execution_engine.persistence.get_workflow(wf_id)
+                    if wf and workflow_name.lower() in wf.name.lower():
+                        matching_workflows.append(wf)
+                except:
+                    pass
+            
+            if not matching_workflows:
+                click.echo(f"No workflows found matching name: {workflow_name}")
+                return
+            
+            click.echo(f"Found {len(matching_workflows)} workflow(s) matching '{workflow_name}':")
+            click.echo()
+            
+            for wf in matching_workflows:
+                click.echo(f"Workflow: {wf.name} ({wf.id})")
+                click.echo(f"Status: {wf.status}")
+                click.echo(f"Description: {wf.description or 'N/A'}")
+                click.echo("=" * 50)
+                
+                # Get all tasks for this workflow
+                wf_tasks = [t for t in all_tasks if t.workflow_id == wf.id]
+                
+                if not wf_tasks:
+                    click.echo("No tasks found for this workflow")
+                    click.echo()
+                    continue
+                
+                # Get results for each task
+                for task in wf_tasks:
+                    click.echo(f"Task: {task.name} ({task.id})")
+                    click.echo(f"  Status: {task.status}")
+                    click.echo(f"  Protocol: {task.protocol}")
+                    click.echo(f"  Method: {task.method}")
+                    
+                    if task.started_at:
+                        click.echo(f"  Started: {task.started_at}")
+                    if task.completed_at:
+                        click.echo(f"  Completed: {task.completed_at}")
+                        duration = (task.completed_at - task.started_at).total_seconds() if task.started_at else 0
+                        click.echo(f"  Duration: {duration:.3f}s")
+                    
+                    # Get the task result
+                    try:
+                        result = await cli_app.execution_engine.persistence.get_task_result(task.id)
+                        if result:
+                            click.echo(f"  Result:")
+                            if result.result:
+                                import json
+                                result_str = json.dumps(result.result, indent=4, default=str)
+                                for line in result_str.split('\n'):
+                                    click.echo(f"    {line}")
+                            else:
+                                click.echo(f"    No result data")
+                            
+                            if result.error:
+                                click.echo(f"  Error: {result.error}")
+                        else:
+                            click.echo(f"  No result found")
+                    except Exception as e:
+                        click.echo(f"  Error getting result: {e}")
+                    
+                    click.echo()
+                
+                click.echo()
+                
+        except Exception as e:
+            click.echo(f"Error getting workflow results: {e}", err=True)
+    
+    asyncio.run(_get_results_by_workflow())
+
+
+# System Commands
+@cli.group()
+def system():
+    """System management commands"""
+    pass
+
+
+@system.command()
+@click.option('--mode', type=click.Choice(['single', 'workflow', 'event']), default='event')
+def start(mode):
+    """Start the execution engine"""
+    async def _start_engine():
+        await cli_app._initialize_components()
+        
+        execution_mode = {
+            'single': ExecutionMode.SINGLE_SHOT,
+            'workflow': ExecutionMode.WORKFLOW_ONLY,
+            'event': ExecutionMode.EVENT_DRIVEN
+        }[mode]
+        
+        click.echo(f"Starting execution engine in {mode} mode...")
+        click.echo("Press Ctrl+C to stop")
+        
+        try:
+            await cli_app.execution_engine.start(execution_mode)
+        except KeyboardInterrupt:
+            click.echo("\nStopping execution engine...")
+            await cli_app.execution_engine.stop()
+    
+    asyncio.run(_start_engine())
+
+
+@system.command()
+def status():
+    """Show system status"""
+    async def _system_status():
+        await cli_app._initialize_components()
+        
+        # Engine stats
+        stats = cli_app.execution_engine.get_stats()
+        click.echo("Execution Engine:")
+        click.echo(f"  Running: {cli_app.execution_engine.running}")
+        click.echo(f"  Tasks processed: {stats.tasks_processed}")
+        click.echo(f"  Success rate: {stats.tasks_succeeded / stats.tasks_processed * 100 if stats.tasks_processed > 0 else 0:.1f}%")
+        click.echo(f"  Active tasks: {len(cli_app.execution_engine.active_tasks)}")
+        
+        # Workflow stats
+        wf_stats = cli_app.workflow_manager.get_workflow_statistics()
+        click.echo("\nWorkflow Manager:")
+        click.echo(f"  Templates: {wf_stats['total_templates']}")
+        click.echo(f"  Active executions: {wf_stats['active_executions']}")
+        click.echo(f"  Success rate: {wf_stats['success_rate']:.1f}%")
+        
+        # Queue stats
+        queue_stats = await cli_app.queue_manager.get_global_stats()
+        click.echo("\nQueues:")
+        click.echo(f"  Total size: {queue_stats['total_size']}")
+        click.echo(f"  Total processed: {queue_stats['total_dequeued']}")
+    
+    asyncio.run(_system_status())
+
+
+@system.command()
+@click.option('--key', help='Configuration key')
+@click.option('--value', help='Configuration value')
+def config(key, value):
+    """Show or update configuration"""
+    if key and value:
+        # Set configuration
+        try:
+            # Try to parse as JSON first
+            try:
+                parsed_value = json.loads(value)
+            except json.JSONDecodeError:
+                parsed_value = value
+            
+            cli_app.config[key] = parsed_value
+            cli_app._save_config()
+            click.echo(f"Set {key} = {parsed_value}")
+        except Exception as e:
+            click.echo(f"Error setting config: {e}", err=True)
     else:
-        parser.print_help()
+        # Show configuration
+        click.echo("Current configuration:")
+        for k, v in cli_app.config.items():
+            click.echo(f"  {k}: {v}")
 
 
-def run():
-    """Entry point for the CLI"""
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("\n⏹️  Interrupted by user")
-        sys.exit(0)
-    except Exception as e:
-        print(f"💥 Error: {e}")
-        sys.exit(1)
-
-
-if __name__ == "__main__":
-    run()
+if __name__ == '__main__':
+    cli()

@@ -1,0 +1,31 @@
+include README.md
+include LICENSE
+include requirements.txt
+include setup.py
+
+# Include all Python files
+recursive-include cli *.py
+recursive-include client *.py
+recursive-include core *.py
+recursive-include integrations *.py
+recursive-include persistence *.py
+recursive-include pooling *.py
+recursive-include protocols *.py
+recursive-include providers *.py
+recursive-include server *.py
+recursive-include task_queue *.py
+
+# Include YAML protocol definitions
+recursive-include protocols *.yaml
+
+# Include example workflows (for reference)
+recursive-include examples *.yaml *.py *.txt *.png *.md
+
+# Exclude test and cache files
+recursive-exclude tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .DS_Store
+
+# Include documentation
+recursive-include docs *.md
