@@ -98,13 +98,13 @@ def main():
     
     # Define test files and their descriptions
     batch_tests = [
-        ("test_batch_simple.py", "Simple Batch Tests"),
+        ("tests/test_batch_simple.py", "Simple Batch Tests"),
         ("tests/test_batch_runner.py", "Comprehensive Batch Tests"),
     ]
     
     # Integration tests that need longer timeout
     integration_tests = [
-        ("test_batch_processor.py", "Batch Processor Integration"),
+        ("tests/test_batch_processor.py", "Batch Processor Integration"),
     ]
     
     # Additional integration test - only if exists

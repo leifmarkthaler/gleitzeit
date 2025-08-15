@@ -1,36 +1,52 @@
 name: "Vision Analysis Workflow"
 description: "Demonstrates vision analysis using LLaVa with Gleitzeit"
+timeout: 60
+wait_for_completion: true
+
 tasks:
-  - name: "analyze_image"
-    protocol: "llm/v1"
-    method: "llm/vision"
-    priority: "normal"
-    params:
-      model: "llava:latest"
-      messages:
-        - role: "user"
-          content: "Analyze this image and describe what you see. Be specific about colors, objects, and any text."
+  - id: analyze-image
+    method: llm/vision
+    priority: 2
+    parameters:
+      model: llava:latest
+      prompt: "Analyze this image and describe what you see. Be specific about colors, objects, and any text."
       images:
-        - "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAA8klEQVR4nO3bsQ3AMAwEMTn775yskKtsA+QEj4NarXdOtObEXc/uATcRKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEOv6l9E5cpTLKsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEmv8+3kIExEwzUIUAAAAASUVORK5CYII="  # Test image with 4 colored quadrants
+        - "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAA8klEQVR4nO3bsQ3AMAwEMTn775yskKtsA+QEj4NarXdOtObEXc/uATcRKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEOv6l9E5cpTLKsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEmv8+3kIExEwzUIUAAAAASUVORK5CYII="  # Test image with 4 colored quadrants: red, green, blue, yellow
 
-  - name: "extract_colors"
-    protocol: "llm/v1"
-    method: "llm/chat"
-    priority: "normal"
-    dependencies: ["analyze_image"]
-    params:
-      model: "llama3.2:latest"
+  - id: extract-colors
+    method: llm/chat
+    priority: 2
+    dependencies: ["analyze-image"]
+    parameters:
+      model: llama3.2
       messages:
-        - role: "user"
-          content: "Based on this image analysis: '${analyze_image.result.content}', extract just the main colors mentioned. List them separated by commas."
+        - role: user
+          content: "Based on this image analysis: '${analyze-image.response}', extract just the main colors mentioned. List them separated by commas."
 
-  - name: "generate_summary"
-    protocol: "llm/v1"
-    method: "llm/chat"
-    priority: "normal"
-    dependencies: ["analyze_image", "extract_colors"]
-    params:
-      model: "llama3.2:latest"
+  - id: generate-summary
+    method: llm/chat
+    priority: 1
+    dependencies: ["analyze-image", "extract-colors"]
+    parameters:
+      model: llama3.2
       messages:
-        - role: "user"
-          content: "Create a brief summary of this image analysis. The analysis was: '${analyze_image.result.content}' and the main colors are: '${extract_colors.result.content}'. Write a 1-sentence summary."
+        - role: user
+          content: "Create a brief summary of this image analysis. The analysis was: '${analyze-image.response}' and the main colors are: '${extract-colors.response}'. Write a 1-sentence summary."
+
+# Usage instructions:
+# 1. Replace the base64 image data with your actual image
+# 2. Ensure LLaVa is available: ollama pull llava:latest
+# 3. Start a vision-enabled provider that supports llm/vision method
+# 4. Submit this workflow: gleitzeit submit examples/vision_workflow.yaml
+
+# Example image creation (Python):
+# from PIL import Image
+# import base64
+# import io
+# 
+# img = Image.new('RGB', (100, 100), color='red')
+# img_bytes = io.BytesIO()
+# img.save(img_bytes, format='PNG')
+# img_bytes.seek(0)
+# image_b64 = base64.b64encode(img_bytes.read()).decode('utf-8')
+# # Use image_b64 as the value for images[0]

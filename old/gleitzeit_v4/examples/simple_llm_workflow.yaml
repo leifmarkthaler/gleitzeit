@@ -1,22 +1,30 @@
+# Simple LLM Workflow Example
+# Demonstrates basic task submission with Ollama
+
 name: "Simple LLM Workflow"
 description: "A basic workflow that generates content using an LLM"
+version: "1.0"
+
+# Workflow configuration
+timeout: 60
+wait_for_completion: true
+
+# Task definitions
 tasks:
-  - name: "greeting_task"
-    protocol: "llm/v1"
+  - id: "greeting_task"
     method: "llm/chat"
-    priority: "high"
-    params:
-      model: "llama3.2:latest"
+    priority: 2
+    parameters:
+      model: "llama3.2"
       messages:
         - role: "user"
           content: "Generate a friendly greeting message for a new user joining our workflow system. Be enthusiastic but professional."
 
-  - name: "explanation_task"
-    protocol: "llm/v1"
+  - id: "explanation_task"
     method: "llm/chat" 
-    priority: "normal"
-    params:
-      model: "llama3.2:latest"
+    priority: 1
+    parameters:
+      model: "llama3.2"
       messages:
         - role: "user"
           content: "Explain in 2-3 sentences what a workflow orchestration system does and why it's useful."

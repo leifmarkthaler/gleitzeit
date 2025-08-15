@@ -1,45 +1,64 @@
+# Parallel Execution Workflow Example
+# Demonstrates tasks that can run in parallel
+
 name: "Parallel Execution Workflow"
 description: "Shows how independent tasks run in parallel for better performance"
+version: "1.0"
+
+# Workflow configuration
+timeout: 90
+wait_for_completion: true
+
+# Independent tasks that can run in parallel
 tasks:
-  - name: "analyze_sentiment"
-    protocol: "llm/v1"
+  - id: "analyze_sentiment"
     method: "llm/chat"
-    priority: "normal"
-    params:
-      model: "llama3.2:latest"
+    priority: 2
+    parameters:
+      model: "llama3.2"
       messages:
         - role: "user"
           content: "Analyze the sentiment of this text: 'I love working with modern workflow systems! They make automation so much easier.' Reply with just: positive, negative, or neutral."
 
-  - name: "count_words"
-    protocol: "python/v1"
+  - id: "count_words"
     method: "python/execute"
-    priority: "normal"
-    params:
-      file: "examples/scripts/count_words.py"
+    priority: 2
+    parameters:
+      code: |
+        text = "I love working with modern workflow systems! They make automation so much easier."
+        words = text.split()
+        word_count = len(words)
+        char_count = len(text)
+        
+        result = {
+            "text": text,
+            "word_count": word_count,
+            "character_count": char_count,
+            "average_word_length": round(char_count / word_count, 2)
+        }
+        
+        print(f"Text analysis: {word_count} words, {char_count} characters")
 
-  - name: "generate_summary"
-    protocol: "llm/v1"
+  - id: "generate_summary"
     method: "llm/chat"
-    priority: "normal"
-    params:
-      model: "llama3.2:latest"
+    priority: 2
+    parameters:
+      model: "llama3.2"
       messages:
         - role: "user"
           content: "Write a one-sentence summary about workflow automation benefits."
 
   # This task depends on all previous tasks
-  - name: "combine_results"
-    protocol: "llm/v1"
+  - id: "combine_results"
     method: "llm/chat"
-    priority: "low"
+    priority: 1
     dependencies: ["analyze_sentiment", "count_words", "generate_summary"]
-    params:
-      model: "llama3.2:latest"
+    parameters:
+      model: "llama3.2"
       messages:
         - role: "user"
           content: |
             Combine these analysis results into a brief report:
-            Sentiment: ${analyze_sentiment.result.content}
+            Sentiment: ${analyze_sentiment.response}
             Word Analysis: ${count_words.result}
-            Summary: ${generate_summary.result.content}
+            Summary: ${generate_summary.response}
