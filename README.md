@@ -59,6 +59,7 @@ pip install git+https://github.com/leifmarkthaler/gleitzeit.git
 
 ### Basic Usage
 
+#### CLI Usage
 ```bash
 # Submit a workflow
 gleitzeit workflow submit examples/llm_workflow.yaml
@@ -79,7 +80,35 @@ gleitzeit batch examples/documents --pattern "*.txt" --prompt "Summarize this do
 gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe this image"
 ```
 
+#### Python API Usage
+```python
+import asyncio
+from gleitzeit import GleitzeitClient
+
+async def main():
+    async with GleitzeitClient() as client:
+        # Simple chat
+        response = await client.chat("Tell me a joke")
+        print(response)
+        
+        # Run a workflow
+        results = await client.run_workflow("examples/simple_llm_workflow.yaml")
+        
+        # Batch process files
+        batch_results = await client.batch_chat(
+            directory="examples/documents",
+            pattern="*.txt",
+            prompt="Summarize this document"
+        )
+
+asyncio.run(main())
+```
+
 ## Documentation
+
+### Python API Documentation
+- [Python API Reference](docs/PYTHON_API_REFERENCE.md) - Complete Python client API documentation
+- [Python API Quick Reference](docs/PYTHON_API_QUICK_REFERENCE.md) - Concise API quick reference
 
 ### Core Documentation
 - [Architecture Overview](docs/GLEITZEIT_V4_ARCHITECTURE.md) - System architecture and design

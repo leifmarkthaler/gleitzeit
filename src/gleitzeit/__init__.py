@@ -4,6 +4,7 @@ __version__ = "0.0.4"
 
 from gleitzeit.core.models import Task, Workflow, TaskResult, WorkflowExecution
 from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.client import GleitzeitClient
 
 __all__ = [
     "Task",
@@ -11,4 +12,5 @@ __all__ = [
     "TaskResult",
     "WorkflowExecution",
     "ExecutionEngine",
+    "GleitzeitClient",
 ]

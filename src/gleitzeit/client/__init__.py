@@ -1,30 +1,23 @@
 """
-Socket.IO client components for Gleitzeit V4
+Gleitzeit Python Client API
+
+Simple Python interface for using Gleitzeit programmatically.
 """
 
-from gleitzeit.client.socketio_provider import (
-    SocketIOProviderClient, 
-    SocketIOEchoProvider,
-    SocketIOTextProcessingProvider,
-    SocketIOOllamaProvider,
-    run_echo_provider,
-    run_text_processing_provider,
-    run_ollama_provider
-)
-
-from gleitzeit.client.socketio_engine import (
-    SocketIOEngineClient,
-    run_workflow_engine
+from gleitzeit.client.api import (
+    GleitzeitClient,
+    chat,
+    vision,
+    run_workflow,
+    batch_process,
+    execute_python
 )
 
 __all__ = [
-    "SocketIOProviderClient",
-    "SocketIOEchoProvider", 
-    "SocketIOTextProcessingProvider",
-    "SocketIOOllamaProvider",
-    "run_echo_provider",
-    "run_text_processing_provider",
-    "run_ollama_provider",
-    "SocketIOEngineClient",
-    "run_workflow_engine"
+    "GleitzeitClient",
+    "chat",
+    "vision",
+    "run_workflow",
+    "batch_process",
+    "execute_python"
 ]
