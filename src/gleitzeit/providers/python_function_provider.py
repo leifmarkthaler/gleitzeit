@@ -13,6 +13,7 @@ import sys
 import json
 import pickle
 import base64
+import tempfile
 from typing import Dict, List, Any, Callable, Optional
 from pathlib import Path
 from datetime import datetime
@@ -163,9 +164,17 @@ class PythonFunctionProvider(ProtocolProvider):
     async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
         """Handle JSON-RPC method calls"""
         
+        # Handle both with and without protocol prefix
+        if method.startswith("python/"):
+            method = method[7:]  # Remove "python/" prefix
+        
         if method == "execute":
-            # Execute a registered function
-            return await self._execute_function(params)
+            # Check if we're executing a file or a function
+            if 'file' in params or 'file_path' in params:
+                return await self._execute_file(params)
+            else:
+                # Execute a registered function
+                return await self._execute_function(params)
         
         elif method == "register":
             # Dynamically register a new function
@@ -201,6 +210,122 @@ class PythonFunctionProvider(ProtocolProvider):
         
         else:
             raise ValueError(f"Unknown method: {method}")
+    
+    async def _execute_file(self, params: Dict[str, Any]) -> Any:
+        """Execute a Python file"""
+        import subprocess
+        import sys
+        from pathlib import Path
+        
+        # Get file path (support both 'file' and 'file_path' parameters)
+        file_path = params.get('file') or params.get('file_path')
+        if not file_path:
+            raise ValueError("Missing 'file' or 'file_path' parameter")
+        
+        # Check if file exists
+        if not Path(file_path).exists():
+            raise FileNotFoundError(f"Python file not found: {file_path}")
+        
+        # Get timeout (default to 10 seconds)
+        timeout = params.get('timeout', 10)
+        
+        # Get context variables if provided
+        context = params.get('context', {})
+        
+        try:
+            # Execute the Python file
+            # Create a temporary script that sets up context and executes the file
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as temp_file:
+                # Write context setup
+                temp_file.write("import json\n")
+                # Use repr to preserve the actual Python objects
+                temp_file.write(f"context = {repr(context)}\n")
+                temp_file.write("result = None\n")
+                temp_file.write(f"exec(open('{file_path}').read())\n")
+                temp_file.write("if 'result' in locals():\n")
+                temp_file.write("    if isinstance(result, (dict, list)):\n")
+                temp_file.write("        print(json.dumps(result))\n")
+                temp_file.write("    else:\n")
+                temp_file.write("        print(result)\n")
+                temp_file_path = temp_file.name
+            
+            # Run the script
+            process = await asyncio.create_subprocess_exec(
+                sys.executable, temp_file_path,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE
+            )
+            
+            # Wait for completion with timeout
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(), 
+                    timeout=timeout
+                )
+            finally:
+                # Clean up temp file
+                Path(temp_file_path).unlink(missing_ok=True)
+            
+            # Parse result
+            if process.returncode != 0:
+                error_msg = stderr.decode() if stderr else "Python execution failed"
+                logger.error(f"Python file execution failed: {error_msg}")
+                return {
+                    "file": file_path,
+                    "error": error_msg,
+                    "success": False,
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+            
+            # Parse stdout
+            stdout_text = stdout.decode().strip()
+            
+            # Split stdout into output lines and potential JSON result
+            output_lines = []
+            json_result = None
+            
+            for line in stdout_text.split('\n'):
+                if line.strip().startswith('{') or line.strip().startswith('['):
+                    try:
+                        json_result = json.loads(line.strip())
+                        break  # Found JSON result, stop looking
+                    except json.JSONDecodeError:
+                        output_lines.append(line)
+                else:
+                    output_lines.append(line)
+            
+            # Determine the result value
+            if json_result:
+                # Return the actual object, not a string representation
+                result = json_result
+            else:
+                # Use the last non-empty line as result if no JSON found
+                result = output_lines[-1] if output_lines else ""
+            
+            return {
+                "result": result,  # Primary result (actual object if JSON, string otherwise)
+                "output": '\n'.join(output_lines),  # Full stdout
+                "success": True,
+                "execution_time": timeout  # Will be replaced with actual time later
+            }
+            
+        except asyncio.TimeoutError:
+            logger.error(f"Python file execution timed out after {timeout} seconds: {file_path}")
+            return {
+                "file": file_path,
+                "error": f"Execution timed out after {timeout} seconds",
+                "success": False,
+                "timestamp": datetime.utcnow().isoformat()
+            }
+        except Exception as e:
+            logger.error(f"Failed to execute Python file {file_path}: {e}")
+            return {
+                "file": file_path,
+                "error": str(e),
+                "success": False,
+                "timestamp": datetime.utcnow().isoformat()
+            }
     
     async def _execute_function(self, params: Dict[str, Any]) -> Any:
         """Execute a registered function"""

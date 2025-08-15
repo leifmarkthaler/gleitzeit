@@ -1,0 +1,12 @@
+name: "Simple Python Execution Workflow"
+description: "Test workflow for Python file execution"
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - id: "run_python_script"
+    method: "python/execute"
+    priority: 1
+    parameters:
+      file: "examples/scripts/count_words.py"
+      timeout: 10

@@ -1,0 +1,33 @@
+name: "Python Only Workflow"
+description: "Test workflow using only Python scripts with data passing"
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - id: "generate_data"
+    method: "python/execute"
+    priority: 3
+    parameters:
+      file: "examples/scripts/generate_numbers.py"
+      timeout: 5
+
+  - id: "calculate_stats"
+    method: "python/execute"
+    priority: 2
+    dependencies: ["generate_data"]
+    parameters:
+      file: "examples/scripts/calculate_sum.py"
+      context:
+        numbers: "${generate_data.result.numbers}"
+      timeout: 5
+
+  - id: "create_report"
+    method: "python/execute"
+    priority: 1
+    dependencies: ["generate_data", "calculate_stats"]
+    parameters:
+      file: "examples/scripts/format_report.py"
+      context:
+        number_data: "${generate_data.result}"
+        sum_data: "${calculate_stats.result}"
+      timeout: 5

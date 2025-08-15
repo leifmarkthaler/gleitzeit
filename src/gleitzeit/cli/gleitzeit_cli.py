@@ -222,19 +222,24 @@ class GleitzeitCLI:
         if result.status == "failed" and result.error:
             click.echo(f"      Error: {result.error}")
         elif result.status == "completed" and result.result:
-            # Handle different result formats
-            if 'content' in result.result:  # LLM results
-                content = result.result['content']
+            # Use standard fields based on provider type
+            display_text = None
+            
+            # Check standard fields in order of preference
+            if 'response' in result.result:  # LLM standard field
+                display_text = result.result['response']
+            elif 'result' in result.result:  # Python standard field
+                display_text = str(result.result['result'])
+            elif 'content' in result.result:  # Backward compatibility for LLM
+                display_text = result.result['content']
+            elif 'output' in result.result:  # Additional Python output
+                display_text = result.result['output']
+            
+            if display_text:
                 # Truncate long responses for display
-                if len(content) > 200:
-                    content = content[:200] + "..."
-                click.echo(f"      Result: {content}")
-            elif 'output' in result.result and result.result['output']:  # Python results
-                output_lines = result.result['output'].strip().split('\n')
-                for line in output_lines[:3]:  # Show first 3 lines
-                    click.echo(f"      Output: {line}")
-                if len(output_lines) > 3:
-                    click.echo(f"      ... ({len(output_lines) - 3} more lines)")
+                if len(display_text) > 200:
+                    display_text = display_text[:200] + "..."
+                click.echo(f"      Result: {display_text}")
     
     async def _shutdown_system(self):
         """Clean shutdown of the system"""

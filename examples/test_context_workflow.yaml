@@ -1,0 +1,25 @@
+name: "Test Context Passing"
+description: "Test that context is properly passed to Python scripts"
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - id: "first_task"
+    method: "python/execute"
+    priority: 2
+    parameters:
+      file: "examples/scripts/generate_numbers.py"
+      timeout: 5
+
+  - id: "second_task"
+    method: "python/execute"
+    priority: 1
+    dependencies: ["first_task"]
+    parameters:
+      file: "examples/scripts/test_context.py"
+      context:
+        numbers: "${first_task.result.numbers}"
+        count: "${first_task.result.count}"
+        test_string: "hello world"
+        test_number: 42
+      timeout: 5

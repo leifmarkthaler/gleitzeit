@@ -25,31 +25,9 @@ tasks:
     priority: 2
     dependencies: ["generate_numbers"]
     parameters:
-      code: |
-        # Parse the numbers from the LLM response
-        numbers_str = "${generate_numbers.response}"
-        numbers = [int(x.strip()) for x in numbers_str.split(',')]
-        
-        # Calculate statistics
-        import statistics
-        mean = statistics.mean(numbers)
-        median = statistics.median(numbers)
-        stdev = statistics.stdev(numbers) if len(numbers) > 1 else 0
-        
-        result = {
-            "numbers": numbers,
-            "count": len(numbers),
-            "mean": round(mean, 2),
-            "median": median,
-            "standard_deviation": round(stdev, 2),
-            "min": min(numbers),
-            "max": max(numbers)
-        }
-        
-        print(f"Statistics for {numbers}:")
-        print(f"Mean: {result['mean']}")
-        print(f"Median: {result['median']}")
-        print(f"Std Dev: {result['standard_deviation']}")
+      file: "examples/scripts/calculate_stats.py"
+      context:
+        numbers_str: "${generate_numbers.response}"
       timeout: 30
 
   - id: "summarize_results"
