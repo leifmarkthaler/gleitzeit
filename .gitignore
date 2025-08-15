@@ -6,7 +6,7 @@ __pycache__/
 .Python
 build/
 develop-eggs/
-dist/
+# dist/  # Commented out to allow dist directory in repo
 downloads/
 eggs/
 .eggs/
@@ -84,5 +84,5 @@ docs/_build/
 docs/.doctrees/
 
 # Package files
-*.tar.gz
+# *.tar.gz  # Commented out to allow distribution files in repo
 *.zip
