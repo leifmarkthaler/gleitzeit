@@ -11,6 +11,8 @@ from typing import Dict, List, Optional, Any, Union
 from uuid import uuid4
 from pydantic import BaseModel, Field, field_validator, ConfigDict
 import json
+import re
+from gleitzeit.core.errors import TaskValidationError
 
 
 class TaskStatus(str, Enum):
@@ -115,23 +117,38 @@ class Task(BaseModel):
         - URI-style: supports colons for resource URIs like 'resource.file://path'
         """
         if not v:
-            raise ValueError("Method name cannot be empty")
+            raise TaskValidationError(
+                "task",
+                ["Method name cannot be empty"]
+            )
         
         # Must start with a letter
         if not v[0].isalpha():
-            raise ValueError("Method name must start with a letter")
+            raise TaskValidationError(
+                "task",
+                ["Method name must start with a letter"]
+            )
         
         # Check for valid characters: letters, numbers, dots, underscores, slashes, colons, hyphens
         import re
         if not re.match(r'^[a-zA-Z][a-zA-Z0-9_./:/-]*$', v):
-            raise ValueError(f"Method name '{v}' contains invalid characters. Allowed: letters, numbers, dots, underscores, slashes, colons, hyphens")
+            raise TaskValidationError(
+                "task",
+                [f"Method name '{v}' contains invalid characters. Allowed: letters, numbers, dots, underscores, slashes, colons, hyphens"]
+            )
         
         # Additional checks for common patterns
         if '..' in v:
-            raise ValueError("Method name cannot contain consecutive dots")
+            raise TaskValidationError(
+                "task",
+                ["Method name cannot contain consecutive dots"]
+            )
         
         if v.endswith('.'):
-            raise ValueError("Method name cannot end with a dot")
+            raise TaskValidationError(
+                "task",
+                ["Method name cannot end with a dot"]
+            )
             
         return v
     
@@ -149,7 +166,10 @@ class Task(BaseModel):
             json.dumps(v)
             return v
         except (TypeError, ValueError) as e:
-            raise ValueError(f"Parameters must be JSON serializable: {e}")
+            raise TaskValidationError(
+                "task",
+                [f"Parameters must be JSON serializable: {e}"]
+            )
     
     def mark_started(self, provider_id: str, node_id: Optional[str] = None):
         """Mark task as started"""

@@ -19,6 +19,10 @@ from pathlib import Path
 from datetime import datetime
 
 from gleitzeit.providers.base import ProtocolProvider
+from gleitzeit.core.errors import (
+    ProviderError, InvalidParameterError, MethodNotSupportedError,
+    ConfigurationError, ErrorCode
+)
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +117,9 @@ class PythonFunctionProvider(ProtocolProvider):
             function_names: Specific functions to register (None = all)
         """
         if module_name not in self.allowed_modules:
-            raise ValueError(f"Module {module_name} not in allowed modules list")
+            raise ConfigurationError(
+                f"Module {module_name} not in allowed modules list"
+            )
         
         try:
             module = importlib.import_module(module_name)
@@ -150,7 +156,10 @@ class PythonFunctionProvider(ProtocolProvider):
         try:
             # Security: Only allow simple lambda expressions
             if not lambda_str.strip().startswith("lambda"):
-                raise ValueError("Must be a lambda expression")
+                raise InvalidParameterError(
+                    "function",
+                    "Must be a lambda expression"
+                )
             
             # Evaluate lambda in restricted environment
             func = eval(lambda_str, {"__builtins__": {}})
@@ -199,17 +208,22 @@ class PythonFunctionProvider(ProtocolProvider):
                     "is_async": inspect.iscoroutinefunction(func)
                 }
             else:
-                raise ValueError(f"Function {func_name} not found")
+                raise InvalidParameterError(
+                "function",
+                f"Function {func_name} not found"
+            )
         
         elif method == "eval":
             # Evaluate a Python expression (DANGEROUS - use with caution)
             if params.get("allow_eval", False):
                 return await self._eval_expression(params)
             else:
-                raise ValueError("eval method is disabled for security. Set allow_eval=true to enable.")
+                raise ConfigurationError(
+                    "eval method is disabled for security. Set allow_eval=true to enable."
+                )
         
         else:
-            raise ValueError(f"Unknown method: {method}")
+            raise MethodNotSupportedError(method, self.provider_id)
     
     async def _execute_file(self, params: Dict[str, Any]) -> Any:
         """Execute a Python file"""
@@ -220,7 +234,10 @@ class PythonFunctionProvider(ProtocolProvider):
         # Get file path (support both 'file' and 'file_path' parameters)
         file_path = params.get('file') or params.get('file_path')
         if not file_path:
-            raise ValueError("Missing 'file' or 'file_path' parameter")
+            raise InvalidParameterError(
+                "file",
+                "Missing 'file' or 'file_path' parameter"
+            )
         
         # Check if file exists
         if not Path(file_path).exists():
@@ -331,10 +348,16 @@ class PythonFunctionProvider(ProtocolProvider):
         """Execute a registered function"""
         func_name = params.get("function")
         if not func_name:
-            raise ValueError("Missing 'function' parameter")
+            raise InvalidParameterError(
+                "function",
+                "Missing 'function' parameter"
+            )
         
         if func_name not in self.functions:
-            raise ValueError(f"Function {func_name} not found")
+            raise InvalidParameterError(
+                "function",
+                f"Function {func_name} not found"
+            )
         
         func = self.functions[func_name]
         
@@ -387,7 +410,9 @@ class PythonFunctionProvider(ProtocolProvider):
                 func = getattr(module, function_name)
                 self.register_function(func_name, func)
             else:
-                raise ValueError(f"Module {module_name} not allowed")
+                raise ConfigurationError(
+                    f"Module {module_name} not allowed"
+                )
         
         elif func_type == "serialized":
             # Deserialize a pickled function (DANGEROUS - only from trusted sources)
@@ -396,10 +421,15 @@ class PythonFunctionProvider(ProtocolProvider):
                 func = pickle.loads(func_data)
                 self.register_function(func_name, func)
             else:
-                raise ValueError("Pickle deserialization disabled for security")
+                raise ConfigurationError(
+                    "Pickle deserialization disabled for security"
+                )
         
         else:
-            raise ValueError(f"Unknown function type: {func_type}")
+            raise InvalidParameterError(
+                "func_type",
+                f"Unknown function type: {func_type}"
+            )
         
         return {
             "registered": func_name,

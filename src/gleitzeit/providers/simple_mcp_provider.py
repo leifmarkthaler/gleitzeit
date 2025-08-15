@@ -6,6 +6,7 @@ Implements MCP tools directly without subprocess
 from typing import Dict, List, Any
 import logging
 from gleitzeit.providers.base import ProtocolProvider
+from gleitzeit.core.errors import MethodNotSupportedError, InvalidParameterError
 
 logger = logging.getLogger(__name__)
 
@@ -84,12 +85,15 @@ class SimpleMCPProvider(ProtocolProvider):
             }
         
         else:
-            raise ValueError(f"Unsupported method: {method}")
+            raise MethodNotSupportedError(method, self.provider_id)
     
     async def _execute_tool(self, tool_name: str, params: Dict[str, Any]) -> Any:
         """Execute a tool"""
         if tool_name not in self.tools:
-            raise ValueError(f"Unknown tool: {tool_name}")
+            raise InvalidParameterError(
+                "tool_name",
+                f"Unknown tool: {tool_name}"
+            )
         
         # Get arguments from params
         arguments = params.get("arguments", params)

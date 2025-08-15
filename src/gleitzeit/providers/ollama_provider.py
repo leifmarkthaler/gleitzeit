@@ -11,6 +11,10 @@ import aiohttp
 import json
 
 from gleitzeit.providers.base import ProtocolProvider
+from gleitzeit.core.errors import (
+    ProviderError, MethodNotSupportedError, InvalidParameterError,
+    ErrorCode
+)
 
 logger = logging.getLogger(__name__)
 
@@ -113,7 +117,7 @@ class OllamaProvider(ProtocolProvider):
         elif method == "embed":
             return await self._embed_text(params)
         else:
-            raise ValueError(f"Unsupported method: {method}")
+            raise MethodNotSupportedError(method, self.provider_id)
     
     async def _generate_text(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Generate text using Ollama"""
@@ -164,7 +168,11 @@ class OllamaProvider(ProtocolProvider):
                 }
             else:
                 error_text = await response.text()
-                raise RuntimeError(f"Ollama API error {response.status}: {error_text}")
+                raise ProviderError(
+                    f"Ollama API error {response.status}: {error_text}",
+                    code=ErrorCode.PROVIDER_NOT_AVAILABLE,
+                    provider_id=self.provider_id
+                )
     
     async def _chat(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Chat using Ollama"""
@@ -243,7 +251,10 @@ class OllamaProvider(ProtocolProvider):
             # Use first image from images array
             image_data = images[0]
         elif not image_data:
-            raise ValueError("Either image_path, image_data, or images required for vision")
+            raise InvalidParameterError(
+                "image_data",
+                "Either image_path, image_data, or images required for vision"
+            )
         
         logger.info(f"Vision analysis with model {model}")
         
@@ -271,7 +282,11 @@ class OllamaProvider(ProtocolProvider):
                 }
             else:
                 error_text = await response.text()
-                raise RuntimeError(f"Ollama vision API error {response.status}: {error_text}")
+                raise ProviderError(
+                    f"Ollama vision API error {response.status}: {error_text}",
+                    code=ErrorCode.PROVIDER_NOT_AVAILABLE,
+                    provider_id=self.provider_id
+                )
     
     async def _embed_text(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Generate embeddings using Ollama"""
@@ -301,7 +316,11 @@ class OllamaProvider(ProtocolProvider):
                 }
             else:
                 error_text = await response.text()
-                raise RuntimeError(f"Ollama embeddings API error {response.status}: {error_text}")
+                raise ProviderError(
+                    f"Ollama embeddings API error {response.status}: {error_text}",
+                    code=ErrorCode.PROVIDER_NOT_AVAILABLE,
+                    provider_id=self.provider_id
+                )
     
     async def _check_ollama_health(self) -> bool:
         """Check if Ollama is healthy"""

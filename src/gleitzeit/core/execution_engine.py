@@ -34,7 +34,10 @@ from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.task_queue import TaskQueue, QueueManager, DependencyResolver
 from gleitzeit.persistence.base import PersistenceBackend
 
-logger = logging.getLogger(__name__)
+from gleitzeit.core.error_formatter import get_clean_logger
+
+# Use clean logger that adjusts log levels for expected warnings
+logger = get_clean_logger(__name__)
 
 
 class ExecutionMode(Enum):
@@ -224,7 +227,7 @@ class ExecutionEngine:
             elif mode == ExecutionMode.EVENT_DRIVEN:
                 await self._execute_event_driven()
             else:
-                raise ValueError(f"Unknown execution mode: {mode}")
+                raise SystemError(f"Unknown execution mode: {mode}")
                 
         except Exception as e:
             logger.error(f"ExecutionEngine startup failed: {e}")
@@ -1116,7 +1119,10 @@ class ExecutionEngine:
         # Add workflow to dependency resolver for validation
         errors = self.dependency_resolver.validate_workflow_dependencies(workflow)
         if errors:
-            raise ValueError(f"Workflow validation failed: {'; '.join(errors)}")
+            raise WorkflowValidationError(
+                workflow.id,
+                errors
+            )
         
         # Build name-to-ID mapping for parameter substitution
         self._build_name_to_id_mapping(workflow)

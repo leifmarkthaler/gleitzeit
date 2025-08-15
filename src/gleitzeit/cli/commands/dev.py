@@ -13,6 +13,7 @@ from typing import Optional
 
 from gleitzeit.cli.client import GleitzeitClient
 from gleitzeit.server.central_server import CentralServer
+from gleitzeit.core.errors import SystemError
 
 # Store process info for cleanup
 _local_processes = {}
@@ -139,7 +140,7 @@ async def _start_redis() -> None:
             click.echo("   ✅ Redis server started")
         else:
             process.terminate()
-            raise Exception("Redis failed to start properly")
+            raise SystemError("Redis failed to start properly")
             
     except FileNotFoundError:
         click.echo("   ⚠️  Redis not found. Install with: brew install redis (macOS) or apt install redis-server (Ubuntu)")
@@ -168,7 +169,7 @@ async def _start_filesystem_mcp(path: str) -> None:
             click.echo(f"   📁 Serving files from: {path}")
         else:
             stdout, stderr = process.communicate()
-            raise Exception(f"MCP server failed: {stderr.decode()}")
+            raise SystemError(f"MCP server failed: {stderr.decode()}")
             
     except FileNotFoundError:
         click.echo("   ⚠️  Node.js/npm not found. Install Node.js to use MCP servers.")
@@ -203,7 +204,7 @@ async def _start_brave_search_mcp() -> None:
             click.echo("   ✅ Brave Search MCP server started")
         else:
             stdout, stderr = process.communicate()
-            raise Exception(f"MCP server failed: {stderr.decode()}")
+            raise SystemError(f"MCP server failed: {stderr.decode()}")
             
     except Exception as e:
         click.echo(f"   ❌ Failed to start Brave Search MCP server: {e}")
@@ -226,7 +227,7 @@ async def _start_memory_mcp() -> None:
             click.echo("   ✅ Memory MCP server started")
         else:
             stdout, stderr = process.communicate()
-            raise Exception(f"MCP server failed: {stderr.decode()}")
+            raise SystemError(f"MCP server failed: {stderr.decode()}")
             
     except Exception as e:
         click.echo(f"   ❌ Failed to start Memory MCP server: {e}")

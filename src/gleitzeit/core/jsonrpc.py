@@ -11,7 +11,10 @@ from enum import IntEnum
 import json
 import uuid
 
-from gleitzeit.core.errors import ErrorCode, GleitzeitError, error_to_jsonrpc
+from gleitzeit.core.errors import (
+    ErrorCode, GleitzeitError, error_to_jsonrpc,
+    ProtocolError, InvalidParameterError
+)
 
 
 # JSON-RPC error codes are now defined in centralized ErrorCode enum
@@ -41,7 +44,7 @@ class JSONRPCError(BaseModel):
             if v > 0 or -32099 <= v <= -25000:
                 return v
         
-        raise ValueError(f"Invalid JSON-RPC error code: {v}")
+        raise ProtocolError(f"Invalid JSON-RPC error code: {v}")
     
     def __str__(self) -> str:
         return f"JSONRPCError({self.code}): {self.message}"
@@ -61,7 +64,7 @@ class JSONRPCRequest(BaseModel):
     def validate_method_name(cls, v):
         """Validate method name follows JSON-RPC conventions"""
         if v.startswith('rpc.'):
-            raise ValueError("Method names starting with 'rpc.' are reserved")
+            raise ProtocolError("Method names starting with 'rpc.' are reserved")
         return v
     
     def is_notification(self) -> bool:
@@ -119,10 +122,10 @@ class JSONRPCResponse(BaseModel):
         """Ensure exactly one of result or error is present"""
         # Now that we renamed the classmethod, we can safely access the field
         if self.result is not None and self.error is not None:
-            raise ValueError("Response cannot have both result and error")
+            raise ProtocolError("Response cannot have both result and error")
         
         if self.result is None and self.error is None:
-            raise ValueError("Response must have either result or error")
+            raise ProtocolError("Response must have either result or error")
         
         return self
     
@@ -246,12 +249,15 @@ def parse_jsonrpc_request(data: Union[str, bytes, Dict[str, Any]]) -> Union[JSON
     elif isinstance(data, dict):
         parsed = data
     else:
-        raise ValueError(f"Unsupported input type: {type(data)}")
+        raise InvalidParameterError(
+            "data",
+            f"Unsupported input type: {type(data)}"
+        )
     
     # Handle batch requests
     if isinstance(parsed, list):
         if not parsed:
-            raise ValueError("Empty batch request")
+            raise ProtocolError("Empty batch request")
         
         requests = []
         for item in parsed:
@@ -264,7 +270,7 @@ def parse_jsonrpc_request(data: Union[str, bytes, Dict[str, Any]]) -> Union[JSON
         return JSONRPCRequest(**parsed)
     
     else:
-        raise ValueError("Invalid JSON-RPC format")
+        raise ProtocolError("Invalid JSON-RPC format")
 
 
 def parse_jsonrpc_response(data: Union[str, bytes, Dict[str, Any]]) -> Union[JSONRPCResponse, JSONRPCBatch]:
@@ -287,12 +293,15 @@ def parse_jsonrpc_response(data: Union[str, bytes, Dict[str, Any]]) -> Union[JSO
     elif isinstance(data, dict):
         parsed = data
     else:
-        raise ValueError(f"Unsupported input type: {type(data)}")
+        raise InvalidParameterError(
+            "data",
+            f"Unsupported input type: {type(data)}"
+        )
     
     # Handle batch responses
     if isinstance(parsed, list):
         if not parsed:
-            raise ValueError("Empty batch response")
+            raise ProtocolError("Empty batch response")
         
         responses = []
         for item in parsed:
@@ -305,7 +314,7 @@ def parse_jsonrpc_response(data: Union[str, bytes, Dict[str, Any]]) -> Union[JSO
         return JSONRPCResponse(**parsed)
     
     else:
-        raise ValueError("Invalid JSON-RPC format")
+        raise ProtocolError("Invalid JSON-RPC format")
 
 
 # Exception classes for JSON-RPC errors

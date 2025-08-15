@@ -15,6 +15,7 @@ from typing import Dict, Any, List, Optional
 from uuid import uuid4
 
 from gleitzeit.core.models import Task, Workflow, Priority, RetryConfig
+from gleitzeit.core.errors import WorkflowValidationError, ConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +37,7 @@ def load_workflow_from_file(file_path: str) -> Workflow:
         elif path.suffix.lower() == '.json':
             data = json.load(f)
         else:
-            raise ValueError(f"Unsupported file format: {path.suffix}")
+            raise ConfigurationError(f"Unsupported file format: {path.suffix}")
     
     return load_workflow_from_dict(data)
 
@@ -190,18 +191,24 @@ def create_batch_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
     pattern = batch_config.get('pattern', '*')
     
     if not directory:
-        raise ValueError("Batch workflow requires 'batch.directory' to be specified")
+        raise WorkflowValidationError(
+            workflow_id="batch_workflow",
+            validation_errors=["Batch workflow requires 'batch.directory' to be specified"]
+        )
     
     if not template:
-        raise ValueError("Batch workflow requires 'template' section to define task parameters")
+        raise WorkflowValidationError(
+            workflow_id="batch_workflow",
+            validation_errors=["Batch workflow requires 'template' section to define task parameters"]
+        )
     
     # Discover files
     dir_path = Path(directory)
     if not dir_path.exists():
-        raise ValueError(f"Directory not found: {directory}")
+        raise ConfigurationError(f"Directory not found: {directory}")
     
     if not dir_path.is_dir():
-        raise ValueError(f"Not a directory: {directory}")
+        raise ConfigurationError(f"Not a directory: {directory}")
     
     # Use glob to find matching files
     file_pattern = str(dir_path / pattern)

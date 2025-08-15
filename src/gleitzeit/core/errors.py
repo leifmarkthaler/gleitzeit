@@ -239,6 +239,18 @@ class ProviderTimeoutError(ProviderError):
         )
 
 
+class MethodNotSupportedError(ProviderError):
+    """Method not supported by provider"""
+    
+    def __init__(self, method: str, provider_id: str, **kwargs):
+        super().__init__(
+            f"Method '{method}' not supported by provider '{provider_id}'",
+            ErrorCode.METHOD_NOT_SUPPORTED,
+            provider_id=provider_id,
+            **kwargs
+        )
+
+
 # Task Execution Errors
 class TaskError(GleitzeitError):
     """Task execution errors"""
@@ -297,6 +309,19 @@ class TaskDependencyError(TaskError):
             ErrorCode.TASK_DEPENDENCY_FAILED,
             task_id=task_id,
             data=data,
+            **kwargs
+        )
+
+
+class InvalidParameterError(TaskError):
+    """Invalid parameter error"""
+    
+    def __init__(self, param_name: str, reason: str, task_id: Optional[str] = None, **kwargs):
+        super().__init__(
+            f"Invalid parameter '{param_name}': {reason}",
+            ErrorCode.INVALID_PARAMS,
+            task_id=task_id,
+            data={"parameter": param_name, "reason": reason},
             **kwargs
         )
 
@@ -363,6 +388,18 @@ class QueueError(GleitzeitError):
         if queue_name:
             data["queue_name"] = queue_name
         super().__init__(message, code, data=data, **kwargs)
+
+
+class QueueNotFoundError(QueueError):
+    """Queue not found error"""
+    
+    def __init__(self, queue_name: str, **kwargs):
+        super().__init__(
+            f"Queue '{queue_name}' not found",
+            ErrorCode.QUEUE_NOT_FOUND,
+            queue_name=queue_name,
+            **kwargs
+        )
 
 
 class QueueFullError(QueueError):

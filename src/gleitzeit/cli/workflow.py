@@ -11,6 +11,7 @@ from typing import List, Dict, Any, Optional
 from uuid import uuid4
 
 from gleitzeit.core.models import Task, Workflow, Priority, RetryConfig
+from gleitzeit.core.errors import ConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -31,9 +32,9 @@ async def load_workflow(workflow_path: Path) -> Workflow:
         return workflow
         
     except yaml.YAMLError as e:
-        raise ValueError(f"Invalid YAML format: {e}")
+        raise ConfigurationError(f"Invalid YAML format: {e}")
     except Exception as e:
-        raise ValueError(f"Failed to load workflow: {e}")
+        raise ConfigurationError(f"Failed to load workflow: {e}")
 
 
 def validate_workflow(workflow: Workflow) -> List[str]:

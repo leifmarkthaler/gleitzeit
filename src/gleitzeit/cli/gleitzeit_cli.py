@@ -34,12 +34,11 @@ from gleitzeit.persistence.redis_backend import RedisBackend
 from gleitzeit.persistence.sqlite_backend import SQLiteBackend
 from gleitzeit.core.batch_processor import BatchProcessor, BatchResult
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Import error formatter
+from gleitzeit.core.error_formatter import set_debug_mode, get_clean_logger
+
+# Set up logging - will be configured based on verbosity
+logger = get_clean_logger(__name__)
 
 
 class GleitzeitCLI:
@@ -274,12 +273,26 @@ def cli(verbose: bool, debug: bool):
     
     Execute workflows with Python code, LLM tasks, MCP tools, and more.
     """
+    # Configure logging and error formatting based on verbosity
     if debug:
-        logging.getLogger().setLevel(logging.DEBUG)
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        set_debug_mode(True)
     elif verbose:
-        logging.getLogger().setLevel(logging.INFO)
+        logging.basicConfig(
+            level=logging.INFO,
+            format='%(asctime)s - %(levelname)s - %(message)s'
+        )
+        set_debug_mode(False)
     else:
-        logging.getLogger().setLevel(logging.WARNING)
+        # Production mode - only show warnings and errors
+        logging.basicConfig(
+            level=logging.WARNING,
+            format='%(levelname)s: %(message)s'
+        )
+        set_debug_mode(False)
 
 
 @cli.command()

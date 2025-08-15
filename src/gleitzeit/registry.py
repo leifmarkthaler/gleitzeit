@@ -14,7 +14,7 @@ from enum import Enum
 
 from gleitzeit.core.protocol import ProtocolSpec, get_protocol_registry
 from gleitzeit.core.jsonrpc import JSONRPCRequest, JSONRPCResponse
-from gleitzeit.core.errors import ErrorCode
+from gleitzeit.core.errors import ErrorCode, ProtocolError, ProviderNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class ProtocolProviderRegistry:
         # Validate protocol exists
         protocol = self.protocol_registry.get(protocol_id)
         if not protocol:
-            raise ValueError(f"Protocol not registered: {protocol_id}")
+            raise ProtocolError(f"Protocol not registered: {protocol_id}")
         
         # Auto-detect supported methods if not provided
         if supported_methods is None:
@@ -441,7 +441,7 @@ class ProtocolProviderRegistry:
     async def check_provider_health(self, provider_id: str) -> Dict[str, Any]:
         """Check health of a specific provider"""
         if provider_id not in self.providers:
-            raise ValueError(f"Provider not found: {provider_id}")
+            raise ProviderNotFoundError(provider_id)
         
         provider_info = self.providers[provider_id]
         provider_instance = self.provider_instances.get(provider_id)

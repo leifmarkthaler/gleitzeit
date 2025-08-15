@@ -14,6 +14,11 @@ import json
 from gleitzeit.core import ExecutionEngine, Task, Workflow, Priority
 from gleitzeit.core.workflow_loader import load_workflow_from_file, load_workflow_from_dict
 from gleitzeit.core.batch_processor import BatchProcessor
+from gleitzeit.core.error_handler import (
+    ErrorHandler, get_error_handler,
+    task_not_found_error, provider_not_available_error
+)
+from gleitzeit.core.errors import TaskError, ErrorCode, InvalidParameterError
 from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.persistence.sqlite_backend import SQLiteBackend
@@ -48,7 +53,8 @@ class GleitzeitClient:
         persistence: str = "sqlite",
         db_path: Optional[str] = None,
         redis_url: Optional[str] = None,
-        ollama_url: str = "http://localhost:11434"
+        ollama_url: str = "http://localhost:11434",
+        debug: bool = False
     ):
         """
         Initialize Gleitzeit client.
@@ -63,12 +69,16 @@ class GleitzeitClient:
         self.db_path = db_path
         self.redis_url = redis_url
         self.ollama_url = ollama_url
+        self.debug = debug
         
         self.backend = None
         self.registry = None
         self.engine = None
         self.batch_processor = None
         self._initialized = False
+        
+        # Setup error handler
+        self.error_handler = ErrorHandler(debug=debug, suppress_warnings=not debug)
     
     async def __aenter__(self):
         """Async context manager entry."""
@@ -202,7 +212,11 @@ class GleitzeitClient:
                 return result["response"]
             return str(result)
         
-        raise RuntimeError("Chat completion failed")
+        raise TaskError(
+            "Chat completion failed - no result returned",
+            ErrorCode.TASK_EXECUTION_FAILED,
+            task_id=task.id
+        )
     
     async def vision(
         self,
@@ -251,7 +265,11 @@ class GleitzeitClient:
                 return result["response"]
             return str(result)
         
-        raise RuntimeError("Vision analysis failed")
+        raise TaskError(
+            "Vision analysis failed - no result returned",
+            ErrorCode.TASK_EXECUTION_FAILED,
+            task_id=task.id
+        )
     
     async def execute_python(
         self,
@@ -300,7 +318,12 @@ class GleitzeitClient:
                 return result["result"]
             return result
         
-        raise RuntimeError("Python execution failed")
+        raise TaskError(
+            f"Python script execution failed: {script_file}",
+            ErrorCode.TASK_EXECUTION_FAILED,
+            task_id=task.id,
+            data={"script_file": script_file}
+        )
     
     # Workflow methods
     
@@ -327,7 +350,10 @@ class GleitzeitClient:
         elif isinstance(workflow, Workflow):
             workflow_obj = workflow
         else:
-            raise ValueError(f"Unsupported workflow type: {type(workflow)}")
+            raise InvalidParameterError(
+                "workflow",
+                f"Unsupported workflow type: {type(workflow)}"
+            )
         
         # Store and execute
         await self.backend.save_workflow(workflow_obj)

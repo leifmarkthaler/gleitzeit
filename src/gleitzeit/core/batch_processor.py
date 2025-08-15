@@ -16,6 +16,7 @@ import json
 
 from gleitzeit.core.models import Task, Workflow, Priority
 from gleitzeit.core.workflow_loader import create_task_from_dict
+from gleitzeit.core.errors import ConfigurationError, TaskValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +114,10 @@ class BatchProcessor:
         """
         dir_path = Path(directory)
         if not dir_path.exists():
-            raise ValueError(f"Directory not found: {directory}")
+            raise ConfigurationError(f"Directory not found: {directory}")
         
         if not dir_path.is_dir():
-            raise ValueError(f"Not a directory: {directory}")
+            raise ConfigurationError(f"Not a directory: {directory}")
         
         # Use glob to find matching files
         file_pattern = str(dir_path / pattern)
@@ -152,7 +153,10 @@ class BatchProcessor:
             Workflow with tasks for each file
         """
         if not files:
-            raise ValueError("No files provided for batch processing")
+            raise TaskValidationError(
+                "batch_task",
+                ["No files provided for batch processing"]
+            )
         
         workflow_id = f"batch-{uuid4().hex[:8]}"
         workflow_name = name or f"Batch Processing ({len(files)} files)"
@@ -250,7 +254,10 @@ class BatchProcessor:
         if directory:
             files = self.scan_directory(directory, pattern)
         elif not files:
-            raise ValueError("Either 'files' or 'directory' must be provided")
+            raise TaskValidationError(
+                "batch_task",
+                ["Either 'files' or 'directory' must be provided"]
+            )
         
         # Create batch result
         batch_id = f"batch-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
