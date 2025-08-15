@@ -47,6 +47,14 @@ gleitzeit batch examples/documents --pattern "*.txt" --prompt "Summarize this do
 gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe this image"
 ```
 
+## Documentation
+
+### Core Documentation
+- [Provider Implementation Guide](docs/PROVIDER_IMPLEMENTATION_GUIDE.md) - How to implement providers correctly
+- [Workflow Parameter Substitution](docs/WORKFLOW_PARAMETER_SUBSTITUTION.md) - Using task results in subsequent tasks
+- [Architecture Overview](docs/GLEITZEIT_V4_ARCHITECTURE.md) - System architecture and design
+- [Protocols and Providers](docs/PROTOCOLS_PROVIDERS_EXECUTION.md) - Protocol-based execution system
+
 ## LLM Workflow Example
 
 Create an LLM workflow (`research_workflow.yaml`):

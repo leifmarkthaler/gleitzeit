@@ -1,0 +1,41 @@
+# Dependent Tasks Workflow Example
+# Demonstrates parameter substitution and task dependencies
+
+name: "Dependent Tasks Workflow"
+description: "Shows how tasks can depend on results from previous tasks"
+version: "1.0"
+
+# Workflow configuration
+timeout: 120
+wait_for_completion: true
+
+# Task definitions with dependencies
+tasks:
+  - id: "generate_topic"
+    method: "llm/chat"
+    priority: 3
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Generate a random interesting topic for a short essay. Reply with just the topic, nothing else."
+
+  - id: "write_outline"
+    method: "llm/chat"
+    priority: 2
+    dependencies: ["generate_topic"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Create a 3-point outline for an essay about: ${generate_topic.response}"
+
+  - id: "write_essay"
+    method: "llm/chat"
+    priority: 1
+    dependencies: ["write_outline"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Write a short essay (2-3 paragraphs) based on this outline: ${write_outline.response}"

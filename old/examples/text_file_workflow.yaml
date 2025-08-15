@@ -1,0 +1,51 @@
+name: "Text File Analysis Workflow"
+description: "Demonstrates LLM processing of text files"
+tasks:
+  - name: "summarize_story"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    params:
+      model: "llama3.2:latest"
+      file_path: "examples/documents/sample_story.txt"
+      messages:
+        - role: "user"
+          content: "Please summarize this story in 2-3 sentences."
+
+  - name: "extract_characters"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    params:
+      model: "llama3.2:latest"
+      file_path: "examples/documents/sample_story.txt"
+      messages:
+        - role: "user"
+          content: "List all the characters mentioned in this story and briefly describe each one."
+
+  - name: "analyze_themes"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    params:
+      model: "llama3.2:latest"
+      file_path: "examples/documents/sample_story.txt"
+      messages:
+        - role: "user"
+          content: "What are the main themes and literary elements in this story? Provide a brief literary analysis."
+
+  - name: "create_sequel_idea"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    dependencies: ["summarize_story"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "system"
+          content: "You are a creative writer who specializes in story continuations."
+        - role: "user"
+          content: |
+            Based on this summary: ${summarize_story.result.content}
+            
+            Suggest an interesting idea for a sequel to this story. What might happen next?

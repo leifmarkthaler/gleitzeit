@@ -55,29 +55,16 @@ all = [
 ]
 
 [project.scripts]
-gleitzeit = "cli.gleitzeit_cli:main"
-gz = "cli.gleitzeit_cli:main"
+gleitzeit = "gleitzeit.cli.gleitzeit_cli:main"
+gz = "gleitzeit.cli.gleitzeit_cli:main"
 
 [project.urls]
 "Source" = "https://github.com/leifmarkthaler/gleitzeit"
 "Bug Reports" = "https://github.com/leifmarkthaler/gleitzeit/issues"
 
-[tool.setuptools]
-packages = [
-    "cli",
-    "cli.commands",
-    "client",
-    "core",
-    "integrations",
-    "persistence",
-    "pooling",
-    "protocols",
-    "providers",
-    "server",
-    "task_queue",
-]
-py-modules = ["main", "registry", "cli"]
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["gleitzeit*"]
 
 [tool.setuptools.package-data]
-protocols = ["*.yaml"]
-examples = ["*.yaml", "*.py", "*.txt", "*.png", "*.md"]
+gleitzeit = ["protocols/*.yaml", "examples/*.yaml", "examples/*.py", "examples/*.txt", "examples/*.png", "examples/*.md"]

@@ -9,9 +9,7 @@ tasks:
     priority: 2
     parameters:
       model: llava:latest
-      messages:
-        - role: user
-          content: "Analyze this image and describe what you see. Be specific about colors, objects, and any text."
+      prompt: "Analyze this image and describe what you see. Be specific about colors, objects, and any text."
       images:
         - "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAA8klEQVR4nO3bsQ3AMAwEMTn775yskKtsA+QEj4NarXdOtObEXc/uATcRKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEOv6l9E5cpTLKsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEmv8+3kIExEwzUIUAAAAASUVORK5CYII="  # Test image with 4 colored quadrants: red, green, blue, yellow
 

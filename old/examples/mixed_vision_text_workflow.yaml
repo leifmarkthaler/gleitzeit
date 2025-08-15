@@ -1,0 +1,38 @@
+name: "Mixed Vision + Text Workflow"
+description: "Demonstrates combining LLaVa vision analysis with Ollama text processing"
+timeout: 45
+wait_for_completion: true
+
+tasks:
+  - id: analyze-scene
+    method: llm/vision
+    priority: 2
+    parameters:
+      model: llava:latest
+      prompt: "Look at this image and describe the scene. What objects, colors, or activities do you see? Be descriptive but concise."
+      images:
+        - "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAA8klEQVR4nO3bsQ3AMAwEMTn775yskKtsA+QEj4NarXdOtObEXc/uATcRKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEOv6l9E5cpTLKsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEmv8+3kIExEwzUIUAAAAASUVORK5CYII="  # 4-color test image
+
+  - id: write-story
+    method: llm/chat
+    priority: 1
+    dependencies: ["analyze-scene"]
+    parameters:
+      model: llama3.2
+      messages:
+        - role: system
+          content: "You are a creative storyteller. Write short, engaging stories based on visual descriptions."
+        - role: user
+          content: "Based on this scene description: '${analyze-scene.response}', write a brief 2-3 sentence creative story or scenario that could be happening in this scene. Be imaginative!"
+
+# Usage:
+# 1. Ensure both LLaVa and Ollama text models are available:
+#    ollama pull llava:latest
+#    ollama pull llama3.2
+# 2. Start a provider that supports both llm/vision and llm/chat methods
+# 3. Submit: gleitzeit submit examples/mixed_vision_text_workflow.yaml
+#
+# Expected flow:
+# 1. LLaVa analyzes the image and describes the colorful scene
+# 2. Ollama uses that description to create a creative story
+# 3. Result: Vision analysis + Creative text generation combined!

@@ -16,6 +16,7 @@ from datetime import datetime
 # Add parent directory to path (since we're in tests/ subdirectory)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, os.path.join(parent_dir, 'src'))
 sys.path.insert(0, parent_dir)
 
 
@@ -43,7 +44,7 @@ def run_test(test_file: str, description: str) -> tuple[bool, str, float]:
         result = subprocess.run(
             [sys.executable, test_file],
             cwd=parent_dir,
-            env={**os.environ, 'PYTHONPATH': '.'},
+            env={**os.environ, 'PYTHONPATH': 'src:.'},
             capture_output=True,
             text=True,
             timeout=60

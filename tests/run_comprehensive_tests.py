@@ -14,6 +14,7 @@ from pathlib import Path
 # Add parent directory to path (since we're in tests/ subdirectory)
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, os.path.join(parent_dir, 'src'))
 sys.path.insert(0, parent_dir)
 
 
@@ -39,7 +40,7 @@ class TestRunner:
             result = subprocess.run(
                 [sys.executable, test_file],
                 cwd=current_dir,
-                env={**os.environ, 'PYTHONPATH': parent_dir},
+                env={**os.environ, 'PYTHONPATH': f'{os.path.join(parent_dir, "src")}:{parent_dir}'},
                 capture_output=True,
                 text=True,
                 timeout=timeout

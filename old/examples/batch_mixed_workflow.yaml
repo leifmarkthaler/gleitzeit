@@ -1,0 +1,26 @@
+name: "Batch Mixed Processing"
+description: "Process text files, then use Python to analyze results"
+tasks:
+  - name: "summarize_documents"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:latest"
+      files:
+        - "examples/documents/sample_story.txt"
+        - "examples/documents/meeting_notes.txt"
+        - "examples/documents/technical_spec.txt"
+      batch_mode: true
+      messages:
+        - role: "user"
+          content: "Extract the key topics from this document."
+    priority: "high"
+  
+  - name: "analyze_summaries"
+    protocol: "python/v1"
+    method: "python/execute"
+    params:
+      file: "analyze_batch_results.py"
+      timeout: 10
+    dependencies: ["summarize_documents"]
+    priority: "normal"
