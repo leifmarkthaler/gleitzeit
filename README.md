@@ -340,43 +340,6 @@ gleitzeit batch examples/documents --pattern "*.txt" --output results.json
 gleitzeit batch examples/documents --pattern "*.txt" --output results.md
 ```
 
-### Batch Processing in Python
-
-```python
-from core.batch_processor import BatchProcessor
-from core import ExecutionEngine
-
-# Create batch processor
-batch_processor = BatchProcessor()
-
-# Scan directory for files
-files = batch_processor.scan_directory("examples/documents", "*.txt")
-
-# Create batch workflow
-workflow = batch_processor.create_batch_workflow(
-    files=files,
-    method="llm/chat",
-    prompt="Provide a summary",
-    model="llama3.2:latest"
-)
-
-# Process batch with execution engine
-result = await batch_processor.process_batch(
-    execution_engine=engine,
-    directory="examples/documents",
-    pattern="*.txt",
-    method="llm/chat",
-    prompt="Summarize this document"
-)
-
-# Access results
-print(f"Processed {result.total_files} files")
-print(f"Success: {result.successful}, Failed: {result.failed}")
-
-# Export results
-result.save_to_file()  # Saves as JSON
-print(result.to_markdown())  # Get markdown report
-```
 
 ### Batch Workflow Examples
 
