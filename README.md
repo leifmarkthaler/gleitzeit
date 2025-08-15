@@ -326,7 +326,7 @@ Process multiple files in parallel with a single command or API call.
 ### Basic Batch Usage
 
 ```bash
-# Process all text files in a directory
+# Process text files with LLM
 gleitzeit batch examples/documents --pattern "*.txt" --prompt "Summarize this document"
 
 # Process specific file types with custom prompt
@@ -334,6 +334,9 @@ gleitzeit batch /path/to/docs --pattern "*.md" --prompt "Extract key points"
 
 # Process images with vision model
 gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe what you see"
+
+# Process files with Python scripts (workflow-based)
+gleitzeit run examples/batch_python_workflow.yaml
 
 # Save results to file
 gleitzeit batch examples/documents --pattern "*.txt" --output results.json
@@ -344,38 +347,47 @@ gleitzeit batch examples/documents --pattern "*.txt" --output results.md
 ### Batch Workflow Examples
 
 ```yaml
-# Batch text analysis
+# Dynamic batch text analysis with LLM
 name: "Batch Document Analysis"
-tasks:
-  - name: "analyze_documents"
-    protocol: "llm/v1"
-    method: "llm/chat"
-    params:
-      model: "llama3.2:latest"
-      directory: "examples/documents"
-      file_pattern: "*.txt"
-      batch_mode: true
-      messages:
-        - role: "user"
-          content: "Summarize this document in 2 sentences"
+type: "batch"
+batch:
+  directory: "examples/documents"
+  pattern: "*.txt"
+template:
+  method: "llm/chat"
+  model: "llama3.2:latest"
+  messages:
+    - role: "user"
+      content: "Summarize this document in 2 sentences"
 ```
 
 ```yaml
-# Batch image description
+# Process files with Python scripts
+name: "Python Batch Processing"
+type: "batch"
+protocol: "python/v1"
+batch:
+  directory: "examples/documents"
+  pattern: "*.txt"
+template:
+  method: "python/execute"
+  file: "examples/scripts/read_text_file.py"
+  timeout: 10
+```
+
+```yaml
+# Batch image description with vision model
 name: "Batch Image Processing"
-tasks:
-  - name: "describe_images"
-    protocol: "llm/v1"
-    method: "llm/vision"
-    params:
-      model: "llava:latest"
-      image_paths:
-        - "examples/images/chart1.png"
-        - "examples/images/chart2.png"
-      batch_mode: true
-      messages:
-        - role: "user"
-          content: "Describe the visual elements"
+type: "batch"
+batch:
+  directory: "examples/images"
+  pattern: "*.png"
+template:
+  method: "llm/vision"
+  model: "llava:latest"
+  messages:
+    - role: "user"
+      content: "Describe the visual elements"
 ```
 
 ### Batch Results

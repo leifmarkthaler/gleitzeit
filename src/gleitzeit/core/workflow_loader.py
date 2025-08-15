@@ -236,8 +236,14 @@ def create_batch_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
             if key != 'method':
                 params[key] = value
         
-        # Add file path
-        if is_image and template.get('method') == 'llm/vision':
+        # Add file path based on protocol/method
+        protocol = data.get('protocol', 'llm/v1')
+        if protocol == 'python/v1':
+            # For Python, file path goes in context
+            if 'context' not in params:
+                params['context'] = {}
+            params['context']['file_path'] = file_path
+        elif is_image and template.get('method') == 'llm/vision':
             params['image_path'] = file_path
         else:
             params['file_path'] = file_path

@@ -2,7 +2,7 @@
 
 ## Dynamic Batch Workflows (Recommended)
 
-### Text Files
+### Text Files with LLM
 ```yaml
 name: "Batch Text Processing"
 type: "batch"
@@ -15,6 +15,21 @@ template:
   messages:
     - role: "user"
       content: "Your prompt here"
+```
+
+### Text Files with Python Scripts
+```yaml
+name: "Python Batch Processing"
+type: "batch"
+protocol: "python/v1"
+batch:
+  directory: "path/to/documents"
+  pattern: "*.csv"  # or "*.txt", "*.json", etc.
+template:
+  method: "python/execute"
+  file: "scripts/process_file.py"  # Your Python script
+  timeout: 10
+  # File path is passed to script via context.file_path
 ```
 
 ### Image Files
@@ -115,7 +130,7 @@ template:
       content: "Describe this product image including color, style, and key features"
 ```
 
-### Code Analysis
+### Code Analysis with LLM
 ```yaml
 name: "Analyze Python Files"
 type: "batch"
@@ -128,6 +143,21 @@ template:
   messages:
     - role: "user"
       content: "Review this code for potential bugs and suggest improvements"
+```
+
+### Data Processing with Python
+```yaml
+name: "Process CSV Files"
+type: "batch"
+protocol: "python/v1"
+batch:
+  directory: "data"
+  pattern: "*.csv"
+template:
+  method: "python/execute"
+  file: "scripts/analyze_csv.py"  # Custom Python script for CSV analysis
+  timeout: 30
+  # Each CSV file path is passed to the script via context
 ```
 
 ## Tips

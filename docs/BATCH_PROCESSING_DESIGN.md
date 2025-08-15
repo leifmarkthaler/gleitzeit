@@ -266,7 +266,7 @@ Elapsed: 23s | ETA: 6s
 
 ## Example Workflows
 
-### Dynamic Batch Document Analysis (NEW)
+### Dynamic Batch Document Analysis with LLM
 ```yaml
 # Dynamic batch workflow with automatic file discovery
 name: "Dynamic Batch Text Analysis"
@@ -287,6 +287,25 @@ template:
       content: "You are a helpful document analyzer."
     - role: "user"
       content: "Provide a 2-sentence summary of this document"
+```
+
+### Dynamic Batch Processing with Python Scripts
+```yaml
+# Process files using Python scripts
+name: "Python Batch File Processing"
+description: "Process multiple files using Python script"
+type: "batch"
+protocol: "python/v1"  # Specify Python protocol
+
+batch:
+  directory: "examples/documents"
+  pattern: "*.txt"
+
+template:
+  method: "python/execute"
+  file: "examples/scripts/read_text_file.py"  # Python script to execute
+  timeout: 10
+  # File paths are automatically passed to the script via context
 ```
 
 ### Dynamic Batch Image Analysis (NEW)

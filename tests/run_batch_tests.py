@@ -101,6 +101,7 @@ def main():
     batch_tests = [
         ("tests/test_batch_simple.py", "Simple Batch Tests"),
         ("tests/test_batch_runner.py", "Comprehensive Batch Tests"),
+        ("tests/test_batch_python.py", "Python Batch Processing"),
     ]
     
     # Integration tests that need longer timeout

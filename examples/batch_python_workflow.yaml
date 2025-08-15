@@ -1,0 +1,14 @@
+name: "Python Batch File Processing"
+description: "Process multiple files using Python script"
+type: "batch"
+protocol: "python/v1"
+
+batch:
+  directory: "examples/documents"
+  pattern: "*.txt"
+
+template:
+  method: "python/execute"
+  file: "examples/scripts/read_text_file.py"
+  timeout: 10
+  # The file_path will be automatically added to context by the batch processor
