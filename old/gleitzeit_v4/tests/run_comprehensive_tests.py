@@ -155,7 +155,9 @@ class TestRunner:
         # Filter to only existing test files
         available_tests = []
         for test in test_suites:
-            if os.path.exists(test['file']):
+            test_path = os.path.join(current_dir, test['file'])
+            if os.path.exists(test_path):
+                test['file'] = test_path  # Update to full path
                 available_tests.append(test)
             else:
                 print(f"⚠️  Skipping {test['name']} - file not found: {test['file']}")

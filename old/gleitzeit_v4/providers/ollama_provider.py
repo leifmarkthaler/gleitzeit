@@ -97,7 +97,7 @@ class OllamaProvider(ProtocolProvider):
     
     def get_supported_methods(self) -> List[str]:
         """Get supported protocol methods"""
-        return ["llm/chat", "llm/complete"]
+        return ["llm/chat", "llm/complete", "llm/vision"]
     
     async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
         """Handle protocol request"""
@@ -108,6 +108,8 @@ class OllamaProvider(ProtocolProvider):
             return await self._chat(params)
         elif method == "llm/complete":
             return await self._generate_text(params)
+        elif method == "llm/vision":
+            return await self._handle_vision(params)
         else:
             raise ValueError(f"Unsupported method: {method}")
     
@@ -166,6 +168,35 @@ class OllamaProvider(ProtocolProvider):
         model = params.get('model', 'llama3')
         temperature = params.get('temperature', 0.7)
         max_tokens = params.get('max_tokens', 500)
+        file_path = params.get('file_path')
+        
+        # If file_path is provided, read the file and add to messages
+        if file_path:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    file_content = f.read()
+                logger.info(f"Read file {file_path} ({len(file_content)} chars)")
+                
+                # Add file content to the last user message or create a new one
+                if messages and messages[-1].get('role') == 'user':
+                    # Append to last user message
+                    original_content = messages[-1].get('content', '')
+                    messages[-1]['content'] = f"{original_content}\n\nFile content from {file_path}:\n{file_content}"
+                else:
+                    # Create new user message with file content
+                    messages.append({
+                        "role": "user",
+                        "content": f"File content from {file_path}:\n{file_content}"
+                    })
+            except Exception as e:
+                logger.error(f"Error reading file {file_path}: {e}")
+                return {
+                    "content": f"Error reading file: {e}",
+                    "role": "assistant",
+                    "model": model,
+                    "provider_id": self.provider_id,
+                    "error": str(e)
+                }
         
         # If no messages, use prompt
         if not messages and 'prompt' in params:
@@ -212,6 +243,36 @@ class OllamaProvider(ProtocolProvider):
                     'temperature': temperature,
                     'max_tokens': max_tokens
                 })
+    
+    async def _handle_vision(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle vision method - routes to appropriate implementation"""
+        messages = params.get('messages', [])
+        images = params.get('images', [])
+        image_path = params.get('image_path')
+        
+        # Extract images from messages if present
+        for msg in messages:
+            if 'images' in msg and msg['images']:
+                images.extend(msg['images'])
+        
+        # If we have images or image_path, use vision analysis
+        if images or image_path:
+            # Get the prompt from the last user message
+            prompt = 'Describe this image'
+            for msg in reversed(messages):
+                if msg.get('role') == 'user':
+                    prompt = msg.get('content', prompt)
+                    break
+            
+            return await self._analyze_vision({
+                'prompt': prompt,
+                'model': params.get('model', 'llava'),
+                'image_data': images[0] if images else None,  # Use first image if available
+                'image_path': image_path  # Pass through image_path
+            })
+        else:
+            # No images, fallback to regular chat
+            return await self._chat(params)
     
     async def _analyze_vision(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Analyze image using Ollama vision model"""

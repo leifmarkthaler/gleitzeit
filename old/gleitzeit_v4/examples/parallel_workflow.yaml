@@ -1,0 +1,45 @@
+name: "Parallel Execution Workflow"
+description: "Shows how independent tasks run in parallel for better performance"
+tasks:
+  - name: "analyze_sentiment"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Analyze the sentiment of this text: 'I love working with modern workflow systems! They make automation so much easier.' Reply with just: positive, negative, or neutral."
+
+  - name: "count_words"
+    protocol: "python/v1"
+    method: "python/execute"
+    priority: "normal"
+    params:
+      file: "examples/scripts/count_words.py"
+
+  - name: "generate_summary"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Write a one-sentence summary about workflow automation benefits."
+
+  # This task depends on all previous tasks
+  - name: "combine_results"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "low"
+    dependencies: ["analyze_sentiment", "count_words", "generate_summary"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: |
+            Combine these analysis results into a brief report:
+            Sentiment: ${analyze_sentiment.result.content}
+            Word Analysis: ${count_words.result}
+            Summary: ${generate_summary.result.content}

@@ -1,66 +1,34 @@
-# Mixed Provider Workflow Example
-# Demonstrates using both LLM and Python execution
-
 name: "Mixed Provider Workflow"
 description: "Combines LLM tasks with Python code execution"
-version: "1.0"
-
-# Workflow configuration
-timeout: 180
-wait_for_completion: true
-
-# Tasks using different providers
 tasks:
-  - id: "generate_numbers"
+  - name: "generate_numbers"
     protocol: "llm/v1"
     method: "llm/chat"
-    priority: 3
-    parameters:
-      model: "llama3.2"
+    priority: "high"
+    params:
+      model: "llama3.2:latest"
       messages:
         - role: "user"
           content: "Generate 5 random numbers between 1 and 100. Reply with just the numbers separated by commas, nothing else."
 
-  - id: "calculate_stats"
+  - name: "calculate_stats"
     protocol: "python/v1"
     method: "python/execute"
-    priority: 2
+    priority: "normal"
     dependencies: ["generate_numbers"]
-    parameters:
-      code: |
-        # Parse the numbers from the LLM response
-        numbers_str = "${generate_numbers.response}"
-        numbers = [int(x.strip()) for x in numbers_str.split(',')]
-        
-        # Calculate statistics
-        import statistics
-        mean = statistics.mean(numbers)
-        median = statistics.median(numbers)
-        stdev = statistics.stdev(numbers) if len(numbers) > 1 else 0
-        
-        result = {
-            "numbers": numbers,
-            "count": len(numbers),
-            "mean": round(mean, 2),
-            "median": median,
-            "standard_deviation": round(stdev, 2),
-            "min": min(numbers),
-            "max": max(numbers)
-        }
-        
-        print(f"Statistics for {numbers}:")
-        print(f"Mean: {result['mean']}")
-        print(f"Median: {result['median']}")
-        print(f"Std Dev: {result['standard_deviation']}")
+    params:
+      file: "examples/scripts/calculate_stats.py"
+      context:
+        numbers_str: "${generate_numbers.result.content}"
       timeout: 30
 
-  - id: "summarize_results"
+  - name: "summarize_results"
     protocol: "llm/v1"
     method: "llm/chat"
-    priority: 1
+    priority: "normal"
     dependencies: ["calculate_stats"]
-    parameters:
-      model: "llama3.2"
+    params:
+      model: "llama3.2:latest"
       messages:
         - role: "user"
           content: "Summarize these statistical results in a friendly, easy-to-understand way: ${calculate_stats.result}"

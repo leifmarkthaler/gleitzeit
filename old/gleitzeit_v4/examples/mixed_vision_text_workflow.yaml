@@ -1,0 +1,27 @@
+name: "Mixed Vision + Text Workflow"
+description: "Demonstrates combining LLaVa vision analysis with Ollama text processing"
+tasks:
+  - name: "analyze_scene"
+    protocol: "llm/v1"
+    method: "llm/vision"
+    priority: "normal"
+    params:
+      model: "llava:latest"
+      messages:
+        - role: "user"
+          content: "Look at this image and describe the scene. What objects, colors, or activities do you see? Be descriptive but concise."
+      images:
+        - "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAA8klEQVR4nO3bsQ3AMAwEMTn775yskKtsA+QEj4NarXdOtObEXc/uATcRKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEOv6l9E5cpTLKsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEmv8+3kIExEwzUIUAAAAASUVORK5CYII="  # 4-color test image
+
+  - name: "write_story"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    dependencies: ["analyze_scene"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "system"
+          content: "You are a creative storyteller. Write short, engaging stories based on visual descriptions."
+        - role: "user"
+          content: "Based on this scene description: '${analyze_scene.result.content}', write a brief 2-3 sentence creative story or scenario that could be happening in this scene. Be imaginative!"

@@ -12,6 +12,7 @@ A protocol-based orchestration system designed for coordinating LLM workflows wi
 - **Multiple Backends** - SQLite, Redis, or in-memory persistence
 - **Dependency Management** - Tasks can depend on outputs from previous tasks
 - **YAML Workflows** - Define complex workflows declaratively
+- **Batch Processing** - Process multiple files (text, images) in parallel with a single command
 
 ## Quick Start
 
@@ -35,6 +36,12 @@ gleitzeit system status
 
 # View help
 gleitzeit --help
+
+# Batch process multiple files
+gleitzeit batch examples/documents --pattern "*.txt" --prompt "Summarize this document"
+
+# Batch process images with vision model
+gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe this image"
 ```
 
 ## LLM Workflow Example
@@ -218,6 +225,116 @@ tasks:
     dependencies: ["data_processing"]
 ```
 
+## Batch Processing
+
+Gleitzeit v0.0.4 includes powerful batch processing capabilities for handling multiple files efficiently.
+
+### Basic Batch Usage
+
+```bash
+# Process all text files in a directory
+gleitzeit batch examples/documents --pattern "*.txt" --prompt "Summarize this document"
+
+# Process specific file types with custom prompt
+gleitzeit batch /path/to/docs --pattern "*.md" --prompt "Extract key points"
+
+# Process images with vision model
+gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe what you see"
+
+# Save results to file
+gleitzeit batch examples/documents --pattern "*.txt" --output results.json
+gleitzeit batch examples/documents --pattern "*.txt" --output results.md
+```
+
+### Batch Processing in Python
+
+```python
+from core.batch_processor import BatchProcessor
+from core import ExecutionEngine
+
+# Create batch processor
+batch_processor = BatchProcessor()
+
+# Scan directory for files
+files = batch_processor.scan_directory("examples/documents", "*.txt")
+
+# Create batch workflow
+workflow = batch_processor.create_batch_workflow(
+    files=files,
+    method="llm/chat",
+    prompt="Provide a summary",
+    model="llama3.2:latest"
+)
+
+# Process batch with execution engine
+result = await batch_processor.process_batch(
+    execution_engine=engine,
+    directory="examples/documents",
+    pattern="*.txt",
+    method="llm/chat",
+    prompt="Summarize this document"
+)
+
+# Access results
+print(f"Processed {result.total_files} files")
+print(f"Success: {result.successful}, Failed: {result.failed}")
+
+# Export results
+result.save_to_file()  # Saves as JSON
+print(result.to_markdown())  # Get markdown report
+```
+
+### Batch Workflow Examples
+
+```yaml
+# Batch text analysis
+name: "Batch Document Analysis"
+tasks:
+  - name: "analyze_documents"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:latest"
+      directory: "examples/documents"
+      file_pattern: "*.txt"
+      batch_mode: true
+      messages:
+        - role: "user"
+          content: "Summarize this document in 2 sentences"
+```
+
+```yaml
+# Batch image description
+name: "Batch Image Processing"
+tasks:
+  - name: "describe_images"
+    protocol: "llm/v1"
+    method: "llm/vision"
+    params:
+      model: "llava:latest"
+      image_paths:
+        - "examples/images/chart1.png"
+        - "examples/images/chart2.png"
+      batch_mode: true
+      messages:
+        - role: "user"
+          content: "Describe the visual elements"
+```
+
+### Batch Results
+
+Results are automatically saved and can be exported in multiple formats:
+
+- **JSON**: Complete structured data with all details
+- **Markdown**: Human-readable report with summaries
+- **CSV**: Tabular format for analysis (coming soon)
+
+Results include:
+- Batch ID and timestamp
+- Processing statistics (total, successful, failed)
+- Individual file results
+- Processing time metrics
+
 ## Development
 
 ### Running Tests
@@ -227,6 +344,10 @@ PYTHONPATH=. python run_core_tests.py
 
 # Workflow tests
 PYTHONPATH=. python tests/test_comprehensive_cli.py
+
+# Batch processing tests
+PYTHONPATH=. python test_batch_simple.py
+PYTHONPATH=. python tests/test_batch_comprehensive.py
 ```
 
 ### Adding MCP Providers

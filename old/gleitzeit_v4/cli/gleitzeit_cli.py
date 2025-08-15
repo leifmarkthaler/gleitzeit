@@ -31,6 +31,7 @@ from providers.ollama_provider import OllamaProvider
 from protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1
 from persistence.redis_backend import RedisBackend
 from persistence.sqlite_backend import SQLiteBackend
+from core.batch_processor import BatchProcessor, BatchResult
 
 # Set up logging
 logging.basicConfig(
@@ -74,11 +75,21 @@ class GleitzeitCLI:
                     },
                     'ollama': {
                         'enabled': True,
-                        'endpoint': 'http://localhost:11434'
+                        'endpoint': 'http://localhost:11434',
+                        'default_models': {
+                            'chat': 'llama3.2:latest',
+                            'vision': 'llava:latest',
+                            'embedding': 'nomic-embed-text:latest'
+                        }
                     }
                 },
                 'execution': {
                     'max_concurrent_tasks': 5
+                },
+                'batch': {
+                    'max_file_size': 1048576,  # 1MB
+                    'max_concurrent': 5,
+                    'results_directory': str(Path.home() / '.gleitzeit' / 'batch_results')
                 }
             }
     
@@ -152,6 +163,79 @@ class GleitzeitCLI:
             click.echo(f"❌ System setup failed: {e}")
             return False
     
+    async def run(self, workflow_file: str) -> bool:
+        """Run a workflow programmatically"""
+        try:
+            # Setup system
+            if not await self._setup_system():
+                return False
+            
+            # Load workflow using the unified loader
+            from core.workflow_loader import load_workflow_from_file, validate_workflow
+            
+            workflow = load_workflow_from_file(workflow_file)
+            click.echo(f"📄 Loading workflow: {workflow.name}")
+            
+            # Validate workflow
+            validation_errors = validate_workflow(workflow)
+            if validation_errors:
+                click.echo("❌ Workflow validation failed:")
+                for error in validation_errors:
+                    click.echo(f"  • {error}")
+                return False
+            
+            click.echo(f"🚀 Executing workflow: {workflow.name}")
+            click.echo(f"   Tasks: {len(workflow.tasks)}")
+            
+            # Submit and execute workflow using the same method as CLI
+            await self.execution_engine.submit_workflow(workflow)
+            
+            # Execute workflow
+            await self.execution_engine._execute_workflow(workflow)
+            
+            # Show results
+            click.echo("\n✅ Workflow completed!")
+            for task in workflow.tasks:
+                result = self.execution_engine.task_results.get(task.id)
+                self._display_task_result(task.name, result)
+            
+            persistence_backend = self.config.get('persistence', {}).get('backend', 'sqlite')
+            click.echo(f"\n💾 Results persisted to {persistence_backend} backend")
+            return True
+                
+        except Exception as e:
+            click.echo(f"❌ Workflow execution failed: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+        finally:
+            await self._shutdown_system()
+    
+    def _display_task_result(self, task_name: str, result):
+        """Display task result in a consistent format"""
+        if not result:
+            return
+            
+        status_icon = "✅" if result.status == "completed" else "❌"
+        click.echo(f"   {status_icon} {task_name}: {result.status}")
+        
+        if result.status == "failed" and result.error:
+            click.echo(f"      Error: {result.error}")
+        elif result.status == "completed" and result.result:
+            # Handle different result formats
+            if 'content' in result.result:  # LLM results
+                content = result.result['content']
+                # Truncate long responses for display
+                if len(content) > 200:
+                    content = content[:200] + "..."
+                click.echo(f"      Result: {content}")
+            elif 'output' in result.result and result.result['output']:  # Python results
+                output_lines = result.result['output'].strip().split('\n')
+                for line in output_lines[:3]:  # Show first 3 lines
+                    click.echo(f"      Output: {line}")
+                if len(output_lines) > 3:
+                    click.echo(f"      ... ({len(output_lines) - 3} more lines)")
+    
     async def _shutdown_system(self):
         """Clean shutdown of the system"""
         if self.persistence_backend:
@@ -200,67 +284,19 @@ async def _run_workflow(workflow_file: str, watch: bool, backend: Optional[str])
         if not await cli_instance._setup_system():
             return
         
-        # Load workflow file
-        with open(workflow_file, 'r') as f:
-            if workflow_file.endswith('.yaml') or workflow_file.endswith('.yml'):
-                workflow_data = yaml.safe_load(f)
-            else:
-                workflow_data = json.load(f)
+        # Use the unified workflow loader
+        from core.workflow_loader import load_workflow_from_file, validate_workflow
         
-        click.echo(f"📄 Loading workflow: {workflow_data['name']}")
+        workflow = load_workflow_from_file(workflow_file)
+        click.echo(f"📄 Loading workflow: {workflow.name}")
         
-        # Create tasks from workflow definition
-        tasks = []
-        name_to_id_map = {}  # Map task names to generated IDs
-        
-        # First pass: create tasks and build name-to-ID mapping
-        for task_def in workflow_data['tasks']:
-            # Handle retry config
-            retry_config = None
-            if 'retry' in task_def:
-                retry_def = task_def['retry']
-                retry_config = RetryConfig(
-                    max_attempts=retry_def.get('max_attempts', 3),
-                    base_delay=retry_def.get('base_delay', 1.0),
-                    max_delay=retry_def.get('max_delay', 60.0),
-                    backoff_strategy=BackoffStrategy(retry_def.get('strategy', 'exponential')),
-                    jitter=retry_def.get('jitter', True)
-                )
-            
-            # Create task (without dependencies resolved yet)
-            task = Task(
-                name=task_def['name'],
-                protocol=task_def['protocol'],
-                method=task_def['method'],
-                params=task_def['parameters'],
-                dependencies=[],  # Will resolve in second pass
-                retry_config=retry_config,
-                priority=Priority(task_def.get('priority', 'normal').lower())
-            )
-            tasks.append(task)
-            name_to_id_map[task.name] = task.id
-        
-        # Second pass: resolve dependencies (map task names to task IDs)
-        for i, task_def in enumerate(workflow_data['tasks']):
-            dependencies = task_def.get('dependencies', [])
-            resolved_dependencies = []
-            
-            for dep_name in dependencies:
-                if dep_name in name_to_id_map:
-                    resolved_dependencies.append(name_to_id_map[dep_name])
-                else:
-                    click.echo(f"⚠️  Warning: Task '{tasks[i].name}' depends on unknown task '{dep_name}'")
-                    # Keep original dependency name for error reporting
-                    resolved_dependencies.append(dep_name)
-            
-            tasks[i].dependencies = resolved_dependencies
-        
-        # Create workflow
-        workflow = Workflow(
-            name=workflow_data['name'],
-            description=workflow_data.get('description', ''),
-            tasks=tasks
-        )
+        # Validate workflow
+        validation_errors = validate_workflow(workflow)
+        if validation_errors:
+            click.echo("❌ Workflow validation failed:")
+            for error in validation_errors:
+                click.echo(f"  • {error}")
+            return
         
         click.echo(f"🚀 Executing workflow: {workflow.name}")
         click.echo(f"   Tasks: {len(workflow.tasks)}")
@@ -278,18 +314,7 @@ async def _run_workflow(workflow_file: str, watch: bool, backend: Optional[str])
         click.echo("\n✅ Workflow completed!")
         for task in workflow.tasks:
             result = cli_instance.execution_engine.task_results.get(task.id)
-            if result:
-                status_icon = "✅" if result.status == "completed" else "❌"
-                click.echo(f"   {status_icon} {task.name}: {result.status}")
-                if result.status == "failed" and result.error:
-                    click.echo(f"      Error: {result.error}")
-                elif result.status == "completed" and result.result:
-                    if 'output' in result.result and result.result['output']:
-                        output_lines = result.result['output'].strip().split('\n')
-                        for line in output_lines[:3]:  # Show first 3 lines
-                            click.echo(f"      Output: {line}")
-                        if len(output_lines) > 3:
-                            click.echo(f"      ... ({len(output_lines) - 3} more lines)")
+            cli_instance._display_task_result(task.name, result)
         
         persistence_backend = cli_instance.config.get('persistence', {}).get('backend', 'sqlite')
         click.echo(f"\n💾 Results persisted to {persistence_backend} backend")
@@ -361,6 +386,9 @@ def init(name: str, workflow_type: str):
 
 def _create_workflow_template(name: str, workflow_type: str):
     """Create workflow template implementation"""
+    # Create a script file for Python workflows
+    script_name = f"{name.replace(' ', '_').lower()}_script.py"
+    
     templates = {
         'python': {
             'name': name,
@@ -370,17 +398,8 @@ def _create_workflow_template(name: str, workflow_type: str):
                     'name': 'Calculate Data',
                     'protocol': 'python/v1',
                     'method': 'python/execute',
-                    'parameters': {
-                        'code': '''
-# Example Python task
-result = {
-    'message': 'Hello from Gleitzeit!',
-    'numbers': [1, 2, 3, 4, 5],
-    'sum': sum([1, 2, 3, 4, 5])
-}
-
-print(f"Calculated sum: {result['sum']}")
-''',
+                    'params': {
+                        'file': script_name,
                         'timeout': 10
                     },
                     'priority': 'normal'
@@ -395,7 +414,7 @@ print(f"Calculated sum: {result['sum']}")
                     'name': 'Generate Text',
                     'protocol': 'llm/v1', 
                     'method': 'llm/chat',
-                    'parameters': {
+                    'params': {
                         'model': 'llama3.2:latest',
                         'messages': [
                             {'role': 'user', 'content': 'Write a short poem about workflow automation'}
@@ -418,20 +437,8 @@ print(f"Calculated sum: {result['sum']}")
                     'name': 'Generate Prompt',
                     'protocol': 'python/v1',
                     'method': 'python/execute',
-                    'parameters': {
-                        'code': '''
-import random
-
-topics = ['automation', 'efficiency', 'innovation', 'technology']
-topic = random.choice(topics)
-
-result = {
-    'topic': topic,
-    'prompt': f'Write a haiku about {topic}'
-}
-
-print(f"Generated prompt: {result['prompt']}")
-''',
+                    'params': {
+                        'file': f"{name.replace(' ', '_').lower()}_prompt.py",
                         'timeout': 5
                     },
                     'priority': 'high'
@@ -440,7 +447,7 @@ print(f"Generated prompt: {result['prompt']}")
                     'name': 'Generate Haiku',
                     'protocol': 'llm/v1',
                     'method': 'llm/chat', 
-                    'parameters': {
+                    'params': {
                         'model': 'llama3.2:latest',
                         'messages': [
                             {'role': 'user', 'content': '${Generate Prompt.result.result.prompt}'}
@@ -459,6 +466,48 @@ print(f"Generated prompt: {result['prompt']}")
     
     with open(filename, 'w') as f:
         yaml.dump(template, f, default_flow_style=False, indent=2)
+    
+    # Create associated Python files
+    if workflow_type == 'python':
+        script_file = script_name
+        with open(script_file, 'w') as f:
+            f.write('''#!/usr/bin/env python3
+"""
+Example Python script for workflow
+"""
+
+# Example calculation
+result = {
+    'message': 'Hello from Gleitzeit!',
+    'numbers': [1, 2, 3, 4, 5],
+    'sum': sum([1, 2, 3, 4, 5])
+}
+
+print(f"Calculated sum: {result['sum']}")
+''')
+        click.echo(f"✅ Created Python script: {script_file}")
+    
+    elif workflow_type == 'mixed':
+        prompt_file = f"{name.replace(' ', '_').lower()}_prompt.py"
+        with open(prompt_file, 'w') as f:
+            f.write('''#!/usr/bin/env python3
+"""
+Generate a random prompt for haiku generation
+"""
+
+import random
+
+topics = ['automation', 'efficiency', 'innovation', 'technology']
+topic = random.choice(topics)
+
+result = {
+    'topic': topic,
+    'prompt': f'Write a haiku about {topic}'
+}
+
+print(f"Generated prompt: {result['prompt']}")
+''')
+        click.echo(f"✅ Created Python script: {prompt_file}")
     
     click.echo(f"✅ Created workflow template: {filename}")
     click.echo(f"   Type: {workflow_type}")
@@ -488,11 +537,97 @@ def config():
 
 
 @cli.command()
+@click.argument('directory', type=click.Path(exists=True))
+@click.option('--pattern', default='*', help='File pattern to match (e.g., "*.txt", "*.png")')
+@click.option('--prompt', default='Analyze this file', help='Prompt to use for each file')
+@click.option('--model', default='llama3.2:latest', help='Model to use')
+@click.option('--vision', is_flag=True, help='Use vision model for images')
+@click.option('--output', type=click.Path(), help='Save results to file')
+def batch(directory: str, pattern: str, prompt: str, model: str, vision: bool, output: Optional[str]):
+    """Process multiple files in batch"""
+    return asyncio.run(_batch_process(directory, pattern, prompt, model, vision, output))
+
+
+@cli.command()
 @click.argument('code')
 @click.option('--timeout', default=10, help='Execution timeout in seconds')
 def exec(code: str, timeout: int):
     """Execute Python code directly"""
     return asyncio.run(_exec_code(code, timeout))
+
+
+async def _batch_process(directory: str, pattern: str, prompt: str, model: str, vision: bool, output: Optional[str]):
+    """Process files in batch using BatchProcessor"""
+    try:
+        if not await cli_instance._setup_system():
+            return
+        
+        click.echo(f"📁 Scanning directory: {directory}")
+        click.echo(f"   Pattern: {pattern}")
+        
+        # Create batch processor
+        batch_processor = BatchProcessor()
+        
+        # Determine method based on vision flag
+        method = "llm/vision" if vision else "llm/chat"
+        
+        # Use configured default model if not specified
+        if model == 'llama3.2:latest':  # Default value from click option
+            ollama_config = cli_instance.config.get('providers', {}).get('ollama', {})
+            default_models = ollama_config.get('default_models', {})
+            if vision:
+                model = default_models.get('vision', 'llava:latest')
+            else:
+                model = default_models.get('chat', 'llama3.2:latest')
+        
+        # Process batch
+        click.echo("⏳ Processing files...")
+        result = await batch_processor.process_batch(
+            execution_engine=cli_instance.execution_engine,
+            directory=directory,
+            pattern=pattern,
+            method=method,
+            prompt=prompt,
+            model=model
+        )
+        
+        # Display results
+        click.echo(f"\n✅ Batch processing complete!")
+        click.echo(f"   Batch ID: {result.batch_id}")
+        click.echo(f"   Total files: {result.total_files}")
+        click.echo(f"   Successful: {result.successful} ({result.successful/result.total_files*100:.1f}%)")
+        click.echo(f"   Failed: {result.failed}")
+        click.echo(f"   Processing time: {result.processing_time:.2f}s")
+        
+        # Show individual results
+        if result.total_files <= 10:  # Show details for small batches
+            click.echo("\n📊 Results:")
+            for file_path, file_result in result.results.items():
+                file_name = Path(file_path).name
+                if file_result['status'] == 'success':
+                    content = file_result.get('content', '')
+                    # Truncate long content
+                    if len(content) > 200:
+                        content = content[:200] + "..."
+                    click.echo(f"   ✅ {file_name}: {content}")
+                else:
+                    click.echo(f"   ❌ {file_name}: {file_result.get('error', 'Unknown error')}")
+        
+        # Save output if requested
+        if output:
+            output_path = Path(output)
+            if output_path.suffix == '.md':
+                output_path.write_text(result.to_markdown())
+                click.echo(f"\n💾 Results saved to: {output_path} (Markdown)")
+            else:
+                output_path.write_text(result.to_json())
+                click.echo(f"\n💾 Results saved to: {output_path} (JSON)")
+        
+    except Exception as e:
+        click.echo(f"❌ Batch processing failed: {e}")
+        logger.error(f"Batch processing error: {e}", exc_info=True)
+    finally:
+        await cli_instance._shutdown_system()
 
 
 async def _exec_code(code: str, timeout: int):

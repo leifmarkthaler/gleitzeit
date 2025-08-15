@@ -13,7 +13,7 @@ long_description = readme_file.read_text() if readme_file.exists() else ""
 
 setup(
     name="gleitzeit-v4",
-    version="4.0.0",
+    version="0.0.4",
     description="Event-driven distributed workflow orchestration system",
     long_description=long_description,
     long_description_content_type="text/markdown",

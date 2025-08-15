@@ -7,7 +7,7 @@ the queue to protocol providers and managing workflow state progression.
 
 import asyncio
 import logging
-from typing import Dict, List, Optional, Set, Any, Callable, Union
+from typing import Dict, List, Optional, Set, Any, Callable, Union, TYPE_CHECKING
 from datetime import datetime, timedelta
 from enum import Enum
 from dataclasses import dataclass
@@ -32,7 +32,7 @@ from .events import (
 )
 from registry import ProtocolProviderRegistry
 from task_queue import TaskQueue, QueueManager, DependencyResolver
-from persistence.base import PersistenceBackend, InMemoryBackend
+from persistence.base import PersistenceBackend
 
 logger = logging.getLogger(__name__)
 
@@ -88,9 +88,13 @@ class ExecutionEngine:
         self.scheduler = EventScheduler(emit_callback=self.emit_event)
         
         # Initialize retry manager for centralized retry logic
+        if persistence is None:
+            from persistence.base import InMemoryBackend
+            persistence = InMemoryBackend()
+        
         self.retry_manager = RetryManager(
             queue_manager=queue_manager,
-            persistence=persistence or InMemoryBackend(),
+            persistence=persistence,
             scheduler=self.scheduler
         )
         

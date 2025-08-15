@@ -1,0 +1,15 @@
+name: "Batch Image Description"
+description: "Describe multiple images using vision model"
+tasks:
+  - name: "batch_describe_images"
+    protocol: "llm/v1"
+    method: "llm/vision"
+    params:
+      model: "llava:latest"
+      image_paths:
+        - "examples/images/test_colors.png"
+        - "examples/images/sales_chart.png"
+      batch_mode: true
+      messages:
+        - role: "user"
+          content: "Describe what you see in this image in detail. Include colors, shapes, and any text or numbers visible."

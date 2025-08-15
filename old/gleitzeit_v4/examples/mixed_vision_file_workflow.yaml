@@ -1,0 +1,41 @@
+name: "Mixed Vision File + Python Workflow"
+description: "Combines vision analysis of image files with Python processing"
+tasks:
+  - name: "analyze_scene"
+    protocol: "llm/v1"
+    method: "llm/vision"
+    priority: "high"
+    params:
+      model: "llava:latest"
+      image_path: "examples/images/test_colors.png"
+      messages:
+        - role: "user"
+          content: "Look at this image and describe the colors and patterns you see. Be descriptive but concise."
+
+  - name: "process_description"
+    protocol: "python/v1"
+    method: "python/execute"
+    priority: "normal"
+    dependencies: ["analyze_scene"]
+    params:
+      file: "examples/scripts/process_vision.py"
+      context:
+        description: "${analyze_scene.result.content}"
+      timeout: 10
+
+  - name: "write_story"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    dependencies: ["analyze_scene", "process_description"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "system"
+          content: "You are a creative storyteller. Write short, engaging stories based on visual descriptions."
+        - role: "user"
+          content: |
+            Based on this scene description: '${analyze_scene.result.content}'
+            And these extracted keywords: ${process_description.result}
+            
+            Write a brief 2-3 sentence creative story that could be happening in this colorful scene.

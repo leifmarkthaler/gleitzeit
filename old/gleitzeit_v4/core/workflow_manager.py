@@ -338,7 +338,7 @@ class WorkflowManager:
                 name=task_data.get('name', task_data.get('id', 'unnamed')),
                 protocol=task_data.get('protocol', ''),
                 method=task_data.get('method', ''),
-                params=task_data.get('parameters', {}),
+                params=task_data.get('params', {}),
                 dependencies=task_data.get('dependencies', []),
                 priority=Priority.NORMAL
             )

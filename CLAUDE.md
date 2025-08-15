@@ -1,342 +1,384 @@
-# Gleitzeit - Socket.IO Workflow Orchestration System
+# Gleitzeit - Task and Workflow Orchestration System (v0.0.4)
 
 ## Project Overview
 
-Gleitzeit is a modern, Socket.IO-based distributed workflow orchestration system designed for real-time task execution. It features a pure event-driven microservices architecture where all components communicate through a central Socket.IO hub.
+Gleitzeit is a protocol-based orchestration system designed for coordinating LLM workflows with multi-task, multi-method execution patterns. It features an event-driven architecture with support for multiple persistence backends and provider types.
 
-**Key Characteristics:**
-- Pure Socket.IO event-driven communication
-- Distributed, fault-tolerant microservices
-- Real-time workflow orchestration
-- YAML-based configuration and workflows
-- Pluggable provider system (LLM, Python, custom)
-- Beautiful CLI with rich terminal output
+**Version:** 0.0.4  
+**Location:** `/old/gleitzeit_v4/` (current active codebase)
+
+## Core Features
+
+- **LLM Workflow Coordination** - Orchestrate complex LLM interactions and chains
+- **Multi-Task Workflows** - Combine different task types (LLM, Python, MCP) in workflows  
+- **Protocol-Based** - JSON-RPC 2.0 foundation with native MCP support
+- **Multiple Backends** - SQLite, Redis, or in-memory persistence
+- **Dependency Management** - Tasks can depend on outputs from previous tasks
+- **YAML Workflows** - Define complex workflows declaratively
+- **Event-Driven Architecture** - Asynchronous task execution with retry support
 
 ## Architecture Overview
 
 ```
-Central Hub (Socket.IO Server) - Pure event router
-├── Queue Manager - Task queuing and workflow coordination
-├── Dependency Resolver - Parameter substitution and dependency resolution  
-├── Execution Engine - Task execution and provider coordination
-└── Providers (Universal) - Pluggable execution backends
-    ├── Ollama LLM Provider
-    ├── Python Local Provider
-    └── Custom Providers (extensible)
+Central Server (Event Coordinator)
+├── Task Queue - Priority-based task scheduling with persistence
+├── Dependency Resolver - Parameter substitution and circular detection
+├── Workflow Manager - Workflow lifecycle and state management
+├── Execution Engine - Task execution and retry management
+└── Provider System - Pluggable execution backends
+    ├── Ollama Provider - LLM interactions
+    ├── Python Function Provider - Local Python execution
+    ├── MCP Provider - Model Context Protocol support
+    └── Mock Providers - Testing and development
 ```
 
 ## Core Components
 
-### `/base/` - Foundation Framework
-- **`component.py`**: `SocketIOComponent` base class for all distributed components
-- **`config.py`**: Environment-based configuration (`ComponentConfig`)
-- **`events.py`**: Event routing, correlation tracking, component registry
-
-### `/hub/` - Central Coordination
-- **`central_hub.py`**: `CentralHub` - pure Socket.IO event router and component registry
-- No business logic - only routes events and maintains health monitoring
-
-### `/components/` - Business Logic Components
-- **`queue_manager.py`**: `QueueManagerClient` - task queuing, priority scheduling, workflow coordination
-- **`dependency_resolver.py`**: `DependencyResolverClient` - parameter substitution, dependency resolution, circular detection
-- **`execution_engine.py`**: `ExecutionEngineClient` - task execution coordination, provider routing
-
-### `/core/` - System Infrastructure
-- **`protocol.py`**: Protocol specification and validation system
-- **`provider_factory.py`**: Dynamic provider creation from YAML
-- **`executor_base.py`**: Base executor framework for providers
-- **`yaml_loader.py`**: YAML configuration loading and validation
-- **`jsonrpc.py`**: JSON-RPC 2.0 request/response handling
+### `/old/gleitzeit_v4/core/` - Core Infrastructure
+- **`models.py`**: Core data models (Task, Workflow, Provider)
+- **`events.py`**: Event system and correlation tracking
 - **`errors.py`**: Centralized error handling
+- **`jsonrpc.py`**: JSON-RPC 2.0 implementation
+- **`protocol.py`**: Protocol specification and validation
+- **`workflow_manager.py`**: Workflow lifecycle management
+- **`execution_engine.py`**: Task execution coordination
+- **`dependency_tracker.py`**: Dependency resolution and parameter substitution
+- **`scheduler.py`**: Task scheduling and priority management
+- **`retry_manager.py`**: Retry logic and backoff strategies
 
-### `/protocols/` & `/providers/` - Provider System
-- **Protocol definitions**: LLM and Python protocols with JSON Schema validation
-- **Universal provider**: Single provider supporting multiple protocols via executor pattern
-- **YAML configuration**: Dynamic provider/protocol loading from YAML files
+### `/old/gleitzeit_v4/server/` - Server Components
+- **`central_server.py`**: Main server implementation with event routing
 
-## Key Development Patterns
+### `/old/gleitzeit_v4/task_queue/` - Task Management
+- **`task_queue.py`**: Priority queue with persistence support
+- **`dependency_resolver.py`**: Dependency graph resolution
 
-### Socket.IO Component Pattern
-All components inherit from `SocketIOComponent`:
-```python
-class MyComponent(SocketIOComponent):
-    async def on_my_event(self, data):
-        # Handle event with automatic correlation tracking
-        result = await self.process(data)
-        await self.emit_correlated('response_event', result, data)
-```
+### `/old/gleitzeit_v4/persistence/` - Storage Backends
+- **`base.py`**: Abstract persistence interface
+- **`sqlite_backend.py`**: SQLite persistence implementation
+- **`redis_backend.py`**: Redis persistence implementation
 
-### Event-Driven Communication
-All inter-component communication uses Socket.IO events:
-```python
-# Event emission with correlation
-await self.emit_correlated('execute_task', task_data, original_event)
+### `/old/gleitzeit_v4/providers/` - Provider Implementations
+- **`base.py`**: Base provider interface
+- **`ollama_provider.py`**: Ollama LLM provider
+- **`python_function_provider.py`**: Python code execution
+- **`mcp_provider.py`**: MCP protocol provider
+- **`echo_provider.py`**: Simple echo provider for testing
+- **`mock_*_provider.py`**: Mock providers for testing
 
-# Event handling with correlation
-@component.event_handler('execute_task')
-async def handle_execution(self, data):
-    # Process and respond
-    await self.emit_correlated('task_completed', result, data)
-```
+### `/old/gleitzeit_v4/protocols/` - Protocol Definitions
+- **`llm_protocol.py`**: LLM protocol specification
+- **`python_protocol.py`**: Python execution protocol
+- **`mcp_protocol.py`**: MCP protocol specification
 
-### Provider Development
-Providers use the Universal Provider + Executor pattern:
-1. Create YAML configuration in `providers/yaml/`
-2. Implement executor in `core/executor_base.py` 
-3. Define protocol in `protocols/yaml/`
-4. Register with system via YAML loading
+### `/old/gleitzeit_v4/pooling/` - Connection Pooling
+- **`manager.py`**: Connection pool management
+- **`pool.py`**: Pool implementation
+- **`worker.py`**: Worker thread management
+- **`backpressure.py`**: Backpressure handling
+- **`circuit_breaker.py`**: Circuit breaker pattern
 
-### Workflow Definition
-Workflows are YAML files with parameter substitution:
-```yaml
-name: "Example Workflow"
-tasks:
-  - id: "llm_task"
-    method: "llm/chat"
-    parameters:
-      model: "llama3.2"
-      messages:
-        - role: "user"
-          content: "Hello world"
-  
-  - id: "python_task"
-    method: "python/execute"
-    dependencies: ["llm_task"]
-    parameters:
-      code: "print('LLM said:', '${llm_task.response}')"
-```
+### `/old/gleitzeit_v4/cli/` - Command Line Interface
+- **`gleitzeit_cli.py`**: Main CLI entry point
+- **`commands/`**: Individual command implementations
+  - **`submit.py`**: Workflow submission
+  - **`status.py`**: Status checking
+  - **`dev.py`**: Development commands
+- **`workflow.py`**: Workflow management CLI
+- **`config.py`**: CLI configuration
+
+### `/old/gleitzeit_v4/client/` - Client Libraries
+- **`socketio_engine.py`**: SocketIO client implementation
+- **`socketio_provider.py`**: SocketIO-based provider client
 
 ## CLI Commands & Usage
 
-### Quick Start Commands
-```bash
-# One-command workflow execution (recommended)
-gleitzeit run examples/simple_llm_workflow.yaml
-
-# Start everything and monitor
-gleitzeit start
-gleitzeit monitor
-```
-
-### Component Control
-```bash
-# Start individual components
-gleitzeit hub --port 8001
-gleitzeit components queue deps exec
-
-# Auto-start features (hub starts automatically)
-gleitzeit submit workflow.yaml
-gleitzeit monitor
-gleitzeit status
-```
-
-### Development Commands
-```bash
-# Check system status
-gleitzeit status
-
-# List available providers
-gleitzeit providers
-
-# Real-time monitoring
-gleitzeit monitor
-```
-
-## Testing Framework
-
-### Test Structure
-- **Unit tests**: Individual component testing with extensive mocking
-- **Integration tests**: Full component interaction testing  
-- **CLI tests**: Command-line interface testing
-- **Async support**: Full pytest-asyncio integration
-
-### Test Patterns
-```python
-# Async component testing
-@pytest.mark.asyncio
-async def test_component():
-    with patch('component.dependency') as mock_dep:
-        result = await component.method()
-        assert result == expected
-
-# CLI testing with mocking
-def test_cli_command():
-    with patch('gleitzeit_v5.cli.GleitzeitCLI') as mock_cli:
-        mock_cli.return_value.start = AsyncMock(return_value=True)
-        # Test CLI behavior
-```
-
-### Running Tests
-```bash
-# Install dev dependencies
-pip install -e .[dev]
-
-# Run all tests
-pytest
-
-# Run specific test categories
-pytest -m unit
-pytest -m integration
-pytest -m slow
-```
-
-## Configuration System
-
-### Environment Configuration
-Components use environment-based configuration:
-```python
-class ComponentConfig:
-    hub_url: str = os.getenv('GLEITZEIT_HUB_URL', 'http://localhost:8000')
-    redis_url: str = os.getenv('GLEITZEIT_REDIS_URL', 'redis://localhost:6379')
-    log_level: str = os.getenv('GLEITZEIT_LOG_LEVEL', 'INFO')
-```
-
-### YAML Configuration
-- **Protocols**: Define method specifications with JSON Schema validation
-- **Providers**: Configure provider endpoints, authentication, capabilities
-- **Workflows**: Define task sequences with dependencies and parameters
-
-## Package Structure & Setup
-
 ### Installation
 ```bash
-# Development installation
+# From the /old/gleitzeit_v4/ directory
 pip install -e .
 
-# With development tools
+# With development dependencies
 pip install -e .[dev]
 
 # With all optional dependencies
 pip install -e .[all]
 ```
 
-### Entry Points
-- `gleitzeit` - Main CLI command
-- `gz` - Short alias for quick access
+### Basic Commands
+```bash
+# Submit a workflow
+gleitzeit workflow submit examples/llm_workflow.yaml
 
-### Dependencies
-**Core requirements:**
-- `python-socketio>=5.8.0` - Real-time communication
-- `aiohttp>=3.8.0` - HTTP client/server
-- `pydantic>=2.0.0` - Data validation
-- `pyyaml>=6.0.0` - YAML configuration
-- `rich>=13.0.0` - Beautiful CLI output
+# Check workflow status
+gleitzeit workflow status WORKFLOW_ID
+
+# View system status
+gleitzeit system status
+
+# Start development server
+gleitzeit dev start
+
+# View help
+gleitzeit --help
+```
+
+### Workflow Management
+```bash
+# List all workflows
+gleitzeit workflow list
+
+# Get workflow details
+gleitzeit workflow get WORKFLOW_ID
+
+# Cancel a workflow
+gleitzeit workflow cancel WORKFLOW_ID
+```
+
+## Example Workflows
+
+### Simple LLM Workflow
+Location: `/old/gleitzeit_v4/examples/llm_workflow.yaml`
+```yaml
+name: "Simple LLM Workflow"
+tasks:
+  - name: "generate_text"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Write a haiku about coding"
+```
+
+### Dependent Workflow
+Location: `/old/gleitzeit_v4/examples/dependent_workflow.yaml`
+```yaml
+name: "Dependent Tasks"
+tasks:
+  - name: "first_task"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Generate a topic"
+  
+  - name: "second_task"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["first_task"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Write about: ${first_task.result}"
+```
+
+### Mixed Provider Workflow
+Location: `/old/gleitzeit_v4/examples/mixed_workflow.yaml`
+```yaml
+name: "Mixed Provider Workflow"
+tasks:
+  - name: "llm_task"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Generate Python code to calculate fibonacci"
+  
+  - name: "python_task"
+    protocol: "python/v1"
+    method: "python/execute"
+    dependencies: ["llm_task"]
+    parameters:
+      code: "${llm_task.result}"
+```
+
+## Testing
+
+### Test Structure
+Location: `/old/gleitzeit_v4/tests/`
+
+- **Core Tests**: `test_core_*.py` - Core component testing
+- **Integration Tests**: `test_*_integration.py` - Full system tests
+- **Provider Tests**: `test_*_provider.py` - Provider implementations
+- **Workflow Tests**: `test_*_workflow.py` - Workflow execution
+- **CLI Tests**: `test_cli*.py` - Command line interface
+
+### Running Tests
+```bash
+# Run all tests
+cd /old/gleitzeit_v4
+pytest
+
+# Run specific test categories
+pytest tests/test_core_components.py
+pytest tests/test_integration.py
+
+# Run with coverage
+pytest --cov=. tests/
+
+# Run test suite scripts
+python tests/run_all_tests.py
+python tests/run_core_tests.py
+```
+
+## Configuration
+
+### Environment Variables
+```bash
+# Server configuration
+GLEITZEIT_HOST=127.0.0.1
+GLEITZEIT_PORT=8765
+GLEITZEIT_LOG_LEVEL=INFO
+
+# Persistence backend
+GLEITZEIT_BACKEND=sqlite  # or 'redis', 'memory'
+GLEITZEIT_SQLITE_PATH=./gleitzeit.db
+GLEITZEIT_REDIS_URL=redis://localhost:6379
+
+# Provider configuration
+OLLAMA_HOST=http://localhost:11434
+```
+
+### Provider Configuration
+Providers are configured via the central server initialization:
+
+```python
+# In server startup
+providers = {
+    "ollama": OllamaProvider(base_url="http://localhost:11434"),
+    "python": PythonFunctionProvider(),
+    "mcp": MCPProvider(),
+}
+```
+
+## Development
+
+### Project Structure
+```
+/old/gleitzeit_v4/
+├── cli/                 # CLI implementation
+├── client/              # Client libraries
+├── core/                # Core infrastructure
+├── examples/            # Example workflows
+├── integrations/        # External integrations
+├── persistence/         # Storage backends
+├── pooling/            # Connection pooling
+├── protocols/          # Protocol definitions
+├── providers/          # Provider implementations
+├── server/             # Server implementation
+├── task_queue/         # Task queue management
+├── tests/              # Test suite
+├── docs/               # Documentation
+├── setup.py            # Package configuration
+└── README.md           # Project readme
+```
+
+### Adding New Providers
+1. Create provider class inheriting from `ProviderBase` in `/old/gleitzeit_v4/providers/`
+2. Implement required methods: `execute()`, `validate_parameters()`
+3. Register provider in server initialization
+4. Add protocol specification if needed
+
+### Adding New Protocols
+1. Define protocol in `/old/gleitzeit_v4/protocols/`
+2. Create JSON Schema for validation
+3. Implement provider supporting the protocol
+4. Add examples and tests
+
+### Key Development Files
+- **Main entry**: `/old/gleitzeit_v4/main.py`
+- **CLI entry**: `/old/gleitzeit_v4/cli/gleitzeit_cli.py`
+- **Server**: `/old/gleitzeit_v4/server/central_server.py`
+- **Setup**: `/old/gleitzeit_v4/setup.py`
+
+## Dependencies
+
+### Core Requirements
 - `click>=8.0.0` - CLI framework
+- `pydantic>=2.0.0` - Data validation
+- `pyyaml>=6.0.0` - YAML parsing
+- `aiohttp>=3.8.0` - Async HTTP
+- `aiosqlite>=0.19.0` - SQLite backend
+- `redis>=4.5.0` - Redis backend
+- `httpx>=0.24.0` - HTTP client
 
-**Development tools:**
-- `pytest>=7.0.0` + `pytest-asyncio>=0.21.0` - Testing
-- `black>=23.0.0` - Code formatting  
+### Development Requirements
+- `pytest>=7.0.0` - Testing framework
+- `pytest-asyncio>=0.21.0` - Async test support
+- `black>=23.0.0` - Code formatting
 - `mypy>=1.0.0` - Type checking
 - `ruff>=0.1.0` - Linting
 
-## Development Workflow
+## Documentation
 
-### Adding New Components
-1. Inherit from `SocketIOComponent`
-2. Implement event handlers with `@event_handler` decorator
-3. Use correlation tracking for all events
-4. Add component to CLI startup
+### Available Documentation
+- `/old/gleitzeit_v4/README.md` - Main project documentation
+- `/old/gleitzeit_v4/docs/GLEITZEIT_V4_ARCHITECTURE.md` - Architecture overview
+- `/old/gleitzeit_v4/docs/GLEITZEIT_V4_DESIGN.md` - Design principles
+- `/old/gleitzeit_v4/docs/PROTOCOLS_PROVIDERS_EXECUTION.md` - Protocol details
+- `/old/gleitzeit_v4/docs/EVENT_ROUTING.md` - Event system documentation
+- `/old/gleitzeit_v4/docs/TASK_QUEUE_PERSISTENCE.md` - Persistence details
+- `/old/gleitzeit_v4/docs/CLI_COMMANDS.md` - CLI reference
 
-### Adding New Providers
-1. Create YAML configuration in `providers/yaml/`
-2. Define protocol specification in `protocols/yaml/`
-3. Implement executor class inheriting from `ExecutorBase`
-4. Register with `ProviderFactory`
+## Key Features
 
-### Adding New Protocols
-1. Define protocol methods and parameters
-2. Create JSON Schema validation
-3. Add protocol YAML configuration
-4. Update provider implementations
+### Protocol-Based Design
+- Clean separation between protocol definition and implementation
+- Support for multiple protocols (LLM, Python, MCP)
+- JSON-RPC 2.0 foundation for standardized communication
 
-### Code Style & Standards
-- **Async/await**: All I/O operations are async
-- **Type hints**: Full type annotation with Pydantic models
-- **Error handling**: Centralized error codes and correlation tracking
-- **Logging**: Structured logging with correlation IDs
-- **Testing**: High test coverage with mocking for external dependencies
+### Persistence Options
+- **SQLite**: Default, good for single-node deployments
+- **Redis**: Distributed, good for multi-node deployments
+- **Memory**: Fast, for testing and development
 
-## Deployment Patterns
+### Task Dependencies
+- Automatic dependency resolution
+- Parameter substitution from previous task outputs
+- Circular dependency detection
 
-### Single Machine Development
+### Retry Management
+- Configurable retry policies per task
+- Exponential backoff support
+- Circuit breaker pattern for provider protection
+
+### Connection Pooling
+- Efficient resource management
+- Backpressure handling
+- Worker thread pooling
+
+## Common Workflows
+
+### Development Workflow
 ```bash
-# All components on localhost
-gleitzeit start
+# Start development server
+cd /old/gleitzeit_v4
+gleitzeit dev start
+
+# In another terminal, submit a workflow
+gleitzeit workflow submit examples/llm_workflow.yaml
+
+# Monitor status
+gleitzeit workflow status <workflow_id>
 ```
 
-### Distributed Deployment
+### Testing Workflow
 ```bash
-# Hub on central server
-GLEITZEIT_HUB_URL=http://hub-server:8000 gleitzeit hub
+# Run unit tests
+pytest tests/test_core_components.py
 
-# Components on worker nodes  
-GLEITZEIT_HUB_URL=http://hub-server:8000 gleitzeit components all
+# Run integration tests
+pytest tests/test_integration.py
+
+# Run all tests with coverage
+pytest --cov=. tests/
 ```
 
-### Container Deployment
-- Environment variable configuration
-- Health check endpoints available
-- Graceful shutdown handling
-- Horizontal scaling support
-
-## Key Files & Locations
-
-### Configuration Files
-- `setup.py` - Package configuration and dependencies
-- `requirements.txt` - Core Python dependencies
-- `pytest.ini` - Test configuration with async support
-
-### Example Workflows
-- `examples/simple_llm_workflow.yaml` - Basic LLM tasks
-- `examples/dependent_workflow.yaml` - Task dependencies
-- `examples/mixed_workflow.yaml` - Multi-provider workflows
-- `examples/parallel_workflow.yaml` - Parallel execution
-- `examples/vision_workflow.yaml` - Image processing
-
-### Protocol & Provider Configs
-- `protocols/yaml/llm.yaml` - LLM protocol specification
-- `protocols/yaml/python.yaml` - Python execution protocol
-- `providers/yaml/ollama.yaml` - Ollama LLM provider
-- `providers/yaml/python_local.yaml` - Local Python provider
-
-## Architecture Benefits
-
-1. **True Horizontal Scaling**: Add instances of any component type
-2. **Fault Tolerance**: Component failures don't affect system
-3. **Real-time Updates**: Socket.IO enables instant progress monitoring
-4. **Development Flexibility**: Independent component development
-5. **Protocol Flexibility**: Easy addition of new execution backends
-6. **Observability**: Full event correlation and tracing
-
-## Common Development Tasks
-
-### Running Quick Tests
-```bash
-# Test basic functionality
-python test_basic_hub.py
-python test_cli_quick.py
-
-# Test specific integrations  
-python test_ollama_integration.py
-python test_yaml_provider_integration.py
-```
-
-### Debugging Components
-```bash
-# Start with verbose logging
-GLEITZEIT_LOG_LEVEL=DEBUG gleitzeit start
-
-# Monitor events in real-time
-gleitzeit monitor
-
-# Check component health
-gleitzeit status
-```
-
-### Adding New Workflow Examples
-1. Create YAML file in `examples/`
-2. Test with `gleitzeit run examples/your_workflow.yaml`
-3. Add corresponding test in test files
-4. Update documentation
-
-This system represents a modern approach to distributed workflow orchestration, emphasizing real-time communication, fault tolerance, and horizontal scalability while maintaining simplicity in component design and deployment.
+This system provides a robust foundation for orchestrating complex workflows involving LLMs, Python execution, and other providers, with a focus on reliability, extensibility, and ease of use.

@@ -1,0 +1,36 @@
+name: "Vision Analysis Workflow"
+description: "Demonstrates vision analysis using LLaVa with Gleitzeit"
+tasks:
+  - name: "analyze_image"
+    protocol: "llm/v1"
+    method: "llm/vision"
+    priority: "normal"
+    params:
+      model: "llava:latest"
+      messages:
+        - role: "user"
+          content: "Analyze this image and describe what you see. Be specific about colors, objects, and any text."
+      images:
+        - "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAA8klEQVR4nO3bsQ3AMAwEMTn775yskKtsA+QEj4NarXdOtObEXc/uATcRKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEOv6l9E5cpTLKsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEmv8+3kIExEwzUIUAAAAASUVORK5CYII="  # Test image with 4 colored quadrants
+
+  - name: "extract_colors"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    dependencies: ["analyze_image"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Based on this image analysis: '${analyze_image.result.content}', extract just the main colors mentioned. List them separated by commas."
+
+  - name: "generate_summary"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    priority: "normal"
+    dependencies: ["analyze_image", "extract_colors"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Create a brief summary of this image analysis. The analysis was: '${analyze_image.result.content}' and the main colors are: '${extract_colors.result.content}'. Write a 1-sentence summary."

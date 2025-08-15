@@ -164,8 +164,8 @@ class PythonFunctionProvider(ProtocolProvider):
         """Handle JSON-RPC method calls"""
         
         if method == "python/execute":
-            # Execute Python code directly
-            return await self._execute_code(params)
+            # Execute Python file
+            return await self._execute_file(params)
         elif method == "execute":
             # Execute a registered function
             return await self._execute_function(params)
@@ -248,21 +248,62 @@ class PythonFunctionProvider(ProtocolProvider):
                 "timestamp": datetime.utcnow().isoformat()
             }
     
-    async def _execute_code(self, params: Dict[str, Any]) -> Any:
-        """Execute arbitrary Python code"""
+    async def _execute_file(self, params: Dict[str, Any]) -> Any:
+        """Execute Python file with context"""
         import sys
         from io import StringIO
         import json
         
-        code = params.get("code", "")
+        file_path = params.get("file", "")
         timeout = params.get("timeout", 30)
         context = params.get("context", {})
         
-        if not code:
+        if not file_path:
             return {
                 "result": None,
                 "output": "",
-                "error": "No code provided",
+                "error": "No file path provided",
+                "success": False,
+                "execution_time": 0
+            }
+        
+        # Resolve file path - can be absolute or relative
+        file_path_obj = Path(file_path)
+        
+        # If not absolute, treat as relative to current working directory
+        if not file_path_obj.is_absolute():
+            full_path = Path.cwd() / file_path_obj
+        else:
+            full_path = file_path_obj
+        
+        if not full_path.exists():
+            return {
+                "result": None,
+                "output": "",
+                "error": f"File not found: {full_path}",
+                "success": False,
+                "execution_time": 0
+            }
+        
+        # Security check - ensure it's a .py file
+        if full_path.suffix != '.py':
+            return {
+                "result": None,
+                "output": "",
+                "error": f"Security error: Only .py files are allowed, got {full_path.suffix}",
+                "success": False,
+                "execution_time": 0
+            }
+        
+        # Read the file
+        try:
+            with open(full_path, 'r') as f:
+                code = f.read()
+        except Exception as e:
+            return {
+                "result": None,
+                "output": "",
+                "error": f"Error reading file: {e}",
                 "success": False,
                 "execution_time": 0
             }
@@ -305,10 +346,12 @@ class PythonFunctionProvider(ProtocolProvider):
             "random": __import__("random"),
             "datetime": __import__("datetime"),
             "time": __import__("time"),
+            "statistics": __import__("statistics"),
         }
         
-        # Add context variables
+        # Add context as both individual variables and as 'context' dict
         exec_globals.update(context)
+        exec_globals['context'] = context
         
         exec_locals = {}
         
