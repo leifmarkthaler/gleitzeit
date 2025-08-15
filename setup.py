@@ -28,6 +28,7 @@ setup(
         "pydantic>=2.0.0",
         "pyyaml>=6.0.0",
         "aiohttp>=3.8.0",
+        "jsonschema>=4.0.0",
         
         # Persistence backends
         "aiosqlite>=0.19.0",
