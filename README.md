@@ -386,4 +386,4 @@ See the `examples/` directory for workflow templates:
 
 ## License
 
-See LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
