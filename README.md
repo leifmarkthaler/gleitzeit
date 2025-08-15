@@ -19,6 +19,12 @@ A protocol-based orchestration system designed for coordinating LLM workflows wi
 ### Installation
 
 ```bash
+# Install from GitHub
+pip install git+https://github.com/leifmarkthaler/gleitzeit.git
+
+# Or for development
+git clone https://github.com/leifmarkthaler/gleitzeit.git
+cd gleitzeit
 pip install -e .
 ```
 
