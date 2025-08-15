@@ -267,11 +267,12 @@ cli_instance = GleitzeitCLI()
 @click.group()
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
 @click.option('--debug', is_flag=True, help='Enable debug logging')
+@click.version_option(version='0.0.4', prog_name='Gleitzeit')
 def cli(verbose: bool, debug: bool):
     """
-    Gleitzeit V4 - Event-driven workflow orchestration system
+    Gleitzeit - Protocol-based workflow orchestration system
     
-    Execute workflows with Python code, LLM tasks, and more.
+    Execute workflows with Python code, LLM tasks, MCP tools, and more.
     """
     if debug:
         logging.getLogger().setLevel(logging.DEBUG)

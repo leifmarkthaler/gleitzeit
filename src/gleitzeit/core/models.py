@@ -69,7 +69,7 @@ class Task(BaseModel):
     
     # Protocol specification
     protocol: str = Field(..., pattern=r"^[a-z][a-z0-9_-]*(/[a-z0-9_-]+|/v\d+)?$", 
-                         description="Protocol identifier (e.g., 'web-search/v1', 'mcp/filesystem')")
+                         description="Protocol identifier (e.g., 'llm/v1', 'mcp/v1', 'python/v1')")
     method: str = Field(..., description="JSON-RPC method name")
     params: Dict[str, Any] = Field(default_factory=dict,
                                   description="JSON-RPC parameters")

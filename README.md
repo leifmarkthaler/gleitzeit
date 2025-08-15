@@ -19,13 +19,42 @@ A protocol-based orchestration system designed for coordinating LLM workflows wi
 
 ## Quick Start
 
+### Requirements
+
+- Python 3.8 or higher
+- Redis (optional, for Redis backend)
+- Ollama (optional, for LLM provider)
+
 ### Installation
 
+#### Using uv (Recommended)
+[uv](https://github.com/astral-sh/uv) is a fast Python package installer and resolver written in Rust.
+
+```bash
+# Install uv if you haven't already
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Clone and install in development mode
+git clone https://github.com/leifmarkthaler/gleitzeit.git
+cd gleitzeit
+uv pip install -e .
+
+# Or install directly from GitHub
+uv pip install git+https://github.com/leifmarkthaler/gleitzeit.git
+
+# Build the package
+uv build
+```
+
+#### Using pip
 ```bash
 # Clone and install in development mode
 git clone https://github.com/leifmarkthaler/gleitzeit.git
 cd gleitzeit
 pip install -e .
+
+# Or install directly from GitHub
+pip install git+https://github.com/leifmarkthaler/gleitzeit.git
 ```
 
 ### Basic Usage

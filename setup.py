@@ -1,59 +1,60 @@
 #!/usr/bin/env python3
 """
-Setup script for Gleitzeit - Modern workflow orchestration
+Setup script for Gleitzeit - Protocol-based workflow orchestration
 """
 
 from setuptools import setup, find_packages
-import os
 from pathlib import Path
 
-# Read README if it exists
+# Read README
 readme_path = Path(__file__).parent / "README.md"
 long_description = ""
 if readme_path.exists():
-    with open(readme_path) as f:
+    with open(readme_path, encoding="utf-8") as f:
         long_description = f.read()
 
 # Read requirements
 requirements_path = Path(__file__).parent / "requirements.txt"
 requirements = []
 if requirements_path.exists():
-    with open(requirements_path) as f:
+    with open(requirements_path, encoding="utf-8") as f:
         requirements = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-else:
-    # Default requirements for V5
-    requirements = [
-        "python-socketio>=5.8.0",
-        "aiohttp>=3.8.0",
-        "pydantic>=2.0.0",
-        "pyyaml>=6.0.0",
-        "httpx>=0.24.0",
-        "rich>=13.0.0",  # For beautiful CLI output
-        "click>=8.0.0",
-        "asyncio-mqtt>=0.13.0",
-    ]
 
 setup(
     name="gleitzeit",
-    version="0.0.1",
-    description="Gleitzeit - Modern workflow orchestration with Socket.IO",
+    version="0.0.4",
+    description="Protocol-based workflow orchestration system with LLM and MCP support",
     long_description=long_description,
     long_description_content_type="text/markdown",
     author="Leif Markthaler",
     author_email="leif.markthaler@gmail.com",
     url="https://github.com/leifmarkthaler/gleitzeit",
-    py_modules=['cli'],  # Include CLI module
+    license="MIT",
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     include_package_data=True,
     package_data={
-        'gleitzeit_v5': [
-            'protocols/yaml/*.yaml',
-            'providers/yaml/*.yaml',
+        'gleitzeit': [
+            'protocols/*.yaml',
             'examples/*.yaml',
-            'examples/*.json',
+            'examples/*.py',
+            'examples/*.txt',
+            'examples/*.png',
+            'examples/*.md',
         ],
     },
-    python_requires=">=3.9",
-    install_requires=requirements,
+    python_requires=">=3.8",
+    install_requires=requirements if requirements else [
+        "click>=8.0.0",
+        "pydantic>=2.0.0",
+        "pyyaml>=6.0.0",
+        "aiohttp>=3.8.0",
+        "jsonschema>=4.0.0",
+        "aiosqlite>=0.19.0",
+        "redis>=4.5.0",
+        "aiofiles>=23.0.0",
+        "httpx>=0.24.0",
+    ],
     extras_require={
         'dev': [
             'pytest>=7.0.0',
@@ -62,39 +63,43 @@ setup(
             'mypy>=1.0.0',
             'ruff>=0.1.0',
         ],
-        'all': [
-            'redis>=4.5.0',  # For advanced clustering
-            'pillow>=10.0.0',  # For image processing workflows
+        'llm': [
+            'ollama>=0.1.0',
+            'openai>=1.0.0',
+            'anthropic>=0.7.0',
         ],
     },
     entry_points={
         'console_scripts': [
-            'gleitzeit=cli:run',
-            'gz=cli:run',  # Short alias
+            'gleitzeit=gleitzeit.cli.gleitzeit_cli:main',
+            'gz=gleitzeit.cli.gleitzeit_cli:main',
         ],
     },
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
+        "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: 3.11",
         "Programming Language :: Python :: 3.12",
-        "Topic :: Software Development :: Libraries :: Application Frameworks",
+        "Topic :: Software Development :: Libraries :: Python Modules",
         "Topic :: System :: Distributed Computing",
-        "Topic :: System :: Systems Administration",
+        "Topic :: Software Development :: Libraries :: Application Frameworks",
     ],
     keywords=[
         "workflow", 
         "orchestration", 
+        "automation",
         "distributed", 
-        "socketio", 
         "async", 
-        "real-time",
-        "components",
-        "microservices"
+        "llm",
+        "mcp",
+        "model-context-protocol",
+        "task-automation"
     ],
     project_urls={
         "Homepage": "https://github.com/leifmarkthaler/gleitzeit",

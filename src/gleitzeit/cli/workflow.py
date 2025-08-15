@@ -310,27 +310,26 @@ def create_workflow_template(name: str, template_type: str) -> Dict[str, Any]:
             ],
             'tasks': [
                 {
-                    'id': 'search-query',
-                    'name': 'Web Search',
-                    'protocol': 'mcp/brave-search',
-                    'method': 'brave_web_search',
+                    'id': 'echo-test',
+                    'name': 'Echo Test',
+                    'protocol': 'mcp/v1',
+                    'method': 'mcp/tool.echo',
                     'params': {
-                        'query': 'Gleitzeit distributed task execution'
+                        'message': 'Advanced workflow with MCP'
                     },
                     'retry': {
                         'max_attempts': 2
                     }
                 },
                 {
-                    'id': 'save-results',
-                    'name': 'Save Search Results',
-                    'protocol': 'mcp/filesystem',
-                    'method': 'file.write',
+                    'id': 'process-result',
+                    'name': 'Process Echo Result',
+                    'protocol': 'python/v1',
+                    'method': 'python/execute',
                     'params': {
-                        'path': '/tmp/search_results.json',
-                        'content': '${search-query.result}'
+                        'code': 'result = f"Processed: ${echo-test.response}"'
                     },
-                    'dependencies': ['search-query']
+                    'dependencies': ['echo-test']
                 }
             ]
         }

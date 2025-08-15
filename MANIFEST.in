@@ -1,31 +1,32 @@
 include README.md
 include LICENSE
 include requirements.txt
+include pyproject.toml
 include setup.py
 
-# Include all Python files
-recursive-include cli *.py
-recursive-include client *.py
-recursive-include core *.py
-recursive-include integrations *.py
-recursive-include persistence *.py
-recursive-include pooling *.py
-recursive-include protocols *.py
-recursive-include providers *.py
-recursive-include server *.py
-recursive-include task_queue *.py
+# Include all documentation
+recursive-include docs *.md *.txt *.yaml
 
-# Include YAML protocol definitions
-recursive-include protocols *.yaml
-
-# Include example workflows (for reference)
+# Include example files
 recursive-include examples *.yaml *.py *.txt *.png *.md
 
-# Exclude test and cache files
+# Include test files (optional, often excluded from distributions)
 recursive-exclude tests *
-recursive-exclude * __pycache__
-recursive-exclude * *.py[co]
-recursive-exclude * .DS_Store
 
-# Include documentation
-recursive-include docs *.md
+# Include package data
+recursive-include src/gleitzeit *.yaml *.json *.txt
+
+# Include protocols
+recursive-include src/gleitzeit/protocols *.py *.yaml
+
+# Exclude compiled files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude .DS_Store
+global-exclude *.so
+global-exclude *.dylib
+global-exclude *.dll
+global-exclude .git*
+global-exclude .coverage
+global-exclude .pytest_cache

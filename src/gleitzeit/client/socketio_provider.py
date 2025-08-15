@@ -252,23 +252,6 @@ class SocketIOPythonFunctionProvider(SocketIOProviderClient):
         self.set_provider_instance(python_provider)
 
 
-class SocketIOWebSearchProvider(SocketIOProviderClient):
-    """Web search provider using Socket.IO connection"""
-    
-    def __init__(self, provider_id: str = "socketio-web-search-1", server_url: str = "http://localhost:8000"):
-        super().__init__(
-            provider_id=provider_id,
-            protocol_id="web-search/v1",
-            server_url=server_url,
-            name="Socket.IO Web Search Provider",
-            description="Web search provider connected via Socket.IO"
-        )
-        
-        # Import and set provider instance
-        from providers.mock_web_search_provider import MockWebSearchProvider
-        search_provider = MockWebSearchProvider(provider_id)
-        self.set_provider_instance(search_provider)
-
 
 class SocketIOTextProcessingProvider(SocketIOProviderClient):
     """Text processing provider using Socket.IO connection"""
@@ -313,10 +296,6 @@ async def run_echo_provider(server_url: str = "http://localhost:8000"):
     await provider.start()
 
 
-async def run_web_search_provider(server_url: str = "http://localhost:8000"):
-    """Run web search provider as Socket.IO client"""
-    provider = SocketIOWebSearchProvider(server_url=server_url)
-    await provider.start()
 
 
 async def run_text_processing_provider(server_url: str = "http://localhost:8000"):

@@ -251,25 +251,23 @@ def create_default_templates(templates_dir: Path) -> None:
         'version': '1.0',
         'description': 'MCP server integration example',
         'providers': [
-            'mcp://filesystem',
-            'mcp://brave-search'
+            'mcp://filesystem'
         ],
         'tasks': [
             {
-                'id': 'search-query',
-                'protocol': 'mcp/brave-search',
-                'method': 'brave_web_search',
-                'params': {'query': 'Gleitzeit task execution'}
+                'id': 'echo-test',
+                'protocol': 'mcp/v1',
+                'method': 'mcp/tool.echo',
+                'params': {'message': 'Advanced MCP workflow'}
             },
             {
-                'id': 'save-results',
-                'protocol': 'mcp/filesystem',
-                'method': 'file.write',
+                'id': 'process-result',
+                'protocol': 'python/v1',
+                'method': 'python/execute',
                 'params': {
-                    'path': '/tmp/search_results.json',
-                    'content': '${search-query.result}'
+                    'code': 'result = f"Processed: ${echo-test.response}"'
                 },
-                'depends_on': ['search-query']
+                'depends_on': ['echo-test']
             }
         ]
     }
