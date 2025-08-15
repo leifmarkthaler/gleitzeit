@@ -2,7 +2,7 @@
 
 ## Overview
 
-Gleitzeit V4 provides a comprehensive command-line interface for managing tasks, workflows, and system components. All commands support both single-task execution and complex workflow orchestration with automatic persistence.
+Gleitzeit V4 provides a command-line interface for managing tasks, workflows, and system components. All commands support both single-task execution and workflow orchestration with automatic persistence.
 
 ## Global Options
 

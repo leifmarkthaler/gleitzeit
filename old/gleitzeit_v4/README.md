@@ -227,7 +227,7 @@ tasks:
 
 ## Batch Processing
 
-Gleitzeit v0.0.4 includes powerful batch processing capabilities for handling multiple files efficiently.
+Process multiple files in parallel with a single command or API call.
 
 ### Basic Batch Usage
 
@@ -325,9 +325,8 @@ tasks:
 
 Results are automatically saved and can be exported in multiple formats:
 
-- **JSON**: Complete structured data with all details
+- **JSON**: Structured data with all details
 - **Markdown**: Human-readable report with summaries
-- **CSV**: Tabular format for analysis (coming soon)
 
 Results include:
 - Batch ID and timestamp
@@ -354,7 +353,7 @@ PYTHONPATH=. python tests/test_batch_runner.py
 
 ### Adding MCP Providers
 
-MCP providers integrate seamlessly due to the JSON-RPC 2.0 foundation:
+MCP providers integrate via the JSON-RPC 2.0 foundation:
 
 1. Register MCP server endpoint
 2. Define protocol specification
