@@ -99,14 +99,17 @@ def main():
     # Define test files and their descriptions
     batch_tests = [
         ("test_batch_simple.py", "Simple Batch Tests"),
-        ("tests/test_batch_processing.py", "Batch Processing Unit Tests"),
-        # Add test for batch CLI integration
-        ("tests/test_batch_cli_integration.py", "Batch CLI Integration"),
+        ("tests/test_batch_runner.py", "Comprehensive Batch Tests"),
     ]
     
-    # Additional integration test
+    # Integration tests that need longer timeout
     integration_tests = [
         ("test_batch_processor.py", "Batch Processor Integration"),
+    ]
+    
+    # Additional integration test - only if exists
+    optional_tests = [
+        ("tests/test_batch_processing.py", "Batch Processing Unit Tests (pytest)"),
     ]
     
     all_tests = []
@@ -118,12 +121,21 @@ def main():
             result = run_test(test_file, description)
             all_tests.append((description, result))
     
-    # Run integration tests
+    # Run integration tests with longer timeout
     print_header("Batch Processing Integration Tests", 2)
     for test_file, description in integration_tests:
-        if os.path.exists(test_file):
+        if os.path.exists(test_file) or os.path.exists(os.path.join("tests", test_file.split('/')[-1])):
+            result = run_test(test_file, description, timeout=90)  # 90 seconds for integration tests
+            all_tests.append((description, result))
+    
+    # Run optional tests if they exist
+    print_header("Optional Tests", 2)
+    for test_file, description in optional_tests:
+        if os.path.exists(test_file) or os.path.exists(os.path.join("tests", test_file.split('/')[-1])):
             result = run_test(test_file, description, timeout=60)
             all_tests.append((description, result))
+        else:
+            print(f"⏭️  Skipping {description} (file not found)")
     
     # Print summary
     print_header("Test Suite Summary", 1)

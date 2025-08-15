@@ -164,6 +164,45 @@ python cli.py backend stats
 # Displays task counts by status, workflow statistics, etc.
 ```
 
+### 📦 Batch Processing Commands (`batch`)
+
+Process multiple files in parallel with a single command.
+
+#### Process Files in Batch
+```bash
+gleitzeit batch <directory> [OPTIONS]
+
+# Required:
+<directory>          Directory containing files to process
+
+# Options:
+--pattern TEXT       File pattern to match (default: "*")
+--prompt TEXT        Prompt to use for each file (default: "Analyze this file")
+--model TEXT         Model to use (default: "llama3.2:latest")
+--vision            Use vision model for image files
+--output PATH        Save results to file (JSON or Markdown)
+```
+
+**Examples:**
+```bash
+# Process all text files in a directory
+gleitzeit batch examples/documents --pattern "*.txt" --prompt "Summarize this document"
+
+# Process images with vision model
+gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe what you see"
+
+# Save results to markdown file
+gleitzeit batch /path/to/docs --pattern "*.md" --output results.md
+
+# Save results as JSON
+gleitzeit batch /path/to/docs --pattern "*.txt" --output results.json
+```
+
+**Output Formats:**
+- **JSON**: Complete structured data with all file results
+- **Markdown**: Human-readable report with summaries and statistics
+- **Console**: Real-time progress and summary (default)
+
 ### 🔧 System Commands (`system`)
 
 Manage the execution engine and system configuration.

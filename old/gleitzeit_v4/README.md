@@ -345,9 +345,11 @@ PYTHONPATH=. python run_core_tests.py
 # Workflow tests
 PYTHONPATH=. python tests/test_comprehensive_cli.py
 
-# Batch processing tests
+# Batch processing tests  
+PYTHONPATH=. python tests/run_batch_tests.py
+# Or run individual batch tests
 PYTHONPATH=. python test_batch_simple.py
-PYTHONPATH=. python tests/test_batch_comprehensive.py
+PYTHONPATH=. python tests/test_batch_runner.py
 ```
 
 ### Adding MCP Providers

@@ -16,6 +16,7 @@ Gleitzeit is a protocol-based orchestration system designed for coordinating LLM
 - **Dependency Management** - Tasks can depend on outputs from previous tasks
 - **YAML Workflows** - Define complex workflows declaratively
 - **Event-Driven Architecture** - Asynchronous task execution with retry support
+- **Batch Processing** - Process multiple files (text, images) in parallel
 
 ## Architecture Overview
 
@@ -45,6 +46,7 @@ Central Server (Event Coordinator)
 - **`dependency_tracker.py`**: Dependency resolution and parameter substitution
 - **`scheduler.py`**: Task scheduling and priority management
 - **`retry_manager.py`**: Retry logic and backoff strategies
+- **`batch_processor.py`**: Batch processing for multiple files
 
 ### `/old/gleitzeit_v4/server/` - Server Components
 - **`central_server.py`**: Main server implementation with event routing
@@ -121,6 +123,12 @@ gleitzeit dev start
 
 # View help
 gleitzeit --help
+
+# Batch process multiple files
+gleitzeit batch examples/documents --pattern "*.txt" --prompt "Summarize"
+
+# Batch process images with vision model
+gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe"
 ```
 
 ### Workflow Management
