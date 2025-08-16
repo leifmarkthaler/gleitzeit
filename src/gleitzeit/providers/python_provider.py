@@ -7,8 +7,16 @@ import logging
 from typing import Dict, Any, Optional, List
 import asyncio
 import json
-import docker
-from docker.models.containers import Container
+
+# Optional Docker import
+try:
+    import docker
+    from docker.models.containers import Container
+    DOCKER_AVAILABLE = True
+except ImportError:
+    docker = None
+    Container = None
+    DOCKER_AVAILABLE = False
 
 from gleitzeit.providers.hub_provider import HubProvider
 from gleitzeit.hub.base import ResourceInstance, ResourceStatus
@@ -18,7 +26,7 @@ from gleitzeit.core.errors import InvalidParameterError, TaskExecutionError
 logger = logging.getLogger(__name__)
 
 
-class PythonProviderStreamlined(HubProvider[DockerConfig]):
+class PythonProvider(HubProvider[DockerConfig]):
     """
     Streamlined Python provider with integrated container management
     
@@ -46,6 +54,11 @@ class PythonProviderStreamlined(HubProvider[DockerConfig]):
             enable_local: Enable local Python execution
             enable_sharing: Allow provider to be shared
         """
+        # If Docker is not available, force local execution only
+        if not DOCKER_AVAILABLE:
+            logger.warning("Docker not available, enabling local execution only")
+            enable_local = True
+            max_containers = 0
         super().__init__(
             provider_id=provider_id,
             protocol_id="python/v1",
@@ -83,29 +96,34 @@ class PythonProviderStreamlined(HubProvider[DockerConfig]):
     
     async def initialize(self):
         """Initialize provider and Docker client"""
-        try:
-            # Initialize Docker client
-            self.docker_client = docker.from_env()
-            self.docker_client.ping()
-            logger.info("Docker client initialized")
-            
-            # Pre-create a sandboxed container for quick startup
-            if len(self.instances) == 0:
-                config = DockerConfig(
-                    image=self.default_image,
-                    memory_limit="512m",
-                    cpu_limit=1.0,
-                    network_mode="none",
-                    labels={"mode": "sandboxed", "provider": self.provider_id}
-                )
-                instance = await self.create_resource(config)
-                await self.register_instance(instance)
-                logger.info(f"Pre-created container: {instance.id}")
-            
-        except Exception as e:
-            logger.warning(f"Docker initialization failed: {e}")
-            if not self.enable_local:
-                raise
+        if DOCKER_AVAILABLE and self.max_instances > 0:
+            try:
+                # Initialize Docker client
+                self.docker_client = docker.from_env()
+                self.docker_client.ping()
+                logger.info("Docker client initialized")
+                
+                # Pre-create a sandboxed container for quick startup
+                if len(self.instances) == 0:
+                    config = DockerConfig(
+                        image=self.default_image,
+                        memory_limit="512m",
+                        cpu_limit=1.0,
+                        network_mode="none",
+                        labels={"mode": "sandboxed", "provider": self.provider_id}
+                    )
+                    instance = await self.create_resource(config)
+                    await self.register_instance(instance)
+                    logger.info(f"Pre-created container: {instance.id}")
+                
+            except Exception as e:
+                logger.warning(f"Docker initialization failed: {e}")
+                if not self.enable_local:
+                    raise
+        elif not DOCKER_AVAILABLE:
+            logger.info("Docker not available, using local execution only")
+        else:
+            logger.info("Docker containers disabled, using local execution only")
         
         # Call parent initialization
         await super().initialize()
@@ -122,6 +140,9 @@ class PythonProviderStreamlined(HubProvider[DockerConfig]):
     
     async def create_resource(self, config: DockerConfig) -> ResourceInstance[DockerConfig]:
         """Create a Docker container resource"""
+        if not DOCKER_AVAILABLE:
+            raise Exception("Docker is not available - install with: pip install 'gleitzeit[docker]'")
+        
         if not self.docker_client:
             raise Exception("Docker client not initialized")
         
@@ -195,6 +216,19 @@ class PythonProviderStreamlined(HubProvider[DockerConfig]):
         """No auto-discovery for Docker containers - they're created on demand"""
         return []
     
+    async def execute(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Override execute to handle local-only execution when Docker unavailable"""
+        # If Docker is not available, bypass resource management and execute locally
+        if not DOCKER_AVAILABLE and method == "python/execute":
+            return await self._execute_python(None, params)
+        elif method == "python/validate":
+            return await self._validate_python(params)
+        elif method == "python/info":
+            return self._get_info()
+        
+        # Otherwise use normal hub execution
+        return await super().execute(method, params)
+    
     async def execute_on_resource(
         self,
         instance: ResourceInstance[DockerConfig],
@@ -241,8 +275,8 @@ class PythonProviderStreamlined(HubProvider[DockerConfig]):
                     reason=f'Failed to read file: {e}'
                 )
         
-        # Execute locally if requested and enabled
-        if mode == 'local' and self.enable_local:
+        # Execute locally if requested and enabled, or if Docker is not available
+        if (mode == 'local' and self.enable_local) or not DOCKER_AVAILABLE:
             return await self._execute_local(code, args)
         
         # Otherwise execute in container
@@ -444,24 +478,6 @@ except Exception:
             labels={'mode': mode}
         )
     
-    async def handle_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle JSON-RPC style requests"""
-        method = request.get('method')
-        params = request.get('params', {})
-        
-        try:
-            result = await self.execute(method, params)
-            return {
-                'jsonrpc': '2.0',
-                'result': result,
-                'id': request.get('id')
-            }
-        except Exception as e:
-            return {
-                'jsonrpc': '2.0',
-                'error': {
-                    'code': getattr(e, 'code', -32603),
-                    'message': str(e)
-                },
-                'id': request.get('id')
-            }
+    def get_supported_methods(self) -> List[str]:
+        """Get list of supported methods"""
+        return ["python/execute", "python/validate", "python/info"]

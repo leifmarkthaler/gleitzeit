@@ -150,7 +150,7 @@ class GleitzeitCLI:
                 try:
                     registry.register_protocol(LLM_PROTOCOL_V1)
                     ollama_endpoint = ollama_config.get('endpoint', 'http://localhost:11434')
-                    ollama_provider = OllamaProvider("cli-ollama-provider", ollama_endpoint)
+                    ollama_provider = OllamaProvider("cli-ollama-provider", auto_discover=False)
                     await ollama_provider.initialize()
                     registry.register_provider("cli-ollama-provider", "llm/v1", ollama_provider)
                     click.echo("✓ Ollama provider registered")

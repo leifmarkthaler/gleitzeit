@@ -24,7 +24,7 @@ from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.persistence.sqlite_backend import SQLiteBackend
 from gleitzeit.persistence.redis_backend import RedisBackend
 from gleitzeit.providers.ollama_provider import OllamaProvider
-from gleitzeit.providers.python_function_provider import CustomFunctionProvider
+from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 
@@ -116,13 +116,13 @@ class GleitzeitClient:
         self.registry.register_protocol(MCP_PROTOCOL_V1)
         
         # Register providers
-        # Python provider
-        python_provider = CustomFunctionProvider("python-1")
+        # Python provider (hub-based with optional Docker)
+        python_provider = PythonProvider("python-1", enable_local=True)
         await python_provider.initialize()
         self.registry.register_provider("python-1", "python/v1", python_provider)
         
-        # Ollama provider
-        ollama_provider = OllamaProvider("ollama-1", self.ollama_url)
+        # Ollama provider (hub-based with auto-discovery)
+        ollama_provider = OllamaProvider("ollama-1", auto_discover=True)
         await ollama_provider.initialize()
         self.registry.register_provider("ollama-1", "llm/v1", ollama_provider)
         

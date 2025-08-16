@@ -92,7 +92,7 @@ class ExecutionEngine:
         
         # Initialize retry manager for centralized retry logic
         if persistence is None:
-            from persistence.base import InMemoryBackend
+            from gleitzeit.persistence.base import InMemoryBackend
             persistence = InMemoryBackend()
         
         self.retry_manager = RetryManager(

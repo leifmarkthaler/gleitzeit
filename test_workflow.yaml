@@ -1,0 +1,45 @@
+name: test_workflow
+description: End-to-end test workflow to verify provider architecture
+version: "1.0"
+
+tasks:
+  - id: greeting_task
+    name: Generate Greeting
+    type: llm
+    provider: ollama
+    params:
+      model: llama3.2
+      prompt: "Generate a friendly greeting in exactly 10 words."
+      temperature: 0.7
+    
+  - id: math_calculation
+    name: Math Calculation
+    type: python
+    provider: python
+    params:
+      code: |
+        import math
+        # Calculate the area of a circle with radius 5
+        radius = 5
+        area = math.pi * radius ** 2
+        result = f"Area of circle with radius {radius} is {area:.2f}"
+        print(result)
+      execution_mode: local
+    depends_on:
+      - greeting_task
+    
+  - id: simple_tool
+    name: Simple MCP Tool
+    type: mcp
+    provider: mcp
+    params:
+      tool: add
+      a: 25
+      b: 17
+    depends_on:
+      - math_calculation
+
+outputs:
+  greeting: greeting_task.response
+  calculation: math_calculation.result
+  sum: simple_tool.result

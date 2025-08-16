@@ -42,6 +42,11 @@ uv pip install -e .
 # Or install directly from GitHub
 uv pip install git+https://github.com/leifmarkthaler/gleitzeit.git
 
+# Install with optional dependencies
+uv pip install "gleitzeit[docker]"  # For Python container execution
+uv pip install "gleitzeit[llm]"     # For additional LLM providers
+uv pip install "gleitzeit[all]"     # All optional dependencies
+
 # Build the package
 uv build
 ```
@@ -55,6 +60,11 @@ pip install -e .
 
 # Or install directly from GitHub
 pip install git+https://github.com/leifmarkthaler/gleitzeit.git
+
+# Install with optional dependencies
+pip install "gleitzeit[docker]"  # For Python container execution
+pip install "gleitzeit[llm]"     # For additional LLM providers
+pip install "gleitzeit[all]"     # All optional dependencies
 ```
 
 ### Basic Usage

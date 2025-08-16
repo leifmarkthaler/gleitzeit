@@ -1,368 +1,418 @@
 """
-Ollama Provider for Gleitzeit V4
-
-Protocol-based Ollama LLM provider that implements the "llm/v1" protocol.
+Streamlined Ollama Provider with Integrated Hub
+Much simpler implementation with built-in resource management
 """
 
-import asyncio
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional, List
 import aiohttp
-import json
+import asyncio
+from datetime import datetime
 
-from gleitzeit.providers.base import ProtocolProvider
-from gleitzeit.core.errors import (
-    ProviderError, MethodNotSupportedError, InvalidParameterError,
-    ErrorCode
-)
+from gleitzeit.providers.hub_provider import HubProvider
+from gleitzeit.hub.base import ResourceInstance, ResourceStatus
+from gleitzeit.hub.ollama_hub import OllamaConfig
+from gleitzeit.core.errors import InvalidParameterError, TaskExecutionError
 
 logger = logging.getLogger(__name__)
 
 
-class OllamaProvider(ProtocolProvider):
+class OllamaProvider(HubProvider[OllamaConfig]):
     """
-    Ollama provider for V4 protocol-based architecture
+    Streamlined Ollama provider with integrated resource management
     
-    Implements the "llm/v1" protocol with methods:
-    - generate: Text generation
-    - chat: Chat completions 
-    - vision: Image analysis
-    - embed: Text embeddings
+    This version is much simpler:
+    - Inherits all resource management from HubProvider
+    - Only implements Ollama-specific logic
+    - Automatic health monitoring, metrics, load balancing
     """
     
     def __init__(
         self,
-        provider_id: str,
-        ollama_url: str = "http://localhost:11434",
-        timeout: int = 60
+        provider_id: str = "ollama-streamlined",
+        default_model: str = "llama3.2",
+        auto_discover: bool = True,
+        max_instances: int = 10,
+        enable_sharing: bool = False
     ):
+        """
+        Initialize streamlined Ollama provider
+        
+        Args:
+            provider_id: Unique provider identifier  
+            default_model: Default model to use
+            auto_discover: Auto-discover local Ollama instances
+            max_instances: Maximum Ollama instances to manage
+            enable_sharing: Allow provider to be shared
+        """
         super().__init__(
             provider_id=provider_id,
             protocol_id="llm/v1",
-            name="Ollama LLM Provider",
-            description="Ollama local LLM provider"
+            name="Streamlined Ollama Provider",
+            description="Ollama provider with integrated hub functionality",
+            resource_config_class=OllamaConfig,
+            enable_sharing=enable_sharing,
+            max_instances=max_instances,
+            enable_auto_discovery=auto_discover
         )
-        self.ollama_url = ollama_url
-        self.timeout = timeout
-        self.available_models = []
-        self.session = None
         
-        logger.info(f"Initialized OllamaProvider: {provider_id}")
+        self.default_model = default_model
+        self.session: Optional[aiohttp.ClientSession] = None
     
     async def initialize(self):
-        """Initialize the Ollama provider"""
-        try:
-            # Create HTTP session
-            self.session = aiohttp.ClientSession()
-            
-            # Check Ollama health
-            await self._check_ollama_health()
-            
-            # Load available models
-            await self._load_models()
-            
-            logger.info(f"✅ Ollama provider initialized with {len(self.available_models)} models")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize Ollama provider: {e}")
-            raise
+        """Initialize provider and create HTTP session"""
+        # Create HTTP session
+        self.session = aiohttp.ClientSession()
+        
+        # Call parent initialization (handles auto-discovery, etc.)
+        await super().initialize()
     
     async def shutdown(self):
-        """Shutdown the Ollama provider"""
+        """Cleanup resources"""
+        # Close HTTP session
         if self.session:
             await self.session.close()
             self.session = None
         
-        logger.info("Ollama provider shutdown")
+        # Call parent shutdown
+        await super().shutdown()
     
-    async def health_check(self) -> Dict[str, Any]:
-        """Check Ollama provider health"""
-        try:
-            healthy = await self._check_ollama_health()
-            
-            return {
-                "status": "healthy" if healthy else "unhealthy",
-                "details": {
-                    "ollama_url": self.ollama_url,
-                    "models_available": len(self.available_models),
-                    "available_models": self.available_models[:5] if self.available_models else []
-                }
-            }
-            
-        except Exception as e:
-            return {
-                "status": "unhealthy",
-                "details": {"error": str(e)}
-            }
-    
-    def get_supported_methods(self) -> List[str]:
-        """Get supported protocol methods"""
-        return ["llm/generate", "llm/chat", "llm/vision", "llm/embed"]
-    
-    async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
-        """Handle protocol request"""
-        logger.info(f"Handling Ollama request: {method}")
-        logger.debug(f"Parameters: {params}")
+    async def create_resource(self, config: OllamaConfig) -> ResourceInstance[OllamaConfig]:
+        """Create an Ollama resource instance"""
+        # Ollama instances are external, we just create a reference
+        from gleitzeit.hub.base import ResourceType
+        instance = ResourceInstance(
+            id=f"ollama-{config.host}-{config.port}",
+            name=f"Ollama@{config.port}",
+            type=ResourceType.OLLAMA,
+            endpoint=f"http://{config.host}:{config.port}",
+            status=ResourceStatus.UNKNOWN,
+            config=config,
+            capabilities=set(config.models) if config.models else set(),
+            tags=set(config.tags) if hasattr(config, 'tags') and config.tags else set()
+        )
         
-        # Handle both with and without protocol prefix
-        if method.startswith("llm/"):
-            method = method[4:]  # Remove "llm/" prefix
-        
-        if method == "generate":
-            return await self._generate_text(params)
-        elif method == "chat":
-            return await self._chat(params)
-        elif method == "vision":
-            return await self._analyze_vision(params)
-        elif method == "embed":
-            return await self._embed_text(params)
+        # Check if it's actually available
+        if await self.check_resource_health(instance):
+            instance.status = ResourceStatus.HEALTHY
         else:
-            raise MethodNotSupportedError(method, self.provider_id)
+            instance.status = ResourceStatus.UNHEALTHY
+        
+        return instance
     
-    async def _generate_text(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate text using Ollama"""
-        prompt = params.get('prompt', '')
-        model = params.get('model', 'llama3')
-        temperature = params.get('temperature', 0.7)
-        max_tokens = params.get('max_tokens', 500)
-        # Note: file_path is now handled by base class in _preprocess_params
-        
-        # Handle parameter substitution results
-        if isinstance(prompt, dict) and 'content' in prompt:
-            if isinstance(prompt['content'], list):
-                # Extract text from content array
-                prompt = ' '.join([
-                    item.get('text', '') 
-                    for item in prompt['content'] 
-                    if isinstance(item, dict) and 'text' in item
-                ])
-            else:
-                prompt = str(prompt['content'])
-        
-        logger.info(f"Generating text with model {model} (prompt length: {len(prompt)} chars)")
-        
-        payload = {
-            'model': model,
-            'prompt': prompt,
-            'stream': False,
-            'options': {
-                'temperature': temperature,
-                'num_predict': max_tokens
-            }
-        }
-        
-        async with self.session.post(
-            f"{self.ollama_url}/api/generate",
-            json=payload,
-            timeout=aiohttp.ClientTimeout(total=self.timeout)
-        ) as response:
-            if response.status == 200:
-                result = await response.json()
-                return {
-                    "response": result.get('response', ''),  # Standard field for workflow compatibility
-                    "content": result.get('response', ''),  # Keep for backward compatibility
-                    "model": model,
-                    "provider_id": self.provider_id,
-                    "tokens_used": result.get('eval_count', 0),
-                    "total_duration": result.get('total_duration', 0)
-                }
-            else:
-                error_text = await response.text()
-                raise ProviderError(
-                    f"Ollama API error {response.status}: {error_text}",
-                    code=ErrorCode.PROVIDER_NOT_AVAILABLE,
-                    provider_id=self.provider_id
-                )
+    async def destroy_resource(self, instance: ResourceInstance[OllamaConfig]):
+        """Destroy an Ollama resource (just cleanup references)"""
+        # Ollama instances are external, nothing to destroy
+        logger.info(f"Removed Ollama instance reference: {instance.id}")
     
-    async def _chat(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Chat using Ollama"""
-        messages = params.get('messages', [])
-        model = params.get('model', 'llama3')
-        temperature = params.get('temperature', 0.7)
-        max_tokens = params.get('max_tokens', 500)
-        # Note: file_path is now handled by base class in _preprocess_params
-        
-        # If no messages, use prompt
-        if not messages and 'prompt' in params:
-            messages = [{"role": "user", "content": params['prompt']}]
-        
-        logger.info(f"Chat with model {model} ({len(messages)} messages)")
-        
-        payload = {
-            'model': model,
-            'messages': messages,
-            'stream': False,
-            'options': {
-                'temperature': temperature,
-                'num_predict': max_tokens
-            }
-        }
-        
-        async with self.session.post(
-            f"{self.ollama_url}/api/chat",
-            json=payload,
-            timeout=aiohttp.ClientTimeout(total=self.timeout)
-        ) as response:
-            if response.status == 200:
-                result = await response.json()
-                message = result.get('message', {})
-                return {
-                    "response": message.get('content', ''),  # Standard field for workflow compatibility
-                    "content": message.get('content', ''),  # Keep for backward compatibility
-                    "role": message.get('role', 'assistant'),
-                    "model": model,
-                    "provider_id": self.provider_id,
-                    "tokens_used": result.get('eval_count', 0),
-                    "total_duration": result.get('total_duration', 0)
-                }
-            else:
-                # Fallback to generate API
-                logger.warning(f"Chat API failed ({response.status}), falling back to generate")
-                prompt = "\n".join([
-                    f"{msg.get('role', 'user')}: {msg.get('content', '')}" 
-                    for msg in messages
-                ])
-                return await self._generate_text({
-                    'prompt': prompt,
-                    'model': model,
-                    'temperature': temperature,
-                    'max_tokens': max_tokens
-                })
-    
-    async def _analyze_vision(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze image using Ollama vision model"""
-        # Support both 'prompt' and 'messages' format
-        prompt = params.get('prompt')
-        if not prompt and 'messages' in params:
-            # Extract prompt from messages format
-            messages = params.get('messages', [])
-            if messages and len(messages) > 0:
-                prompt = messages[-1].get('content', 'Describe this image')
-        if not prompt:
-            prompt = 'Describe this image'
-        
-        model = params.get('model', 'llava')
-        # Note: image_path is now handled by base class in _preprocess_params
-        image_data = params.get('image_data')
-        images = params.get('images', [])  # Support 'images' parameter
-        
-        # Get image data - support multiple input formats
-        if images and len(images) > 0:
-            # Use first image from images array
-            image_data = images[0]
-        elif not image_data:
-            raise InvalidParameterError(
-                "image_data",
-                "Either image_path, image_data, or images required for vision"
-            )
-        
-        logger.info(f"Vision analysis with model {model}")
-        
-        payload = {
-            'model': model,
-            'prompt': prompt,
-            'images': [image_data],
-            'stream': False
-        }
-        
-        async with self.session.post(
-            f"{self.ollama_url}/api/generate",
-            json=payload,
-            timeout=aiohttp.ClientTimeout(total=self.timeout * 2)  # Vision takes longer
-        ) as response:
-            if response.status == 200:
-                result = await response.json()
-                return {
-                    "response": result.get('response', ''),  # Standard field for workflow compatibility
-                    "content": result.get('response', ''),  # Keep for backward compatibility
-                    "model": model,
-                    "provider_id": self.provider_id,
-                    "tokens_used": result.get('eval_count', 0),
-                    "total_duration": result.get('total_duration', 0)
-                }
-            else:
-                error_text = await response.text()
-                raise ProviderError(
-                    f"Ollama vision API error {response.status}: {error_text}",
-                    code=ErrorCode.PROVIDER_NOT_AVAILABLE,
-                    provider_id=self.provider_id
-                )
-    
-    async def _embed_text(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Generate embeddings using Ollama"""
-        text = params.get('prompt', params.get('text', ''))
-        model = params.get('model', 'nomic-embed-text')
-        
-        logger.info(f"Generating embeddings with model {model} (text length: {len(text)} chars)")
-        
-        payload = {
-            'model': model,
-            'prompt': text
-        }
-        
-        async with self.session.post(
-            f"{self.ollama_url}/api/embeddings",
-            json=payload,
-            timeout=aiohttp.ClientTimeout(total=30)
-        ) as response:
-            if response.status == 200:
-                result = await response.json()
-                embedding = result.get('embedding', [])
-                return {
-                    "embedding": embedding,
-                    "model": model,
-                    "provider_id": self.provider_id,
-                    "dimensions": len(embedding)
-                }
-            else:
-                error_text = await response.text()
-                raise ProviderError(
-                    f"Ollama embeddings API error {response.status}: {error_text}",
-                    code=ErrorCode.PROVIDER_NOT_AVAILABLE,
-                    provider_id=self.provider_id
-                )
-    
-    async def _check_ollama_health(self) -> bool:
-        """Check if Ollama is healthy"""
-        try:
-            if not self.session:
-                self.session = aiohttp.ClientSession()
-            
-            async with self.session.get(
-                f"{self.ollama_url}/api/tags",
-                timeout=aiohttp.ClientTimeout(total=5)
-            ) as response:
-                healthy = response.status == 200
-                if not healthy:
-                    logger.warning(f"Ollama health check failed: {response.status}")
-                else:
-                    logger.debug("✅ Ollama server is healthy")
-                return healthy
-            
-        except Exception as e:
-            logger.error(f"❌ Ollama server not available: {e}")
+    async def check_resource_health(self, instance: ResourceInstance[OllamaConfig]) -> bool:
+        """Check if Ollama instance is healthy"""
+        if not self.session:
             return False
-    
-    async def _load_models(self):
-        """Load available models from Ollama"""
+        
         try:
             async with self.session.get(
-                f"{self.ollama_url}/api/tags",
-                timeout=aiohttp.ClientTimeout(total=10)
+                f"{instance.endpoint}/api/tags",
+                timeout=aiohttp.ClientTimeout(total=5)
             ) as response:
                 if response.status == 200:
                     data = await response.json()
-                    self.available_models = [
-                        model['name'] 
-                        for model in data.get('models', [])
-                    ]
-                    logger.info(f"📋 Loaded {len(self.available_models)} models")
-                    if self.available_models:
-                        logger.info(f"   Available: {', '.join(self.available_models[:5])}")
-                else:
-                    logger.warning(f"Failed to load models: {response.status}")
-                    self.available_models = ['llama3']  # Fallback default
-        
+                    # Update capabilities with available models
+                    models = {model['name'] for model in data.get('models', [])}
+                    instance.capabilities = models
+                    return True
+                return False
         except Exception as e:
-            logger.warning(f"Error loading models: {e}")
-            self.available_models = ['llama3']  # Fallback default
+            logger.debug(f"Health check failed for {instance.id}: {e}")
+            return False
+    
+    async def discover_resources(self) -> List[OllamaConfig]:
+        """Auto-discover local Ollama instances"""
+        discovered = []
+        
+        # Check common Ollama ports
+        ports_to_check = [11434, 11435, 11436, 11437, 11438]
+        
+        for port in ports_to_check:
+            config = OllamaConfig(
+                host="127.0.0.1",
+                port=port,
+                max_concurrent=4
+            )
+            
+            # Create temporary instance to check
+            from gleitzeit.hub.base import ResourceType
+            temp_instance = ResourceInstance(
+                id=f"temp-{port}",
+                name=f"temp-{port}",
+                type=ResourceType.OLLAMA,
+                endpoint=f"http://127.0.0.1:{port}",
+                status=ResourceStatus.UNKNOWN,
+                config=config
+            )
+            
+            if await self.check_resource_health(temp_instance):
+                config.models = list(temp_instance.capabilities)
+                discovered.append(config)
+                logger.info(f"Discovered Ollama at port {port} with models: {config.models}")
+        
+        return discovered
+    
+    async def execute_on_resource(
+        self,
+        instance: ResourceInstance[OllamaConfig],
+        method: str,
+        params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute an LLM method on an Ollama instance"""
+        
+        # Map methods to Ollama API endpoints
+        if method == "llm/complete":
+            return await self._complete(instance, params)
+        elif method == "llm/chat":
+            return await self._chat(instance, params)
+        elif method == "llm/vision":
+            return await self._vision(instance, params)
+        elif method == "llm/embeddings":
+            return await self._embeddings(instance, params)
+        elif method == "llm/list_models":
+            return await self._list_models(instance, params)
+        # Support legacy method names for backward compatibility
+        elif method == "llm/generate":
+            return await self._complete(instance, params)
+        else:
+            raise ValueError(f"Unknown method: {method}")
+    
+    async def _complete(self, instance: ResourceInstance[OllamaConfig], params: Dict[str, Any]) -> Dict[str, Any]:
+        """Text completion"""
+        model = params.get('model', self.default_model)
+        prompt = params.get('prompt', '')
+        
+        if not prompt:
+            raise InvalidParameterError(param_name='prompt', reason='Prompt is required')
+        
+        # Ensure model is available
+        if model not in instance.capabilities:
+            await self._pull_model(instance, model)
+        
+        # Make API call
+        async with self.session.post(
+            f"{instance.endpoint}/api/generate",
+            json={
+                'model': model,
+                'prompt': prompt,
+                'temperature': params.get('temperature', 0.7),
+                'stream': False
+            }
+        ) as response:
+            if response.status == 200:
+                data = await response.json()
+                return {
+                    'success': True,
+                    'response': data.get('response', ''),
+                    'text': data.get('response', ''),  # Also include 'text' field for protocol compliance
+                    'model': model,
+                    'done': True,
+                    'instance_id': instance.id
+                }
+            else:
+                error = await response.text()
+                raise TaskExecutionError(message=f"Completion failed: {error}")
+    
+    async def _chat(self, instance: ResourceInstance[OllamaConfig], params: Dict[str, Any]) -> Dict[str, Any]:
+        """Chat completion"""
+        model = params.get('model', self.default_model)
+        messages = params.get('messages', [])
+        
+        if not messages:
+            raise InvalidParameterError(param_name='messages', reason='Messages are required')
+        
+        # Ensure model is available
+        if model not in instance.capabilities:
+            await self._pull_model(instance, model)
+        
+        # Make API call
+        async with self.session.post(
+            f"{instance.endpoint}/api/chat",
+            json={
+                'model': model,
+                'messages': messages,
+                'temperature': params.get('temperature', 0.7),
+                'stream': False
+            }
+        ) as response:
+            if response.status == 200:
+                data = await response.json()
+                message = data.get('message', {})
+                return {
+                    'success': True,
+                    'response': message.get('content', ''),  # Extract response text for workflows
+                    'message': message,
+                    'model': model,
+                    'done': True,
+                    'instance_id': instance.id
+                }
+            else:
+                error = await response.text()
+                raise TaskExecutionError(message=f"Chat failed: {error}")
+    
+    async def _vision(self, instance: ResourceInstance[OllamaConfig], params: Dict[str, Any]) -> Dict[str, Any]:
+        """Vision analysis with multimodal models
+        
+        Note: The base ProtocolProvider already handles image_path -> base64 conversion
+        and adds it to the images array during preprocessing.
+        """
+        model = params.get('model', 'llava:latest')
+        messages = params.get('messages', [])
+        images = params.get('images', [])  # Already preprocessed by base class
+        
+        if not messages:
+            raise InvalidParameterError(param_name='messages', reason='Messages are required')
+        
+        # Ensure vision model is available (e.g., llava)
+        if model not in instance.capabilities:
+            await self._pull_model(instance, model)
+        
+        # Prepare messages with images
+        formatted_messages = []
+        for msg in messages:
+            formatted_msg = {
+                'role': msg.get('role', 'user'),
+                'content': msg.get('content', '')
+            }
+            # Add images to user messages if they have them
+            if msg.get('images'):
+                formatted_msg['images'] = msg['images']
+            # Or add the preprocessed images to the first user message
+            elif msg.get('role') == 'user' and images:
+                formatted_msg['images'] = images
+                images = []  # Only add once
+            formatted_messages.append(formatted_msg)
+        
+        # If images still weren't added, add them to the last user message
+        if images:
+            for msg in reversed(formatted_messages):
+                if msg['role'] == 'user':
+                    msg['images'] = images
+                    break
+        
+        # Make API call using chat endpoint (Ollama uses same endpoint for vision)
+        async with self.session.post(
+            f"{instance.endpoint}/api/chat",
+            json={
+                'model': model,
+                'messages': formatted_messages,
+                'temperature': params.get('temperature', 0.7),
+                'stream': False
+            }
+        ) as response:
+            if response.status == 200:
+                data = await response.json()
+                message = data.get('message', {})
+                return {
+                    'success': True,
+                    'response': message.get('content', ''),  # Extract response text for workflows
+                    'message': message,
+                    'model': model,
+                    'done': True,
+                    'instance_id': instance.id
+                }
+            else:
+                error = await response.text()
+                raise TaskExecutionError(message=f"Vision analysis failed: {error}")
+    
+    async def _embeddings(self, instance: ResourceInstance[OllamaConfig], params: Dict[str, Any]) -> Dict[str, Any]:
+        """Generate embeddings"""
+        model = params.get('model', 'nomic-embed-text')
+        text = params.get('text', '')
+        
+        if not text:
+            raise InvalidParameterError(param_name='text', reason='Text is required')
+        
+        # Ensure model is available
+        if model not in instance.capabilities:
+            await self._pull_model(instance, model)
+        
+        # Make API call
+        async with self.session.post(
+            f"{instance.endpoint}/api/embeddings",
+            json={
+                'model': model,
+                'prompt': text
+            }
+        ) as response:
+            if response.status == 200:
+                data = await response.json()
+                return {
+                    'success': True,
+                    'embedding': data.get('embedding', []),
+                    'model': model,
+                    'instance_id': instance.id
+                }
+            else:
+                error = await response.text()
+                raise TaskExecutionError(message=f"Embeddings failed: {error}")
+    
+    async def _list_models(self, instance: ResourceInstance[OllamaConfig], params: Dict[str, Any]) -> Dict[str, Any]:
+        """List available models"""
+        # Aggregate from all instances
+        all_models = set()
+        model_distribution = {}
+        
+        for inst in self.instances.values():
+            if inst.status == ResourceStatus.HEALTHY:
+                for model in inst.capabilities:
+                    all_models.add(model)
+                    if model not in model_distribution:
+                        model_distribution[model] = []
+                    model_distribution[model].append(inst.id)
+        
+        return {
+            'success': True,
+            'models': list(all_models),
+            'model_distribution': model_distribution,
+            'total_instances': len(self.instances)
+        }
+    
+    async def _pull_model(self, instance: ResourceInstance[OllamaConfig], model: str):
+        """Pull a model to an instance"""
+        logger.info(f"Pulling model {model} to {instance.id}")
+        
+        async with self.session.post(
+            f"{instance.endpoint}/api/pull",
+            json={'name': model}
+        ) as response:
+            if response.status == 200:
+                # Update capabilities
+                instance.capabilities.add(model)
+                logger.info(f"Successfully pulled {model} to {instance.id}")
+            else:
+                error = await response.text()
+                logger.error(f"Failed to pull model: {error}")
+    
+    def get_method_requirements(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Get resource requirements for a method"""
+        requirements = {}
+        
+        # For model-specific methods, prefer instances with that model
+        if method in ["llm/complete", "llm/generate", "llm/chat", "llm/vision", "llm/embeddings"]:
+            model = params.get('model', self.default_model)
+            # Use vision-specific default for vision method
+            if method == "llm/vision" and model == self.default_model:
+                model = 'llava:latest'
+            requirements['capabilities'] = {model}
+        
+        return requirements
+    
+    def create_default_config(self, method: str, params: Dict[str, Any]) -> OllamaConfig:
+        """Create default Ollama configuration"""
+        return OllamaConfig(
+            host="127.0.0.1",
+            port=11434,
+            max_concurrent=4
+        )
+    
+    def get_supported_methods(self) -> List[str]:
+        """Get list of supported methods"""
+        return ["llm/complete", "llm/chat", "llm/vision", "llm/embeddings", "llm/list_models", "llm/generate"]  # generate for backward compatibility
+    

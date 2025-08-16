@@ -432,6 +432,13 @@ class HubProvider(ProtocolProvider, Generic[T], ABC):
         
         return status
     
+    async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
+        """
+        Handle a JSON-RPC method call (required by ProtocolProvider)
+        Routes to execute() for actual execution
+        """
+        return await self.execute(method, params)
+    
     # Helper methods for subclasses
     
     def get_method_requirements(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:

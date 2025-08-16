@@ -5,10 +5,10 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gleitzeit"
 version = "0.0.4"
-description = "Protocol-based workflow orchestration system with LLM and MCP support"
+description = "Protocol-based workflow orchestration system with LLM, Python, and MCP support"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Leif Markthaler", email = "leif.markthaler@gmail.com"},
 ]
@@ -25,12 +25,14 @@ keywords = [
     "llm",
     "mcp",
     "model-context-protocol",
-    "task-automation"
+    "task-automation",
+    "python-execution",
+    "docker",
+    "hub-architecture"
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
@@ -71,9 +73,13 @@ llm = [
     "openai>=1.0.0",
     "anthropic>=0.7.0",
 ]
+docker = [
+    "docker>=6.0.0",
+]
 all = [
     "gleitzeit[dev]",
     "gleitzeit[llm]",
+    "gleitzeit[docker]",
 ]
 
 [project.scripts]
