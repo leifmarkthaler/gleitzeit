@@ -1,0 +1,135 @@
+# Example workflow demonstrating multi-instance Ollama and Docker execution
+name: "Multi-Instance and Docker Demo"
+description: "Demonstrates load balancing across Ollama instances and sandboxed Python execution"
+
+# Multi-instance Ollama configuration (for demonstration)
+# In production, this would be in your main configuration file
+providers:
+  ollama_pool:
+    type: "ollama_pool"
+    instances:
+      - id: "local"
+        url: "http://localhost:11434"
+        models: ["llama3.2", "codellama"]
+        max_concurrent: 5
+        tags: ["local", "cpu"]
+      
+      - id: "gpu-server"
+        url: "http://gpu-server:11434"  # Replace with actual GPU server
+        models: ["llama3.2:70b", "mixtral"]
+        max_concurrent: 2
+        tags: ["remote", "gpu", "high-memory"]
+    
+    load_balancing:
+      strategy: "least_loaded"
+      health_check_interval: 30
+      failover: true
+      retry_attempts: 3
+
+tasks:
+  # Task 1: Use least loaded Ollama instance
+  - id: "analyze_text"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2"
+      load_balancing_strategy: "least_loaded"
+      messages:
+        - role: "user"
+          content: "Analyze this text and provide insights"
+  
+  # Task 2: Use GPU instance for large model
+  - id: "deep_analysis"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:70b"
+      require_gpu: true
+      instance_tags: ["gpu", "high-memory"]
+      messages:
+        - role: "user"
+          content: "Perform deep analysis on: ${analyze_text.response}"
+    dependencies: ["analyze_text"]
+  
+  # Task 3: Execute Python in sandbox (Docker)
+  - id: "process_data_sandboxed"
+    protocol: "python/v1"
+    method: "python/execute"
+    params:
+      execution_mode: "sandboxed"
+      memory_limit: "512m"
+      cpu_limit: 1.0
+      timeout: 30
+      code: |
+        import json
+        import hashlib
+        
+        # Process analysis results
+        analysis = """${deep_analysis.response}"""
+        
+        # Calculate hash for verification
+        hash_value = hashlib.sha256(analysis.encode()).hexdigest()
+        
+        result = {
+            "processed": True,
+            "hash": hash_value,
+            "length": len(analysis),
+            "words": len(analysis.split())
+        }
+    dependencies: ["deep_analysis"]
+  
+  # Task 4: Execute Python in specialized data science container
+  - id: "advanced_analysis"
+    protocol: "python/v1"
+    method: "python/execute"
+    params:
+      execution_mode: "datascience"
+      image: "python:3.11"  # Or use custom image
+      memory_limit: "2g"
+      cpu_limit: 2.0
+      code: |
+        import numpy as np
+        import json
+        
+        # Parse previous results
+        data = ${process_data_sandboxed.result}
+        
+        # Perform statistical analysis
+        values = [data['length'], data['words']]
+        
+        result = {
+            "mean": float(np.mean(values)),
+            "std": float(np.std(values)),
+            "summary": f"Processed {data['words']} words with hash {data['hash'][:8]}..."
+        }
+    dependencies: ["process_data_sandboxed"]
+  
+  # Task 5: Use model affinity routing for vision
+  - id: "vision_analysis"
+    protocol: "llm/v1"
+    method: "llm/vision"
+    params:
+      model: "llava"
+      load_balancing_strategy: "model_affinity"
+      instance_tags: ["vision"]
+      prompt: "Describe what you see"
+      images: ["examples/images/test_colors.png"]
+  
+  # Task 6: Final report using round-robin
+  - id: "generate_report"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2"
+      load_balancing_strategy: "round_robin"
+      messages:
+        - role: "system"
+          content: "You are a report generator. Create a concise summary."
+        - role: "user"
+          content: |
+            Create a final report from:
+            - Text Analysis: ${analyze_text.response}
+            - Deep Analysis: ${deep_analysis.response}
+            - Processing Stats: ${advanced_analysis.result}
+            - Vision Analysis: ${vision_analysis.response}
+    dependencies: ["analyze_text", "deep_analysis", "advanced_analysis", "vision_analysis"]

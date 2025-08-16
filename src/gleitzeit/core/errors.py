@@ -49,6 +49,7 @@ class ErrorCode(IntEnum):
     PROVIDER_OVERLOADED = -30007
     METHOD_NOT_SUPPORTED = -30008
     PROTOCOL_VERSION_MISMATCH = -30009
+    PROVIDER_ERROR = -30010  # Generic provider error
     
     # Task Execution Errors (-29999 to -29000)
     TASK_VALIDATION_FAILED = -29001
@@ -251,6 +252,21 @@ class MethodNotSupportedError(ProviderError):
         )
 
 
+class ProviderNotAvailableError(ProviderError):
+    """Provider not available error"""
+    
+    def __init__(self, provider_id: str, reason: Optional[str] = None, **kwargs):
+        message = f"Provider '{provider_id}' is not available"
+        if reason:
+            message += f": {reason}"
+        super().__init__(
+            message,
+            ErrorCode.PROVIDER_NOT_AVAILABLE,
+            provider_id=provider_id,
+            **kwargs
+        )
+
+
 # Task Execution Errors
 class TaskError(GleitzeitError):
     """Task execution errors"""
@@ -294,6 +310,20 @@ class TaskTimeoutError(TaskError):
             ErrorCode.TASK_TIMEOUT,
             task_id=task_id,
             data=data,
+            **kwargs
+        )
+
+
+class TaskExecutionError(TaskError):
+    """Task execution error"""
+    
+    def __init__(self, task_id: Optional[str] = None, message: Optional[str] = None, **kwargs):
+        if not message:
+            message = f"Task {task_id} execution failed" if task_id else "Task execution failed"
+        super().__init__(
+            message,
+            ErrorCode.TASK_EXECUTION_FAILED,
+            task_id=task_id,
             **kwargs
         )
 
