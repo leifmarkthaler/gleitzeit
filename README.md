@@ -80,29 +80,87 @@ gleitzeit batch examples/documents --pattern "*.txt" --prompt "Summarize this do
 gleitzeit batch examples/images --pattern "*.png" --vision --prompt "Describe this image"
 ```
 
-#### Python API Usage
+### Python API Examples
+
+#### Basic Workflow Execution
 ```python
 import asyncio
 from gleitzeit import GleitzeitClient
 
 async def main():
     async with GleitzeitClient() as client:
-        # Simple chat
-        response = await client.chat("Tell me a joke")
-        print(response)
-        
-        # Run a workflow
-        results = await client.run_workflow("examples/simple_llm_workflow.yaml")
-        
-        # Batch process files
-        batch_results = await client.batch_chat(
-            directory="examples/documents",
-            pattern="*.txt",
-            prompt="Summarize this document"
-        )
+        # Run a workflow from YAML file
+        results = await client.run_workflow("workflow.yaml")
+        print(f"Completed {len(results)} tasks")
 
 asyncio.run(main())
 ```
+
+#### Create and Run Complex Workflow
+```python
+async def data_pipeline():
+    async with GleitzeitClient() as client:
+        workflow = await client.create_workflow(
+            name="Data Processing Pipeline",
+            tasks=[
+                {
+                    "name": "Load Data",
+                    "protocol": "python/v1",
+                    "method": "python/execute",
+                    "params": {
+                        "code": "import pandas as pd; df = pd.read_csv('data.csv'); result = df.to_dict()"
+                    }
+                },
+                {
+                    "name": "Analyze",
+                    "protocol": "llm/v1",
+                    "method": "llm/chat",
+                    "dependencies": ["Load Data"],
+                    "params": {
+                        "model": "llama3.2:latest",
+                        "messages": [{
+                            "role": "user",
+                            "content": "Analyze this data: ${Load Data.result}"
+                        }]
+                    }
+                },
+                {
+                    "name": "Save Report",
+                    "protocol": "python/v1",
+                    "method": "python/execute",
+                    "dependencies": ["Analyze"],
+                    "params": {
+                        "code": "report = '${Analyze.response}'; open('report.txt', 'w').write(report)"
+                    }
+                }
+            ]
+        )
+        
+        results = await client.run_workflow(workflow)
+        return results
+```
+
+#### Batch Processing
+```python
+async def batch_analysis():
+    async with GleitzeitClient() as client:
+        # Process all Python files for potential issues
+        results = await client.batch_process(
+            directory="src",
+            pattern="**/*.py",
+            method="llm/chat",
+            prompt="Find potential bugs or improvements in this code",
+            max_concurrent=10
+        )
+        
+        print(f"Analyzed {results.total_files} files")
+        print(f"Found issues in {results.failed} files")
+        
+        # Save results
+        results.save_to_markdown("code_review.md")
+```
+
+See [Python API Reference](docs/PYTHON_API_REFERENCE.md) for complete documentation.
 
 ## Documentation
 
@@ -146,6 +204,140 @@ gleitzeit run batch_analysis.yaml
 
 # Or using CLI directly
 gleitzeit batch documents --pattern "*.txt" --prompt "Summarize"
+```
+
+## Python API Use Cases
+
+### Document Analysis Pipeline
+```python
+import asyncio
+from gleitzeit import GleitzeitClient
+from pathlib import Path
+
+async def analyze_project_docs():
+    async with GleitzeitClient(persistence="redis") as client:
+        # Step 1: Summarize all markdown files
+        summaries = await client.batch_process(
+            directory="docs",
+            pattern="**/*.md",
+            prompt="Create a concise summary of this document",
+            max_concurrent=5
+        )
+        
+        # Step 2: Extract key concepts from summaries
+        all_summaries = "\n".join([
+            f"{Path(f).name}: {r['content']}" 
+            for f, r in summaries.results.items() 
+            if r['status'] == 'success'
+        ])
+        
+        concepts = await client.chat(
+            f"Extract the 10 most important concepts from:\n{all_summaries}",
+            model="llama3.2:latest"
+        )
+        
+        # Step 3: Generate documentation index
+        index = await client.execute_python(
+            code=f"""
+concepts = '''{concepts}'''
+summaries = {summaries.results}
+
+# Generate markdown index
+index_md = "# Documentation Index\\n\\n"
+index_md += "## Key Concepts\\n" + concepts + "\\n\\n"
+index_md += "## Document Summaries\\n"
+for file, data in summaries.items():
+    if data['status'] == 'success':
+        index_md += f"### {file}\\n{data['content'][:200]}...\\n\\n"
+
+result = index_md
+"""
+        )
+        
+        # Save the index
+        Path("docs/INDEX.md").write_text(index['result'])
+        return "Documentation index generated"
+
+asyncio.run(analyze_project_docs())
+```
+
+### Multi-Stage Data Processing
+```python
+async def process_customer_data():
+    async with GleitzeitClient() as client:
+        workflow = {
+            "name": "Customer Data Pipeline",
+            "tasks": [
+                # Extract from multiple sources in parallel
+                {"name": "DB_Extract", "protocol": "python/v1", "method": "python/execute",
+                 "params": {"file": "extractors/database.py"}},
+                {"name": "API_Extract", "protocol": "python/v1", "method": "python/execute",
+                 "params": {"file": "extractors/api.py"}},
+                {"name": "CSV_Extract", "protocol": "python/v1", "method": "python/execute",
+                 "params": {"file": "extractors/csv.py"}},
+                
+                # Merge all data
+                {"name": "Merge", "protocol": "python/v1", "method": "python/execute",
+                 "dependencies": ["DB_Extract", "API_Extract", "CSV_Extract"],
+                 "params": {"code": """
+db_data = ${DB_Extract.result}
+api_data = ${API_Extract.result}
+csv_data = ${CSV_Extract.result}
+result = {**db_data, **api_data, **csv_data}
+"""}},
+                
+                # Analyze with LLM
+                {"name": "Analysis", "protocol": "llm/v1", "method": "llm/chat",
+                 "dependencies": ["Merge"],
+                 "params": {
+                     "model": "llama3.2:latest",
+                     "messages": [{"role": "user", 
+                                  "content": "Analyze customer trends: ${Merge.result}"}]
+                 }},
+                
+                # Generate report
+                {"name": "Report", "protocol": "python/v1", "method": "python/execute",
+                 "dependencies": ["Analysis"],
+                 "params": {"file": "generators/report.py",
+                            "args": {"analysis": "${Analysis.response}"}}}
+            ]
+        }
+        
+        results = await client.run_workflow(workflow)
+        return results["Report"]
+```
+
+### Code Review Automation
+```python
+async def automated_code_review():
+    async with GleitzeitClient(debug=True) as client:
+        # Review all changed files
+        changed_files = await client.execute_python(
+            code="import subprocess; result = subprocess.check_output(['git', 'diff', '--name-only']).decode().split()"
+        )
+        
+        # Batch review Python files
+        py_files = [f for f in changed_files['result'] if f.endswith('.py')]
+        
+        if py_files:
+            reviews = await client.batch_process(
+                files=py_files,
+                method="llm/chat",
+                prompt="""Review this code for:
+                1. Potential bugs
+                2. Security issues
+                3. Performance problems
+                4. Code style improvements
+                Provide specific line numbers when possible.""",
+                model="llama3.2:latest"
+            )
+            
+            # Generate PR comment
+            comment = await client.chat(
+                f"Summarize these code reviews into a GitHub PR comment:\n{reviews.to_json()}"
+            )
+            
+            return comment
 ```
 
 ## Workflow Examples
