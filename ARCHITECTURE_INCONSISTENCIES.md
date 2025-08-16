@@ -649,12 +649,300 @@ except:
 - 🟠 **Consistency Issues**: 20 (Type Hints, Timeouts, Validation)
 - 📝 **Total Issues Found**: 60
 
+## 61. Incomplete Error Context
+
+### Missing Exception Details
+- **Issue**: Many error handlers lose context
+- Multiple places catch exceptions but don't log full details
+- Stack traces often lost
+- Original exception cause not preserved
+
+### Examples:
+```python
+# enhanced_client.py:182, 319
+except:
+    continue  # No logging, no context
+```
+
+## 62. Test Assertions in Production Code
+
+### Assert Statements Not for Production
+- **Issue**: Using `assert` for runtime validation
+- Assert statements are removed with `-O` flag
+- Found in test files but patterns could leak
+- Should use explicit validation
+
+## 63. Environment Variable Security
+
+### Unvalidated Environment Access
+- **Issue**: Direct environment variable access without validation
+- **Files**:
+  - `cli/commands/dev.py:188`: `os.getenv('BRAVE_API_KEY')`
+  - `cli/config.py:66`: `os.getenv('GLEITZEIT_CONFIG')`
+- No validation of content
+- No sanitization
+- Could expose secrets in logs
+
+## 64. Print Statements in Library Code
+
+### Debug Prints Left in Production
+- **Issue**: `print()` statements in src code
+- **Found in**:
+  - `src/gleitzeit/providers/python_provider.py`
+  - `src/gleitzeit/cli/gleitzeit_cli.py`
+  - `src/gleitzeit/execution/docker_executor.py`
+  - `src/gleitzeit/providers/python_function_provider.py`
+- Should use logging framework
+- Can't control output in production
+
+## 65. Hardcoded Sleep Intervals
+
+### Magic Sleep Numbers
+- **Issue**: Hardcoded sleep durations throughout
+- **Examples**:
+  - `asyncio.sleep(30)` - metrics collection
+  - `asyncio.sleep(60)` - health checks
+  - `asyncio.sleep(0.1)` - polling intervals
+  - `asyncio.sleep(2 ** attempt)` - backoff
+- No configuration
+- No adaptive timing
+- Performance impact
+
+## 66. TODO Comments Left Unaddressed
+
+### Incomplete Implementation Markers
+- **Issue**: TODO/FIXME comments indicate incomplete work
+- Found in documentation examples
+- `"execution_time": 0  # TODO: calculate actual time`
+- Indicates missing functionality
+
+## 67. Missing Audit Logging
+
+### No Security Event Tracking
+- **Issue**: No audit trail for sensitive operations
+- Resource creation/deletion not logged
+- Authentication/authorization events missing
+- Configuration changes not tracked
+- Compliance requirements not met
+
+## 68. Inconsistent Database Transaction Boundaries
+
+### Transaction Scope Issues
+- **Issue**: Inconsistent transaction management
+- Some operations auto-commit
+- Others require manual commit
+- No clear transaction boundaries
+- Could cause partial updates
+
+## 69. Missing Rate Limiting
+
+### No Request Throttling
+- **Issue**: No rate limiting on API endpoints
+- Could allow DoS attacks
+- No per-user/per-IP limits
+- No backpressure mechanism
+- Resource exhaustion possible
+
+## 70. Circular Import Risks
+
+### Import Dependency Cycles
+- **Issue**: Complex import chains risk cycles
+- Providers import from hub
+- Hub imports from providers
+- Enhanced client imports deleted providers
+- No clear dependency layers
+
+## 71. Missing Health Check Standards
+
+### Inconsistent Health Endpoints
+- **Issue**: No standard health check format
+- Different providers implement differently
+- No liveness vs readiness distinction
+- No standard response format
+- Monitoring integration difficult
+
+## 72. Configuration Hot-Reload Missing
+
+### Static Configuration Only
+- **Issue**: Configuration changes require restart
+- No dynamic configuration updates
+- No feature flags
+- No A/B testing capability
+- Operational flexibility limited
+
+## 73. Missing Distributed Tracing
+
+### No Request Correlation
+- **Issue**: Can't trace requests across components
+- No correlation IDs
+- No span tracking
+- No distributed debugging
+- Performance bottlenecks hidden
+
+## 74. Inadequate Input Sanitization
+
+### SQL Injection Risks
+- **Issue**: Direct string interpolation in SQL
+- **Example**: `persistence_sql.py` uses string formatting
+- Parameter binding not always used
+- Could allow injection attacks
+
+## 75. Missing Circuit Breaker Pattern
+
+### No Failure Isolation
+- **Issue**: Failures cascade through system
+- No circuit breaker implementation
+- Failed services keep getting called
+- No automatic recovery
+- System degradation not graceful
+
+## 76. Inconsistent Datetime Handling
+
+### Timezone Issues
+- **Issue**: Mix of naive and aware datetimes
+- `datetime.utcnow()` used (deprecated)
+- No consistent timezone handling
+- Could cause scheduling issues
+
+## 77. Missing Pagination
+
+### Unbounded Result Sets
+- **Issue**: List operations return all results
+- No pagination support
+- Memory exhaustion possible
+- API performance issues
+- No cursor-based pagination
+
+## 78. Weak Password/Secret Management
+
+### Secrets in Code
+- **Issue**: No centralized secret management
+- API keys in environment variables
+- No rotation mechanism
+- No encryption at rest
+- Secrets could leak
+
+## 79. Missing Request Deduplication
+
+### Duplicate Request Processing
+- **Issue**: Same request processed multiple times
+- No idempotency keys
+- No request deduplication
+- Could cause duplicate operations
+- Resource waste
+
+## 80. Incomplete OpenAPI/Swagger Documentation
+
+### No API Schema Definition
+- **Issue**: No OpenAPI specification
+- API not self-documenting
+- No schema validation
+- Client generation not possible
+- Testing harder
+
+## 81. Missing Graceful Degradation
+
+### No Fallback Mechanisms
+- **Issue**: Binary success/failure model
+- No degraded operation modes
+- No fallback providers
+- All-or-nothing approach
+- Poor user experience on failures
+
+## 82. Inconsistent Naming Conventions
+
+### Mixed Naming Styles
+- **Issue**: Different naming patterns
+- `snake_case` and `camelCase` mixed
+- Method names inconsistent
+- `_complete` vs `execute` vs `run`
+- Makes API hard to learn
+
+## 83. Missing Data Retention Policies
+
+### No Automatic Cleanup
+- **Issue**: Data accumulates forever
+- Metrics kept indefinitely (24h hardcoded)
+- No configurable retention
+- Storage growth unbounded
+- GDPR compliance issues
+
+## 84. Weak Error Recovery
+
+### No Automatic Recovery
+- **Issue**: Manual intervention required
+- Failed instances not restarted
+- No self-healing
+- Operators must intervene
+- Availability impacted
+
+## 85. Missing Performance Benchmarks
+
+### No Performance Baselines
+- **Issue**: No performance tests
+- No benchmarks defined
+- Regressions not detected
+- No load testing
+- Capacity planning impossible
+
+## 86. Incomplete Multi-tenancy
+
+### No Tenant Isolation
+- **Issue**: Single-tenant design
+- No namespace separation
+- No resource quotas per tenant
+- No tenant-specific configuration
+- Enterprise features missing
+
+## 87. Missing Webhook Support
+
+### No Event Notifications
+- **Issue**: No webhook callbacks
+- Can't notify external systems
+- No event subscriptions
+- Integration limited
+- Real-time updates not possible
+
+## 88. Inadequate Batch Error Handling
+
+### Partial Batch Failures
+- **Issue**: Batch operations fail completely
+- No partial success handling
+- One error fails entire batch
+- No retry for failed items
+- Poor batch processing
+
+## 89. Missing Request Prioritization
+
+### No QoS Support
+- **Issue**: All requests equal priority
+- No priority queues
+- No deadline scheduling
+- Critical requests can be delayed
+- SLA management difficult
+
+## 90. Incomplete Observability
+
+### Missing Metrics/Traces
+- **Issue**: Blind spots in system
+- No custom metrics export
+- No trace sampling
+- No profiling hooks
+- Debugging production hard
+
+### Critical Issues Count (Updated):
+- 🔴 **Breaking Issues**: 20 (Security, SQL injection, eval/exec)
+- 🟡 **Architecture Issues**: 35 (No DI, No pagination, No multi-tenancy)
+- 🟠 **Consistency Issues**: 25 (Naming, datetime, transactions)
+- 🔵 **Operational Issues**: 10 (No monitoring, no retention policies)
+- 📝 **Total Issues Found**: 90
+
 ### Issue Categories:
-1. **Security & Safety**: 8 issues (eval/exec, bare excepts, no validation)
-2. **Resource Management**: 12 issues (leaks, no pooling, no limits)
-3. **Concurrency**: 7 issues (locks, async/sync mixing, cancellation)
-4. **Architecture**: 15 issues (no DI, no factories, tight coupling)
-5. **Operations**: 10 issues (no monitoring, no caching, no migrations)
-6. **Code Quality**: 8 issues (type hints, duplication, magic numbers)
+1. **Security & Safety**: 12 issues (eval/exec, injection, secrets, audit)
+2. **Resource Management**: 15 issues (leaks, no limits, no pagination)
+3. **Concurrency**: 10 issues (locks, transactions, race conditions)
+4. **Architecture**: 20 issues (no DI, no multi-tenancy, tight coupling)
+5. **Operations**: 18 issues (no monitoring, no retention, no observability)
+6. **Code Quality**: 15 issues (naming, TODOs, print statements)
 
 These issues should be addressed systematically to ensure a clean, maintainable, and secure architecture.
