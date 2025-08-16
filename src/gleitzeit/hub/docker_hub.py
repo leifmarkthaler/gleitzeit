@@ -230,6 +230,10 @@ class DockerHub(ResourceHub[DockerConfig]):
             if config.ports:
                 container_config['ports'] = config.ports
             
+            # For Python containers, keep them running with a sleep command if no command specified
+            if 'python' in config.image and not config.command:
+                container_config['command'] = 'sh -c "while true; do sleep 30; done"'
+            
             # Remove None values
             container_config = {k: v for k, v in container_config.items() if v is not None}
             
