@@ -308,9 +308,14 @@ class BatchProcessor:
                 result = execution_engine.task_results.get(task.id)
                 if result:
                     if result.status == 'completed':
+                        # Extract the response text from the result
+                        content = ''
+                        if result.result:
+                            # Try 'response' first (standard field), then 'content', then 'text'
+                            content = result.result.get('response', result.result.get('content', result.result.get('text', '')))
                         batch_result.results[file_path] = {
                             'status': 'success',
-                            'content': result.result.get('content', '') if result.result else ''
+                            'content': content
                         }
                         batch_result.successful += 1
                     else:
