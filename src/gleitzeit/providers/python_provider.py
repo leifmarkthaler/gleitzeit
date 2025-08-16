@@ -1,12 +1,16 @@
 """
 Streamlined Python Provider with Integrated Hub
-Much simpler implementation with built-in container management
+Executes Python files either locally (trusted) or in Docker (untrusted)
 """
 
 import logging
 from typing import Dict, Any, Optional, List
 import asyncio
 import json
+from pathlib import Path
+import sys
+import tempfile
+import shutil
 
 # Optional Docker import
 try:
@@ -19,7 +23,7 @@ except ImportError:
     DOCKER_AVAILABLE = False
 
 from gleitzeit.providers.hub_provider import HubProvider
-from gleitzeit.hub.base import ResourceInstance, ResourceStatus
+from gleitzeit.hub.base import ResourceInstance, ResourceStatus, ResourceType
 from gleitzeit.hub.docker_hub import DockerConfig
 from gleitzeit.core.errors import InvalidParameterError, TaskExecutionError
 
@@ -28,396 +32,311 @@ logger = logging.getLogger(__name__)
 
 class PythonProvider(HubProvider[DockerConfig]):
     """
-    Streamlined Python provider with integrated container management
+    Secure Python file execution provider
     
-    This version is much simpler:
-    - Inherits all container management from HubProvider
-    - Only implements Python execution logic
-    - Automatic pooling, health monitoring, metrics
+    Security model:
+    - Local execution: For trusted/owned code only (subprocess isolation)
+    - Docker execution: For untrusted/external code (container isolation)
+    - NO arbitrary code execution via exec() or eval()
     """
     
     def __init__(
         self,
-        provider_id: str = "python-streamlined",
-        default_image: str = "python:3.11-slim",
+        provider_id: str = "python",
+        docker_image: str = "python:3.11-slim",
         max_containers: int = 5,
-        enable_local: bool = True,
-        enable_sharing: bool = False
+        allow_local: bool = True,
+        trusted_dirs: Optional[List[str]] = None
     ):
         """
-        Initialize streamlined Python provider
+        Initialize Python provider
         
         Args:
-            provider_id: Unique provider identifier
-            default_image: Default Docker image
-            max_containers: Maximum containers to manage
-            enable_local: Enable local Python execution
-            enable_sharing: Allow provider to be shared
+            provider_id: Unique provider ID
+            docker_image: Default Docker image for containers
+            max_containers: Maximum number of containers to manage
+            allow_local: Allow local execution of trusted files
+            trusted_dirs: List of directories containing trusted code
         """
-        # If Docker is not available, force local execution only
-        if not DOCKER_AVAILABLE:
-            logger.warning("Docker not available, enabling local execution only")
-            enable_local = True
-            max_containers = 0
         super().__init__(
             provider_id=provider_id,
             protocol_id="python/v1",
-            name="Streamlined Python Provider",
-            description="Python provider with integrated container management",
+            name="Python File Executor",
+            description="Securely execute Python files locally or in Docker",
             resource_config_class=DockerConfig,
-            enable_sharing=enable_sharing,
-            max_instances=max_containers,
-            enable_auto_discovery=False  # Containers are created on-demand
+            max_instances=max_containers
         )
         
-        self.default_image = default_image
-        self.enable_local = enable_local
-        self.docker_client: Optional[docker.DockerClient] = None
+        self.docker_image = docker_image
+        self.allow_local = allow_local
+        self.trusted_dirs = [Path(d).resolve() for d in (trusted_dirs or [])]
         
-        # Execution modes
-        self.modes = {
-            "local": {
-                "enabled": enable_local,
-                "description": "Direct local execution"
-            },
-            "sandboxed": {
-                "enabled": True,
-                "image": "python:3.11-slim",
-                "memory_limit": "512m",
-                "cpu_limit": 1.0
-            },
-            "datascience": {
-                "enabled": True,
-                "image": "jupyter/datascience-notebook:latest",
-                "memory_limit": "2g",
-                "cpu_limit": 2.0
-            }
-        }
-    
-    async def initialize(self):
-        """Initialize provider and Docker client"""
-        if DOCKER_AVAILABLE and self.max_instances > 0:
+        # Add current working directory as trusted by default
+        if not self.trusted_dirs:
+            self.trusted_dirs.append(Path.cwd())
+        
+        # Docker client
+        self.docker_client = None
+        if DOCKER_AVAILABLE:
             try:
-                # Initialize Docker client
                 self.docker_client = docker.from_env()
-                self.docker_client.ping()
                 logger.info("Docker client initialized")
-                
-                # Pre-create a sandboxed container for quick startup
-                if len(self.instances) == 0:
-                    config = DockerConfig(
-                        image=self.default_image,
-                        memory_limit="512m",
-                        cpu_limit=1.0,
-                        network_mode="none",
-                        labels={"mode": "sandboxed", "provider": self.provider_id}
-                    )
-                    instance = await self.create_resource(config)
-                    await self.register_instance(instance)
-                    logger.info(f"Pre-created container: {instance.id}")
-                
             except Exception as e:
-                logger.warning(f"Docker initialization failed: {e}")
-                if not self.enable_local:
-                    raise
-        elif not DOCKER_AVAILABLE:
-            logger.info("Docker not available, using local execution only")
-        else:
-            logger.info("Docker containers disabled, using local execution only")
-        
-        # Call parent initialization
-        await super().initialize()
+                logger.warning(f"Failed to initialize Docker client: {e}")
     
-    async def shutdown(self):
-        """Cleanup resources"""
-        # Close Docker client
-        if self.docker_client:
-            self.docker_client.close()
-            self.docker_client = None
-        
-        # Call parent shutdown (handles container cleanup)
-        await super().shutdown()
-    
-    async def create_resource(self, config: DockerConfig) -> ResourceInstance[DockerConfig]:
-        """Create a Docker container resource"""
-        if not DOCKER_AVAILABLE:
-            raise Exception("Docker is not available - install with: pip install 'gleitzeit[docker]'")
-        
-        if not self.docker_client:
-            raise Exception("Docker client not initialized")
-        
-        # Keep Python containers running with a sleep loop
-        if 'python' in config.image and not config.command:
-            config.command = 'sh -c "while true; do sleep 30; done"'
-        
-        # Create container
-        container_config = {
-            'image': config.image,
-            'command': config.command,
-            'environment': config.environment or {},
-            'volumes': config.volumes or {},
-            'mem_limit': config.memory_limit,
-            'cpu_quota': int(config.cpu_limit * 100000),
-            'cpu_period': 100000,
-            'network_mode': config.network_mode,
-            'labels': config.labels or {},
-            'detach': True,
-            'auto_remove': config.auto_remove
-        }
-        
-        # Remove None values
-        container_config = {k: v for k, v in container_config.items() if v is not None}
-        
-        # Run container
-        container: Container = self.docker_client.containers.run(**container_config)
-        
-        # Create resource instance
-        from gleitzeit.hub.base import ResourceType
-        instance = ResourceInstance(
-            id=f"docker-{container.short_id}",
-            name=f"Container-{container.short_id}",
-            type=ResourceType.DOCKER,
-            endpoint=container.short_id,
-            status=ResourceStatus.HEALTHY,
-            config=config,
-            capabilities=set(),
-            tags=set(config.labels.keys()) if config.labels else set(),
-            metadata={'container': container}
-        )
-        
-        logger.info(f"Created container: {instance.id}")
-        return instance
-    
-    async def destroy_resource(self, instance: ResourceInstance[DockerConfig]):
-        """Destroy a Docker container"""
-        if 'container' in instance.metadata:
-            container = instance.metadata['container']
-            try:
-                container.stop(timeout=5)
-                container.remove()
-                logger.info(f"Destroyed container: {instance.id}")
-            except Exception as e:
-                logger.error(f"Failed to destroy container {instance.id}: {e}")
-    
-    async def check_resource_health(self, instance: ResourceInstance[DockerConfig]) -> bool:
-        """Check if container is healthy"""
-        if 'container' not in instance.metadata:
-            return False
-        
-        try:
-            container = instance.metadata['container']
-            container.reload()
-            return container.status == 'running'
-        except Exception as e:
-            logger.debug(f"Health check failed for {instance.id}: {e}")
-            return False
-    
-    async def discover_resources(self) -> List[DockerConfig]:
-        """No auto-discovery for Docker containers - they're created on demand"""
-        return []
+    def get_supported_methods(self) -> List[str]:
+        """Get list of supported methods"""
+        return [
+            "python/execute",      # Execute Python file
+            "python/validate",     # Validate Python file syntax
+            "python/info"          # Get provider info
+        ]
     
     async def execute(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Override execute to handle local-only execution when Docker unavailable"""
-        # If Docker is not available, bypass resource management and execute locally
-        if not DOCKER_AVAILABLE and method == "python/execute":
-            return await self._execute_python(None, params)
-        elif method == "python/validate":
-            return await self._validate_python(params)
-        elif method == "python/info":
-            return self._get_info()
-        
-        # Otherwise use normal hub execution
-        return await super().execute(method, params)
-    
-    async def execute_on_resource(
-        self,
-        instance: ResourceInstance[DockerConfig],
-        method: str,
-        params: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Execute Python code on a container"""
-        
+        """Execute a Python method"""
         if method == "python/execute":
-            return await self._execute_python(instance, params)
+            return await self._execute_file(params)
         elif method == "python/validate":
-            return await self._validate_python(params)
+            return await self._validate_file(params)
         elif method == "python/info":
             return self._get_info()
         else:
-            raise ValueError(f"Unknown method: {method}")
+            raise InvalidParameterError(param_name='method', reason=f"Unsupported method: {method}")
     
-    async def _execute_python(
-        self,
-        instance: Optional[ResourceInstance[DockerConfig]],
-        params: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Execute Python code"""
-        code = params.get('code')
-        file_path = params.get('file')
-        args = params.get('args', {})
-        mode = params.get('execution_mode', 'sandboxed')
+    async def _execute_file(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute a Python file"""
+        file_path = params.get('file') or params.get('file_path')
+        if not file_path:
+            raise InvalidParameterError(param_name='file', reason="Missing 'file' or 'file_path' parameter")
         
-        # Validate inputs
-        if not code and not file_path:
-            raise InvalidParameterError(
-                param_name='code',
-                reason='Either code or file parameter is required'
-            )
+        args = params.get('args', [])
+        env = params.get('env', {})
+        timeout = params.get('timeout', 30)
+        use_docker = params.get('use_docker', None)
         
-        # Load code from file if needed
-        if file_path and not code:
+        # Resolve file path
+        file_path = Path(file_path).resolve()
+        
+        # Validate file
+        if not file_path.exists():
+            raise InvalidParameterError(param_name='file', reason=f"File not found: {file_path}")
+        if not file_path.suffix == '.py':
+            raise InvalidParameterError(param_name='file', reason=f"Not a Python file: {file_path}")
+        
+        # Determine execution mode
+        is_trusted = self._is_trusted_file(file_path)
+        
+        if use_docker is None:
+            # Auto-detect: use Docker for untrusted files
+            use_docker = not is_trusted
+        
+        if use_docker:
+            if not DOCKER_AVAILABLE or not self.docker_client:
+                raise TaskExecutionError("Docker not available for untrusted code execution")
+            return await self._execute_in_docker(file_path, args, env, timeout)
+        else:
+            if not is_trusted and not params.get('force_local', False):
+                raise TaskExecutionError(
+                    f"File {file_path} is not in trusted directories. "
+                    "Use use_docker=True or add to trusted_dirs"
+                )
+            return await self._execute_locally(file_path, args, env, timeout)
+    
+    def _is_trusted_file(self, file_path: Path) -> bool:
+        """Check if file is in a trusted directory"""
+        file_path = file_path.resolve()
+        for trusted_dir in self.trusted_dirs:
             try:
-                with open(file_path, 'r') as f:
-                    code = f.read()
-            except Exception as e:
-                raise InvalidParameterError(
-                    param_name='file',
-                    reason=f'Failed to read file: {e}'
-                )
-        
-        # Execute locally if requested and enabled, or if Docker is not available
-        if (mode == 'local' and self.enable_local) or not DOCKER_AVAILABLE:
-            return await self._execute_local(code, args)
-        
-        # Otherwise execute in container
-        if not instance:
-            # Get or create a container
-            requirements = {'tags': {mode}}
-            instance = await self.get_instance(requirements)
-            
-            if not instance:
-                # Create new container
-                mode_config = self.modes.get(mode, self.modes['sandboxed'])
-                config = DockerConfig(
-                    image=mode_config.get('image', self.default_image),
-                    memory_limit=mode_config.get('memory_limit', '512m'),
-                    cpu_limit=mode_config.get('cpu_limit', 1.0),
-                    network_mode='none',
-                    labels={'mode': mode}
-                )
-                instance = await self.create_resource(config)
-                await self.register_instance(instance)
-        
-        return await self._execute_in_container(instance, code, args)
+                file_path.relative_to(trusted_dir)
+                return True
+            except ValueError:
+                continue
+        return False
     
-    async def _execute_local(self, code: str, args: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute Python code locally"""
-        import sys
-        import io
-        import traceback
-        from contextlib import redirect_stdout, redirect_stderr
+    async def _execute_locally(
+        self,
+        file_path: Path,
+        args: List[str],
+        env: Dict[str, str],
+        timeout: int
+    ) -> Dict[str, Any]:
+        """Execute Python file locally in subprocess"""
+        import os
+        
+        # Build command
+        cmd = [sys.executable, str(file_path)]
+        if args:
+            cmd.extend(args)
         
         # Prepare environment
-        exec_globals = {"__builtins__": __builtins__}
-        exec_locals = args.copy()
-        
-        # Capture output
-        stdout_capture = io.StringIO()
-        stderr_capture = io.StringIO()
+        process_env = os.environ.copy()
+        process_env.update(env)
         
         try:
-            with redirect_stdout(stdout_capture), redirect_stderr(stderr_capture):
-                exec(code, exec_globals, exec_locals)
+            # Run in subprocess
+            process = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=process_env
+            )
             
-            # Extract result
-            result = exec_locals.get('result') or exec_globals.get('result')
+            try:
+                stdout, stderr = await asyncio.wait_for(
+                    process.communicate(),
+                    timeout=timeout
+                )
+            except asyncio.TimeoutError:
+                process.kill()
+                await process.wait()
+                return {
+                    'success': False,
+                    'error': f'Execution timed out after {timeout} seconds',
+                    'timeout': True,
+                    'execution_mode': 'local'
+                }
             
             return {
-                'success': True,
-                'stdout': stdout_capture.getvalue(),
-                'stderr': stderr_capture.getvalue(),
-                'result': result,
-                'execution_mode': 'local'
+                'success': process.returncode == 0,
+                'returncode': process.returncode,
+                'stdout': stdout.decode('utf-8', errors='replace') if stdout else '',
+                'stderr': stderr.decode('utf-8', errors='replace') if stderr else '',
+                'execution_mode': 'local',
+                'trusted': True
             }
             
         except Exception as e:
+            logger.error(f"Failed to execute {file_path} locally: {e}")
             return {
                 'success': False,
-                'stdout': stdout_capture.getvalue(),
-                'stderr': stderr_capture.getvalue() + '\n' + traceback.format_exc(),
                 'error': str(e),
                 'execution_mode': 'local'
             }
     
-    async def _execute_in_container(
+    async def _execute_in_docker(
         self,
-        instance: ResourceInstance[DockerConfig],
-        code: str,
-        args: Dict[str, Any]
+        file_path: Path,
+        args: List[str],
+        env: Dict[str, str],
+        timeout: int
     ) -> Dict[str, Any]:
-        """Execute Python code in container"""
+        """Execute Python file in Docker container"""
+        if not self.docker_client:
+            raise TaskExecutionError("Docker client not initialized")
+        
+        # Get or create container
+        instance = await self._get_or_create_container()
         container = instance.metadata['container']
         
-        # Prepare code with arguments
-        if args:
-            arg_code = '\n'.join([f"{k} = {repr(v)}" for k, v in args.items()])
-            full_code = arg_code + '\n\n' + code
-        else:
-            full_code = code
+        # Create temporary directory for file transfer
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Copy file to temp directory
+            temp_script = Path(tmpdir) / "script.py"
+            shutil.copy2(file_path, temp_script)
+            
+            # Create tar archive
+            import tarfile
+            import io
+            tar_stream = io.BytesIO()
+            with tarfile.open(fileobj=tar_stream, mode='w') as tar:
+                tar.add(str(temp_script), arcname='script.py')
+            tar_stream.seek(0)
+            
+            # Copy to container
+            container.put_archive('/tmp', tar_stream.read())
+            
+            # Build command
+            cmd = ['python', '/tmp/script.py']
+            if args:
+                cmd.extend(args)
+            
+            # Execute in container
+            try:
+                exec_result = container.exec_run(
+                    cmd=cmd,
+                    stdout=True,
+                    stderr=True,
+                    demux=True,
+                    environment=env
+                )
+                
+                stdout = exec_result.output[0] if exec_result.output[0] else b''
+                stderr = exec_result.output[1] if exec_result.output[1] else b''
+                
+                return {
+                    'success': exec_result.exit_code == 0,
+                    'returncode': exec_result.exit_code,
+                    'stdout': stdout.decode('utf-8', errors='replace'),
+                    'stderr': stderr.decode('utf-8', errors='replace'),
+                    'execution_mode': 'docker',
+                    'container_id': container.short_id,
+                    'trusted': False
+                }
+                
+            except Exception as e:
+                logger.error(f"Failed to execute {file_path} in Docker: {e}")
+                return {
+                    'success': False,
+                    'error': str(e),
+                    'execution_mode': 'docker'
+                }
+    
+    async def _get_or_create_container(self) -> ResourceInstance[DockerConfig]:
+        """Get existing container or create new one"""
+        # Try to get healthy instance
+        for instance in self.instances.values():
+            if instance.status == ResourceStatus.HEALTHY:
+                return instance
         
-        # Create execution script
-        script = self._create_script(full_code)
-        
-        # Execute in container
-        exec_result = container.exec_run(
-            cmd=['python', '-c', script],
-            stdout=True,
-            stderr=True,
-            demux=True
+        # Create new container
+        config = DockerConfig(
+            image=self.docker_image,
+            memory_limit='512m',
+            cpu_limit=1.0,
+            network_mode='none'  # Isolated network for security
         )
         
-        stdout = exec_result.output[0] if exec_result.output[0] else b''
-        stderr = exec_result.output[1] if exec_result.output[1] else b''
-        
-        # Parse result
-        result = None
-        stdout_str = stdout.decode('utf-8', errors='replace')
-        stderr_str = stderr.decode('utf-8', errors='replace')
-        
-        if exec_result.exit_code == 0 and stdout_str:
-            # Try to extract JSON result
-            try:
-                lines = stdout_str.strip().split('\n')
-                if lines and lines[-1].startswith('{'):
-                    parsed = json.loads(lines[-1])
-                    if 'result' in parsed:
-                        result = parsed['result']
-                        stdout_str = '\n'.join(lines[:-1])
-            except Exception:
-                pass
-        
-        return {
-            'success': exec_result.exit_code == 0,
-            'stdout': stdout_str,
-            'stderr': stderr_str,
-            'result': result,
-            'exit_code': exec_result.exit_code,
-            'execution_mode': 'container',
-            'container_id': instance.id
-        }
+        instance = await self.create_resource(config)
+        await self.register_instance(instance)
+        return instance
     
-    async def _validate_python(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Validate Python syntax"""
-        code = params.get('code')
+    async def _validate_file(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Validate Python file syntax"""
+        file_path = params.get('file') or params.get('file_path')
+        if not file_path:
+            raise InvalidParameterError(param_name='file', reason="Missing 'file' or 'file_path' parameter")
         
-        if not code:
-            raise InvalidParameterError(
-                param_name='code',
-                reason='Code parameter is required'
-            )
+        file_path = Path(file_path).resolve()
+        
+        if not file_path.exists():
+            return {
+                'valid': False,
+                'error': f'File not found: {file_path}'
+            }
+        
+        if not file_path.suffix == '.py':
+            return {
+                'valid': False,
+                'error': f'Not a Python file: {file_path}'
+            }
         
         try:
-            compile(code, '<string>', 'exec')
+            with open(file_path, 'r') as f:
+                code = f.read()
+            
+            compile(code, str(file_path), 'exec')
             return {
                 'valid': True,
-                'message': 'Code syntax is valid'
+                'message': 'Python syntax is valid',
+                'file': str(file_path)
             }
         except SyntaxError as e:
             return {
                 'valid': False,
                 'error': str(e),
                 'line': e.lineno,
-                'offset': e.offset
+                'offset': e.offset,
+                'file': str(file_path)
             }
     
     def _get_info(self) -> Dict[str, Any]:
@@ -425,59 +344,112 @@ class PythonProvider(HubProvider[DockerConfig]):
         return {
             'provider': self.provider_id,
             'protocol': self.protocol_id,
-            'default_image': self.default_image,
+            'docker_available': DOCKER_AVAILABLE,
+            'docker_image': self.docker_image,
+            'allow_local': self.allow_local,
+            'trusted_dirs': [str(d) for d in self.trusted_dirs],
             'total_containers': len(self.instances),
             'healthy_containers': sum(
                 1 for inst in self.instances.values()
                 if inst.status == ResourceStatus.HEALTHY
-            ),
-            'modes': {
-                name: config.get('enabled', False)
-                for name, config in self.modes.items()
-            }
+            )
         }
     
-    def _create_script(self, code: str) -> str:
-        """Create Python execution script"""
-        return f"""
-import sys
-import json
-import traceback
-
-try:
-    exec_globals = {{}}
-    exec_locals = {{}}
-    exec({repr(code)}, exec_globals, exec_locals)
-    
-    if 'result' in exec_locals:
-        print(json.dumps({{'result': exec_locals['result']}}))
-    elif 'result' in exec_globals:
-        print(json.dumps({{'result': exec_globals['result']}}))
-except Exception:
-    traceback.print_exc()
-    sys.exit(1)
-"""
-    
-    def get_method_requirements(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Get resource requirements for a method"""
-        if method == "python/execute":
-            mode = params.get('execution_mode', 'sandboxed')
-            return {'tags': {mode}}
-        return {}
-    
-    def create_default_config(self, method: str, params: Dict[str, Any]) -> DockerConfig:
-        """Create default Docker configuration"""
-        mode = params.get('execution_mode', 'sandboxed')
-        mode_config = self.modes.get(mode, self.modes['sandboxed'])
+    async def create_resource(self, config: DockerConfig) -> ResourceInstance[DockerConfig]:
+        """Create Docker container for Python execution"""
+        if not self.docker_client:
+            raise TaskExecutionError("Docker client not available")
         
-        return DockerConfig(
-            image=mode_config.get('image', self.default_image),
-            memory_limit=mode_config.get('memory_limit', '512m'),
-            cpu_limit=mode_config.get('cpu_limit', 1.0),
-            network_mode='none',
-            labels={'mode': mode}
-        )
+        try:
+            container = self.docker_client.containers.run(
+                image=config.image,
+                detach=True,
+                mem_limit=config.memory_limit,
+                nano_cpus=int(config.cpu_limit * 1e9),
+                network_mode=config.network_mode,
+                labels=config.labels,
+                command="sleep infinity",  # Keep container running
+                remove=False
+            )
+            
+            instance = ResourceInstance(
+                id=f"python-{container.short_id}",
+                name=f"Python Container {container.short_id}",
+                type=ResourceType.DOCKER,
+                endpoint=f"container://{container.id}",
+                status=ResourceStatus.HEALTHY,
+                config=config,
+                metadata={'container': container},
+                capabilities=set(self.get_supported_methods()),
+                tags={'python', 'docker'}
+            )
+            
+            logger.info(f"Created Python container: {container.short_id}")
+            return instance
+            
+        except Exception as e:
+            logger.error(f"Failed to create Docker container: {e}")
+            raise TaskExecutionError(f"Failed to create container: {e}")
     
-    def get_supported_methods(self) -> List[str]:
-        """Get list of supported methods"""
-        return ["python/execute", "python/validate", "python/info"]
+    async def destroy_resource(self, instance: ResourceInstance[DockerConfig]) -> None:
+        """Destroy Docker container"""
+        container = instance.metadata.get('container')
+        if container:
+            try:
+                container.stop(timeout=5)
+                container.remove()
+                logger.info(f"Destroyed container: {container.short_id}")
+            except Exception as e:
+                logger.error(f"Failed to destroy container: {e}")
+    
+    async def check_resource_health(self, instance: ResourceInstance[DockerConfig]) -> bool:
+        """Check if container is healthy"""
+        container = instance.metadata.get('container')
+        if not container:
+            return False
+        
+        try:
+            container.reload()
+            return container.status == 'running'
+        except Exception:
+            return False
+    
+    async def execute_on_resource(
+        self,
+        instance: ResourceInstance[DockerConfig],
+        method: str,
+        params: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """Execute method on specific container"""
+        # For now, just delegate to main execute
+        return await self.execute(method, params)
+    
+    async def discover_resources(self) -> List[ResourceInstance[DockerConfig]]:
+        """Discover existing Python containers"""
+        if not self.docker_client:
+            return []
+        
+        discovered = []
+        try:
+            containers = self.docker_client.containers.list(
+                filters={'label': 'gleitzeit.provider=python'}
+            )
+            
+            for container in containers:
+                instance = ResourceInstance(
+                    id=f"python-{container.short_id}",
+                    name=f"Python Container {container.short_id}",
+                    type=ResourceType.DOCKER,
+                    endpoint=f"container://{container.id}",
+                    status=ResourceStatus.HEALTHY if container.status == 'running' else ResourceStatus.UNHEALTHY,
+                    config=DockerConfig(image=container.image.tags[0] if container.image.tags else 'unknown'),
+                    metadata={'container': container},
+                    capabilities=set(self.get_supported_methods()),
+                    tags={'python', 'docker', 'discovered'}
+                )
+                discovered.append(instance)
+            
+        except Exception as e:
+            logger.error(f"Failed to discover containers: {e}")
+        
+        return discovered

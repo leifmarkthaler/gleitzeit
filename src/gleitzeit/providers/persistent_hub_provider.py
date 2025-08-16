@@ -88,6 +88,14 @@ class PersistentHubProvider(HubProvider[T]):
         
         logger.info(f"Initialized PersistentHubProvider: {provider_id} (instance: {self.instance_id})")
     
+    def get_supported_methods(self) -> List[str]:
+        """
+        Get supported methods - delegates to subclass implementation.
+        This is still abstract for PersistentHubProvider.
+        """
+        # This class is also abstract, so subclasses must implement this
+        raise NotImplementedError("Subclasses must implement get_supported_methods()")
+    
     async def initialize(self):
         """Initialize provider with persistence support"""
         # Initialize persistence adapter

@@ -26,7 +26,7 @@ from gleitzeit.core.models import RetryConfig
 from gleitzeit.core.retry_manager import BackoffStrategy
 from gleitzeit.task_queue import QueueManager, DependencyResolver  
 from gleitzeit.registry import ProtocolProviderRegistry
-from gleitzeit.providers.python_function_provider import CustomFunctionProvider
+from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
@@ -139,7 +139,7 @@ class GleitzeitCLI:
             python_config = provider_config.get('python', {})
             if python_config.get('enabled', True):
                 registry.register_protocol(PYTHON_PROTOCOL_V1)
-                python_provider = CustomFunctionProvider("cli-python-provider")
+                python_provider = PythonProvider("cli-python-provider", allow_local=True)
                 await python_provider.initialize()
                 registry.register_provider("cli-python-provider", "python/v1", python_provider)
                 click.echo("✓ Python provider registered")

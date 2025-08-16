@@ -9,9 +9,10 @@ from pathlib import Path
 import tempfile
 
 from gleitzeit.client.api import GleitzeitClient
-from gleitzeit.providers.ollama_pool_provider import OllamaPoolProvider
-from gleitzeit.providers.ollama_provider_streamlined import OllamaProviderStreamlined
-from gleitzeit.providers.python_provider_streamlined import PythonProviderStreamlined
+# Note: OllamaPoolProvider was deleted during streamlining
+# Using the streamlined providers that were renamed
+from gleitzeit.providers.ollama_provider import OllamaProvider
+from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
 
 logger = logging.getLogger(__name__)
@@ -148,10 +149,10 @@ class EnhancedGleitzeitClient(GleitzeitClient):
         """Discover Ollama instances and create appropriate provider"""
         try:
             if self.use_streamlined:
-                # Use streamlined provider with auto-discovery
-                provider = OllamaProviderStreamlined(
+                # Use streamlined provider (renamed from OllamaProviderStreamlined)
+                provider = OllamaProvider(
                     provider_id="ollama-auto",
-                    auto_discover=True
+                    default_model="llama3.2"
                 )
                 await provider.initialize()
                 
@@ -179,22 +180,22 @@ class EnhancedGleitzeitClient(GleitzeitClient):
                                         "url": url,
                                         "max_concurrent": 5
                                     })
-                    except:
+                    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+                        logger.debug(f"Port {port} not responding: {e}")
                         continue
                 
                 if len(instances) > 1:
-                    # Multiple instances - use pool provider
-                    provider = OllamaPoolProvider(
-                        provider_id="ollama-pool-auto",
-                        instances=instances
-                    )
+                    # Multiple instances - use first one for now (pool provider was deleted)
+                    # TODO: Implement proper load balancing in OllamaProvider
+                    logger.warning(f"Found {len(instances)} Ollama instances, using first one only")
+                    from gleitzeit.providers.ollama_provider import OllamaProvider
+                    provider = OllamaProvider("ollama-auto", default_model="llama3.2")
                     await provider.initialize()
-                    logger.info(f"Created OllamaPoolProvider with {len(instances)} instances")
                     return provider
                 elif len(instances) == 1:
-                    # Single instance - use basic provider
+                    # Single instance - use provider
                     from gleitzeit.providers.ollama_provider import OllamaProvider
-                    provider = OllamaProvider("ollama-auto", auto_discover=False)
+                    provider = OllamaProvider("ollama-auto", default_model="llama3.2")
                     await provider.initialize()
                     logger.info("Created OllamaProvider for single instance")
                     return provider
@@ -208,19 +209,17 @@ class EnhancedGleitzeitClient(GleitzeitClient):
         """Discover Python execution capability"""
         try:
             if self.use_streamlined:
-                # Use streamlined Python provider
-                provider = PythonProviderStreamlined(
+                # Use streamlined Python provider (renamed from PythonProviderStreamlined)
+                provider = PythonProvider(
                     provider_id="python-auto",
-                    max_containers=3,
-                    enable_local=True
+                    docker_image="python:3.11-slim"
                 )
                 await provider.initialize()
                 logger.info("Created streamlined Python provider")
                 return provider
             else:
-                # Use basic provider
-                from gleitzeit.providers.python_function_provider import CustomFunctionProvider
-                provider = CustomFunctionProvider("python-auto")
+                # Use Python provider for file execution
+                provider = PythonProvider("python-auto", allow_local=True)
                 await provider.initialize()
                 logger.info("Created basic Python provider")
                 return provider
@@ -232,16 +231,16 @@ class EnhancedGleitzeitClient(GleitzeitClient):
     async def _register_streamlined_providers(self):
         """Register streamlined providers without auto-discovery"""
         # Ollama
-        ollama = OllamaProviderStreamlined(
+        ollama = OllamaProvider(
             provider_id="ollama-streamlined",
-            auto_discover=False  # Don't auto-discover, just use default
+            default_model="llama3.2"
         )
         await self._register_provider(ollama, "llm/v1")
         
         # Python
-        python = PythonProviderStreamlined(
+        python = PythonProvider(
             provider_id="python-streamlined",
-            max_containers=3
+            docker_image="python:3.11-slim"
         )
         await self._register_provider(python, "python/v1")
         
@@ -252,14 +251,14 @@ class EnhancedGleitzeitClient(GleitzeitClient):
     async def _register_basic_providers(self):
         """Register basic providers (fallback to parent behavior)"""
         from gleitzeit.providers.ollama_provider import OllamaProvider
-        from gleitzeit.providers.python_function_provider import CustomFunctionProvider
+        # All providers now use the secure PythonProvider
         
         # Ollama
-        ollama = OllamaProvider("ollama-1", auto_discover=False)
+        ollama = OllamaProvider("ollama-1", default_model="llama3.2")
         await self._register_provider(ollama, "llm/v1")
         
         # Python
-        python = CustomFunctionProvider("python-1")
+        python = PythonProvider("python-1", allow_local=True)
         await self._register_provider(python, "python/v1")
         
         # MCP
@@ -316,7 +315,8 @@ class EnhancedGleitzeitClient(GleitzeitClient):
                     loop = asyncio.get_event_loop()
                     status = loop.run_until_complete(provider.get_status())
                     provider_info['status'] = status
-                except:
+                except Exception as e:
+                    logger.warning(f"Failed to get provider status: {e}")
                     pass
             
             info['providers'].append(provider_info)

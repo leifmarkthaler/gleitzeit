@@ -90,6 +90,17 @@ class HubProvider(ProtocolProvider, Generic[T], ABC):
     # Abstract methods for subclasses to implement
     
     @abstractmethod
+    def get_supported_methods(self) -> List[str]:
+        """
+        Get list of supported protocol methods.
+        Must be implemented by subclasses.
+        
+        Returns:
+            List of method names this provider supports
+        """
+        pass
+    
+    @abstractmethod
     async def create_resource(self, config: T) -> ResourceInstance[T]:
         """
         Create a new resource instance

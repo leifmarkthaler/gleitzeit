@@ -116,7 +116,8 @@ class OllamaHub(ResourceHub[OllamaConfig]):
                                 }
                                 for model in running_models
                             ]
-                except:
+                except (aiohttp.ClientError, asyncio.TimeoutError, KeyError) as e:
+                    logger.debug(f"Failed to get running models: {e}")
                     pass
             
             # Update from instance's tracked metrics
@@ -386,7 +387,8 @@ class OllamaHub(ResourceHub[OllamaConfig]):
                 url = f"http://{host}:{port}/api/tags"
                 async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
                     return resp.status == 200
-        except:
+        except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
+            logger.debug(f"Health check failed for {instance.endpoint}: {e}")
             return False
     
     async def discover_instances(self, port_range: range = range(11434, 11440)) -> List[str]:
