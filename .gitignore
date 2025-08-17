@@ -83,6 +83,9 @@ test_results.json
 docs/_build/
 docs/.doctrees/
 
+# Claude.ai documentation
+CLAUDE.md
+
 # Package files
 # *.tar.gz  # Commented out to allow distribution files in repo
 *.zip
