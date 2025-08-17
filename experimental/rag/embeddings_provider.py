@@ -8,8 +8,8 @@ import numpy as np
 from dataclasses import dataclass, field
 import aiohttp
 
-from gleitzeit.protocols.base import ProtocolProvider, ProviderCapabilities
-from gleitzeit.core.models import TaskResult, TaskStatus
+from gleitzeit.providers.base import ProtocolProvider
+from gleitzeit.core.errors import ProviderError
 
 
 @dataclass
@@ -25,16 +25,20 @@ class Document:
 class EmbeddingsProvider(ProtocolProvider):
     """Provider for document embeddings and vector operations."""
     
-    protocol_name = "embeddings"
-    protocol_version = "v1"
-    
     def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         """Initialize embeddings provider."""
-        super().__init__(config or {})
-        self.ollama_endpoint = self.config.get('ollama_endpoint', 'http://localhost:11434')
-        self.embedding_model = self.config.get('embedding_model', 'nomic-embed-text')
-        self.chunk_size = self.config.get('chunk_size', 512)
-        self.chunk_overlap = self.config.get('chunk_overlap', 50)
+        config = config or {}
+        super().__init__(
+            provider_id="embeddings_provider",
+            protocol_id="embeddings/v1",
+            name="Embeddings Provider",
+            description="Provider for document embeddings and vector operations"
+        )
+        self.config = config
+        self.ollama_endpoint = config.get('ollama_endpoint', 'http://localhost:11434')
+        self.embedding_model = config.get('embedding_model', 'nomic-embed-text')
+        self.chunk_size = config.get('chunk_size', 512)
+        self.chunk_overlap = config.get('chunk_overlap', 50)
         
         # In-memory vector store (can be replaced with Chroma, Pinecone, etc.)
         self.documents: Dict[str, Document] = {}
@@ -44,12 +48,12 @@ class EmbeddingsProvider(ProtocolProvider):
         """Initialize provider resources."""
         pass
     
-    async def cleanup(self) -> None:
+    async def shutdown(self) -> None:
         """Clean up provider resources."""
         self.documents.clear()
         self.embeddings_cache.clear()
     
-    async def validate(self) -> bool:
+    async def health_check(self) -> bool:
         """Validate provider configuration."""
         try:
             async with aiohttp.ClientSession() as session:
@@ -58,20 +62,15 @@ class EmbeddingsProvider(ProtocolProvider):
         except Exception:
             return False
     
-    def get_capabilities(self) -> ProviderCapabilities:
+    def get_supported_methods(self) -> List[str]:
         """Get provider capabilities."""
-        return ProviderCapabilities(
-            supports_batch=True,
-            supports_streaming=False,
-            max_concurrent_tasks=10,
-            supported_methods=[
-                'chunk_text',
-                'generate_embedding',
-                'index_documents',
-                'search_similar',
-                'retrieve_context'
-            ]
-        )
+        return [
+            'chunk_text',
+            'generate_embedding',
+            'index_documents',
+            'search_similar',
+            'retrieve_context'
+        ]
     
     def chunk_text(self, text: str, chunk_size: Optional[int] = None, overlap: Optional[int] = None) -> List[str]:
         """Split text into overlapping chunks."""
@@ -213,83 +212,63 @@ class EmbeddingsProvider(ProtocolProvider):
         
         return "\n".join(context_parts)
     
-    async def execute(self, method: str, parameters: Dict[str, Any]) -> TaskResult:
-        """Execute a method on the provider."""
+    async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
+        """Handle a JSON-RPC method call."""
         try:
             if method == 'chunk_text':
-                text = parameters['text']
+                text = params['text']
                 chunks = self.chunk_text(
                     text,
-                    parameters.get('chunk_size'),
-                    parameters.get('overlap')
+                    params.get('chunk_size'),
+                    params.get('overlap')
                 )
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'chunk_text'),
-                    status=TaskStatus.COMPLETED,
-                    result={'chunks': chunks, 'count': len(chunks)}
-                )
+                return {'chunks': chunks, 'count': len(chunks)}
             
             elif method == 'generate_embedding':
-                text = parameters['text']
+                text = params['text']
                 embedding = await self.generate_embedding(text)
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'generate_embedding'),
-                    status=TaskStatus.COMPLETED,
-                    result={'embedding': embedding, 'dimension': len(embedding)}
-                )
+                return {'embedding': embedding, 'dimension': len(embedding)}
             
             elif method == 'index_documents':
-                documents = parameters['documents']
+                documents = params['documents']
                 result = await self.index_documents(documents)
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'index_documents'),
-                    status=TaskStatus.COMPLETED,
-                    result=result
-                )
+                return result
             
             elif method == 'search_similar':
-                query = parameters['query']
-                top_k = parameters.get('top_k', 5)
-                threshold = parameters.get('threshold', 0.0)
+                query = params['query']
+                top_k = params.get('top_k', 5)
+                threshold = params.get('threshold', 0.0)
                 
                 results = await self.search_similar(query, top_k, threshold)
                 
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'search_similar'),
-                    status=TaskStatus.COMPLETED,
-                    result={
-                        'documents': [
-                            {
-                                'id': doc.id,
-                                'text': doc.text,
-                                'score': doc.score,
-                                'metadata': doc.metadata
-                            }
-                            for doc in results
-                        ],
-                        'count': len(results)
-                    }
-                )
+                return {
+                    'documents': [
+                        {
+                            'id': doc.id,
+                            'text': doc.text,
+                            'score': doc.score,
+                            'metadata': doc.metadata
+                        }
+                        for doc in results
+                    ],
+                    'count': len(results)
+                }
             
             elif method == 'retrieve_context':
-                query = parameters['query']
-                top_k = parameters.get('top_k', 5)
-                max_tokens = parameters.get('max_tokens', 2000)
+                query = params['query']
+                top_k = params.get('top_k', 5)
+                max_tokens = params.get('max_tokens', 2000)
                 
                 context = await self.retrieve_context(query, top_k, max_tokens)
                 
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'retrieve_context'),
-                    status=TaskStatus.COMPLETED,
-                    result={'context': context, 'query': query}
-                )
+                return {'context': context, 'query': query}
             
             else:
                 raise ValueError(f"Unsupported method: {method}")
         
         except Exception as e:
-            return TaskResult(
-                task_id=parameters.get('task_id', method),
-                status=TaskStatus.FAILED,
-                error=str(e)
+            raise ProviderError(
+                message=f"Method {method} failed: {str(e)}",
+                provider_id=self.provider_id,
+                cause=e
             )

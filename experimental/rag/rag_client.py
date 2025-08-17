@@ -4,8 +4,8 @@ import asyncio
 from typing import Dict, Any, List, Optional
 from pathlib import Path
 
-from gleitzeit import GleitzeitClient
-from gleitzeit.core.workflow import Workflow, Task
+from gleitzeit.client import GleitzeitClient
+from gleitzeit.core.models import Workflow, Task
 
 
 class RAGClient:

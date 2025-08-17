@@ -5,59 +5,58 @@ from typing import Dict, Any, List, Optional
 from pathlib import Path
 import glob as glob_module
 
-from gleitzeit.protocols.base import ProtocolProvider, ProviderCapabilities
-from gleitzeit.core.models import TaskResult, TaskStatus
-from .embeddings_provider import EmbeddingsProvider
+from gleitzeit.providers.base import ProtocolProvider
+from gleitzeit.core.errors import ProviderError
+from embeddings_provider import EmbeddingsProvider
 
 
 class RAGProvider(ProtocolProvider):
     """Provider for RAG workflows combining retrieval and generation."""
     
-    protocol_name = "rag"
-    protocol_version = "v1"
-    
     def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
         """Initialize RAG provider."""
-        super().__init__(config or {})
+        config = config or {}
+        super().__init__(
+            provider_id="rag_provider",
+            protocol_id="rag/v1",
+            name="RAG Provider",
+            description="Provider for RAG workflows combining retrieval and generation"
+        )
+        self.config = config
         
         # Initialize embeddings provider
         self.embeddings_provider = EmbeddingsProvider(config)
         
         # LLM configuration
-        self.ollama_endpoint = self.config.get('ollama_endpoint', 'http://localhost:11434')
-        self.chat_model = self.config.get('chat_model', 'llama3.2:latest')
+        self.ollama_endpoint = config.get('ollama_endpoint', 'http://localhost:11434')
+        self.chat_model = config.get('chat_model', 'llama3.2:latest')
         
         # RAG configuration
-        self.top_k = self.config.get('top_k', 5)
-        self.context_max_tokens = self.config.get('context_max_tokens', 2000)
-        self.similarity_threshold = self.config.get('similarity_threshold', 0.3)
+        self.top_k = config.get('top_k', 5)
+        self.context_max_tokens = config.get('context_max_tokens', 2000)
+        self.similarity_threshold = config.get('similarity_threshold', 0.3)
     
     async def initialize(self) -> None:
         """Initialize provider resources."""
         await self.embeddings_provider.initialize()
     
-    async def cleanup(self) -> None:
+    async def shutdown(self) -> None:
         """Clean up provider resources."""
-        await self.embeddings_provider.cleanup()
+        await self.embeddings_provider.shutdown()
     
-    async def validate(self) -> bool:
+    async def health_check(self) -> bool:
         """Validate provider configuration."""
-        return await self.embeddings_provider.validate()
+        return await self.embeddings_provider.health_check()
     
-    def get_capabilities(self) -> ProviderCapabilities:
+    def get_supported_methods(self) -> List[str]:
         """Get provider capabilities."""
-        return ProviderCapabilities(
-            supports_batch=True,
-            supports_streaming=False,
-            max_concurrent_tasks=5,
-            supported_methods=[
-                'ingest_documents',
-                'ingest_directory',
-                'query',
-                'query_with_context',
-                'clear_index'
-            ]
-        )
+        return [
+            'ingest_documents',
+            'ingest_directory',
+            'query',
+            'query_with_context',
+            'clear_index'
+        ]
     
     async def ingest_documents(self, documents: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Ingest documents into the RAG system."""
@@ -240,62 +239,42 @@ class RAGProvider(ProtocolProvider):
             'documents_removed': doc_count
         }
     
-    async def execute(self, method: str, parameters: Dict[str, Any]) -> TaskResult:
-        """Execute a method on the provider."""
+    async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
+        """Handle a JSON-RPC method call."""
         try:
             if method == 'ingest_documents':
-                documents = parameters['documents']
+                documents = params['documents']
                 result = await self.ingest_documents(documents)
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'ingest_documents'),
-                    status=TaskStatus.COMPLETED,
-                    result=result
-                )
+                return result
             
             elif method == 'ingest_directory':
-                directory = parameters['directory']
-                pattern = parameters.get('pattern', '*.txt')
+                directory = params['directory']
+                pattern = params.get('pattern', '*.txt')
                 result = await self.ingest_directory(directory, pattern)
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'ingest_directory'),
-                    status=TaskStatus.COMPLETED,
-                    result=result
-                )
+                return result
             
             elif method == 'query':
-                query = parameters['query']
-                use_context = parameters.get('use_context', True)
+                query = params['query']
+                use_context = params.get('use_context', True)
                 result = await self.query(query, use_context)
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'query'),
-                    status=TaskStatus.COMPLETED,
-                    result=result
-                )
+                return result
             
             elif method == 'query_with_context':
-                query = parameters['query']
-                additional_context = parameters['additional_context']
+                query = params['query']
+                additional_context = params['additional_context']
                 result = await self.query_with_context(query, additional_context)
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'query_with_context'),
-                    status=TaskStatus.COMPLETED,
-                    result=result
-                )
+                return result
             
             elif method == 'clear_index':
                 result = await self.clear_index()
-                return TaskResult(
-                    task_id=parameters.get('task_id', 'clear_index'),
-                    status=TaskStatus.COMPLETED,
-                    result=result
-                )
+                return result
             
             else:
                 raise ValueError(f"Unsupported method: {method}")
         
         except Exception as e:
-            return TaskResult(
-                task_id=parameters.get('task_id', method),
-                status=TaskStatus.FAILED,
-                error=str(e)
+            raise ProviderError(
+                message=f"Method {method} failed: {str(e)}",
+                provider_id=self.provider_id,
+                cause=e
             )

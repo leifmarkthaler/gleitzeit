@@ -32,7 +32,7 @@ class TestEmbeddingsProvider:
         })
         await provider.initialize()
         yield provider
-        await provider.cleanup()
+        await provider.shutdown()
     
     def test_chunk_text(self) -> None:
         """Test text chunking functionality."""
@@ -65,7 +65,7 @@ class TestEmbeddingsProvider:
     async def test_generate_embedding(self, provider: EmbeddingsProvider) -> None:
         """Test embedding generation."""
         # Skip if Ollama is not available
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         text = "This is a test document for embedding generation."
@@ -78,7 +78,7 @@ class TestEmbeddingsProvider:
     @pytest.mark.asyncio
     async def test_embedding_cache(self, provider: EmbeddingsProvider) -> None:
         """Test that embeddings are cached."""
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         text = "Test caching behavior"
@@ -117,7 +117,7 @@ class TestEmbeddingsProvider:
     @pytest.mark.asyncio
     async def test_index_documents(self, provider: EmbeddingsProvider) -> None:
         """Test document indexing."""
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         documents = [
@@ -136,7 +136,7 @@ class TestEmbeddingsProvider:
     @pytest.mark.asyncio
     async def test_search_similar(self, provider: EmbeddingsProvider) -> None:
         """Test similarity search."""
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         # Index test documents
@@ -171,7 +171,7 @@ class TestRAGProvider:
         })
         await provider.initialize()
         yield provider
-        await provider.cleanup()
+        await provider.shutdown()
     
     @pytest.fixture
     def temp_dir(self) -> Path:
@@ -191,7 +191,7 @@ class TestRAGProvider:
     @pytest.mark.asyncio
     async def test_ingest_documents(self, provider: RAGProvider) -> None:
         """Test document ingestion."""
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         documents = [
@@ -208,7 +208,7 @@ class TestRAGProvider:
     @pytest.mark.asyncio
     async def test_ingest_directory(self, provider: RAGProvider, temp_dir: Path) -> None:
         """Test directory ingestion."""
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         result = await provider.ingest_directory(str(temp_dir), "*.txt")
@@ -219,7 +219,7 @@ class TestRAGProvider:
     @pytest.mark.asyncio
     async def test_query_with_context(self, provider: RAGProvider) -> None:
         """Test querying with context."""
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         # Ingest test documents
@@ -241,7 +241,7 @@ class TestRAGProvider:
     @pytest.mark.asyncio
     async def test_query_without_context(self, provider: RAGProvider) -> None:
         """Test querying without context."""
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         result = await provider.query("What is Python?", use_context=False)
@@ -253,7 +253,7 @@ class TestRAGProvider:
     @pytest.mark.asyncio
     async def test_clear_index(self, provider: RAGProvider) -> None:
         """Test clearing the index."""
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         # Add documents
@@ -311,7 +311,7 @@ class TestIntegration:
         """Test complete RAG workflow."""
         # Skip if Ollama is not available
         provider = EmbeddingsProvider()
-        if not await provider.validate():
+        if not await provider.health_check():
             pytest.skip("Ollama not available")
         
         config = {
@@ -386,7 +386,7 @@ if __name__ == '__main__':
         print(f"✓ Cosine similarity works: {similarity:.3f}")
         
         # Check Ollama availability
-        if await provider.validate():
+        if await provider.health_check():
             print("✓ Ollama is available")
             
             # Test embedding generation
