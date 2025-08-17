@@ -58,13 +58,13 @@ A workflow orchestration system for coordinating LLM tasks, Python code executio
 ## 🚀 Quick Navigation
 
 ### For Users
-Start with the [Quick Start Guide](QUICK_START.md) to run your first workflow, then explore [Workflow Execution](WORKFLOW_EXECUTION.md) and [CLI Reference](CLI_REFERENCE.md).
+Start with the [Quick Start Guide](docs/QUICK_START.md) to run your first workflow, then explore [Workflow Execution](docs/WORKFLOW_EXECUTION.md) and [CLI Reference](docs/CLI_REFERENCE.md).
 
 ### For Developers
-Read the [Architecture Overview](ARCHITECTURE.md), then dive into [Provider Development](PROVIDER_DEVELOPMENT.md) or [Hub Development](HUB_DEVELOPMENT.md) based on your needs.
+Read the [Architecture Overview](docs/ARCHITECTURE.md), then dive into [Provider Development](docs/PROVIDER_DEVELOPMENT.md) or [Hub Development](docs/HUB_DEVELOPMENT.md) based on your needs.
 
 ### For System Administrators
-Focus on [Installation Guide](INSTALLATION.md), [Configuration](CONFIGURATION.md), and [Health Monitoring](HEALTH_MONITORING.md).
+Focus on [Installation Guide](docs/INSTALLATION.md), [Configuration](docs/CONFIGURATION.md), and [Health Monitoring](docs/HEALTH_MONITORING.md).
 
 ## 📋 Version Information
 
