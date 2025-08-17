@@ -8,7 +8,7 @@ from unittest.mock import Mock, AsyncMock
 import yaml
 
 from gleitzeit.core.execution_engine import ExecutionEngine
-from gleitzeit.core.registry import ProtocolProviderRegistry
+from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.persistence import UnifiedPersistenceAdapter
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider

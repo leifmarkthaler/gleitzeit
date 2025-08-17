@@ -33,7 +33,7 @@ This guide covers testing strategies, patterns, and tools for Gleitzeit v0.0.5. 
 
 ```
 gleitzeit/
-├── newtests/
+├── tests/
 │   ├── unit/
 │   │   ├── providers/
 │   │   │   ├── test_base_provider.py
@@ -445,7 +445,7 @@ class TestExecutionEngine:
 
 ### Overview
 
-The `newtests/workflows/` directory contains comprehensive tests for all workflow examples in the `/examples` directory. These tests validate workflow structure, execution flow, parameter substitution, and provider integration.
+The `tests/workflows/` directory contains comprehensive tests for all workflow examples in the `/examples` directory. These tests validate workflow structure, execution flow, parameter substitution, and provider integration.
 
 ### Workflow Test Categories
 
@@ -524,19 +524,19 @@ Tests advanced workflow patterns:
 
 ```bash
 # Run all workflow tests
-pytest newtests/workflows/
+pytest tests/workflows/
 
 # Run specific workflow test
-pytest newtests/workflows/test_batch_workflows.py
+pytest tests/workflows/test_batch_workflows.py
 
 # Run with coverage
-pytest newtests/workflows/ --cov=src/gleitzeit
+pytest tests/workflows/ --cov=src/gleitzeit
 
 # Use the master test runner
-python newtests/workflows/test_all_workflows.py
+python tests/workflows/test_all_workflows.py
 
 # Test specific workflow type
-python newtests/workflows/test_all_workflows.py batch
+python tests/workflows/test_all_workflows.py batch
 ```
 
 ### Workflow Test Structure
@@ -1190,22 +1190,22 @@ jobs:
 
 ```bash
 # Run all tests
-pytest newtests/
+pytest tests/
 
 # Run unit tests only
-pytest newtests/unit/
+pytest tests/unit/
 
 # Run workflow tests only
-pytest newtests/workflows/
+pytest tests/workflows/
 
 # Run specific test file
-pytest newtests/unit/providers/test_ollama_provider.py
+pytest tests/unit/providers/test_ollama_provider.py
 
 # Run specific test class
-pytest newtests/workflows/test_batch_workflows.py::TestBatchWorkflows
+pytest tests/workflows/test_batch_workflows.py::TestBatchWorkflows
 
 # Run specific test method
-pytest newtests/workflows/test_simple_llm_workflow.py::TestSimpleLLMWorkflow::test_workflow_structure
+pytest tests/workflows/test_simple_llm_workflow.py::TestSimpleLLMWorkflow::test_workflow_structure
 
 # Run tests by marker
 pytest -m unit           # Unit tests only
@@ -1216,7 +1216,7 @@ pytest -m "not slow"     # Skip slow tests
 pytest --cov=src/gleitzeit --cov-report=html
 
 # Run workflow tests with coverage
-pytest newtests/workflows/ --cov=src/gleitzeit --cov-report=term-missing
+pytest tests/workflows/ --cov=src/gleitzeit --cov-report=term-missing
 
 # Run in parallel
 pytest -n auto
@@ -1231,12 +1231,12 @@ pytest -x
 pytest --lf
 
 # Use the workflow test runner
-python newtests/workflows/test_all_workflows.py
+python tests/workflows/test_all_workflows.py
 
 # Test specific workflow category
-python newtests/workflows/test_all_workflows.py vision
-python newtests/workflows/test_all_workflows.py batch
-python newtests/workflows/test_all_workflows.py mcp
+python tests/workflows/test_all_workflows.py vision
+python tests/workflows/test_all_workflows.py batch
+python tests/workflows/test_all_workflows.py mcp
 ```
 
 ### Test Coverage
