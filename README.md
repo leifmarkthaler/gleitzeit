@@ -90,7 +90,7 @@ Focus on [Installation Guide](docs/INSTALLATION.md), [Configuration](docs/CONFIG
 
 See [Migration Guide](MIGRATION.md) for upgrade instructions.
 
-## 📞 Support
+## Support
 
 - **GitHub Issues**: [Report bugs or request features](https://github.com/yourusername/gleitzeit/issues)
 - **Documentation Issues**: [Report documentation problems](https://github.com/yourusername/gleitzeit/issues/new?labels=documentation)
@@ -123,4 +123,4 @@ See [Migration Guide](MIGRATION.md) for upgrade instructions.
 
 ## 📚 Complete Documentation Index
 
-All documentation files are in this `/newdocs` directory. For the legacy documentation, see `/docs`.
+All documentation files are in `/docs` directory.
