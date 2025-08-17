@@ -4,30 +4,15 @@ Ollama Hub - Manages multiple Ollama instances
 import asyncio
 import aiohttp
 import logging
-from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional, Set
 from datetime import datetime
 import psutil
 import subprocess
 
 from .base import ResourceHub, ResourceInstance, ResourceStatus, ResourceMetrics, ResourceType
+from .configs import OllamaConfig
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class OllamaConfig:
-    """Configuration for an Ollama instance"""
-    host: str = "127.0.0.1"
-    port: int = 11434
-    models: List[str] = field(default_factory=list)
-    max_concurrent: int = 4
-    gpu_layers: Optional[int] = None
-    cpu_threads: Optional[int] = None
-    context_size: Optional[int] = None
-    environment: Dict[str, str] = field(default_factory=dict)
-    auto_pull_models: bool = True
-    process_id: Optional[int] = None  # For managed instances
 
 
 class OllamaHub(ResourceHub[OllamaConfig]):
@@ -45,97 +30,149 @@ class OllamaHub(ResourceHub[OllamaConfig]):
     def __init__(
         self,
         hub_id: str = "ollama-hub",
-        health_check_interval: int = 30,
-        max_health_failures: int = 3,
-        enable_auto_recovery: bool = True,
+        auto_discover: bool = True,
         enable_metrics: bool = True,
-        auto_discover: bool = True
+        max_instances: int = 10,
+        discovery_ports: Optional[List[int]] = None
     ):
         super().__init__(
             hub_id=hub_id,
             resource_type=ResourceType.OLLAMA,
-            health_check_interval=health_check_interval,
-            max_health_failures=max_health_failures,
-            enable_auto_recovery=enable_auto_recovery,
+            enable_sharing=True,
+            max_instances=max_instances,
             enable_metrics=enable_metrics
         )
         
         self.auto_discover = auto_discover
-        self.model_cache: Dict[str, Set[str]] = {}  # instance_id -> set of loaded models
-        self.discovery_task: Optional[asyncio.Task] = None
+        self.discovery_ports = discovery_ports or list(range(11434, 11439))
+        self.model_cache: Dict[str, Set[str]] = {}  # instance_id -> set of models
+        self.session: Optional[aiohttp.ClientSession] = None  # Shared session pool
+        
+        logger.info(f"Initialized OllamaHub {hub_id} with auto_discover={auto_discover}")
     
-    async def check_health(self, instance: ResourceInstance[OllamaConfig]) -> bool:
-        """Check health of an Ollama instance"""
-        try:
-            async with aiohttp.ClientSession() as session:
-                url = f"{instance.endpoint}/api/tags"
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as resp:
-                    if resp.status == 200:
-                        data = await resp.json()
-                        # Update model cache
-                        models = {model['name'] for model in data.get('models', [])}
-                        self.model_cache[instance.id] = models
-                        instance.capabilities = models
-                        return True
+    async def initialize(self) -> None:
+        """Initialize the hub and discover instances"""
+        await super().initialize()
+        
+        # Create shared session with connection pooling
+        connector = aiohttp.TCPConnector(
+            limit=100,  # Total connection pool limit
+            limit_per_host=30,  # Per-host connection limit
+            ttl_dns_cache=300  # DNS cache timeout
+        )
+        self.session = aiohttp.ClientSession(connector=connector)
+        
+        if self.auto_discover:
+            await self.discover_instances()
+    
+    async def discover_instances(self) -> List[ResourceInstance[OllamaConfig]]:
+        """Discover running Ollama instances"""
+        discovered = []
+        
+        for port in self.discovery_ports:
+            if await self._is_ollama_running("127.0.0.1", port):
+                config = OllamaConfig(host="127.0.0.1", port=port)
+                instance = await self.create_resource(config)
+                if instance:
+                    await self.register_instance(instance)
+                    discovered.append(instance)
+                    logger.info(f"Discovered Ollama instance at port {port}")
+        
+        return discovered
+    
+    async def _is_ollama_running(self, host: str, port: int) -> bool:
+        """Check if Ollama is running at given host:port"""
+        if not self.session:
+            # Fallback if session not initialized
+            async with aiohttp.ClientSession() as temp_session:
+                try:
+                    url = f"http://{host}:{port}/api/tags"
+                    async with temp_session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
+                        return resp.status == 200
+                except:
                     return False
-        except Exception as e:
-            logger.debug(f"Health check failed for {instance.id}: {e}")
+        
+        try:
+            url = f"http://{host}:{port}/api/tags"
+            async with self.session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
+                return resp.status == 200
+        except:
             return False
     
-    async def collect_metrics(self, instance: ResourceInstance[OllamaConfig]) -> ResourceMetrics:
-        """Collect metrics from an Ollama instance"""
-        metrics = ResourceMetrics()
+    async def create_resource(self, config: OllamaConfig) -> Optional[ResourceInstance[OllamaConfig]]:
+        """Create an Ollama resource instance"""
+        instance_id = f"ollama-{config.host}-{config.port}"
+        endpoint = f"http://{config.host}:{config.port}"
         
-        try:
-            # Get Ollama process metrics if we have the PID
-            if instance.config and instance.config.process_id:
+        # Check if it's actually running
+        if not await self._is_ollama_running(config.host, config.port):
+            logger.warning(f"Ollama not running at {endpoint}")
+            return None
+        
+        # Get available models
+        models = await self._get_available_models(endpoint)
+        
+        instance = ResourceInstance(
+            id=instance_id,
+            name=f"Ollama@{config.port}",
+            type=ResourceType.OLLAMA,
+            endpoint=endpoint,
+            status=ResourceStatus.HEALTHY,
+            config=config,
+            capabilities=models,
+            tags={"ollama", f"port:{config.port}"},
+            metrics=ResourceMetrics()
+        )
+        
+        return instance
+    
+    async def _get_available_models(self, endpoint: str) -> Set[str]:
+        """Get list of available models from Ollama instance"""
+        if not self.session:
+            logger.warning("Session not initialized, using temporary session")
+            async with aiohttp.ClientSession() as temp_session:
                 try:
-                    process = psutil.Process(instance.config.process_id)
-                    metrics.cpu_percent = process.cpu_percent(interval=0.1)
-                    memory_info = process.memory_info()
-                    metrics.memory_mb = memory_info.rss / 1024 / 1024
-                    metrics.memory_percent = process.memory_percent()
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    pass
-            
-            # Try to get Ollama-specific metrics
-            async with aiohttp.ClientSession() as session:
-                # Check for running models
-                url = f"{instance.endpoint}/api/ps"
-                try:
-                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
+                    url = f"{endpoint}/api/tags"
+                    async with temp_session.get(url) as resp:
                         if resp.status == 200:
                             data = await resp.json()
-                            running_models = data.get('models', [])
-                            metrics.active_connections = len(running_models)
-                            metrics.custom_metrics['running_models'] = [
-                                {
-                                    'name': model.get('name'),
-                                    'size': model.get('size'),
-                                    'digest': model.get('digest')
-                                }
-                                for model in running_models
-                            ]
-                except (aiohttp.ClientError, asyncio.TimeoutError, KeyError) as e:
-                    logger.debug(f"Failed to get running models: {e}")
-                    pass
-            
-            # Update from instance's tracked metrics
-            if hasattr(instance, '_request_metrics'):
-                metrics.request_count = instance._request_metrics.get('total', 0)
-                metrics.error_count = instance._request_metrics.get('errors', 0)
-                
-                response_times = instance._request_metrics.get('response_times', [])
-                if response_times:
-                    metrics.avg_response_time_ms = sum(response_times) / len(response_times)
-                    sorted_times = sorted(response_times)
-                    metrics.p95_response_time_ms = sorted_times[int(len(sorted_times) * 0.95)]
-                    metrics.p99_response_time_ms = sorted_times[int(len(sorted_times) * 0.99)]
-            
-        except Exception as e:
-            logger.error(f"Failed to collect metrics for {instance.id}: {e}")
+                            models = {model['name'] for model in data.get('models', [])}
+                            return models
+                except Exception as e:
+                    logger.error(f"Failed to get models from {endpoint}: {e}")
+                return set()
         
-        metrics.last_updated = datetime.utcnow()
+        try:
+            url = f"{endpoint}/api/tags"
+            async with self.session.get(url) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    models = {model['name'] for model in data.get('models', [])}
+                    return models
+        except Exception as e:
+            logger.error(f"Failed to get models from {endpoint}: {e}")
+        
+        return set()
+    
+    async def check_resource_health(self, instance: ResourceInstance[OllamaConfig]) -> ResourceMetrics:
+        """Check health of an Ollama instance"""
+        metrics = instance.metrics or ResourceMetrics()
+        
+        # Check if responsive
+        if await self._is_ollama_running(instance.config.host, instance.config.port):
+            instance.status = ResourceStatus.HEALTHY
+            
+            # Update available models
+            models = await self._get_available_models(instance.endpoint)
+            instance.capabilities = models
+            
+            # Update model cache
+            self.model_cache[instance.id] = models
+        else:
+            instance.status = ResourceStatus.UNHEALTHY
+            metrics.error_count += 1
+        
+        metrics.last_check = datetime.utcnow()
         return metrics
     
     async def start_instance(self, config: OllamaConfig) -> ResourceInstance[OllamaConfig]:
@@ -169,41 +206,34 @@ class OllamaHub(ResourceHub[OllamaConfig]):
                 # Wait for startup
                 await asyncio.sleep(3)
                 
-                if not await self._is_ollama_running(config.host, config.port):
-                    raise RuntimeError(f"Failed to start Ollama at {endpoint}")
-                
-                logger.info(f"Started Ollama instance at {endpoint} (PID: {process.pid})")
-                
+                # Verify it started
+                max_retries = 10
+                for _ in range(max_retries):
+                    if await self._is_ollama_running(config.host, config.port):
+                        logger.info(f"Started Ollama at {endpoint} (PID: {process.pid})")
+                        break
+                    await asyncio.sleep(1)
+                else:
+                    logger.error(f"Failed to start Ollama at {endpoint}")
+                    process.terminate()
+                    raise RuntimeError(f"Ollama failed to start at {endpoint}")
+                    
+            except FileNotFoundError:
+                logger.error("Ollama binary not found. Please install Ollama first.")
+                raise
             except Exception as e:
-                logger.error(f"Failed to start Ollama instance: {e}")
+                logger.error(f"Failed to start Ollama: {e}")
                 raise
         
-        # Register the instance
-        instance = await self.register_instance(
-            instance_id=instance_id,
-            name=f"Ollama@{config.port}",
-            endpoint=endpoint,
-            metadata={
-                'host': config.host,
-                'port': config.port,
-                'max_concurrent': config.max_concurrent
-            },
-            tags={'local'} if config.host in ['127.0.0.1', 'localhost'] else {'remote'},
-            capabilities=set(config.models),
-            config=config
-        )
-        
-        # Initialize request tracking
-        instance._request_metrics = {
-            'total': 0,
-            'errors': 0,
-            'response_times': []
-        }
-        
-        # Pull models if needed
-        if config.auto_pull_models:
-            for model in config.models:
-                await self.ensure_model(instance_id, model)
+        # Create and register instance
+        instance = await self.create_resource(config)
+        if instance:
+            await self.register_instance(instance)
+            
+            # Pull default models if specified
+            if config.auto_pull_models and config.models:
+                for model in config.models:
+                    await self.ensure_model(instance.id, model)
         
         return instance
     
@@ -243,10 +273,11 @@ class OllamaHub(ResourceHub[OllamaConfig]):
         
         config = instance.config
         
-        # Stop the instance
-        if config.process_id:
-            await self.stop_instance(instance_id)
-            await asyncio.sleep(2)
+        # Stop it first
+        await self.stop_instance(instance_id)
+        
+        # Wait a bit
+        await asyncio.sleep(2)
         
         # Start it again
         try:
@@ -270,11 +301,13 @@ class OllamaHub(ResourceHub[OllamaConfig]):
             # Pull the model
             logger.info(f"Pulling model {model_name} on {instance_id}")
             
-            async with aiohttp.ClientSession() as session:
-                url = f"{instance.endpoint}/api/pull"
-                data = {"name": model_name}
-                
-                async with session.post(url, json=data) as resp:
+            if not self.session:
+                raise RuntimeError("Session not initialized")
+            
+            url = f"{instance.endpoint}/api/pull"
+            data = {"name": model_name}
+            
+            async with self.session.post(url, json=data) as resp:
                     if resp.status == 200:
                         # Stream the response to track progress
                         async for line in resp.content:
@@ -344,121 +377,56 @@ class OllamaHub(ResourceHub[OllamaConfig]):
         start_time = datetime.utcnow()
         
         try:
-            async with aiohttp.ClientSession() as session:
-                # Map method to Ollama API endpoint
-                endpoint_map = {
-                    'generate': '/api/generate',
-                    'chat': '/api/chat',
-                    'embeddings': '/api/embeddings'
-                }
-                
-                endpoint = endpoint_map.get(method, f'/api/{method}')
-                url = f"{instance.endpoint}{endpoint}"
-                
-                async with session.post(url, json=params) as resp:
-                    response_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+            if not self.session:
+                raise RuntimeError("Session not initialized")
+            
+            # Map method to Ollama API endpoint
+            endpoint_map = {
+                "llm/complete": "/api/generate",
+                "llm/chat": "/api/chat",
+                "llm/embeddings": "/api/embeddings"
+            }
+            
+            endpoint = endpoint_map.get(method, "/api/generate")
+            url = f"{instance.endpoint}{endpoint}"
+            
+            # Update metrics
+            instance.metrics.active_connections += 1
+            instance.metrics.total_requests += 1
+            
+            async with self.session.post(url, json=params) as resp:
+                    result = await resp.json()
                     
                     # Update metrics
-                    if hasattr(instance, '_request_metrics'):
-                        instance._request_metrics['total'] += 1
-                        instance._request_metrics['response_times'].append(response_time)
-                        
-                        # Keep only last 100 response times
-                        if len(instance._request_metrics['response_times']) > 100:
-                            instance._request_metrics['response_times'] = \
-                                instance._request_metrics['response_times'][-100:]
+                    elapsed = (datetime.utcnow() - start_time).total_seconds() * 1000
+                    instance.metrics.avg_response_time_ms = (
+                        (instance.metrics.avg_response_time_ms * (instance.metrics.total_requests - 1) + elapsed) /
+                        instance.metrics.total_requests
+                    )
                     
-                    if resp.status == 200:
-                        return await resp.json()
-                    else:
-                        if hasattr(instance, '_request_metrics'):
-                            instance._request_metrics['errors'] += 1
-                        raise RuntimeError(f"Request failed: HTTP {resp.status}")
-                        
+                    if resp.status != 200:
+                        instance.metrics.error_count += 1
+                        raise RuntimeError(f"Ollama API error: {result}")
+                    
+                    return result
+                    
         except Exception as e:
-            if hasattr(instance, '_request_metrics'):
-                instance._request_metrics['errors'] += 1
+            instance.metrics.error_count += 1
+            logger.error(f"Failed to execute on {instance_id}: {e}")
             raise
+        finally:
+            instance.metrics.active_connections -= 1
     
-    async def _is_ollama_running(self, host: str, port: int) -> bool:
-        """Check if Ollama is running at given host:port"""
-        try:
-            async with aiohttp.ClientSession() as session:
-                url = f"http://{host}:{port}/api/tags"
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=2)) as resp:
-                    return resp.status == 200
-        except (aiohttp.ClientError, asyncio.TimeoutError, Exception) as e:
-            logger.debug(f"Health check failed for {instance.endpoint}: {e}")
-            return False
-    
-    async def discover_instances(self, port_range: range = range(11434, 11440)) -> List[str]:
-        """Discover running Ollama instances on local machine"""
-        discovered = []
+    async def cleanup(self) -> None:
+        """Clean up resources"""
+        # Stop all managed instances
+        for instance_id, instance in list(self.instances.items()):
+            if instance.config and instance.config.process_id:
+                await self.stop_instance(instance_id)
         
-        for port in port_range:
-            if await self._is_ollama_running("127.0.0.1", port):
-                discovered.append(f"127.0.0.1:{port}")
-                logger.info(f"Discovered Ollama instance at 127.0.0.1:{port}")
+        # Close the shared session
+        if self.session and not self.session.closed:
+            await self.session.close()
+            self.session = None
         
-        return discovered
-    
-    async def auto_discover_and_register(self):
-        """Automatically discover and register Ollama instances"""
-        discovered = await self.discover_instances()
-        
-        for endpoint_str in discovered:
-            host, port = endpoint_str.split(':')
-            port = int(port)
-            instance_id = f"ollama-{host}-{port}"
-            
-            if instance_id not in self.instances:
-                config = OllamaConfig(host=host, port=port)
-                endpoint = f"http://{host}:{port}"
-                
-                await self.register_instance(
-                    instance_id=instance_id,
-                    name=f"Ollama@{port}",
-                    endpoint=endpoint,
-                    metadata={'host': host, 'port': port, 'discovered': True},
-                    tags={'local', 'discovered'},
-                    config=config
-                )
-    
-    async def start(self):
-        """Start the Ollama hub"""
-        await super().start()
-        
-        if self.auto_discover:
-            # Do initial discovery
-            await self.auto_discover_and_register()
-            
-            # Start periodic discovery
-            async def discovery_loop():
-                while self.running:
-                    await asyncio.sleep(60)  # Check every minute
-                    await self.auto_discover_and_register()
-            
-            self.discovery_task = asyncio.create_task(discovery_loop())
-    
-    async def stop(self):
-        """Stop the Ollama hub"""
-        if self.discovery_task:
-            self.discovery_task.cancel()
-            try:
-                await self.discovery_task
-            except asyncio.CancelledError:
-                pass
-        
-        await super().stop()
-    
-    async def get_model_distribution(self) -> Dict[str, List[str]]:
-        """Get which models are loaded on which instances"""
-        distribution = {}
-        
-        for instance_id, models in self.model_cache.items():
-            for model in models:
-                if model not in distribution:
-                    distribution[model] = []
-                distribution[model].append(instance_id)
-        
-        return distribution
+        await super().cleanup()

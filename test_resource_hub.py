@@ -11,7 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / "src"))
 
 from gleitzeit.hub import ResourceManager, ResourceType, ResourceStatus
-from gleitzeit.hub.docker_hub import DockerConfig
+from gleitzeit.hub.configs import DockerConfig
 
 
 async def test_resource_hub():

@@ -109,10 +109,10 @@ def analyze_core_coverage():
             'key_classes': ['OllamaProvider'],
             'key_functions': ['LLM requests', 'model management', 'streaming']
         },
-        'providers/python_function_provider.py': {
-            'description': 'Python code execution provider',
-            'key_classes': ['PythonFunctionProvider'],
-            'key_functions': ['code execution', 'security', 'result handling']
+        'providers/python_provider.py': {
+            'description': 'Secure Python code execution provider',
+            'key_classes': ['PythonProvider'],
+            'key_functions': ['code execution', 'Docker isolation', 'trusted directories']
         },
         'providers/mcp_jsonrpc_provider.py': {
             'description': 'MCP JSON-RPC provider',

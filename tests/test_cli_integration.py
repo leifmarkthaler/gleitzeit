@@ -75,7 +75,7 @@ def test_python_task_creation():
     """Test Python task creation and validation"""
     try:
         from gleitzeit.core.models import Task
-        from gleitzeit.providers.python_function_provider import CustomFunctionProvider
+        from gleitzeit.providers.python_provider import PythonProvider
         
         # Create Python execution task
         code = "import json; result = json.dumps({'status': 'success', 'value': 42})"

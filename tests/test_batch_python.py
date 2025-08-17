@@ -19,7 +19,7 @@ from gleitzeit.core.workflow_loader import load_workflow_from_file
 from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.persistence.sqlite_backend import SQLiteBackend
-from gleitzeit.providers.python_function_provider import CustomFunctionProvider
+from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.protocols.python_protocol import PYTHON_PROTOCOL_V1
 
 
@@ -39,7 +39,7 @@ async def test_python_batch_workflow():
         registry = ProtocolProviderRegistry()
         registry.register_protocol(PYTHON_PROTOCOL_V1)
         
-        python_provider = CustomFunctionProvider("python-1")
+        python_provider = PythonProvider(provider_id="python-1", allow_local=True)
         await python_provider.initialize()
         registry.register_provider("python-1", "python/v1", python_provider)
         

@@ -10,9 +10,9 @@ import logging
 from datetime import datetime
 
 from gleitzeit.providers.persistent_hub_provider import PersistentHubProvider
-from gleitzeit.hub.persistence import RedisHubAdapter, InMemoryHubAdapter
+from gleitzeit.persistence.factory import PersistenceFactory
 from gleitzeit.hub.base import ResourceInstance, ResourceStatus, ResourceType
-from gleitzeit.hub.ollama_hub import OllamaConfig
+from gleitzeit.hub.configs import OllamaConfig
 
 logging.basicConfig(
     level=logging.INFO,
@@ -143,16 +143,18 @@ async def main():
     print("Persistent Ollama Provider Example")
     print("="*60)
     
-    # Choose persistence backend
-    use_redis = False  # Set to True if Redis is available
+    # Create persistence adapter using factory
+    # It will automatically select the best available backend
+    print("\n🔍 Creating persistence adapter...")
+    adapter = await PersistenceFactory.create()
     
-    if use_redis:
-        print("\n📦 Using Redis persistence backend")
-        print("Make sure Redis is running: redis-server")
-        adapter = RedisHubAdapter("redis://localhost:6379")
+    backend_type = adapter.__class__.__name__
+    if "Redis" in backend_type:
+        print("📦 Using Redis persistence backend")
+    elif "SQL" in backend_type:
+        print("💿 Using SQL persistence backend")
     else:
-        print("\n💾 Using in-memory persistence (for testing)")
-        adapter = InMemoryHubAdapter()
+        print("💾 Using in-memory persistence (for testing)")
     
     # Create provider with persistence
     provider = PersistentOllamaProvider(

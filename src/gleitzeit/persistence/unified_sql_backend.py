@@ -24,7 +24,6 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.pool import NullPool
 
 from gleitzeit.persistence.base import PersistenceBackend
-from gleitzeit.hub.persistence import HubPersistenceAdapter
 from gleitzeit.core.models import Task, Workflow, TaskResult, WorkflowExecution, TaskStatus, WorkflowStatus
 from gleitzeit.hub.base import ResourceInstance, ResourceMetrics, ResourceStatus, ResourceType
 from gleitzeit.core.errors import (
@@ -205,7 +204,7 @@ class DBResourceLock(HubBase):
 # Unified Backend Implementation
 # ============================================================================
 
-class UnifiedSQLBackend(PersistenceBackend, HubPersistenceAdapter):
+class UnifiedSQLBackend(PersistenceBackend):
     """
     Unified SQLAlchemy-based backend for both task and hub persistence.
     

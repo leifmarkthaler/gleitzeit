@@ -1,5 +1,9 @@
 """
 Unified Resource Manager - Orchestrates multiple resource hubs
+
+The ResourceManager provides centralized management of different resource types
+through their respective hubs. It handles resource allocation, monitoring, and
+orchestration across multiple resource types (Ollama, Docker, etc.).
 """
 import asyncio
 import logging
@@ -9,8 +13,9 @@ from collections import defaultdict
 import json
 
 from .base import ResourceHub, ResourceInstance, ResourceStatus, ResourceType
-from .ollama_hub import OllamaHub, OllamaConfig
-from .docker_hub import DockerHub, DockerConfig
+from .configs import OllamaConfig, DockerConfig
+from .ollama_hub import OllamaHub
+from .docker_hub import DockerHub
 
 logger = logging.getLogger(__name__)
 

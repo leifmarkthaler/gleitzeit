@@ -259,6 +259,15 @@ class GleitzeitCLI:
     
     async def _shutdown_system(self):
         """Clean shutdown of the system"""
+        # Shutdown all providers
+        if self.execution_engine and self.execution_engine.registry:
+            for provider_id, provider_instance in self.execution_engine.registry.provider_instances.items():
+                if hasattr(provider_instance, 'shutdown'):
+                    await provider_instance.shutdown()
+                elif hasattr(provider_instance, 'cleanup'):
+                    await provider_instance.cleanup()
+        
+        # Shutdown persistence backend
         if self.persistence_backend:
             await self.persistence_backend.shutdown()
 
