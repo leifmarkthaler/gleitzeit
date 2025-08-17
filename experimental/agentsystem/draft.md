@@ -865,14 +865,331 @@ agents:
 3. **Resource Limits**: Prevent runaway agent execution
 4. **Monitoring**: Track agent performance metrics
 
+## Critical Analysis & Alternative Approaches
+
+### Potential Issues with Pure Overlay Approach
+
+After analysis, the pure overlay approach has several challenges:
+
+#### 1. **Workflow Overhead**
+Creating a full `Workflow` object for every agent thought/action is heavyweight:
+```python
+# Problem: Too much overhead for micro-operations
+for thought in agent_thoughts:
+    workflow = Workflow(name=f"thought_{n}", tasks=[think_task])
+    result = await engine.execute_workflow(workflow)  # Heavy machinery for one LLM call
+```
+
+#### 2. **Dynamic Parameter Substitution Limitations**
+Gleitzeit's `${task.response}` system expects known task IDs at workflow creation time:
+```python
+# Problem: Can't reference tasks that don't exist yet
+next_task.parameters = {"context": "${previous_dynamic_task.response}"}  # Won't work
+```
+
+#### 3. **Context Window Explosion**
+Passing growing context between dynamically generated workflows:
+```python
+# Problem: Context grows exponentially
+iteration_1: 2k tokens
+iteration_5: 10k tokens  
+iteration_10: 50k tokens  # 💥 Context overflow
+```
+
+#### 4. **Cost Multiplication**
+Every agent action = planning call + execution call:
+```
+10 step task = 10 planning calls + 10 execution calls = 20+ LLM calls
+Cost: $0.50-1.00 per complex request with GPT-4
+```
+
+### Recommended Approach: Agent Provider Pattern
+
+Instead of pure overlay, implement agents as a specialized provider:
+
+#### AgentProvider Implementation
+
+```python
+# experimental/agentsystem/agent_provider.py
+from gleitzeit.providers.base import BaseProvider
+from typing import Dict, Any, Optional
+import json
+
+class AgentProvider(BaseProvider):
+    """
+    Provider that implements agent capabilities as first-class operations.
+    This avoids workflow overhead for micro-steps while maintaining integration.
+    """
+    
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(config)
+        self.agents = {}
+        self.memory_store = {}
+        self._initialize_agents()
+    
+    async def execute(self, method: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute agent methods"""
+        
+        if method == "agent/research":
+            return await self._research_agent(parameters)
+        elif method == "agent/code_assist":
+            return await self._code_assistant(parameters)
+        elif method == "agent/multi_step":
+            return await self._multi_step_agent(parameters)
+        elif method == "agent/chat":
+            return await self._chat_agent(parameters)
+        else:
+            raise ValueError(f"Unknown agent method: {method}")
+    
+    async def _research_agent(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Research agent with built-in planning"""
+        topic = params["topic"]
+        depth = params.get("depth", "medium")
+        max_steps = params.get("max_steps", 5)
+        
+        # Initialize agent memory for this session
+        session_id = params.get("session_id", str(uuid.uuid4()))
+        memory = self._get_or_create_memory(session_id)
+        
+        # Internal planning without workflow overhead
+        plan = await self._create_research_plan(topic, depth)
+        
+        results = []
+        for step in plan.steps[:max_steps]:
+            # Direct provider calls instead of workflows
+            if step.action == "web_search":
+                result = await self._call_provider("mcp/tool.web_search", {
+                    "query": step.query
+                })
+            elif step.action == "analyze":
+                result = await self._call_provider("llm/chat", {
+                    "model": "llama3.2",
+                    "messages": [{"role": "user", "content": step.prompt}]
+                })
+            elif step.action == "synthesize":
+                result = await self._synthesize_findings(results, topic)
+            
+            results.append({
+                "step": step.name,
+                "action": step.action,
+                "result": result
+            })
+            
+            # Update memory
+            memory.add(step.name, result)
+        
+        # Generate final report
+        final_report = await self._generate_research_report(topic, results, memory)
+        
+        return {
+            "topic": topic,
+            "report": final_report,
+            "steps_executed": len(results),
+            "session_id": session_id,
+            "sources": self._extract_sources(results)
+        }
+    
+    async def _call_provider(self, method: str, parameters: Dict) -> Any:
+        """Direct provider call without workflow overhead"""
+        provider = self.registry.get_provider_for_method(method)
+        return await provider.execute(method, parameters)
+    
+    async def _create_research_plan(self, topic: str, depth: str) -> ResearchPlan:
+        """Create research plan using LLM"""
+        prompt = f"""
+        Create a research plan for: {topic}
+        Depth: {depth}
+        
+        Output a JSON list of steps with:
+        - action: "web_search", "analyze", or "synthesize"  
+        - query/prompt: what to search or analyze
+        - dependencies: previous steps needed
+        """
+        
+        response = await self._call_provider("llm/chat", {
+            "model": "llama3.2",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.7
+        })
+        
+        return ResearchPlan.from_json(response)
+```
+
+#### Hybrid Workflow-Agent Pattern
+
+For complex multi-agent scenarios, use workflows for orchestration but agents for execution:
+
+```yaml
+# agent_workflow.yaml
+name: "Complex Research with Validation"
+tasks:
+  # Single agent call for research
+  - id: "research"
+    method: "agent/research"
+    parameters:
+      topic: "quantum computing applications"
+      depth: "comprehensive"
+      max_steps: 10
+  
+  # Single agent call for fact checking
+  - id: "validate"
+    method: "agent/fact_check"
+    dependencies: ["research"]
+    parameters:
+      content: "${research.report}"
+      check_sources: true
+  
+  # Single agent call for final report
+  - id: "final_report"
+    method: "agent/write_report"
+    dependencies: ["research", "validate"]
+    parameters:
+      research: "${research.report}"
+      validation: "${validate.corrections}"
+      format: "academic"
+```
+
+#### Lightweight Agent Executor
+
+For interactive/chat scenarios, bypass workflows entirely:
+
+```python
+# experimental/agentsystem/agent_executor.py
+class LightweightAgentExecutor:
+    """
+    Direct agent execution without workflow overhead.
+    Used for interactive sessions and rapid iterations.
+    """
+    
+    def __init__(self, provider_registry: ProtocolProviderRegistry):
+        self.registry = provider_registry
+        self.agent_provider = AgentProvider({})
+        self.session_memory = {}
+    
+    async def chat(self, message: str, session_id: str = None) -> str:
+        """Interactive chat with agent"""
+        session_id = session_id or str(uuid.uuid4())
+        
+        # Get or create session memory
+        if session_id not in self.session_memory:
+            self.session_memory[session_id] = {
+                "history": [],
+                "context": {},
+                "iteration": 0
+            }
+        
+        memory = self.session_memory[session_id]
+        memory["history"].append({"role": "user", "content": message})
+        
+        # Direct execution - no workflow
+        response = await self.agent_provider.execute("agent/chat", {
+            "message": message,
+            "history": memory["history"][-10:],  # Last 10 messages
+            "context": memory["context"],
+            "session_id": session_id
+        })
+        
+        memory["history"].append({"role": "assistant", "content": response["reply"]})
+        memory["iteration"] += 1
+        
+        return response["reply"]
+    
+    async def execute_task(self, task: str, agent_type: str = "general") -> Dict:
+        """Execute single task without workflow"""
+        return await self.agent_provider.execute(f"agent/{agent_type}", {
+            "task": task,
+            "mode": "single_shot"
+        })
+```
+
+### Comparison of Approaches
+
+| Aspect | Pure Overlay | Agent Provider | Hybrid |
+|--------|--------------|----------------|---------|
+| **Workflow Overhead** | High (every action) | Low (only major steps) | Medium |
+| **Flexibility** | Limited by workflow model | High | High |
+| **Observability** | Everything tracked | Selected tracking | Good balance |
+| **Performance** | Slow | Fast | Good |
+| **Cost** | High (many LLM calls) | Optimized | Moderate |
+| **Integration** | Complex | Natural | Natural |
+| **Memory Management** | Complex | Simple | Simple |
+
+### Recommended Implementation Path
+
+#### Phase 1: Agent Provider (Week 1)
+```python
+# Start with AgentProvider as a new provider type
+class AgentProvider(BaseProvider):
+    # Implement basic research and code agents
+    # Direct provider calls, no workflow overhead
+```
+
+#### Phase 2: Memory System (Week 2)
+```python
+# Add memory management to AgentProvider
+class AgentMemory:
+    # Use persistence layer for long-term storage
+    # Keep short-term in provider instance
+```
+
+#### Phase 3: Planning Engine (Week 3)
+```python
+# Add planning capabilities
+class AgentPlanner:
+    # Generate plans as data structures
+    # Execute plans via direct provider calls
+```
+
+#### Phase 4: Workflow Integration (Week 4)
+```yaml
+# Enable agent usage in workflows
+tasks:
+  - method: "agent/research"
+    parameters:
+      topic: "AI ethics"
+```
+
+### Usage Examples
+
+#### CLI Integration
+```bash
+# Use agent as provider in workflow
+gleitzeit run agent_workflow.yaml
+
+# Direct agent execution (lightweight mode)
+gleitzeit agent execute "Research quantum computing"
+
+# Interactive chat (no workflow)
+gleitzeit agent chat --session my-session
+```
+
+#### Python API
+```python
+from gleitzeit import GleitzeitClient
+
+async with GleitzeitClient() as client:
+    # Use agent via workflow (for complex tasks)
+    result = await client.run_workflow({
+        "tasks": [{
+            "method": "agent/research",
+            "parameters": {"topic": "climate change"}
+        }]
+    })
+    
+    # Direct agent execution (for simple tasks)
+    from gleitzeit.experimental.agentsystem import LightweightAgentExecutor
+    executor = LightweightAgentExecutor(client.registry)
+    response = await executor.chat("What is quantum computing?")
+```
+
 ## Conclusion
 
-This agent system design leverages Gleitzeit's existing infrastructure while adding autonomous capabilities. The modular design allows for incremental development and testing, with clear integration points into the existing system.
+The **Agent Provider pattern** is the recommended approach because it:
 
-The key innovation is treating agents as intelligent workflow generators that can:
-- Plan and execute complex multi-step tasks
-- Maintain memory and learn from interactions
-- Coordinate with other agents
-- Use any Gleitzeit provider as a tool
+1. **Works with Gleitzeit's grain** rather than against it
+2. **Avoids workflow overhead** for micro-operations
+3. **Maintains integration** through the provider system
+4. **Enables both modes**: workflows for complex orchestration, direct execution for simple tasks
+5. **Optimizes costs** by reducing unnecessary LLM calls
 
-This approach maintains Gleitzeit's core strengths while extending it into the realm of autonomous agents.
+This hybrid approach gives you agent capabilities without compromising Gleitzeit's architectural principles or performance characteristics.
