@@ -46,14 +46,8 @@ A workflow orchestration system for coordinating LLM tasks, Python code executio
 
 ### API Documentation
 - [Python API](docs/PYTHON_API.md) - GleitzeitClient reference
-- [REST API](docs/REST_API.md) - HTTP endpoints (if applicable)
 - [Configuration](docs/CONFIGURATION.md) - System configuration
-
-### Advanced Topics
-- [Security Model](docs/SECURITY.md) - Security architecture and best practices
-- [Performance Tuning](docs/PERFORMANCE.md) - Optimization guide
 - [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions
-- [Migration Guide](docs/MIGRATION.md) - Upgrading from v0.0.4
 
 ## 🚀 Quick Navigation
 

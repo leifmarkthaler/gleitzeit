@@ -1,0 +1,62 @@
+name: "RAG Batch Document Processing"
+description: "Process multiple documents in batch and build knowledge base"
+type: "batch"
+
+# Batch configuration for processing multiple files
+batch:
+  directory: "./knowledge_base"
+  pattern: "*.md"
+  
+# Template for processing each file
+template:
+  - id: "chunk_document"
+    method: "embeddings/chunk_text"
+    parameters:
+      text: "${file_content}"
+      chunk_size: 512
+      overlap: 50
+  
+  - id: "generate_embeddings"
+    method: "embeddings/generate_embedding"
+    dependencies: ["chunk_document"]
+    parameters:
+      text: "${chunk_document.result.chunks[0]}"  # Process first chunk as example
+  
+  - id: "index_document"
+    method: "rag/ingest_documents"
+    dependencies: ["chunk_document"]
+    parameters:
+      documents:
+        - id: "${file_name}"
+          text: "${file_content}"
+          metadata:
+            filename: "${file_name}"
+            path: "${file_path}"
+            chunks: "${chunk_document.result.count}"
+
+# Post-processing after all files are indexed
+post_process:
+  - id: "test_retrieval"
+    method: "rag/query"
+    parameters:
+      query: "Summarize the main concepts from the knowledge base"
+      use_context: true
+  
+  - id: "generate_index_summary"
+    method: "python/execute"
+    parameters:
+      code: |
+        import json
+        
+        # Get index statistics
+        total_docs = ${batch_results | length}
+        
+        print(f"Knowledge base built successfully!")
+        print(f"Total documents indexed: {total_docs}")
+        print(f"Ready for Q&A queries")
+        
+        result = {
+            'total_documents': total_docs,
+            'status': 'ready',
+            'test_query_response': """${test_retrieval.result.response}"""[:200]
+        }
