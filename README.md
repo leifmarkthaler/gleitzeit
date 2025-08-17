@@ -1,4 +1,18 @@
-# Gleitzeit v0.0.5 Documentation
+# Gleitzeit
+
+A workflow orchestration system for coordinating LLM tasks, Python code execution, and tool integrations. Supports parallel task execution, dependency management, and batch file processing.
+
+## Features
+
+- Execute workflows combining LLMs, Python scripts, and MCP tools
+- Parallel task execution with configurable concurrency limits
+- Task dependencies with parameter substitution between steps
+- Persistence with fallback: Redis → SQLite → Memory
+- Hub-Provider architecture for resource management
+- Batch processing with glob patterns for file operations
+- Docker container support for isolated Python execution
+
+## Version: 0.0.5 (Beta)
 
 ## 📚 Documentation Structure
 
