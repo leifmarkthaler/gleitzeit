@@ -30,8 +30,7 @@ from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
-from gleitzeit.persistence.redis_backend import RedisBackend
-from gleitzeit.persistence.sqlite_backend import SQLiteBackend
+from gleitzeit.persistence.factory import PersistenceFactory, PersistenceType
 from gleitzeit.core.batch_processor import BatchProcessor, BatchResult
 
 # Import error formatter
@@ -96,26 +95,31 @@ class GleitzeitCLI:
     async def _setup_system(self) -> bool:
         """Set up the execution system"""
         try:
-            # Initialize persistence backend
+            # Initialize unified persistence backend
+            # This will automatically try Redis -> SQL -> Memory fallback chain
             persistence_config = self.config.get('persistence', {})
-            backend_type = persistence_config.get('backend', 'sqlite')
             
-            if backend_type == 'redis':
-                redis_config = persistence_config.get('redis', {})
-                self.persistence_backend = RedisBackend(
-                    host=redis_config.get('host', 'localhost'),
-                    port=redis_config.get('port', 6379),
-                    db=redis_config.get('db', 0)
-                )
-            else:  # Default to SQLite
-                sqlite_config = persistence_config.get('sqlite', {})
+            # Prepare kwargs for factory
+            factory_kwargs = {}
+            
+            # Redis configuration
+            redis_config = persistence_config.get('redis', {})
+            if redis_config:
+                factory_kwargs['redis_url'] = f"redis://{redis_config.get('host', 'localhost')}:{redis_config.get('port', 6379)}/{redis_config.get('db', 0)}"
+            
+            # SQLite configuration  
+            sqlite_config = persistence_config.get('sqlite', {})
+            if sqlite_config:
                 db_path = sqlite_config.get('db_path', str(Path.home() / '.gleitzeit' / 'workflows.db'))
-                # Ensure directory exists
                 Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-                self.persistence_backend = SQLiteBackend(db_path=db_path)
+                factory_kwargs['sql_db_path'] = db_path
             
-            await self.persistence_backend.initialize()
-            click.echo(f"✓ {backend_type.title()} persistence initialized")
+            # Create unified persistence adapter with automatic fallback
+            self.persistence_backend = await PersistenceFactory.create(**factory_kwargs)
+            
+            # Report which backend was selected
+            backend_name = type(self.persistence_backend).__name__.replace('Unified', '').replace('Adapter', '')
+            click.echo(f"✓ Unified persistence initialized ({backend_name})")
             
             # Set up execution components
             queue_manager = QueueManager()
