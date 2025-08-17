@@ -200,10 +200,11 @@ class TestBatchProcessor:
         for i in range(2):
             (temp_dir / f"test_{i}.txt").write_text(f"Content {i}")
         
-        # Mock results
+        # Mock results with correct task ID format
+        # Files created will be test_0.txt and test_1.txt
         mock_execution_engine.task_results = {
-            "process-test-0-txt-0": Mock(status="completed", result={"response": "Result 0"}),
-            "process-test-1-txt-1": Mock(status="completed", result={"response": "Result 1"})
+            "process-test_0-txt-0": Mock(status="completed", result={"response": "Result 0"}),
+            "process-test_1-txt-1": Mock(status="completed", result={"response": "Result 1"})
         }
         
         result = await batch_processor.process_batch(
