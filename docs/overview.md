@@ -1,8 +1,8 @@
-# Gleitzeit v0.0.4 Overview
+# Gleitzeit v0.0.5 Overview
 
 ## Introduction
 
-Gleitzeit v0.0.4 is a protocol-based workflow orchestration system designed for coordinating LLM workflows, batch processing, and multi-task execution patterns. It provides a simple yet powerful framework for creating and executing complex workflows with support for multiple providers and protocols.
+Gleitzeit v0.0.5 is a protocol-based workflow orchestration system designed for coordinating LLM workflows, batch processing, and multi-task execution patterns. It features a clean hub-provider architecture, unified persistence system, and comprehensive resource management capabilities.
 
 ## Core Architecture
 
@@ -10,30 +10,57 @@ Gleitzeit v0.0.4 is a protocol-based workflow orchestration system designed for 
 
 1. **ExecutionEngine** - The central orchestrator that manages workflow execution
 2. **ProtocolProviderRegistry** - Manages protocol definitions and provider instances
-3. **TaskQueue & QueueManager** - Handles task scheduling and execution order
-4. **DependencyResolver** - Manages task dependencies and parameter substitution
-5. **Persistence Backends** - SQLite, Redis, or in-memory storage for tasks and results
+3. **ResourceManager & Hubs** - Manages compute resources (Ollama servers, Docker containers)
+4. **QueueManager & DependencyResolver** - Handles task scheduling and parameter substitution
+5. **Unified Persistence** - Single adapter interface with Redis → SQL → Memory fallback chain
 
-### Design Philosophy
+### Hub-Provider Architecture
 
-Gleitzeit v0.0.4 follows a simplified, direct execution model:
-- Protocol-based provider abstraction for extensibility
-- Direct task execution without distributed coordination
-- YAML-based workflow definitions for ease of use
-- Built-in batch processing for file operations
-- Parameter substitution for task chaining
+Gleitzeit v0.0.5 introduces a clean separation of concerns:
+
+- **Providers** focus exclusively on protocol execution (LLM operations, code execution)
+- **Hubs** manage resource lifecycle (health monitoring, metrics, allocation)
+- **ResourceManager** orchestrates multiple hubs for global resource management
+
+```
+┌──────────────────────────────────────────────┐
+│            ResourceManager                    │
+│  (Global resource orchestration)              │
+└────────────────┬─────────────────────────────┘
+                 │
+      ┌──────────┴──────────┐
+      │                     │
+┌─────▼──────┐     ┌────────▼────────┐
+│ OllamaHub  │     │   DockerHub     │
+│            │     │                 │
+└─────┬──────┘     └────────┬────────┘
+      │                     │
+┌─────▼──────────────────────▼────────┐
+│         Providers                   │
+│  (OllamaProvider, PythonProvider)   │
+└──────────────────────────────────────┘
+```
+
+## Unified Persistence Architecture
+
+The new unified persistence system consolidates all storage needs:
+
+- **Single Interface**: One `UnifiedPersistenceAdapter` for all persistence operations
+- **Automatic Fallback**: Redis → SQLite → Memory fallback ensures reliability
+- **Cross-Domain**: Seamlessly handles tasks, workflows, and resource instances
+- **Zero Configuration**: Works out of the box with sensible defaults
 
 ## Supported Protocols
 
 ### 1. LLM Protocol (`llm/v1`)
 - **Methods**: `chat`, `vision`
-- **Provider**: OllamaProvider
+- **Provider**: OllamaProvider (uses OllamaHub for resources)
 - **Use Cases**: Text generation, image analysis, conversational AI
 
 ### 2. Python Protocol (`python/v1`)
-- **Methods**: `execute`, `register`, `list`
-- **Provider**: PythonFunctionProvider, CustomFunctionProvider
-- **Use Cases**: Data processing, custom logic, integration tasks
+- **Methods**: `execute` (containers only for security)
+- **Provider**: PythonProvider (uses DockerHub for secure execution)
+- **Use Cases**: Data processing, custom logic in isolated environments
 
 ### 3. MCP Protocol (`mcp/v1`)
 - **Methods**: `tool.*` (echo, add, multiply, concat)
@@ -73,9 +100,32 @@ tasks:
           content: "Expand on: ${task1.response}"
 ```
 
+## Resource Management
+
+### OllamaHub
+Manages multiple Ollama server instances with:
+- Automatic health monitoring
+- Performance metrics collection
+- Instance lifecycle management
+- Auto-discovery of running servers
+
+### DockerHub
+Manages Docker containers as compute resources with:
+- Container lifecycle management
+- Resource limit enforcement
+- Container pooling for reuse
+- Secure Python code execution
+
+### ResourceManager
+Orchestrates multiple hubs providing:
+- Global resource allocation
+- Cross-hub metrics aggregation
+- Unified resource view
+- Allocation tracking
+
 ## Batch Processing
 
-Gleitzeit v0.0.4 includes powerful batch processing capabilities:
+Gleitzeit includes powerful batch processing capabilities:
 
 ```yaml
 name: "Batch Analysis"
@@ -102,20 +152,32 @@ gleitzeit workflow submit workflow.yaml
 # Run batch processing
 gleitzeit batch documents --pattern "*.txt" --prompt "Summarize"
 
-# Check status
+# Check system status
 gleitzeit system status
 
 # View results
 gleitzeit workflow status WORKFLOW_ID
 ```
 
-## Persistence
+## Python API
 
-Three backend options for storing tasks and results:
+```python
+from gleitzeit import GleitzeitClient
 
-1. **SQLite** (default) - File-based persistence
-2. **Redis** - For shared state across instances
-3. **In-Memory** - For testing and temporary workflows
+async def main():
+    async with GleitzeitClient() as client:
+        # Client automatically manages hubs, providers, and persistence
+        result = await client.execute_task({
+            "method": "llm/chat",
+            "params": {
+                "model": "llama3.2",
+                "messages": [
+                    {"role": "user", "content": "Hello!"}
+                ]
+            }
+        })
+        print(result["response"])
+```
 
 ## Parameter Substitution
 
@@ -128,12 +190,14 @@ parameters:
   nested: "${config_task.settings.timeout}"
 ```
 
-## Current Limitations
+## Key Improvements in v0.0.5
 
-- No distributed coordination (single instance only)
-- No real-time event streaming
-- Limited provider pooling/scaling
-- Basic error handling and retry logic
+- **Hub-Provider Separation**: Clean architecture with separated concerns
+- **Unified Persistence**: Single, robust persistence layer with automatic fallback
+- **Resource Management**: Comprehensive resource lifecycle and health monitoring
+- **Security**: Python execution restricted to Docker containers
+- **Reliability**: Automatic health checks and recovery mechanisms
+- **Testing**: 193+ unit tests with 100% pass rate
 
 ## Installation
 
@@ -154,14 +218,24 @@ pip install -e .
 
 ## Version Information
 
-- **Current Version**: 0.0.4
-- **Status**: Beta
-- **Focus**: Core workflow orchestration with LLM and batch processing support
+- **Current Version**: 0.0.5
+- **Status**: Beta / Development
+- **Architecture**: Hub-Provider separation with unified persistence
+- **Testing**: Comprehensive test suite with 100% pass rate
+- **Note**: Not yet production ready - additional testing and stabilization needed
 
-## Next Steps
+## Documentation
 
 For more detailed information, see:
-- [Architecture Details](GLEITZEIT_V4_ARCHITECTURE.md)
-- [Batch Processing Guide](BATCH_PROCESSING_DESIGN.md)
+- [Unified Persistence Architecture](UNIFIED_PERSISTENCE_ARCHITECTURE.md)
+- [Multi-Instance Ollama Guide](MULTI_INSTANCE_OLLAMA_GUIDE.md)
 - [Provider Implementation Guide](PROVIDER_IMPLEMENTATION_GUIDE.md)
+- [Batch Processing Guide](BATCH_PROCESSING_DESIGN.md)
 - [Workflow Parameter Substitution](WORKFLOW_PARAMETER_SUBSTITUTION.md)
+
+## Migration Notes
+
+If upgrading from v0.0.4:
+- The persistence system has been unified - see [Unified Persistence Architecture](UNIFIED_PERSISTENCE_ARCHITECTURE.md)
+- Multi-instance Ollama uses hub architecture - see [Multi-Instance Ollama Guide](MULTI_INSTANCE_OLLAMA_GUIDE.md)
+- Providers now use hubs for resource management - see [Provider Implementation Guide](PROVIDER_IMPLEMENTATION_GUIDE.md)

@@ -22,7 +22,7 @@ if requirements_path.exists():
 
 setup(
     name="gleitzeit",
-    version="0.0.4",
+    version="0.0.5",
     description="Protocol-based workflow orchestration system with LLM and MCP support",
     long_description=long_description,
     long_description_content_type="text/markdown",

@@ -279,7 +279,7 @@ cli_instance = GleitzeitCLI()
 @click.group()
 @click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
 @click.option('--debug', is_flag=True, help='Enable debug logging')
-@click.version_option(version='0.0.4', prog_name='Gleitzeit')
+@click.version_option(version='0.0.5', prog_name='Gleitzeit')
 def cli(verbose: bool, debug: bool):
     """
     Gleitzeit - Protocol-based workflow orchestration system
