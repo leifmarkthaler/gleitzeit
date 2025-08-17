@@ -2,16 +2,70 @@
 
 ## Overview
 
-This guide documents the implementation requirements and best practices for creating providers in Gleitzeit V4. It covers the protocol-based architecture, method naming conventions, response formats, and integration with the workflow system.
+This guide documents the implementation requirements and best practices for creating providers in Gleitzeit V4. It covers the protocol-based architecture, method naming conventions, response formats, integration with the workflow system, and the new Hub-Provider separation architecture.
 
 ## Table of Contents
 
-1. [Provider Architecture](#provider-architecture)
-2. [Method Naming Conventions](#method-naming-conventions)
-3. [Response Format Standards](#response-format-standards)
-4. [Parameter Substitution in Workflows](#parameter-substitution-in-workflows)
-5. [Provider Implementation Checklist](#provider-implementation-checklist)
-6. [Common Issues and Solutions](#common-issues-and-solutions)
+1. [Hub-Provider Architecture](#hub-provider-architecture)
+2. [Provider Architecture](#provider-architecture)
+3. [Method Naming Conventions](#method-naming-conventions)
+4. [Response Format Standards](#response-format-standards)
+5. [Parameter Substitution in Workflows](#parameter-substitution-in-workflows)
+6. [Provider Implementation Checklist](#provider-implementation-checklist)
+7. [Common Issues and Solutions](#common-issues-and-solutions)
+
+## Hub-Provider Architecture
+
+### Separation of Concerns
+
+Gleitzeit V4 introduces a clean separation between **Providers** (protocol execution) and **Hubs** (resource management):
+
+```
+┌──────────────────────────────────────────────┐
+│                 Providers                     │
+│   (Focus on protocol execution only)          │
+│   • OllamaProvider - LLM operations           │
+│   • PythonProvider - Code execution           │
+│   • SimpleMCPProvider - Tool execution        │
+└────────────────▲─────────────────────────────┘
+                 │ Uses resources from
+┌────────────────▼─────────────────────────────┐
+│                   Hubs                        │
+│   (Focus on resource management only)         │
+│   • OllamaHub - Ollama server instances       │
+│   • DockerHub - Docker containers             │
+│   • ResourceManager - Orchestration           │
+└──────────────────────────────────────────────┘
+```
+
+### Key Principles
+
+1. **Providers handle protocols**: Execute methods, process requests, return results
+2. **Hubs manage resources**: Lifecycle, health monitoring, metrics, allocation
+3. **Clean interfaces**: Providers request resources from hubs, not manage them
+4. **Unified persistence**: Both use the same persistence architecture
+
+### Provider-Hub Integration
+
+When a provider needs external resources (like an Ollama server), it uses a hub:
+
+```python
+from gleitzeit.providers.ollama_provider import OllamaProvider
+from gleitzeit.hub.ollama_hub import OllamaHub
+
+# Hub manages Ollama server instances
+hub = OllamaHub()
+await hub.initialize()
+
+# Provider uses hub for LLM operations
+provider = OllamaProvider(
+    provider_id="ollama",
+    ollama_hub=hub  # Provider gets resources from hub
+)
+
+# Provider executes protocol methods using hub resources
+result = await provider.handle_request("chat", params)
+```
 
 ## Provider Architecture
 

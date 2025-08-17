@@ -1,33 +1,73 @@
-# Multi-Instance Ollama Orchestration Guide
+# Multi-Instance Ollama Management with Hub Architecture
 
 ## Table of Contents
 1. [Overview](#overview)
-2. [Quick Start](#quick-start)
-3. [Configuration](#configuration)
-4. [Load Balancing Strategies](#load-balancing-strategies)
-5. [Health Monitoring & Failover](#health-monitoring--failover)
-6. [Python API Usage](#python-api-usage)
-7. [Workflow Integration](#workflow-integration)
-8. [Monitoring & Metrics](#monitoring--metrics)
-9. [Troubleshooting](#troubleshooting)
-10. [Architecture Reference](#architecture-reference)
+2. [Architecture](#architecture)
+3. [Quick Start](#quick-start)
+4. [Configuration](#configuration)
+5. [Python API Usage](#python-api-usage)
+6. [Health Monitoring & Metrics](#health-monitoring--metrics)
+7. [Resource Management](#resource-management)
+8. [Troubleshooting](#troubleshooting)
 
 ## Overview
 
-The Multi-Instance Ollama Orchestration feature allows you to:
-- **Distribute load** across multiple Ollama servers
-- **Automatic failover** when instances become unavailable
-- **Smart routing** based on model availability and instance capabilities
-- **Performance monitoring** with detailed metrics
-- **Circuit breaker protection** to prevent cascade failures
+**Note: This document has been updated to reflect the new Hub-Provider architecture in Gleitzeit V4.**
+
+The Ollama Hub architecture provides:
+- **Centralized management** of multiple Ollama instances
+- **Automatic health monitoring** with configurable intervals
+- **Resource lifecycle management** (start/stop/restart instances)
+- **Metrics collection** for performance monitoring
+- **Clean separation** between protocol execution (Provider) and resource management (Hub)
 
 ### Benefits
 
-- **Higher throughput**: Process more requests in parallel
-- **Better reliability**: Automatic failover ensures service continuity
-- **Resource optimization**: Route large models to GPU instances, small models to CPU
-- **Cost efficiency**: Use spot instances with automatic failover
-- **Scalability**: Add/remove instances dynamically
+- **Simplified resource management**: Hub handles all Ollama instance lifecycle
+- **Better reliability**: Automatic health checks and status tracking
+- **Resource optimization**: Centralized metrics and monitoring
+- **Clean architecture**: Providers focus on LLM execution, Hub manages resources
+
+## Architecture
+
+### Hub-Provider Separation
+
+```
+┌──────────────────────────────────────────────┐
+│            ResourceManager                    │
+│  (Orchestrates multiple resource hubs)        │
+└────────────────┬─────────────────────────────┘
+                 │
+      ┌──────────┴──────────┐
+      │                     │
+┌─────▼──────┐     ┌────────▼────────┐
+│ OllamaHub  │     │   DockerHub     │
+│            │     │                 │
+└─────┬──────┘     └────────┬────────┘
+      │                     │
+      │                     │
+┌─────▼──────────────────────▼────────┐
+│         OllamaProvider              │
+│   (Handles LLM protocol execution)  │
+└──────────────────────────────────────┘
+```
+
+### Key Components
+
+1. **OllamaHub** (`hub/ollama_hub.py`)
+   - Manages Ollama server instances
+   - Monitors health and collects metrics
+   - Handles instance lifecycle (start/stop/restart)
+
+2. **OllamaProvider** (`providers/ollama_provider.py`)
+   - Executes LLM protocol methods (chat, vision)
+   - Uses healthy instances from OllamaHub
+   - Focuses purely on protocol execution
+
+3. **ResourceManager** (`hub/resource_manager.py`)
+   - Orchestrates multiple hubs
+   - Provides global resource view
+   - Handles resource allocation
 
 ## Quick Start
 
@@ -44,705 +84,320 @@ OLLAMA_HOST=127.0.0.1:11435 ollama serve
 OLLAMA_HOST=127.0.0.1:11436 ollama serve
 ```
 
-### 2. Basic Configuration
+### 2. Using the Hub Architecture
 
 ```python
-from gleitzeit.providers.ollama_pool_provider import OllamaPoolProvider
+import asyncio
+from gleitzeit.hub.ollama_hub import OllamaHub
+from gleitzeit.hub.configs import OllamaConfig
+from gleitzeit.providers.ollama_provider import OllamaProvider
 
-# Configure instances
-provider = OllamaPoolProvider(
-    provider_id="ollama_pool",
-    instances=[
-        {
-            "id": "primary",
-            "url": "http://localhost:11434",
-            "models": ["llama3.2", "codellama"],
-            "max_concurrent": 5
-        },
-        {
-            "id": "secondary",
-            "url": "http://localhost:11435",
-            "models": ["llama3.2", "mistral"],
-            "max_concurrent": 5
-        }
+async def main():
+    # Create and initialize the hub
+    hub = OllamaHub(hub_id="ollama-main")
+    await hub.initialize()
+    
+    # Register Ollama instances
+    configs = [
+        OllamaConfig(host="127.0.0.1", port=11434),
+        OllamaConfig(host="127.0.0.1", port=11435),
+        OllamaConfig(host="127.0.0.1", port=11436)
     ]
-)
+    
+    for config in configs:
+        instance = await hub.start_instance(config)
+        if instance:
+            print(f"Started Ollama at {instance.endpoint}")
+    
+    # Create provider that uses the hub
+    provider = OllamaProvider(
+        provider_id="ollama-provider",
+        ollama_hub=hub  # Provider uses hub for resource access
+    )
+    
+    # Execute LLM tasks
+    result = await provider.handle_request(
+        method="chat",
+        params={
+            "model": "llama3.2",
+            "messages": [
+                {"role": "user", "content": "Hello, how are you?"}
+            ]
+        }
+    )
+    
+    print(result["response"])
+    
+    # Cleanup
+    await hub.cleanup()
 
-# Initialize and use
-await provider.initialize()
-result = await provider.execute(
-    method="llm/chat",
-    params={
-        "model": "llama3.2",
-        "messages": [{"role": "user", "content": "Hello!"}]
-    }
-)
+asyncio.run(main())
 ```
 
 ## Configuration
 
+### Hub Configuration
+
+```python
+from gleitzeit.hub.ollama_hub import OllamaHub
+
+hub = OllamaHub(
+    hub_id="ollama-hub",
+    health_check_interval=30,  # Check health every 30 seconds
+    max_health_failures=3,      # Mark unhealthy after 3 failures
+    enable_auto_recovery=True,  # Auto-restart unhealthy instances
+    enable_metrics=True,        # Collect performance metrics
+    auto_discover=True          # Auto-discover running Ollama instances
+)
+```
+
 ### Instance Configuration
 
-Each Ollama instance can be configured with:
-
-```yaml
-instances:
-  - id: "gpu-server-1"           # Unique identifier
-    url: "http://gpu1:11434"     # Ollama API endpoint
-    models:                       # Models available on this instance
-      - "llama3.2:70b"
-      - "mixtral:8x7b"
-    max_concurrent: 2             # Max parallel requests
-    tags:                         # Tags for filtering
-      - "gpu"
-      - "high-memory"
-      - "production"
-    priority: 1                   # Priority for selection (lower = higher priority)
-    weight: 2.0                   # Weight for weighted selection
-    specialization: "large-models" # Optional specialization
-```
-
-### Load Balancing Configuration
-
-```yaml
-load_balancing:
-  strategy: "least_loaded"        # Default strategy
-  health_check_interval: 30       # Seconds between health checks
-  failover: true                  # Enable automatic failover
-  retry_attempts: 3               # Max retry attempts on failure
-  
-  circuit_breaker:
-    failure_threshold: 5          # Failures before opening circuit
-    recovery_timeout: 60          # Seconds before attempting recovery
-    half_open_requests: 3         # Test requests in half-open state
-```
-
-### Environment Variables
-
-```bash
-# Configure via environment variables
-export GLEITZEIT_OLLAMA_INSTANCES="local:http://localhost:11434,gpu:http://gpu:11434"
-export GLEITZEIT_OLLAMA_STRATEGY="least_loaded"
-export GLEITZEIT_OLLAMA_HEALTH_CHECK_INTERVAL="30"
-export GLEITZEIT_OLLAMA_FAILOVER="true"
-```
-
-## Load Balancing Strategies
-
-### 1. Least Loaded (Default)
-Routes requests to the instance with fewest active requests.
-
 ```python
-params = {
-    "load_balancing_strategy": "least_loaded",
-    "model": "llama3.2",
-    "messages": [...]
-}
+from gleitzeit.hub.configs import OllamaConfig
+
+config = OllamaConfig(
+    host="127.0.0.1",
+    port=11434,
+    gpu_layers=35,           # Number of layers to offload to GPU
+    cpu_threads=8,           # Number of CPU threads
+    memory_limit="8GB",      # Memory limit
+    environment={            # Environment variables
+        "OLLAMA_NUM_PARALLEL": "4",
+        "OLLAMA_MAX_LOADED_MODELS": "2"
+    }
+)
 ```
-
-**Best for**: Even distribution of load, general use cases
-
-### 2. Round Robin
-Rotates through instances in order.
-
-```python
-params = {
-    "load_balancing_strategy": "round_robin",
-    ...
-}
-```
-
-**Best for**: Equal distribution regardless of actual load
-
-### 3. Model Affinity
-Prefers instances that already have the model loaded.
-
-```python
-params = {
-    "load_balancing_strategy": "model_affinity",
-    "model": "mixtral:8x7b",
-    ...
-}
-```
-
-**Best for**: Minimizing model loading overhead
-
-### 4. Latency-Based
-Routes to instances with lowest average response time.
-
-```python
-params = {
-    "load_balancing_strategy": "latency_based",
-    ...
-}
-```
-
-**Best for**: Optimizing response times
-
-### 5. Weighted
-Random selection based on instance weights.
-
-```python
-# In configuration
-instances = [
-    {"id": "fast", "url": "...", "weight": 3.0},  # 3x more likely
-    {"id": "slow", "url": "...", "weight": 1.0},  # 1x baseline
-]
-
-params = {
-    "load_balancing_strategy": "weighted",
-    ...
-}
-```
-
-**Best for**: Proportional distribution based on instance capacity
-
-### 6. Tag-Based Routing
-Route to instances with specific capabilities.
-
-```python
-params = {
-    "instance_tags": ["gpu", "high-memory"],  # Require GPU instance
-    "require_gpu": true,                      # Shorthand for GPU requirement
-    ...
-}
-```
-
-**Best for**: Routing based on hardware requirements
-
-## Health Monitoring & Failover
-
-### Health Checks
-
-The system continuously monitors instance health:
-
-1. **API Availability**: Checks `/api/tags` endpoint
-2. **Model Availability**: Tracks loaded models
-3. **Response Times**: Monitors latency trends
-4. **Error Rates**: Tracks failure patterns
-
-### Instance States
-
-```python
-class InstanceState(Enum):
-    HEALTHY = "healthy"       # Fully operational
-    DEGRADED = "degraded"     # Slow or partial issues
-    UNHEALTHY = "unhealthy"   # Not responding
-    UNKNOWN = "unknown"       # Not yet checked
-```
-
-### Circuit Breaker
-
-Prevents repeated attempts to failed instances:
-
-```
-Closed (normal) -> Open (after 5 failures) -> Half-Open (testing) -> Closed
-```
-
-### Automatic Failover
-
-When an instance fails:
-1. Request is automatically retried on another instance
-2. Failed instance is marked and avoided
-3. Circuit breaker prevents flooding failed instance
-4. Background monitoring attempts recovery
 
 ## Python API Usage
 
-### Basic Usage
+### Using with GleitzeitClient
 
 ```python
 from gleitzeit import GleitzeitClient
 
 async def main():
-    async with GleitzeitClient(
-        ollama_config={
-            "instances": [
-                {"id": "local", "url": "http://localhost:11434"},
-                {"id": "remote", "url": "http://remote:11434"}
-            ],
-            "load_balancing": {
-                "strategy": "least_loaded",
-                "failover": True
+    async with GleitzeitClient() as client:
+        # The client automatically manages hubs and providers
+        result = await client.execute_task({
+            "method": "llm/chat",
+            "params": {
+                "model": "llama3.2",
+                "messages": [
+                    {"role": "user", "content": "Explain quantum computing"}
+                ]
             }
-        }
-    ) as client:
-        # Automatically uses load balancing
-        response = await client.chat(
-            "Explain quantum computing",
-            model="llama3.2"
-        )
-```
-
-### Advanced Usage
-
-```python
-from gleitzeit.orchestration.ollama_pool import OllamaPoolManager
-
-# Direct pool manager usage
-pool = OllamaPoolManager(
-    instances=[...],
-    health_check_interval=30,
-    circuit_breaker_config={
-        "failure_threshold": 5,
-        "recovery_timeout": 60
-    }
-)
-
-await pool.initialize()
-
-# Get specific instance
-url = await pool.get_instance(
-    model="llama3.2:70b",
-    strategy="model_affinity",
-    tags=["gpu"],
-    require_healthy=True
-)
-
-# Execute request
-# ... perform request to url ...
-
-# Record metrics
-await pool.record_success(url, response_time=1.5)
-# or
-await pool.record_failure(url, exception)
-
-# Get pool status
-status = await pool.get_pool_status()
-print(f"Healthy instances: {status['healthy_instances']}/{status['total_instances']}")
-```
-
-### Batch Processing
-
-```python
-async def batch_analysis():
-    async with GleitzeitClient(ollama_config={...}) as client:
-        # Process multiple files in parallel across instances
-        results = await client.batch_process(
-            directory="documents",
-            pattern="*.txt",
-            method="llm/chat",
-            prompt="Summarize this document",
-            max_concurrent=10  # Distributed across all instances
-        )
-```
-
-## Workflow Integration
-
-### YAML Workflow Configuration
-
-```yaml
-# workflow.yaml
-name: "Multi-Instance Workflow"
-
-# Global provider configuration
-providers:
-  ollama:
-    type: "ollama_pool"
-    instances:
-      - id: "cpu-1"
-        url: "http://localhost:11434"
-        models: ["llama3.2", "phi"]
-        tags: ["cpu", "fast"]
+        })
         
-      - id: "gpu-1"
-        url: "http://gpu1:11434"
-        models: ["llama3.2:70b", "mixtral"]
-        tags: ["gpu", "large"]
-
-tasks:
-  # Task with automatic load balancing
-  - name: "Quick Analysis"
-    protocol: "llm/v1"
-    method: "llm/chat"
-    params:
-      model: "llama3.2"
-      messages:
-        - role: "user"
-          content: "Analyze this quickly"
-  
-  # Task requiring GPU instance
-  - name: "Deep Analysis"
-    protocol: "llm/v1"
-    method: "llm/chat"
-    params:
-      model: "llama3.2:70b"
-      instance_tags: ["gpu"]
-      require_gpu: true
-      messages:
-        - role: "user"
-          content: "Perform deep analysis"
-  
-  # Task with specific strategy
-  - name: "Fast Response"
-    protocol: "llm/v1"
-    method: "llm/chat"
-    params:
-      model: "phi"
-      load_balancing_strategy: "latency_based"
-      max_latency: 1000  # Prefer instances under 1s latency
-      messages:
-        - role: "user"
-          content: "Quick question"
+        print(result["response"])
 ```
 
-### Dynamic Instance Selection
-
-```yaml
-tasks:
-  - name: "Model-Specific Task"
-    protocol: "llm/v1"
-    method: "llm/chat"
-    params:
-      model: "${model_name}"  # Dynamic model selection
-      load_balancing_strategy: "model_affinity"
-      fallback_model: "llama3.2"  # Use if primary not available
-      messages:
-        - role: "user"
-          content: "${prompt}"
-```
-
-## Monitoring & Metrics
-
-### Available Metrics
+### Direct Hub Management
 
 ```python
-# Get detailed pool status
-status = await pool_manager.get_pool_status()
+from gleitzeit.hub.ollama_hub import OllamaHub
+from gleitzeit.hub.base import ResourceStatus
 
-# Returns:
-{
-    "total_instances": 3,
-    "healthy_instances": 2,
-    "degraded_instances": 1,
-    "unhealthy_instances": 0,
-    "instances": {
-        "gpu-1": {
-            "url": "http://gpu1:11434",
-            "state": "healthy",
-            "active_requests": 2,
-            "total_requests": 150,
-            "avg_response_time": 1.234,  # seconds
-            "error_rate": 2.5,            # percentage
-            "availability": 97.5,         # percentage
-            "models_loaded": ["llama3.2:70b", "mixtral"],
-            "circuit_breaker_open": false
-        },
-        ...
-    }
-}
-```
-
-### Monitoring Dashboard
-
-```python
-async def monitor_pool(pool_manager):
-    while True:
-        status = await pool_manager.get_pool_status()
-        
-        print("\n=== Ollama Pool Status ===")
-        print(f"Total: {status['total_instances']}")
-        print(f"Healthy: {status['healthy_instances']}")
-        
-        for instance_id, info in status['instances'].items():
-            print(f"\n{instance_id}:")
-            print(f"  State: {info['state']}")
-            print(f"  Active: {info['active_requests']}")
-            print(f"  Avg Response: {info['avg_response_time']:.2f}s")
-            print(f"  Error Rate: {info['error_rate']:.1f}%")
-        
-        await asyncio.sleep(5)
-```
-
-### Prometheus Metrics Export
-
-```python
-from prometheus_client import Gauge, Counter
-
-# Define metrics
-instance_health = Gauge('ollama_instance_health', 'Instance health status', ['instance_id'])
-active_requests = Gauge('ollama_active_requests', 'Active requests', ['instance_id'])
-total_requests = Counter('ollama_total_requests', 'Total requests', ['instance_id'])
-response_time = Gauge('ollama_response_time', 'Average response time', ['instance_id'])
-
-# Update metrics
-async def export_metrics(pool_manager):
-    status = await pool_manager.get_pool_status()
+async def manage_instances():
+    hub = OllamaHub()
+    await hub.initialize()
     
-    for instance_id, info in status['instances'].items():
-        instance_health.labels(instance_id).set(
-            1 if info['state'] == 'healthy' else 0
-        )
-        active_requests.labels(instance_id).set(info['active_requests'])
-        total_requests.labels(instance_id).inc(info['total_requests'])
-        response_time.labels(instance_id).set(info['avg_response_time'])
+    # List all instances
+    instances = await hub.list_instances()
+    for instance in instances:
+        print(f"{instance.id}: {instance.status.value}")
+    
+    # Get healthy instances only
+    healthy = await hub.list_instances(status=ResourceStatus.HEALTHY)
+    
+    # Get specific instance
+    instance = await hub.get_instance("ollama-127-0-0-1-11434")
+    
+    # Check health
+    is_healthy = await hub.health_check(instance.id)
+    
+    # Restart an instance
+    await hub.restart_instance(instance.id)
+    
+    # Stop an instance
+    await hub.stop_instance(instance.id)
+```
+
+## Health Monitoring & Metrics
+
+### Automatic Health Monitoring
+
+The hub automatically monitors instance health:
+
+```python
+# Health check happens automatically based on interval
+hub = OllamaHub(health_check_interval=30)  # Every 30 seconds
+
+# Manual health check
+metrics = await hub.check_resource_health(instance)
+print(f"CPU: {metrics.cpu_percent}%")
+print(f"Memory: {metrics.memory_mb}MB")
+print(f"Status: {instance.status.value}")
+```
+
+### Metrics Collection
+
+```python
+# Get hub status and statistics
+status = await hub.get_status()
+print(f"Total instances: {status['instances']['total']}")
+print(f"Healthy: {status['instances']['healthy']}")
+print(f"Unhealthy: {status['instances']['unhealthy']}")
+
+# Get metrics summary
+metrics = await hub.get_metrics_summary()
+print(f"Total CPU: {metrics['aggregate']['total_cpu_percent']}%")
+print(f"Total Memory: {metrics['aggregate']['total_memory_mb']}MB")
+```
+
+## Resource Management
+
+### With ResourceManager
+
+```python
+from gleitzeit.hub.resource_manager import ResourceManager
+from gleitzeit.hub.ollama_hub import OllamaHub
+from gleitzeit.hub.docker_hub import DockerHub
+
+async def setup_resource_management():
+    # Create resource manager
+    manager = ResourceManager()
+    
+    # Add hubs
+    ollama_hub = OllamaHub()
+    docker_hub = DockerHub()
+    
+    await manager.add_hub("ollama", ollama_hub)
+    await manager.add_hub("docker", docker_hub)
+    
+    # Start all hubs
+    await manager.start()
+    
+    # Get global view
+    metrics = await manager.get_global_metrics()
+    print(f"Total resources: {metrics['total_resources']}")
+    
+    # Allocate resources
+    instance = await manager.allocate_resource(
+        ResourceType.OLLAMA,
+        allocation_id="task-123"
+    )
+    
+    # Release when done
+    await manager.release_allocation("task-123")
+    
+    # Cleanup
+    await manager.stop()
 ```
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### 1. All instances marked as unhealthy
+1. **Instances not discovered**
+   ```python
+   # Enable auto-discovery
+   hub = OllamaHub(auto_discover=True)
+   
+   # Or manually register
+   config = OllamaConfig(host="127.0.0.1", port=11434)
+   instance = await hub.create_resource(config)
+   ```
 
-**Symptoms**: No available instances for requests
+2. **Health check failures**
+   ```python
+   # Check logs
+   import logging
+   logging.basicConfig(level=logging.DEBUG)
+   
+   # Increase timeout
+   hub = OllamaHub(
+       health_check_interval=60,
+       max_health_failures=5
+   )
+   ```
 
-**Possible Causes**:
-- Ollama services not running
-- Network connectivity issues
-- Firewall blocking ports
+3. **Port conflicts**
+   ```bash
+   # Check what's using the port
+   lsof -i :11434
+   
+   # Use different ports
+   OLLAMA_HOST=127.0.0.1:11435 ollama serve
+   ```
 
-**Solution**:
-```bash
-# Check each instance
-curl http://localhost:11434/api/tags
-curl http://localhost:11435/api/tags
-
-# Check logs
-tail -f ~/.ollama/logs/server.log
-```
-
-#### 2. Uneven load distribution
-
-**Symptoms**: One instance handling most requests
-
-**Possible Causes**:
-- Instance has all models loaded (model affinity)
-- Other instances at capacity
-- Circuit breaker open on other instances
-
-**Solution**:
-```python
-# Check instance metrics
-status = await pool.get_pool_status()
-for instance_id, info in status['instances'].items():
-    print(f"{instance_id}: {info['active_requests']} active, CB: {info['circuit_breaker_open']}")
-
-# Force round-robin for even distribution
-params["load_balancing_strategy"] = "round_robin"
-```
-
-#### 3. Slow failover
-
-**Symptoms**: Long delays when instance fails
-
-**Possible Causes**:
-- High timeout values
-- Circuit breaker not configured
-
-**Solution**:
-```python
-# Reduce timeouts and configure circuit breaker
-pool = OllamaPoolManager(
-    instances=[...],
-    circuit_breaker_config={
-        "failure_threshold": 3,  # Fail fast after 3 errors
-        "recovery_timeout": 30    # Try recovery after 30s
-    }
-)
-```
-
-### Debug Logging
-
-Enable debug logging to see routing decisions:
+### Monitoring Hub Events
 
 ```python
-import logging
+# Register event handlers
+def on_instance_registered(data):
+    print(f"New instance: {data['id']}")
 
-# Enable debug logging
-logging.basicConfig(level=logging.DEBUG)
-logging.getLogger("gleitzeit.orchestration").setLevel(logging.DEBUG)
+def on_status_changed(data):
+    print(f"Status change: {data['instance_id']} -> {data['new_status']}")
 
-# Logs will show:
-# - Instance selection decisions
-# - Health check results
-# - Circuit breaker state changes
-# - Failover attempts
+hub.on_event('instance_registered', on_instance_registered)
+hub.on_event('status_changed', on_status_changed)
 ```
 
-### Performance Tuning
+## Migration from Old Architecture
 
-#### Optimize for Throughput
+If you were using the old `OllamaPoolProvider` (which no longer exists), here's how to migrate:
+
+### Old Code (No longer works)
 ```python
-config = {
-    "instances": [...],
-    "load_balancing": {
-        "strategy": "least_loaded",
-        "health_check_interval": 60,  # Less frequent checks
-    }
-}
+# This class doesn't exist anymore
+from gleitzeit.providers.ollama_pool_provider import OllamaPoolProvider
+provider = OllamaPoolProvider(...)
 ```
 
-#### Optimize for Latency
+### New Code (Use Hub architecture)
 ```python
-config = {
-    "instances": [...],
-    "load_balancing": {
-        "strategy": "latency_based",
-        "health_check_interval": 10,  # More frequent checks
-    }
-}
-```
+from gleitzeit.hub.ollama_hub import OllamaHub
+from gleitzeit.providers.ollama_provider import OllamaProvider
 
-#### Optimize for Reliability
-```python
-config = {
-    "instances": [...],
-    "load_balancing": {
-        "strategy": "least_loaded",
-        "failover": true,
-        "retry_attempts": 5,
-        "circuit_breaker": {
-            "failure_threshold": 2,  # Fail fast
-            "recovery_timeout": 120   # Slower recovery
-        }
-    }
-}
-```
+# Create hub for resource management
+hub = OllamaHub()
+await hub.initialize()
 
-## Architecture Reference
-
-### Component Diagram
-
-```
-┌─────────────────────────────────────────────┐
-│            GleitzeitClient                  │
-├─────────────────────────────────────────────┤
-│            OllamaPoolProvider               │
-├─────────────────────────────────────────────┤
-│            OllamaPoolManager                │
-│  ┌────────────────────────────────────┐    │
-│  │   Load Balancing Strategies        │    │
-│  │  - Round Robin                     │    │
-│  │  - Least Loaded                    │    │
-│  │  - Model Affinity                  │    │
-│  │  - Latency Based                   │    │
-│  └────────────────────────────────────┘    │
-│  ┌────────────────────────────────────┐    │
-│  │   Health Monitoring                │    │
-│  │  - Continuous health checks        │    │
-│  │  - Circuit breaker                 │    │
-│  │  - Metrics collection              │    │
-│  └────────────────────────────────────┘    │
-├─────────────────────────────────────────────┤
-│         Ollama Instances                    │
-│  ┌──────┐  ┌──────┐  ┌──────┐  ┌──────┐   │
-│  │ CPU1 │  │ CPU2 │  │ GPU1 │  │ GPU2 │   │
-│  └──────┘  └──────┘  └──────┘  └──────┘   │
-└─────────────────────────────────────────────┘
-```
-
-### Request Flow
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant PoolProvider
-    participant PoolManager
-    participant CircuitBreaker
-    participant Instance1
-    participant Instance2
-    
-    Client->>PoolProvider: execute(method, params)
-    PoolProvider->>PoolManager: get_instance(model, strategy)
-    PoolManager->>CircuitBreaker: is_open(instance1)
-    CircuitBreaker-->>PoolManager: false
-    PoolManager-->>PoolProvider: instance1_url
-    PoolProvider->>Instance1: POST /api/generate
-    Instance1-->>PoolProvider: timeout
-    PoolProvider->>PoolManager: record_failure(instance1)
-    PoolManager->>CircuitBreaker: record_failure(instance1)
-    PoolProvider->>PoolManager: get_instance() [retry]
-    PoolManager-->>PoolProvider: instance2_url
-    PoolProvider->>Instance2: POST /api/generate
-    Instance2-->>PoolProvider: success
-    PoolProvider->>PoolManager: record_success(instance2)
-    PoolProvider-->>Client: result
-```
-
-### Class Structure
-
-```python
-# Core classes
-OllamaPoolManager           # Main orchestrator
-├── OllamaInstance         # Instance representation
-│   ├── InstanceMetrics   # Performance metrics
-│   └── InstanceState     # Health state
-├── CircuitBreaker         # Failure protection
-└── LoadBalancingStrategy  # Strategy enum
-
-# Provider integration
-OllamaPoolProvider         # Protocol provider
-└── uses: OllamaPoolManager
-
-# Client integration
-GleitzeitClient
-└── uses: OllamaPoolProvider
-```
-
-## Best Practices
-
-### 1. Instance Configuration
-- **Separate by capability**: CPU instances for small models, GPU for large
-- **Use tags effectively**: Tag instances by location, capability, cost
-- **Set realistic limits**: Configure max_concurrent based on hardware
-
-### 2. Load Balancing
-- **Start with least_loaded**: Good default for most use cases
-- **Use model_affinity** for expensive model loads
-- **Consider latency_based** for user-facing applications
-
-### 3. Monitoring
-- **Set up alerts** for instance failures
-- **Track metrics** over time to identify patterns
-- **Regular health checks** but not too frequent (30-60s is good)
-
-### 4. Failover
-- **Enable circuit breakers** to prevent cascade failures
-- **Set appropriate retry counts** (3-5 is typical)
-- **Monitor failover events** to identify problematic instances
-
-### 5. Scaling
-- **Start small**: 2-3 instances is often sufficient
-- **Scale horizontally**: Add more instances vs bigger instances
-- **Use auto-scaling** based on queue depth or response times
-
-## Migration Guide
-
-### From Single Instance
-
-```python
-# Before (single instance)
+# Create provider for protocol execution
 provider = OllamaProvider(
     provider_id="ollama",
-    ollama_url="http://localhost:11434"
-)
-
-# After (multi-instance)
-provider = OllamaPoolProvider(
-    provider_id="ollama_pool",
-    instances=[
-        {"id": "primary", "url": "http://localhost:11434"},
-        {"id": "backup", "url": "http://backup:11434"}
-    ]
+    ollama_hub=hub
 )
 ```
 
-### Gradual Migration
+## Architecture Benefits
 
-1. **Phase 1**: Add pool provider alongside existing
-2. **Phase 2**: Route some traffic to pool
-3. **Phase 3**: Monitor and tune
-4. **Phase 4**: Migrate all traffic
-5. **Phase 5**: Decommission single instance
+The new hub-provider separation provides:
 
-## Conclusion
+1. **Clear separation of concerns**
+   - Hubs manage resources (lifecycle, health, metrics)
+   - Providers execute protocols (LLM operations)
 
-The Multi-Instance Ollama Orchestration system provides enterprise-grade load balancing, failover, and monitoring for Ollama deployments. It's designed to be:
+2. **Better resource management**
+   - Centralized health monitoring
+   - Automatic recovery mechanisms
+   - Comprehensive metrics collection
 
-- **Reliable**: Automatic failover and circuit breakers
-- **Performant**: Multiple load balancing strategies
-- **Observable**: Comprehensive metrics and monitoring
-- **Flexible**: Extensive configuration options
-- **Compatible**: Works with existing Gleitzeit workflows
+3. **Improved reliability**
+   - Persistent resource tracking
+   - Graceful degradation
+   - Event-driven architecture
 
-For additional support or feature requests, please refer to the [GitHub repository](https://github.com/gleitzeit/gleitzeit).
+4. **Easier testing**
+   - Hubs and providers can be tested independently
+   - Mock hubs for provider testing
+   - Mock providers for hub testing
+
+## See Also
+
+- [Unified Persistence Architecture](UNIFIED_PERSISTENCE_ARCHITECTURE.md)
+- [Provider Implementation Guide](PROVIDER_IMPLEMENTATION_GUIDE.md)
+- [Resource Manager Documentation](../src/gleitzeit/hub/resource_manager.py)
+- [OllamaHub Source](../src/gleitzeit/hub/ollama_hub.py)
