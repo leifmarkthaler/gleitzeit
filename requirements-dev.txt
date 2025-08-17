@@ -1,0 +1,24 @@
+# Gleitzeit v0.0.5 - Development Dependencies
+
+# Include production dependencies
+-r requirements.txt
+
+# Testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.0.0
+pytest-mock>=3.11.0
+
+# Code quality
+black>=23.0.0
+mypy>=1.0.0
+ruff>=0.1.0
+pre-commit>=3.0.0
+
+# Optional: LLM providers (for integration testing)
+# ollama>=0.1.0
+# openai>=1.0.0
+# anthropic>=0.7.0
+
+# Optional: Docker support (for container-based execution)
+# docker>=6.0.0

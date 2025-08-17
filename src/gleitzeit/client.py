@@ -191,7 +191,7 @@ class GleitzeitClient:
             method=method,
             params=params,
             priority=priority,
-            dependencies=dependencies,
+            dependencies=dependencies or [],
             workflow_id=workflow_id
         )
         
