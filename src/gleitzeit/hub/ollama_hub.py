@@ -33,16 +33,17 @@ class OllamaHub(ResourceHub[OllamaConfig]):
         auto_discover: bool = True,
         enable_metrics: bool = True,
         max_instances: int = 10,
-        discovery_ports: Optional[List[int]] = None
+        discovery_ports: Optional[List[int]] = None,
+        persistence: Optional[Any] = None
     ):
         super().__init__(
             hub_id=hub_id,
             resource_type=ResourceType.OLLAMA,
-            enable_sharing=True,
-            max_instances=max_instances,
-            enable_metrics=enable_metrics
+            enable_metrics=enable_metrics,
+            persistence=persistence
         )
         
+        self.max_instances = max_instances
         self.auto_discover = auto_discover
         self.discovery_ports = discovery_ports or list(range(11434, 11439))
         self.model_cache: Dict[str, Set[str]] = {}  # instance_id -> set of models
@@ -52,8 +53,6 @@ class OllamaHub(ResourceHub[OllamaConfig]):
     
     async def initialize(self) -> None:
         """Initialize the hub and discover instances"""
-        await super().initialize()
-        
         # Create shared session with connection pooling
         connector = aiohttp.TCPConnector(
             limit=100,  # Total connection pool limit
@@ -74,7 +73,7 @@ class OllamaHub(ResourceHub[OllamaConfig]):
                 config = OllamaConfig(host="127.0.0.1", port=port)
                 instance = await self.create_resource(config)
                 if instance:
-                    await self.register_instance(instance)
+                    await self.register_instance_object(instance)
                     discovered.append(instance)
                     logger.info(f"Discovered Ollama instance at port {port}")
         
@@ -228,7 +227,7 @@ class OllamaHub(ResourceHub[OllamaConfig]):
         # Create and register instance
         instance = await self.create_resource(config)
         if instance:
-            await self.register_instance(instance)
+            await self.register_instance_object(instance)
             
             # Pull default models if specified
             if config.auto_pull_models and config.models:
@@ -286,6 +285,90 @@ class OllamaHub(ResourceHub[OllamaConfig]):
         except Exception as e:
             logger.error(f"Failed to restart instance {instance_id}: {e}")
             return False
+    
+    async def check_health(self, instance: ResourceInstance[OllamaConfig]) -> bool:
+        """
+        Check the health of an Ollama instance
+        
+        Args:
+            instance: The resource instance to check
+            
+        Returns:
+            True if healthy, False otherwise
+        """
+        if not instance.config:
+            return False
+            
+        try:
+            if not self.session:
+                async with aiohttp.ClientSession() as session:
+                    url = f"http://{instance.config.host}:{instance.config.port}/api/tags"
+                    async with session.get(url, timeout=5) as response:
+                        return response.status == 200
+            else:
+                url = f"http://{instance.config.host}:{instance.config.port}/api/tags"
+                async with self.session.get(url, timeout=5) as response:
+                    return response.status == 200
+        except Exception as e:
+            logger.debug(f"Health check failed for {instance.id}: {e}")
+            return False
+    
+    async def collect_metrics(self, instance: ResourceInstance[OllamaConfig]) -> ResourceMetrics:
+        """
+        Collect metrics from an Ollama instance
+        
+        Args:
+            instance: The resource instance to collect metrics from
+            
+        Returns:
+            ResourceMetrics with current metrics
+        """
+        from gleitzeit.hub.base import ResourceMetrics
+        
+        metrics = ResourceMetrics(
+            cpu_usage=0.0,
+            memory_usage=0.0,
+            gpu_usage=0.0,
+            request_count=0,
+            error_count=0,
+            average_latency=0.0,
+            active_requests=0
+        )
+        
+        # If we have tracked metrics, use them
+        if instance.id in self.instances:
+            stored_instance = self.instances[instance.id]
+            if stored_instance.metrics:
+                metrics = stored_instance.metrics
+        
+        # Try to get actual metrics from Ollama (if it provides them)
+        if instance.config:
+            try:
+                if not self.session:
+                    async with aiohttp.ClientSession() as session:
+                        url = f"http://{instance.config.host}:{instance.config.port}/api/tags"
+                        start_time = asyncio.get_event_loop().time()
+                        async with session.get(url, timeout=5) as response:
+                            latency = asyncio.get_event_loop().time() - start_time
+                            if response.status == 200:
+                                metrics.average_latency = latency
+                                metrics.request_count += 1
+                            else:
+                                metrics.error_count += 1
+                else:
+                    url = f"http://{instance.config.host}:{instance.config.port}/api/tags"
+                    start_time = asyncio.get_event_loop().time()
+                    async with self.session.get(url, timeout=5) as response:
+                        latency = asyncio.get_event_loop().time() - start_time
+                        if response.status == 200:
+                            metrics.average_latency = latency
+                            metrics.request_count += 1
+                        else:
+                            metrics.error_count += 1
+            except Exception:
+                metrics.error_count += 1
+        
+        return metrics
     
     async def ensure_model(self, instance_id: str, model_name: str) -> bool:
         """Ensure a model is available on an instance"""

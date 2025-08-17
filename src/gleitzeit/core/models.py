@@ -17,6 +17,7 @@ from gleitzeit.core.errors import TaskValidationError
 
 class TaskStatus(str, Enum):
     """Task execution status"""
+    PENDING = "pending"
     QUEUED = "queued"
     VALIDATED = "validated" 
     ROUTED = "routed"
@@ -85,7 +86,7 @@ class Task(BaseModel):
     retry_config: Optional[RetryConfig] = None
     
     # Status tracking
-    status: TaskStatus = TaskStatus.QUEUED
+    status: TaskStatus = TaskStatus.PENDING
     attempt_count: int = Field(default=0, ge=0)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
@@ -281,7 +282,7 @@ class Workflow(BaseModel):
         ready = []
         
         for task in self.tasks:
-            if task.status == TaskStatus.QUEUED:
+            if task.status in [TaskStatus.PENDING, TaskStatus.QUEUED]:
                 # Check if all dependencies are completed
                 dependencies_satisfied = all(
                     dep_id in self.completed_tasks 

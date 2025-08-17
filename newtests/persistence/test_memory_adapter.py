@@ -210,7 +210,7 @@ class TestMemoryManagement:
         
         # Test retrieval performance
         start = datetime.utcnow()
-        tasks = await memory_adapter.get_tasks_by_status("queued")
+        tasks = await memory_adapter.get_tasks_by_status("pending")
         duration = (datetime.utcnow() - start).total_seconds()
         
         assert len(tasks) == num_tasks

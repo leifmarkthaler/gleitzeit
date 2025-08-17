@@ -442,7 +442,7 @@ class TestWorkflowExecution:
         statuses = {t.id: t.status for t in tasks}
         assert statuses[task_1.id] == TaskStatus.COMPLETED
         assert statuses[task_2.id] == TaskStatus.FAILED
-        assert statuses[task_3.id] == TaskStatus.QUEUED  # Never executed
+        assert statuses[task_3.id] == TaskStatus.PENDING  # Never executed
         
         # Cleanup
         for task in workflow.tasks:

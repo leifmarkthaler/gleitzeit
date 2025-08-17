@@ -130,7 +130,8 @@ class ResourceHub(ABC, Generic[T]):
         health_check_interval: int = 30,
         max_health_failures: int = 3,
         enable_auto_recovery: bool = True,
-        enable_metrics: bool = True
+        enable_metrics: bool = True,
+        persistence: Optional[Any] = None  # UnifiedPersistenceAdapter
     ):
         self.hub_id = hub_id
         self.resource_type = resource_type
@@ -138,6 +139,7 @@ class ResourceHub(ABC, Generic[T]):
         self.max_health_failures = max_health_failures
         self.enable_auto_recovery = enable_auto_recovery
         self.enable_metrics = enable_metrics
+        self.persistence = persistence
         
         # Resource registry
         self.instances: Dict[str, ResourceInstance[T]] = {}
@@ -233,11 +235,37 @@ class ResourceHub(ABC, Generic[T]):
             self.instances[instance_id] = instance
             self.stats['total_registered'] += 1
             
+            # Save to persistence if available
+            if self.persistence:
+                await self.persistence.save_instance(self.hub_id, instance)
+            
             # Trigger initial health check
             asyncio.create_task(self._check_instance_health(instance))
             
             await self._emit_event('instance_registered', instance.to_dict())
             logger.info(f"Registered {self.resource_type.value} instance: {instance_id} ({name})")
+            
+            return instance
+    
+    async def register_instance_object(self, instance: ResourceInstance[T]) -> ResourceInstance[T]:
+        """Register an already created ResourceInstance object"""
+        async with self.instance_lock:
+            if instance.id in self.instances:
+                logger.warning(f"Instance {instance.id} already registered")
+                return self.instances[instance.id]
+            
+            self.instances[instance.id] = instance
+            self.stats['total_registered'] += 1
+            
+            # Save to persistence if available
+            if self.persistence:
+                await self.persistence.save_instance(self.hub_id, instance)
+            
+            # Trigger initial health check
+            asyncio.create_task(self._check_instance_health(instance))
+            
+            await self._emit_event('instance_registered', instance.to_dict())
+            logger.info(f"Registered {self.resource_type.value} instance: {instance.id} ({instance.name})")
             
             return instance
     
@@ -248,6 +276,11 @@ class ResourceHub(ABC, Generic[T]):
                 return False
             
             instance = self.instances.pop(instance_id)
+            
+            # Delete from persistence if available
+            if self.persistence:
+                await self.persistence.delete_instance(instance_id)
+            
             await self._emit_event('instance_unregistered', instance.to_dict())
             logger.info(f"Unregistered instance: {instance_id}")
             
@@ -256,6 +289,13 @@ class ResourceHub(ABC, Generic[T]):
     async def get_instance(self, instance_id: str) -> Optional[ResourceInstance[T]]:
         """Get a specific instance by ID"""
         return self.instances.get(instance_id)
+    
+    async def health_check(self, instance_id: str) -> bool:
+        """Check health of an instance by ID (wrapper for check_health)"""
+        instance = self.instances.get(instance_id)
+        if not instance:
+            return False
+        return await self.check_health(instance)
     
     async def list_instances(
         self,
@@ -569,3 +609,7 @@ class ResourceHub(ABC, Generic[T]):
                 for instance_id, instance in self.instances.items()
             }
         }
+    
+    async def cleanup(self) -> None:
+        """Clean up resources - to be overridden by subclasses"""
+        await self.stop()

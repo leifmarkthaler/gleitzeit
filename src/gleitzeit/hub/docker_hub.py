@@ -40,16 +40,17 @@ class DockerHub(ResourceHub[DockerConfig]):
         enable_container_reuse: bool = True,
         enable_metrics: bool = True,
         max_instances: int = 20,
-        default_image: str = "python:3.11-slim"
+        default_image: str = "python:3.11-slim",
+        persistence: Optional[Any] = None
     ):
         super().__init__(
             hub_id=hub_id,
             resource_type=ResourceType.DOCKER,
-            enable_sharing=True,
-            max_instances=max_instances,
-            enable_metrics=enable_metrics
+            enable_metrics=enable_metrics,
+            persistence=persistence
         )
         
+        self.max_instances = max_instances
         self.enable_container_reuse = enable_container_reuse
         self.default_image = default_image
         self.docker_client = None
@@ -62,8 +63,6 @@ class DockerHub(ResourceHub[DockerConfig]):
     
     async def initialize(self) -> None:
         """Initialize the Docker hub"""
-        await super().initialize()
-        
         if DOCKER_AVAILABLE:
             try:
                 self.docker_client = docker.from_env()
@@ -314,6 +313,80 @@ class DockerHub(ResourceHub[DockerConfig]):
         except Exception as e:
             logger.error(f"Failed to restart container: {e}")
             return False
+    
+    async def check_health(self, instance: ResourceInstance[DockerConfig]) -> bool:
+        """
+        Check the health of a Docker container
+        
+        Args:
+            instance: The resource instance to check
+            
+        Returns:
+            True if healthy, False otherwise
+        """
+        if not instance.config or not instance.config.container_id:
+            return False
+        
+        if not self.docker_client:
+            return False
+            
+        try:
+            container = self.docker_client.containers.get(instance.config.container_id)
+            container.reload()
+            return container.status == "running"
+        except Exception as e:
+            logger.debug(f"Health check failed for {instance.id}: {e}")
+            return False
+    
+    async def collect_metrics(self, instance: ResourceInstance[DockerConfig]) -> ResourceMetrics:
+        """
+        Collect metrics from a Docker container
+        
+        Args:
+            instance: The resource instance to collect metrics from
+            
+        Returns:
+            ResourceMetrics with current metrics
+        """
+        from gleitzeit.hub.base import ResourceMetrics
+        
+        metrics = ResourceMetrics(
+            cpu_usage=0.0,
+            memory_usage=0.0,
+            gpu_usage=0.0,
+            request_count=0,
+            error_count=0,
+            average_latency=0.0,
+            active_requests=0
+        )
+        
+        if not instance.config or not instance.config.container_id:
+            return metrics
+        
+        if not self.docker_client:
+            return metrics
+            
+        try:
+            container = self.docker_client.containers.get(instance.config.container_id)
+            stats = container.stats(stream=False)
+            
+            # Calculate CPU usage
+            cpu_delta = stats["cpu_stats"]["cpu_usage"]["total_usage"] - \
+                       stats["precpu_stats"]["cpu_usage"]["total_usage"]
+            system_delta = stats["cpu_stats"]["system_cpu_usage"] - \
+                          stats["precpu_stats"]["system_cpu_usage"]
+            if system_delta > 0:
+                metrics.cpu_usage = (cpu_delta / system_delta) * 100.0
+            
+            # Calculate memory usage
+            if "memory_stats" in stats and "usage" in stats["memory_stats"]:
+                metrics.memory_usage = stats["memory_stats"]["usage"] / (1024 * 1024)  # Convert to MB
+                
+        except Exception as e:
+            logger.debug(f"Failed to collect metrics for {instance.id}: {e}")
+            metrics.error_count += 1
+        
+        return metrics
     
     async def execute_in_container(
         self,

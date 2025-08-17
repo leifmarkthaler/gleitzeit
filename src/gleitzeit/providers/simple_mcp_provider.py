@@ -3,7 +3,7 @@ Simple MCP Provider for testing
 Implements MCP tools directly without subprocess
 """
 
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional, Type
 import logging
 from gleitzeit.providers.base import ProtocolProvider
 from gleitzeit.core.errors import MethodNotSupportedError, InvalidParameterError
@@ -149,3 +149,15 @@ class SimpleMCPProvider(ProtocolProvider):
             "joined": True,
             "count": len(strings) if isinstance(strings, list) else 1
         }
+    
+    async def __aenter__(self) -> 'SimpleMCPProvider':
+        """Async context manager entry"""
+        await self.initialize()
+        return self
+    
+    async def __aexit__(self, 
+                         exc_type: Optional[Type[BaseException]], 
+                         exc_val: Optional[BaseException], 
+                         exc_tb: Optional[Any]) -> None:
+        """Async context manager exit"""
+        await self.shutdown()

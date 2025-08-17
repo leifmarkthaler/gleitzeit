@@ -388,8 +388,8 @@ class TestRedisFeatures:
         await redis_adapter.save_tasks_batch(tasks)
         
         # Verify atomic batch save
-        high_priority = await redis_adapter.get_tasks_by_status("queued")
-        assert len([t for t in high_priority if t.priority == "high"]) == 5
+        all_tasks = await redis_adapter.get_tasks_by_status("pending")
+        assert len([t for t in all_tasks if t.priority == "high"]) == 5
     
     async def test_memory_optimization(self, redis_adapter):
         """Test memory optimization strategies"""

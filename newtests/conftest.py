@@ -21,6 +21,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from gleitzeit.core.models import Task, Workflow, Priority
 from gleitzeit.core.execution_engine import ExecutionEngine
 from gleitzeit.providers.base import ProtocolProvider
+from gleitzeit.registry import ProtocolProviderRegistry
+from gleitzeit.task_queue import QueueManager, DependencyResolver
+from gleitzeit.core.protocol import ProtocolSpec
 
 # Configure logging for tests
 logging.basicConfig(
@@ -169,7 +172,7 @@ def sample_workflow():
         params={"model": "llama3.2", "messages": []},
         priority=Priority.NORMAL,
         workflow_id="workflow_1",
-        depends_on=["task_1"]
+        dependencies=["task_1"]
     )
     
     return Workflow(
@@ -209,12 +212,21 @@ def parallel_workflow():
 @pytest.fixture
 async def execution_engine(mock_provider):
     """Configured execution engine for testing"""
-    engine = ExecutionEngine(mode="test", max_concurrent_tasks=5)
+    registry = ProtocolProviderRegistry()
+    queue_manager = QueueManager()
+    dependency_resolver = DependencyResolver()
+    
+    engine = ExecutionEngine(
+        registry=registry,
+        queue_manager=queue_manager,
+        dependency_resolver=dependency_resolver,
+        max_concurrent_tasks=5
+    )
     
     # Register mock provider
-    await engine.registry.register_protocol("mock/v1", "Mock Protocol")
-    engine.registry.provider_instances["mock_provider"] = mock_provider
-    engine.registry.protocol_providers["mock/v1"] = ["mock_provider"]
+    mock_protocol = ProtocolSpec(name="mock", version="v1", description="Mock Protocol")
+    engine.registry.register_protocol(mock_protocol)
+    engine.registry.register_provider("mock_provider", "mock/v1", mock_provider)
     
     yield engine
     
@@ -350,12 +362,11 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.ollama)
         if 'slow' in item.nodeid.lower() or 'performance' in item.nodeid.lower():
             item.add_marker(pytest.mark.slow)
+        
+        # Mark async functions
+        if asyncio.iscoroutinefunction(item.function):
+            item.add_marker(pytest.mark.asyncio)
 
 
 # ================== Async Test Support ==================
-
-def pytest_collection_modifyitems_2(config, items):
-    """Ensure async tests are properly marked"""
-    for item in items:
-        if asyncio.iscoroutinefunction(item.function):
-            item.add_marker(pytest.mark.asyncio)
+# (Handled in pytest_collection_modifyitems above)
