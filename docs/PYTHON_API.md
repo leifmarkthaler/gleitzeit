@@ -2,10 +2,14 @@
 
 ## GleitzeitClient
 
-The main client for interacting with Gleitzeit programmatically.
+The unified client for interacting with Gleitzeit programmatically. As of v0.0.5, there is a single client implementation that provides all functionality with automatic persistence fallback and hub-provider architecture.
 
 ```python
-from gleitzeit.client import GleitzeitClient
+# Import from main package
+from gleitzeit import GleitzeitClient, create_client
+
+# Or import directly
+from gleitzeit import GleitzeitClient, create_client
 ```
 
 ### Constructor
@@ -304,12 +308,24 @@ Clean up data older than specified days.
 
 ### Context Manager Usage
 
+The recommended way to use the client is with the async context manager:
+
 ```python
+# Recommended usage
 async with await create_client() as client:
-    # Client is initialized and ready
+    # Client is automatically initialized and ready
     task = await client.submit_task(...)
     result = await client.wait_for_task(task.id)
     # Client is automatically shut down
+
+# Equivalent manual usage
+client = GleitzeitClient()
+await client.initialize()
+try:
+    task = await client.submit_task(...)
+    result = await client.wait_for_task(task.id)
+finally:
+    await client.shutdown()
 ```
 
 ## Complete Examples
@@ -318,7 +334,7 @@ async with await create_client() as client:
 
 ```python
 import asyncio
-from gleitzeit.client import GleitzeitClient
+from gleitzeit import GleitzeitClient
 
 async def main():
     # Create and initialize client
@@ -360,7 +376,7 @@ asyncio.run(main())
 
 ```python
 import asyncio
-from gleitzeit.client import GleitzeitClient
+from gleitzeit import GleitzeitClient
 
 async def main():
     client = GleitzeitClient()
@@ -436,7 +452,7 @@ asyncio.run(main())
 ```python
 import asyncio
 from pathlib import Path
-from gleitzeit.client import GleitzeitClient
+from gleitzeit import GleitzeitClient
 
 async def process_documents(directory: str, pattern: str = "*.txt"):
     client = GleitzeitClient()
@@ -490,7 +506,7 @@ for file, summary in results.items():
 
 ```python
 import asyncio
-from gleitzeit.client import GleitzeitClient
+from gleitzeit import GleitzeitClient
 
 async def monitor_resources():
     client = GleitzeitClient()
@@ -645,18 +661,33 @@ client = GleitzeitClient(config=config)
 
 Key changes in v0.0.5:
 
-1. **Unified Persistence**: Single adapter for all storage needs
-2. **Hub-Provider Architecture**: Clean separation of resource management
-3. **Cross-Domain Operations**: Link tasks to resources
-4. **Automatic Fallback**: Redis → SQLite → Memory
+1. **Single Client**: Unified client replacing multiple client implementations
+2. **Unified Persistence**: Single adapter for all storage needs with automatic fallback
+3. **Hub-Provider Architecture**: Clean separation of resource management
+4. **Cross-Domain Operations**: Link tasks to resources
+5. **Required Initialization**: Explicit `initialize()` and `shutdown()` calls
 
 Migration example:
 
 ```python
-# Old (v0.0.4)
+# Old (v0.0.4) - Multiple client types
+from gleitzeit.client.api import GleitzeitClient
+from gleitzeit.client.enhanced_client import EnhancedGleitzeitClient
+
 client = GleitzeitClient(backend="redis")
 
-# New (v0.0.5)
+# New (v0.0.5) - Single unified client
+from gleitzeit import GleitzeitClient, create_client
+
+# Manual initialization
 client = GleitzeitClient(persistence_type="redis")
-await client.initialize()  # Required initialization
+await client.initialize()
+try:
+    # Use client
+finally:
+    await client.shutdown()
+
+# Recommended: Context manager
+async with await create_client(persistence_type="redis") as client:
+    # Use client - automatic initialization and cleanup
 ```
