@@ -9,7 +9,10 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from gleitzeit.core.execution_engine import ExecutionEngine
 from uuid import uuid4
 import glob
 import json
@@ -223,7 +226,7 @@ class BatchProcessor:
     
     async def process_batch(
         self,
-        execution_engine,
+        execution_engine: 'ExecutionEngine',
         files: List[str] = None,
         directory: str = None,
         pattern: str = "*",

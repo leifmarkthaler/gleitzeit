@@ -154,13 +154,13 @@ class Task(BaseModel):
     
     @field_validator('dependencies')
     @classmethod
-    def validate_dependencies(cls, v):
+    def validate_dependencies(cls, v: List[str]) -> List[str]:
         """Ensure dependencies don't include self-references"""
         return list(set(v))  # Remove duplicates
     
     @field_validator('params')
     @classmethod
-    def validate_params(cls, v):
+    def validate_params(cls, v: Dict[str, Any]) -> Dict[str, Any]:
         """Ensure params are JSON serializable"""
         try:
             json.dumps(v)
@@ -171,19 +171,19 @@ class Task(BaseModel):
                 [f"Parameters must be JSON serializable: {e}"]
             )
     
-    def mark_started(self, provider_id: str, node_id: Optional[str] = None):
+    def mark_started(self, provider_id: str, node_id: Optional[str] = None) -> None:
         """Mark task as started"""
         self.status = TaskStatus.EXECUTING
         self.started_at = datetime.utcnow()
         self.assigned_provider = provider_id
         self.execution_node = node_id
     
-    def mark_completed(self):
+    def mark_completed(self) -> None:
         """Mark task as completed"""
         self.status = TaskStatus.COMPLETED
         self.completed_at = datetime.utcnow()
     
-    def mark_failed(self, error_message: str):
+    def mark_failed(self, error_message: str) -> None:
         """Mark task as failed"""
         self.status = TaskStatus.FAILED
         self.completed_at = datetime.utcnow()
@@ -195,7 +195,7 @@ class Task(BaseModel):
             return False
         return self.attempt_count < self.retry_config.max_attempts
     
-    def increment_attempt(self):
+    def increment_attempt(self) -> None:
         """Increment attempt counter"""
         self.attempt_count += 1
         if self.can_retry():
@@ -264,7 +264,7 @@ class Workflow(BaseModel):
         }
     )
     
-    def add_task(self, task: Task):
+    def add_task(self, task: Task) -> None:
         """Add a task to the workflow"""
         task.workflow_id = self.id
         self.tasks.append(task)
@@ -297,7 +297,7 @@ class Workflow(BaseModel):
         """Get currently executing tasks"""
         return [task for task in self.tasks if task.status == TaskStatus.EXECUTING]
     
-    def mark_task_completed(self, task_id: str, result: Any):
+    def mark_task_completed(self, task_id: str, result: Any) -> None:
         """Mark a task as completed and store its result"""
         task = self.get_task(task_id)
         if task:
@@ -311,7 +311,7 @@ class Workflow(BaseModel):
             if task_id in self.failed_tasks:
                 self.failed_tasks.remove(task_id)
     
-    def mark_task_failed(self, task_id: str, error_message: str):
+    def mark_task_failed(self, task_id: str, error_message: str) -> None:
         """Mark a task as failed"""
         task = self.get_task(task_id)
         if task:
@@ -397,7 +397,7 @@ class TaskResult(BaseModel):
         }
     )
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Calculate duration if both timestamps are available"""
         if self.started_at and self.completed_at and not self.duration_seconds:
             self.duration_seconds = (self.completed_at - self.started_at).total_seconds()

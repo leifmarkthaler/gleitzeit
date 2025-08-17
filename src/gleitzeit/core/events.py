@@ -130,7 +130,7 @@ class BaseEventData:
     """Base class for all event data"""
     timestamp: Optional[datetime] = None
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
     
@@ -142,7 +142,7 @@ class BaseEventData:
             result['timestamp'] = self.timestamp.isoformat()
         return result
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
 
@@ -172,7 +172,7 @@ class TaskEventData:
     provider_id: Optional[str] = None
     result_size: Optional[int] = None
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
     
@@ -198,7 +198,7 @@ class WorkflowEventData:
     duration: Optional[float] = None
     error_message: Optional[str] = None
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
     
@@ -223,7 +223,7 @@ class ProviderEventData:
     success_rate: Optional[float] = None
     response_time: Optional[float] = None
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
     
@@ -245,7 +245,7 @@ class QueueEventData:
     priority: Optional[str] = None
     wait_time: Optional[float] = None
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
     
@@ -267,7 +267,7 @@ class HealthEventData:
     response_time: Optional[float] = None
     error_message: Optional[str] = None
     
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.timestamp is None:
             self.timestamp = datetime.utcnow()
     

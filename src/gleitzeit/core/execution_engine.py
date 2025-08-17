@@ -633,7 +633,7 @@ class ExecutionEngine:
         import re
         import json
         
-        def substitute_parameters(obj):
+        def substitute_parameters(obj: Any) -> Any:
             """Recursively substitute parameter references"""
             if isinstance(obj, str):
                 # Look for ${task-id.field} patterns

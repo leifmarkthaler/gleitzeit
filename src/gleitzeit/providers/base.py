@@ -89,16 +89,12 @@ class ProtocolProvider(ABC):
         pass
     
     @abstractmethod
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> bool:
         """
         Perform health check and return status
         
         Returns:
-            Dictionary with health status information:
-            {
-                "status": "healthy" | "degraded" | "unhealthy",
-                "details": {...}
-            }
+            True if healthy, False otherwise
         """
         pass
     
@@ -487,22 +483,18 @@ class HTTPServiceProvider(ProtocolProvider):
                     continue
                 raise network_error
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> bool:
         """Default health check via HTTP request"""
         try:
             if not self.session:
-                return {"status": "unhealthy", "details": "Not initialized"}
+                return False
             
             # Try a simple request to check connectivity
             await self.make_request("GET", "/health")
+            return True
             
-            return {"status": "healthy", "details": "HTTP service accessible"}
-            
-        except Exception as e:
-            return {
-                "status": "unhealthy", 
-                "details": f"Health check failed: {str(e)}"
-            }
+        except Exception:
+            return False
 
 
 class WebSocketProvider(ProtocolProvider):
@@ -561,19 +553,15 @@ class WebSocketProvider(ProtocolProvider):
         
         return json.loads(response)
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> bool:
         """Health check via WebSocket ping"""
         try:
             if not self.websocket or self.websocket.closed:
-                return {"status": "unhealthy", "details": "WebSocket not connected"}
+                return False
             
             # Send ping
             await self.websocket.ping()
+            return True
             
-            return {"status": "healthy", "details": "WebSocket connection active"}
-            
-        except Exception as e:
-            return {
-                "status": "unhealthy",
-                "details": f"WebSocket health check failed: {str(e)}"
-            }
+        except Exception:
+            return False

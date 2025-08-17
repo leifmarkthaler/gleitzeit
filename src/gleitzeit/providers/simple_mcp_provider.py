@@ -43,13 +43,10 @@ class SimpleMCPProvider(ProtocolProvider):
         """Cleanup provider"""
         logger.info(f"Simple MCP Provider {self.provider_id} shutdown")
     
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> bool:
         """Check provider health"""
-        return {
-            "status": "healthy",
-            "details": f"Simple MCP provider with {len(self.tools)} tools",
-            "tools": list(self.tools.keys())
-        }
+        # Provider is healthy if initialized
+        return True
     
     def get_supported_methods(self) -> List[str]:
         """Return supported methods WITH protocol prefix as per documentation"""

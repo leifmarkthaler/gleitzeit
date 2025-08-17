@@ -4,7 +4,7 @@ Executes LLM methods using endpoints provided by ResourceManager/OllamaHub
 """
 
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Type, TypeVar
 import aiohttp
 
 from gleitzeit.providers.base import ProtocolProvider
@@ -313,11 +313,14 @@ class OllamaProvider(ProtocolProvider):
         except aiohttp.ClientError as e:
             raise TaskExecutionError(message=f"Connection error: {str(e)}")
     
-    async def __aenter__(self):
+    async def __aenter__(self) -> 'OllamaProvider':
         """Async context manager entry"""
         await self.initialize()
         return self
     
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, 
+                         exc_type: Optional[Type[BaseException]], 
+                         exc_val: Optional[BaseException], 
+                         exc_tb: Optional[Any]) -> None:
         """Async context manager exit"""
         await self.cleanup()
