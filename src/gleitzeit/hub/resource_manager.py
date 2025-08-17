@@ -16,6 +16,7 @@ from .base import ResourceHub, ResourceInstance, ResourceStatus, ResourceType
 from .configs import OllamaConfig, DockerConfig
 from .ollama_hub import OllamaHub
 from .docker_hub import DockerHub
+from .agent_hub import AgentHub, AgentConfig, AgentType
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,10 @@ class ResourceManager:
             logger.info(f"Removed hub {hub_id}")
             return True
     
+    def get_hub(self, hub_id: str) -> Optional[ResourceHub]:
+        """Get a hub by ID"""
+        return self.hubs.get(hub_id)
+    
     async def create_ollama_hub(
         self,
         hub_id: str = "ollama",
@@ -132,6 +137,24 @@ class ResourceManager:
         await self.add_hub(hub_id, hub)
         await hub.start()
         
+        return hub
+    
+    async def create_agent_hub(
+        self,
+        hub_id: str = "agent",
+        max_agents: int = 10
+    ) -> AgentHub:
+        """Create and add an Agent hub"""
+        hub = AgentHub(
+            hub_id=hub_id,
+            resource_manager=self,  # Pass self as resource manager
+            max_agents=max_agents
+        )
+        
+        await self.add_hub(hub_id, hub)
+        await hub.start()
+        
+        logger.info(f"Created agent hub with max_agents={max_agents}")
         return hub
     
     async def allocate_resource(

@@ -1,0 +1,60 @@
+name: "Interactive Agent Chat"
+description: "Demonstrates conversational agent with session memory"
+
+# Simple workflow for interactive chat with an agent
+# The agent maintains context across the conversation
+
+tasks:
+  # First message
+  - id: "chat_1"
+    method: "agent/chat"
+    parameters:
+      message: "Can you explain how neural networks learn?"
+      session_id: "chat_session_001"
+    description: "Initial question about neural networks"
+  
+  # Follow-up question (maintains context)
+  - id: "chat_2"
+    method: "agent/chat"
+    dependencies: ["chat_1"]
+    parameters:
+      message: "What's the difference between gradient descent and backpropagation?"
+      session_id: "chat_session_001"  # Same session ID maintains context
+    description: "Follow-up question"
+  
+  # Request for code example (agent can use tools)
+  - id: "chat_3"
+    method: "agent/chat"
+    dependencies: ["chat_2"]
+    parameters:
+      message: "Can you show me a simple Python example of gradient descent?"
+      session_id: "chat_session_001"
+    description: "Request for code example"
+  
+  # Analysis of the conversation
+  - id: "chat_summary"
+    method: "agent/analyze"
+    dependencies: ["chat_1", "chat_2", "chat_3"]
+    parameters:
+      content: |
+        Conversation:
+        Q1: Can you explain how neural networks learn?
+        A1: ${chat_1.response}
+        
+        Q2: What's the difference between gradient descent and backpropagation?
+        A2: ${chat_2.response}
+        
+        Q3: Can you show me a simple Python example of gradient descent?
+        A3: ${chat_3.response}
+      question: "Summarize the key learning points from this conversation"
+    description: "Analyze and summarize the conversation"
+
+output:
+  format: "json"
+  fields:
+    - response_1: "${chat_1.response}"
+    - response_2: "${chat_2.response}"
+    - response_3: "${chat_3.response}"
+    - tools_used: "${chat_3.tools_used}"
+    - summary: "${chat_summary.analysis}"
+    - session_id: "chat_session_001"

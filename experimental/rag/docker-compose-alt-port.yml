@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  redis-stack:
+    image: redis/redis-stack:latest
+    container_name: redis-vector
+    ports:
+      - "6380:6379"  # Redis on different port (6380 instead of 6379)
+      - "8001:8001"  # RedisInsight web UI
+    environment:
+      - REDIS_ARGS=--save 60 1000 --appendonly yes
+    volumes:
+      - redis-vector-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  redis-vector-data:
+    driver: local
