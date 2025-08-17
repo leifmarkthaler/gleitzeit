@@ -33,12 +33,13 @@ This guide covers testing strategies, patterns, and tools for Gleitzeit v0.0.5. 
 
 ```
 gleitzeit/
-├── tests/
+├── newtests/
 │   ├── unit/
 │   │   ├── providers/
+│   │   │   ├── test_base_provider.py
 │   │   │   ├── test_ollama_provider.py
 │   │   │   ├── test_python_provider.py
-│   │   │   └── test_mcp_provider.py
+│   │   │   └── test_simple_mcp_provider.py
 │   │   ├── hub/
 │   │   │   ├── test_ollama_hub.py
 │   │   │   ├── test_docker_hub.py
@@ -46,9 +47,21 @@ gleitzeit/
 │   │   ├── core/
 │   │   │   ├── test_execution_engine.py
 │   │   │   ├── test_registry.py
+│   │   │   ├── test_batch_processor.py
 │   │   │   └── test_workflow_loader.py
 │   │   └── persistence/
 │   │       └── test_unified_persistence.py
+│   ├── workflows/   # NEW: Comprehensive workflow tests
+│   │   ├── test_simple_llm_workflow.py
+│   │   ├── test_dependent_workflow.py
+│   │   ├── test_parallel_workflow.py
+│   │   ├── test_mixed_workflow.py
+│   │   ├── test_batch_workflows.py
+│   │   ├── test_vision_workflows.py
+│   │   ├── test_mcp_workflows.py
+│   │   ├── test_complex_workflows.py
+│   │   ├── test_all_workflows.py  # Master test runner
+│   │   └── conftest.py
 │   ├── integration/
 │   │   ├── test_workflow_execution.py
 │   │   ├── test_provider_hub_integration.py
@@ -426,6 +439,159 @@ class TestExecutionEngine:
         assert set(layers[0]) == {"task1", "task4"}
         assert set(layers[1]) == {"task2"}
         assert set(layers[2]) == {"task3"}
+```
+
+## Workflow Testing
+
+### Overview
+
+The `newtests/workflows/` directory contains comprehensive tests for all workflow examples in the `/examples` directory. These tests validate workflow structure, execution flow, parameter substitution, and provider integration.
+
+### Workflow Test Categories
+
+#### 1. Simple LLM Workflows (`test_simple_llm_workflow.py`)
+Tests basic LLM task execution without dependencies:
+- Workflow structure validation
+- Task priority handling
+- Parallel execution of independent tasks
+- Timeout enforcement
+- Result storage and retrieval
+
+#### 2. Dependent Workflows (`test_dependent_workflow.py`)
+Tests workflows with task dependencies and parameter substitution:
+- Dependency graph resolution
+- Sequential task execution
+- Parameter substitution between tasks
+- Result propagation through dependencies
+- Dependency failure handling
+
+#### 3. Parallel Workflows (`test_parallel_workflow.py`)
+Tests parallel task execution patterns:
+- Parallel execution verification
+- Maximum parallel task limits
+- Mixed parallel/sequential workflows
+- Error handling in parallel tasks
+- Result aggregation from parallel tasks
+
+#### 4. Mixed Provider Workflows (`test_mixed_workflow.py`)
+Tests workflows combining different provider types:
+- LLM and Python provider integration
+- Data flow between providers
+- Parallel execution across providers
+- Cross-provider error handling
+- Provider-specific timeouts
+
+#### 5. Batch Processing Workflows (`test_batch_workflows.py`)
+Tests batch file processing:
+- File discovery with glob patterns
+- Parallel batch processing
+- Error handling per file
+- Dynamic parameter substitution
+- Recursive directory processing
+- Mixed file type handling
+
+#### 6. Vision Workflows (`test_vision_workflows.py`)
+Tests image processing and vision analysis:
+- Basic image analysis
+- Vision with file reading
+- Mixed vision-text workflows
+- Batch image processing
+- Multiple image format support
+- Base64 image handling
+- Data extraction from images
+
+#### 7. MCP Workflows (`test_mcp_workflows.py`)
+Tests Model Context Protocol tool execution:
+- Simple tool calls
+- Chained tool execution
+- Database operations
+- Calculator operations
+- Filesystem operations
+- Error handling
+- Parallel tool execution
+
+#### 8. Complex Workflows (`test_complex_workflows.py`)
+Tests advanced workflow patterns:
+- Context and parameter passing
+- Multi-instance affinity
+- Complex substitution patterns
+- Meeting analysis workflows
+- Python data pipelines
+- Conditional execution
+- Workflow composition
+
+### Running Workflow Tests
+
+```bash
+# Run all workflow tests
+pytest newtests/workflows/
+
+# Run specific workflow test
+pytest newtests/workflows/test_batch_workflows.py
+
+# Run with coverage
+pytest newtests/workflows/ --cov=src/gleitzeit
+
+# Use the master test runner
+python newtests/workflows/test_all_workflows.py
+
+# Test specific workflow type
+python newtests/workflows/test_all_workflows.py batch
+```
+
+### Workflow Test Structure
+
+Each workflow test file follows this pattern:
+
+```python
+class TestWorkflowType:
+    @pytest.fixture
+    def workflow_path(self):
+        """Path to workflow file"""
+        return Path("examples/workflow.yaml")
+    
+    @pytest.fixture
+    def workflow_content(self, workflow_path):
+        """Load workflow content"""
+        with open(workflow_path) as f:
+            return yaml.safe_load(f)
+    
+    @pytest.fixture
+    async def mock_provider(self):
+        """Create mock provider for testing"""
+        # Mock provider setup
+    
+    @pytest.mark.asyncio
+    async def test_workflow_structure(self, workflow_content):
+        """Test workflow has correct structure"""
+        # Validate workflow structure
+    
+    @pytest.mark.asyncio
+    async def test_workflow_execution(self, execution_engine, workflow_content):
+        """Test workflow executes successfully"""
+        # Test execution flow
+```
+
+### Workflow Validation Tests
+
+The `test_all_workflows.py` file provides comprehensive validation:
+
+```python
+class TestAllWorkflows:
+    def test_all_workflow_files_exist(self):
+        """Verify all expected workflow files exist"""
+    
+    def test_all_workflows_valid_yaml(self):
+        """Validate YAML syntax"""
+    
+    def test_workflow_dependency_resolution(self):
+        """Check for dependency cycles"""
+    
+    def test_workflow_parameter_references(self):
+        """Validate parameter substitution syntax"""
+    
+    def test_workflow_protocols(self):
+        """Verify valid protocol usage"""
 ```
 
 ## Integration Testing
@@ -1024,16 +1190,22 @@ jobs:
 
 ```bash
 # Run all tests
-pytest
+pytest newtests/
+
+# Run unit tests only
+pytest newtests/unit/
+
+# Run workflow tests only
+pytest newtests/workflows/
 
 # Run specific test file
-pytest tests/unit/providers/test_ollama_provider.py
+pytest newtests/unit/providers/test_ollama_provider.py
 
 # Run specific test class
-pytest tests/unit/providers/test_ollama_provider.py::TestOllamaProvider
+pytest newtests/workflows/test_batch_workflows.py::TestBatchWorkflows
 
 # Run specific test method
-pytest tests/unit/providers/test_ollama_provider.py::TestOllamaProvider::test_initialization
+pytest newtests/workflows/test_simple_llm_workflow.py::TestSimpleLLMWorkflow::test_workflow_structure
 
 # Run tests by marker
 pytest -m unit           # Unit tests only
@@ -1042,6 +1214,9 @@ pytest -m "not slow"     # Skip slow tests
 
 # Run with coverage
 pytest --cov=src/gleitzeit --cov-report=html
+
+# Run workflow tests with coverage
+pytest newtests/workflows/ --cov=src/gleitzeit --cov-report=term-missing
 
 # Run in parallel
 pytest -n auto
@@ -1054,6 +1229,14 @@ pytest -x
 
 # Run last failed tests
 pytest --lf
+
+# Use the workflow test runner
+python newtests/workflows/test_all_workflows.py
+
+# Test specific workflow category
+python newtests/workflows/test_all_workflows.py vision
+python newtests/workflows/test_all_workflows.py batch
+python newtests/workflows/test_all_workflows.py mcp
 ```
 
 ### Test Coverage
@@ -1100,12 +1283,24 @@ pytest tests/performance --profile
 
 ### Test Categories
 
-- [ ] **Unit Tests**: Individual components
+- [ ] **Unit Tests**: Individual components (providers, hubs, core)
+- [ ] **Workflow Tests**: All example workflows validation
 - [ ] **Integration Tests**: Component interactions
 - [ ] **E2E Tests**: Full workflow execution
 - [ ] **Performance Tests**: Load and benchmarks
 - [ ] **Security Tests**: Input validation, sanitization
 - [ ] **Error Tests**: Error handling and recovery
+
+### Workflow Test Coverage
+
+- [ ] **Simple LLM Workflows**: Basic task execution
+- [ ] **Dependent Workflows**: Task dependencies and substitution
+- [ ] **Parallel Workflows**: Concurrent task execution
+- [ ] **Mixed Provider Workflows**: LLM + Python integration
+- [ ] **Batch Processing**: File discovery and parallel processing
+- [ ] **Vision Workflows**: Image analysis and processing
+- [ ] **MCP Workflows**: Tool execution and chaining
+- [ ] **Complex Patterns**: Context, conditionals, composition
 
 ## Summary
 
