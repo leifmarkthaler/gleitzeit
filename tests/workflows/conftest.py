@@ -9,7 +9,8 @@ import yaml
 
 from gleitzeit.core.execution_engine import ExecutionEngine
 from gleitzeit.registry import ProtocolProviderRegistry
-from gleitzeit.persistence import UnifiedPersistenceAdapter
+from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter
+from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
@@ -147,11 +148,15 @@ async def mock_registry(mock_ollama_hub, mock_docker_hub):
 @pytest.fixture
 async def execution_engine(mock_registry, mock_persistence):
     """Create execution engine with mocked dependencies"""
+    queue_manager = QueueManager()
+    dependency_resolver = DependencyResolver()
+    
     engine = ExecutionEngine(
         registry=mock_registry,
+        queue_manager=queue_manager,
+        dependency_resolver=dependency_resolver,
         persistence=mock_persistence,
-        max_parallel_tasks=5,
-        task_timeout=60
+        max_concurrent_tasks=5
     )
     return engine
 
@@ -159,8 +164,8 @@ async def execution_engine(mock_registry, mock_persistence):
 @pytest.fixture
 def workflow_validator():
     """Create workflow validator"""
-    from gleitzeit.core.workflow_loader import WorkflowLoader
-    return WorkflowLoader()
+    from gleitzeit.core.workflow_loader import load_workflow_from_dict
+    return load_workflow_from_dict
 
 
 def load_workflow_file(workflow_path: Path) -> dict:

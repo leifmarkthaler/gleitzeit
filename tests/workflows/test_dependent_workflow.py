@@ -7,9 +7,9 @@ from unittest.mock import Mock, AsyncMock, MagicMock
 import yaml
 
 from gleitzeit.core.execution_engine import ExecutionEngine
-from gleitzeit.core.workflow_loader import WorkflowLoader
+from gleitzeit.core.workflow_loader import load_workflow_from_dict
 from gleitzeit.core.dependency_tracker import DependencyTracker
-from gleitzeit.persistence import UnifiedPersistenceAdapter
+from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter
 
 
 class TestDependentWorkflow:
@@ -62,19 +62,6 @@ class TestDependentWorkflow:
         persistence.update_task_status = AsyncMock()
         return persistence
     
-    @pytest.fixture
-    async def execution_engine(self, mock_registry, mock_persistence):
-        """Create execution engine"""
-        engine = ExecutionEngine(
-            registry=mock_registry,
-            persistence=mock_persistence,
-            max_parallel_tasks=5,
-            task_timeout=120
-        )
-        # Mock parameter resolution
-        engine.parameter_resolver = Mock()
-        engine.parameter_resolver.resolve_parameters = AsyncMock(side_effect=lambda params, ctx: params)
-        return engine
     
     @pytest.mark.asyncio
     async def test_workflow_structure(self, workflow_content):

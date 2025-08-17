@@ -8,7 +8,7 @@ import yaml
 import json
 
 from gleitzeit.core.execution_engine import ExecutionEngine
-from gleitzeit.core.workflow_loader import WorkflowLoader
+from gleitzeit.core.workflow_loader import load_workflow_from_dict
 
 
 class TestComplexWorkflows:

@@ -89,15 +89,6 @@ class TestMixedWorkflow:
         persistence.update_task_status = AsyncMock()
         return persistence
     
-    @pytest.fixture
-    async def execution_engine(self, mock_registry, mock_persistence):
-        """Create execution engine"""
-        return ExecutionEngine(
-            registry=mock_registry,
-            persistence=mock_persistence,
-            max_parallel_tasks=5,
-            task_timeout=60
-        )
     
     @pytest.mark.asyncio
     async def test_workflow_has_mixed_providers(self, workflow_content):

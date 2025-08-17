@@ -7,7 +7,7 @@ from unittest.mock import Mock, AsyncMock
 import yaml
 
 from gleitzeit.core.execution_engine import ExecutionEngine
-from gleitzeit.core.workflow_loader import WorkflowLoader
+from gleitzeit.core.workflow_loader import load_workflow_from_dict
 
 
 class TestParallelWorkflow:
@@ -70,15 +70,6 @@ class TestParallelWorkflow:
         persistence.update_task_status = AsyncMock()
         return persistence
     
-    @pytest.fixture
-    async def execution_engine(self, mock_registry, mock_persistence):
-        """Create execution engine"""
-        return ExecutionEngine(
-            registry=mock_registry,
-            persistence=mock_persistence,
-            max_parallel_tasks=10,
-            task_timeout=60
-        )
     
     @pytest.mark.asyncio
     async def test_workflow_structure(self, workflow_content):
