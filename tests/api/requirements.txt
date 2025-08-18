@@ -1,0 +1,8 @@
+# Test requirements for Gleitzeit API tests
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.0
+httpx>=0.24.0
+fastapi[all]>=0.104.0
+aiofiles>=23.0.0

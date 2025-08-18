@@ -1,0 +1,159 @@
+name: "Multi-Task LLM Research Workflow"
+description: "Manual step-by-step research with full control over each task"
+
+tasks:
+  # Step 1: Research Planning
+  - id: "research_plan"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Create a structured research plan for learning Rust programming language. Include 4-5 key areas to investigate."
+      temperature: 0.7
+
+  # Step 2: Language Fundamentals Research  
+  - id: "research_fundamentals"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["research_plan"]
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Based on this plan: ${research_plan.response}. Research Rust fundamentals including syntax, ownership, and memory safety."
+      temperature: 0.6
+
+  # Step 3: Ecosystem Research
+  - id: "research_ecosystem"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["research_fundamentals"]
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Research Rust ecosystem: package manager (Cargo), popular crates, tooling, and community."
+      temperature: 0.6
+
+  # Step 4: Use Cases Research
+  - id: "research_use_cases"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["research_ecosystem"]
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Research Rust use cases: where it excels, major projects using Rust, performance comparisons."
+      temperature: 0.6
+
+  # Step 5: Code Generation
+  - id: "generate_example_code"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["research_use_cases"]
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Based on the research, write a comprehensive Rust example demonstrating ownership, borrowing, and error handling. Include comments explaining concepts."
+      temperature: 0.3
+
+  # Step 6: Code Validation
+  - id: "validate_code_syntax"
+    protocol: "python/v1"
+    method: "python/execute"
+    dependencies: ["generate_example_code"]
+    params:
+      code: |
+        # Simulate Rust syntax validation
+        rust_code = """${generate_example_code.response}"""
+        
+        # Basic validation checks
+        validation_results = {
+            "has_main_function": "fn main()" in rust_code,
+            "has_ownership_example": "let " in rust_code and "&" in rust_code,
+            "has_error_handling": "Result<" in rust_code or "match" in rust_code,
+            "has_comments": "//" in rust_code,
+            "line_count": len(rust_code.split('\n'))
+        }
+        
+        print("Code Validation Results:")
+        for check, result in validation_results.items():
+            print(f"  {check}: {result}")
+            
+        # Generate validation summary
+        result = {
+            "validation_passed": all([
+                validation_results["has_main_function"],
+                validation_results["has_ownership_example"], 
+                validation_results["line_count"] > 10
+            ]),
+            "details": validation_results
+        }
+
+  # Step 7: Code Improvement (if needed)
+  - id: "improve_code"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["validate_code_syntax"]
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Improve this Rust code based on validation results: ${validate_code_syntax.result}. Original code: ${generate_example_code.response}"
+      temperature: 0.2
+
+  # Step 8: Research Synthesis
+  - id: "synthesize_research"
+    protocol: "llm/v1" 
+    method: "llm/chat"
+    dependencies: ["research_fundamentals", "research_ecosystem", "research_use_cases"]
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Synthesize this research into a comprehensive overview:
+            
+            Fundamentals: ${research_fundamentals.response}
+            
+            Ecosystem: ${research_ecosystem.response}
+            
+            Use Cases: ${research_use_cases.response}
+            
+            Create a structured summary with key points and conclusions.
+      temperature: 0.5
+
+  # Step 9: Documentation Generation
+  - id: "create_documentation"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["synthesize_research", "improve_code"]
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Create comprehensive documentation combining:
+            
+            Research Summary: ${synthesize_research.response}
+            
+            Example Code: ${improve_code.response}
+            
+            Format as a tutorial with sections: Introduction, Key Concepts, Code Example, Explanation, Conclusion.
+      temperature: 0.4
+
+  # Step 10: Final Review
+  - id: "review_output"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["create_documentation"]
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Review this documentation for completeness and accuracy. Suggest any improvements: ${create_documentation.response}"
+      temperature: 0.3

@@ -29,7 +29,8 @@ from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
-from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
+from gleitzeit.providers.template_provider import TemplateProvider
+from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1, TEMPLATE_PROTOCOL_V1
 from gleitzeit.persistence.factory import PersistenceFactory, PersistenceType
 from gleitzeit.core.batch_processor import BatchProcessor, BatchResult
 
@@ -47,6 +48,7 @@ class GleitzeitCLI:
         self.config = self._load_config()
         self.execution_engine = None
         self.persistence_backend = None
+        self.resource_manager = None
         
     def _load_config(self) -> Dict[str, Any]:
         """Load CLI configuration"""
@@ -80,6 +82,9 @@ class GleitzeitCLI:
                             'vision': 'llava:latest',
                             'embedding': 'nomic-embed-text:latest'
                         }
+                    },
+                    'template': {
+                        'enabled': True
                     }
                 },
                 'execution': {
@@ -173,6 +178,18 @@ class GleitzeitCLI:
                 except Exception as e:
                     click.echo(f"⚠️  MCP provider failed to initialize: {e}")
             
+            # Template provider
+            template_config = provider_config.get('template', {})
+            if template_config.get('enabled', True):
+                try:
+                    registry.register_protocol(TEMPLATE_PROTOCOL_V1)
+                    template_provider = TemplateProvider("cli-template-provider", execution_engine=self.execution_engine)
+                    await template_provider.initialize()
+                    registry.register_provider("cli-template-provider", "template/v1", template_provider)
+                    click.echo("✓ Template provider registered")
+                except Exception as e:
+                    click.echo(f"⚠️  Template provider failed to initialize: {e}")
+            
             return True
             
         except Exception as e:
@@ -244,6 +261,8 @@ class GleitzeitCLI:
             # Check standard fields in order of preference
             if 'response' in result.result:  # LLM standard field
                 display_text = result.result['response']
+            elif 'analysis' in result.result:  # Agent analysis field
+                display_text = result.result['analysis']
             elif 'result' in result.result:  # Python standard field
                 display_text = str(result.result['result'])
             elif 'content' in result.result:  # Backward compatibility for LLM
@@ -259,6 +278,7 @@ class GleitzeitCLI:
     
     async def _shutdown_system(self):
         """Clean shutdown of the system"""
+        
         # Shutdown all providers
         if self.execution_engine and self.execution_engine.registry:
             for provider_id, provider_instance in self.execution_engine.registry.provider_instances.items():

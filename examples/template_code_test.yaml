@@ -1,0 +1,11 @@
+name: "Template Code Test"
+description: "Test template code generation workflow"
+tasks:
+  - id: "template_code_test"
+    name: "Generate Simple Calculator"
+    protocol: "template/v1"
+    method: "template/code"
+    params:
+      task: "Create a simple calculator function that can add, subtract, multiply, and divide two numbers"
+      language: "python"
+    priority: "normal"
