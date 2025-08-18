@@ -138,7 +138,7 @@ class BatchProcessor:
         method: str,
         prompt: str,
         model: str = "llama3.2:latest",
-        protocol: str = "llm/v1",
+        protocol: str = None,
         name: str = None
     ) -> Workflow:
         """
@@ -146,10 +146,10 @@ class BatchProcessor:
         
         Args:
             files: List of file paths to process
-            method: Protocol method (e.g., "llm/chat", "llm/vision")
+            method: Protocol method (e.g., "llm/chat", "llm/vision", "python/execute")
             prompt: Prompt to use for each file
             model: Model to use
-            protocol: Protocol to use
+            protocol: Protocol to use (auto-detected from method if not provided)
             name: Optional workflow name
         
         Returns:
@@ -160,6 +160,18 @@ class BatchProcessor:
                 "batch_task",
                 ["No files provided for batch processing"]
             )
+        
+        # Auto-detect protocol from method if not provided
+        if protocol is None:
+            if method.startswith("python/"):
+                protocol = "python/v1"
+            elif method.startswith("mcp/"):
+                protocol = "mcp/v1"
+            elif method.startswith("template/"):
+                protocol = "template/v1"
+            else:
+                # Default to llm/v1 for chat/vision methods
+                protocol = "llm/v1"
         
         workflow_id = f"batch-{uuid4().hex[:8]}"
         workflow_name = name or f"Batch Processing ({len(files)} files)"
@@ -172,7 +184,19 @@ class BatchProcessor:
             # Determine if this is a vision task
             is_image = Path(file_path).suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']
             
-            if is_image and method == "llm/vision":
+            if method.startswith("python/"):
+                # Python execution task
+                task_data = {
+                    'id': task_id,
+                    'name': f"Process {file_name}",
+                    'protocol': protocol,
+                    'method': method,
+                    'params': {
+                        'file': file_path
+                    },
+                    'priority': 'normal'
+                }
+            elif is_image and method == "llm/vision":
                 # Vision task with image_path
                 task_data = {
                     'id': task_id,
@@ -189,7 +213,7 @@ class BatchProcessor:
                     'priority': 'normal'
                 }
             else:
-                # Text task with file_path
+                # Text/LLM task with file_path
                 task_data = {
                     'id': task_id,
                     'name': f"Process {file_name}",
@@ -233,7 +257,7 @@ class BatchProcessor:
         method: str = "llm/chat",
         prompt: str = "Analyze this file",
         model: str = "llama3.2:latest",
-        protocol: str = "llm/v1"
+        protocol: str = None
     ) -> BatchResult:
         """
         Process a batch of files
@@ -246,7 +270,7 @@ class BatchProcessor:
             method: Protocol method
             prompt: Prompt for processing
             model: Model to use
-            protocol: Protocol to use
+            protocol: Protocol to use (auto-detected from method if not provided)
         
         Returns:
             BatchResult with processing results
@@ -261,6 +285,17 @@ class BatchProcessor:
                 "batch_task",
                 ["Either 'files' or 'directory' must be provided"]
             )
+        
+        # Auto-detect protocol if not provided (same logic as create_batch_workflow)
+        if protocol is None:
+            if method.startswith("python/"):
+                protocol = "python/v1"
+            elif method.startswith("mcp/"):
+                protocol = "mcp/v1"
+            elif method.startswith("template/"):
+                protocol = "template/v1"
+            else:
+                protocol = "llm/v1"
         
         # Create batch result
         batch_id = f"batch-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
@@ -306,6 +341,8 @@ class BatchProcessor:
                 file_path = task.params['file_path']
             elif 'image_path' in task.params:
                 file_path = task.params['image_path']
+            elif 'file' in task.params:
+                file_path = task.params['file']
             
             if file_path:
                 result = execution_engine.task_results.get(task.id)
@@ -314,8 +351,12 @@ class BatchProcessor:
                         # Extract the response text from the result
                         content = ''
                         if result.result:
-                            # Try 'response' first (standard field), then 'content', then 'text'
-                            content = result.result.get('response', result.result.get('content', result.result.get('text', '')))
+                            # Try various fields based on provider type
+                            # Python tasks return 'output', LLM tasks return 'response'
+                            content = result.result.get('output', 
+                                        result.result.get('response', 
+                                            result.result.get('content', 
+                                                result.result.get('text', ''))))
                         batch_result.results[file_path] = {
                             'status': 'success',
                             'content': content

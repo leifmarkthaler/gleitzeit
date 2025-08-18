@@ -6,7 +6,7 @@ Implements MCP tools directly without subprocess
 from typing import Dict, List, Any, Optional, Type
 import logging
 from gleitzeit.providers.base import ProtocolProvider
-from gleitzeit.core.errors import MethodNotSupportedError, InvalidParameterError
+from gleitzeit.core.errors import MethodNotSupportedError, InvalidParameterError, TaskExecutionError
 
 logger = logging.getLogger(__name__)
 
@@ -95,12 +95,22 @@ class SimpleMCPProvider(ProtocolProvider):
         # Get arguments from params
         arguments = params.get("arguments", params)
         
-        # Execute tool
-        tool_func = self.tools[tool_name]
-        result = await tool_func(arguments)
-        
-        logger.info(f"Tool {tool_name} executed successfully")
-        return result
+        try:
+            # Execute tool
+            tool_func = self.tools[tool_name]
+            result = await tool_func(arguments)
+            
+            logger.info(f"Tool {tool_name} executed successfully")
+            return result
+            
+        except Exception as e:
+            # Wrap any tool execution errors in TaskExecutionError for retry support
+            error_msg = f"MCP tool '{tool_name}' failed: {str(e)}"
+            logger.error(error_msg)
+            raise TaskExecutionError(
+                task_id=f"mcp_tool_{tool_name}",
+                message=error_msg
+            )
     
     # Tool implementations
     async def _tool_echo(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -116,6 +126,14 @@ class SimpleMCPProvider(ProtocolProvider):
         """Add tool - adds two numbers"""
         a = args.get("a", 0)
         b = args.get("b", 0)
+        
+        # Validate inputs are numeric
+        try:
+            a = float(a) if not isinstance(a, (int, float)) else a
+            b = float(b) if not isinstance(b, (int, float)) else b
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid numeric inputs: a={args.get('a')}, b={args.get('b')}")
+        
         result = a + b
         return {
             "response": str(result),
@@ -127,6 +145,14 @@ class SimpleMCPProvider(ProtocolProvider):
         """Multiply tool - multiplies two numbers"""
         a = args.get("a", 1)
         b = args.get("b", 1)
+        
+        # Validate inputs are numeric
+        try:
+            a = float(a) if not isinstance(a, (int, float)) else a
+            b = float(b) if not isinstance(b, (int, float)) else b
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid numeric inputs: a={args.get('a')}, b={args.get('b')}")
+        
         result = a * b
         return {
             "response": str(result),

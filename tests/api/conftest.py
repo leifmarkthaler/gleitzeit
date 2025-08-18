@@ -37,21 +37,23 @@ async def mock_execution_engine():
     engine.start = AsyncMock()
     engine.task_results = {}
     engine.registry = MagicMock()
+    python_provider = MagicMock()
+    python_provider.protocol_id = "python/v1"
+    python_provider.name = "PythonProvider"
+    python_provider.description = "Test Python provider"
+    python_provider.is_running = lambda: True
+    python_provider.get_supported_methods = lambda: ["python/execute", "python/validate"]
+    
+    ollama_provider = MagicMock()
+    ollama_provider.protocol_id = "llm/v1"
+    ollama_provider.name = "OllamaProvider"
+    ollama_provider.description = "Test LLM provider"
+    ollama_provider.is_running = lambda: True
+    ollama_provider.get_supported_methods = lambda: ["llm/chat", "llm/vision"]
+    
     engine.registry.provider_instances = {
-        "test-python-provider": MagicMock(
-            protocol_id="python/v1",
-            name="PythonProvider",
-            description="Test Python provider",
-            is_running=lambda: True,
-            get_supported_methods=lambda: ["python/execute", "python/validate"]
-        ),
-        "test-ollama-provider": MagicMock(
-            protocol_id="llm/v1",
-            name="OllamaProvider",
-            description="Test LLM provider",
-            is_running=lambda: True,
-            get_supported_methods=lambda: ["llm/chat", "llm/vision"]
-        )
+        "test-python-provider": python_provider,
+        "test-ollama-provider": ollama_provider
     }
     engine.registry.list_protocols = lambda: ["python/v1", "llm/v1", "mcp/v1", "template/v1"]
     return engine

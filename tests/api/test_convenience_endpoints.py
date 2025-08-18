@@ -8,92 +8,6 @@ from unittest.mock import MagicMock, AsyncMock, patch
 from gleitzeit.core import TaskResult
 
 
-class TestPythonExecution:
-    """Test Python code execution endpoint"""
-    
-    @pytest.mark.asyncio
-    async def test_execute_python_code(self, async_client, mock_execution_engine):
-        """Test executing Python code directly"""
-        # Mock successful execution
-        result = MagicMock(spec=TaskResult)
-        result.status = "completed"
-        result.result = {"output": "Hello World\n", "result": 42}
-        result.error = None
-        result.execution_time = 0.05
-        
-        # Override task ID generation for predictable testing
-        with patch('gleitzeit.api.main.uuid.uuid4') as mock_uuid:
-            mock_uuid.return_value.hex = "test1234" * 4  # 32 chars
-            mock_execution_engine.task_results = {"exec_test1234": result}
-            
-            response = await async_client.post("/execute/python", json={
-                "code": "print('Hello World'); result = 42",
-                "timeout": 30
-            })
-        
-        assert response.status_code == 200
-        data = response.json()
-        
-        assert data["status"] == "success"
-        assert data["output"] == "Hello World\n"
-        assert data["result"] == 42
-        assert data["execution_time"] == 0.05
-        
-        # Verify task was submitted
-        await asyncio.sleep(0.1)
-        mock_execution_engine.submit_task.assert_called_once()
-        mock_execution_engine.start.assert_called_once()
-    
-    @pytest.mark.asyncio
-    async def test_execute_python_with_error(self, async_client, mock_execution_engine):
-        """Test Python execution with error"""
-        # Mock failed execution
-        result = MagicMock(spec=TaskResult)
-        result.status = "failed"
-        result.result = None
-        result.error = "SyntaxError: invalid syntax"
-        
-        with patch('gleitzeit.api.main.uuid.uuid4') as mock_uuid:
-            mock_uuid.return_value.hex = "test1234" * 4
-            mock_execution_engine.task_results = {"exec_test1234": result}
-            
-            response = await async_client.post("/execute/python", json={
-                "code": "invalid python code @@",
-                "timeout": 30
-            })
-        
-        assert response.status_code == 500
-        assert "SyntaxError" in response.json()["detail"]
-    
-    @pytest.mark.asyncio
-    async def test_execute_python_timeout(self, async_client):
-        """Test Python execution with custom timeout"""
-        response = await async_client.post("/execute/python", json={
-            "code": "import time; time.sleep(100)",
-            "timeout": 1
-        })
-        
-        # Should accept the request (actual timeout handled by execution engine)
-        assert response.status_code in [200, 500]
-    
-    @pytest.mark.asyncio
-    async def test_execute_python_without_engine(self, async_client):
-        """Test Python execution when engine not initialized"""
-        from gleitzeit.api.main import app_state
-        
-        original_engine = app_state.execution_engine
-        app_state.execution_engine = None
-        
-        response = await async_client.post("/execute/python", json={
-            "code": "result = 1",
-            "timeout": 30
-        })
-        
-        assert response.status_code == 503
-        assert response.json()["detail"] == "System not initialized"
-        
-        app_state.execution_engine = original_engine
-
 
 class TestChatEndpoint:
     """Test LLM chat endpoint"""
@@ -309,16 +223,6 @@ class TestBatchProcessing:
 class TestConvenienceEndpointValidation:
     """Test validation for convenience endpoints"""
     
-    @pytest.mark.asyncio
-    async def test_execute_python_empty_code(self, async_client):
-        """Test executing empty Python code"""
-        response = await async_client.post("/execute/python", json={
-            "code": "",
-            "timeout": 30
-        })
-        
-        # Should accept empty code (execution engine will handle)
-        assert response.status_code in [200, 500]
     
     @pytest.mark.asyncio
     async def test_chat_empty_message(self, async_client):

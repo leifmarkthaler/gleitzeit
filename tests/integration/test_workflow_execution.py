@@ -38,40 +38,64 @@ class TestWorkflowExecution:
     @pytest.fixture
     async def mock_llm_provider(self):
         """Create mock LLM provider"""
-        provider = AsyncMock(spec=ProtocolProvider)
-        provider.id = "mock_llm"
-        provider.protocol_id = "llm/v1"
-        provider.health_check = AsyncMock(return_value=True)
-        provider.execute = AsyncMock(return_value={
-            "response": "Mock LLM response",
-            "model": "mock-model"
-        })
-        provider.handle_request = AsyncMock(return_value={
-            "response": "Mock LLM response",
-            "model": "mock-model"
-        })
-        provider.__aenter__ = AsyncMock(return_value=provider)
-        provider.__aexit__ = AsyncMock(return_value=None)
-        return provider
+        class MockLLMProvider:
+            def __init__(self):
+                self.id = "mock_llm"
+                self.protocol_id = "llm/v1"
+            
+            async def health_check(self):
+                return True
+            
+            async def execute(self, method, params):
+                return {
+                    "response": "Mock LLM response",
+                    "model": "mock-model"
+                }
+            
+            async def handle_request(self, method, params):
+                return {
+                    "response": "Mock LLM response",
+                    "model": "mock-model"
+                }
+            
+            async def __aenter__(self):
+                return self
+            
+            async def __aexit__(self, *args):
+                return None
+        
+        return MockLLMProvider()
     
     @pytest.fixture
     async def mock_python_provider(self):
         """Create mock Python provider"""
-        provider = AsyncMock(spec=ProtocolProvider)
-        provider.id = "mock_python"
-        provider.protocol_id = "python/v1"
-        provider.health_check = AsyncMock(return_value=True)
-        provider.execute = AsyncMock(return_value={
-            "status": "success",
-            "output": "Script executed successfully"
-        })
-        provider.handle_request = AsyncMock(return_value={
-            "status": "success",
-            "output": "Script executed successfully"
-        })
-        provider.__aenter__ = AsyncMock(return_value=provider)
-        provider.__aexit__ = AsyncMock(return_value=None)
-        return provider
+        class MockPythonProvider:
+            def __init__(self):
+                self.id = "mock_python"
+                self.protocol_id = "python/v1"
+            
+            async def health_check(self):
+                return True
+            
+            async def execute(self, method, params):
+                return {
+                    "status": "success",
+                    "output": "Script executed successfully"
+                }
+            
+            async def handle_request(self, method, params):
+                return {
+                    "status": "success",
+                    "output": "Script executed successfully"
+                }
+            
+            async def __aenter__(self):
+                return self
+            
+            async def __aexit__(self, *args):
+                return None
+        
+        return MockPythonProvider()
     
     @pytest.fixture
     async def execution_engine_with_providers(self, mock_llm_provider, mock_python_provider):
@@ -87,15 +111,36 @@ class TestWorkflowExecution:
             max_concurrent_tasks=3
         )
         
-        # Register protocols
-        llm_protocol = ProtocolSpec(name="llm", version="v1", description="LLM Protocol")
-        python_protocol = ProtocolSpec(name="python", version="v1", description="Python Protocol")
+        # Register protocols (methods will be auto-detected from provider)
+        from gleitzeit.core.protocol import ProtocolSpec, MethodSpec
+        
+        llm_protocol = ProtocolSpec(
+            name="llm", 
+            version="v1", 
+            description="LLM Protocol",
+            methods={
+                "chat": MethodSpec(name="chat", description="Chat method"),
+                "complete": MethodSpec(name="complete", description="Complete method"),
+                "generate": MethodSpec(name="generate", description="Generate method")
+            }
+        )
+        python_protocol = ProtocolSpec(
+            name="python", 
+            version="v1", 
+            description="Python Protocol",
+            methods={
+                "execute": MethodSpec(name="execute", description="Execute Python code"),
+                "validate": MethodSpec(name="validate", description="Validate Python code")
+            }
+        )
         engine.registry.register_protocol(llm_protocol)
         engine.registry.register_protocol(python_protocol)
         
-        # Register providers
-        engine.registry.register_provider("mock_llm", "llm/v1", mock_llm_provider)
-        engine.registry.register_provider("mock_python", "python/v1", mock_python_provider)
+        # Register providers with supported methods
+        engine.registry.register_provider("mock_llm", "llm/v1", mock_llm_provider, 
+                                         supported_methods={"chat", "complete", "generate"})
+        engine.registry.register_provider("mock_python", "python/v1", mock_python_provider,
+                                         supported_methods={"execute", "validate"})
         
         yield engine
         await engine.stop()
@@ -317,7 +362,7 @@ class TestWorkflowExecution:
         # Make provider fail twice then succeed
         call_count = 0
         
-        async def flaky_execute(method, params):
+        async def flaky_handle_request(method, params):
             nonlocal call_count
             call_count += 1
             if call_count < 3:
@@ -325,7 +370,7 @@ class TestWorkflowExecution:
             return {"response": "Success after retry"}
         
         mock_llm = execution_engine_with_providers.registry.provider_instances["mock_llm"]
-        mock_llm.execute.side_effect = flaky_execute
+        mock_llm.handle_request = flaky_handle_request
         
         task = Task(
             id="retry_task",

@@ -67,13 +67,8 @@ class BatchRequest(BaseModel):
     method: str = Field("llm/chat", description="Method to use for processing")
     prompt: str = Field(..., description="Prompt for each file")
     model: str = Field("llama3.2:latest", description="Model to use")
-    max_concurrent: int = Field(5, description="Maximum concurrent tasks")
 
 
-class ExecuteCodeRequest(BaseModel):
-    """Request model for direct code execution"""
-    code: str = Field(..., description="Python code to execute")
-    timeout: int = Field(30, description="Execution timeout in seconds")
 
 
 class ChatRequest(BaseModel):
@@ -512,42 +507,6 @@ async def get_task_status(task_id: str):
     return app_state.active_tasks[task_id]
 
 
-@app.post("/execute/python")
-async def execute_python_code(request: ExecuteCodeRequest):
-    """Execute Python code directly"""
-    if not app_state.execution_engine:
-        raise HTTPException(status_code=503, detail="System not initialized")
-    
-    task = Task(
-        id=f"exec_{uuid.uuid4().hex[:8]}",
-        name="API Code Execution",
-        protocol="python/v1",
-        method="python/execute",
-        params={
-            "code": request.code,
-            "timeout": request.timeout
-        },
-        priority=Priority.HIGH
-    )
-    
-    await app_state.execution_engine.submit_task(task)
-    await app_state.execution_engine.start(ExecutionMode.SINGLE_SHOT)
-    
-    result = app_state.execution_engine.task_results.get(task.id)
-    
-    if result and result.status == "completed":
-        return {
-            "status": "success",
-            "output": result.result.get("output", ""),
-            "result": result.result.get("result"),
-            "execution_time": result.execution_time
-        }
-    else:
-        raise HTTPException(
-            status_code=500,
-            detail=result.error if result else "Execution failed"
-        )
-
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
@@ -594,14 +553,28 @@ async def batch_process(request: BatchRequest):
         raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
+        # First find matching files
+        files = app_state.batch_processor.scan_directory(request.directory, request.pattern)
+        
+        # If no files found, return empty result
+        if not files:
+            return {
+                "batch_id": f"batch-{uuid.uuid4().hex[:8]}",
+                "total_files": 0,
+                "successful": 0,
+                "failed": 0,
+                "processing_time": 0.0,
+                "results": {}
+            }
+        
+        # Process the batch
         result = await app_state.batch_processor.process_batch(
             execution_engine=app_state.execution_engine,
             directory=request.directory,
             pattern=request.pattern,
             method=request.method,
             prompt=request.prompt,
-            model=request.model,
-            max_concurrent=request.max_concurrent
+            model=request.model
         )
         
         return {
@@ -644,7 +617,7 @@ async def list_protocols():
         raise HTTPException(status_code=503, detail="System not initialized")
     
     return {
-        "protocols": app_state.registry.list_protocols()
+        "protocols": list(app_state.registry.protocol_registry.keys())
     }
 
 

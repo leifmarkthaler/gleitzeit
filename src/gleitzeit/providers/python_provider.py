@@ -243,6 +243,13 @@ class PythonProvider(ProtocolProvider):
             except:
                 pass
             
+            # If the script failed, raise an exception to trigger retry mechanism
+            if process.returncode != 0:
+                raise TaskExecutionError(
+                    task_id='python_task',  # Generic task ID for Python execution
+                    message=f"Python script failed with exit code {process.returncode}: {error_output}"
+                )
+            
             return {
                 'success': process.returncode == 0,
                 'result': result_data,
@@ -252,6 +259,9 @@ class PythonProvider(ProtocolProvider):
                 'execution_mode': 'local'
             }
             
+        except TaskExecutionError:
+            # Re-raise TaskExecutionError to trigger retry
+            raise
         except Exception as e:
             logger.error(f"Failed to execute {file_path} locally: {e}")
             return {

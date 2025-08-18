@@ -589,6 +589,7 @@ def is_retryable_error(error: Union[Exception, GleitzeitError]) -> bool:
             ErrorCode.RESOURCE_EXHAUSTED,
             ErrorCode.RATE_LIMIT_EXCEEDED,
             ErrorCode.PERSISTENCE_CONNECTION_FAILED,
+            ErrorCode.TASK_EXECUTION_FAILED,  # Python script failures, etc. can be transient
         }
         return error.code in retryable_codes
     

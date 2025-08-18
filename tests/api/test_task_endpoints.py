@@ -344,16 +344,17 @@ class TestTaskValidation:
     @pytest.mark.asyncio
     async def test_invalid_priority(self, async_client):
         """Test submitting task with invalid priority"""
+        # Test with numeric priority (invalid type)
         task = {
             "name": "Invalid Priority",
             "protocol": "python/v1",
             "method": "python/execute",
             "params": {"code": "result = 1"},
-            "priority": "invalid_priority"
+            "priority": 999  # Invalid priority type (should be string)
         }
         
         response = await async_client.post("/tasks", json=task)
-        # Should handle the invalid priority gracefully
+        # Should handle the invalid priority gracefully (may accept with default or reject)
         assert response.status_code in [200, 400, 422, 500]
     
     @pytest.mark.asyncio

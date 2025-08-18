@@ -365,6 +365,217 @@ class GleitzeitClient:
         self._ensure_initialized()
         return await self.adapter.get_tasks_by_workflow(workflow_id)
     
+    async def batch_process(
+        self,
+        directory: str,
+        pattern: str = "*",
+        method: str = "llm/chat",
+        prompt: str = "Analyze this file",
+        model: str = "llama3.2:latest",
+        max_concurrent: int = 5,
+        name: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Process multiple files in batch
+        
+        Args:
+            directory: Directory path to scan for files
+            pattern: Glob pattern for files (e.g., "*.txt", "*.py")
+            method: Protocol method (e.g., "llm/chat", "python/execute")
+            prompt: Prompt for processing (for LLM tasks)
+            model: Model to use (for LLM tasks)
+            max_concurrent: Maximum concurrent tasks
+            name: Optional workflow name
+            
+        Returns:
+            Dictionary with batch results including:
+            - batch_id: Unique batch identifier
+            - total_files: Total number of files processed
+            - successful: Number of successful tasks
+            - failed: Number of failed tasks
+            - results: Dictionary mapping file paths to results
+        """
+        self._ensure_initialized()
+        
+        from pathlib import Path
+        import glob
+        from uuid import uuid4
+        
+        # Scan directory for matching files
+        dir_path = Path(directory)
+        if not dir_path.exists():
+            raise FileNotFoundError(f"Directory not found: {directory}")
+        
+        if not dir_path.is_dir():
+            raise ValueError(f"Not a directory: {directory}")
+        
+        # Find matching files
+        file_pattern = str(dir_path / pattern)
+        files = glob.glob(file_pattern)
+        files = [f for f in files if Path(f).is_file()]
+        
+        if not files:
+            # Return empty result if no files found
+            return {
+                "batch_id": f"batch-{uuid4().hex[:8]}",
+                "total_files": 0,
+                "successful": 0,
+                "failed": 0,
+                "results": {}
+            }
+        
+        # Determine protocol from method
+        if method.startswith("python/"):
+            protocol = "python/v1"
+        elif method.startswith("mcp/"):
+            protocol = "mcp/v1"
+        elif method.startswith("template/"):
+            protocol = "template/v1"
+        else:
+            protocol = "llm/v1"
+        
+        # Create batch workflow
+        batch_id = f"batch-{uuid4().hex[:8]}"
+        workflow_name = name or f"Batch Processing ({len(files)} files)"
+        
+        tasks = []
+        for i, file_path in enumerate(files):
+            file_name = Path(file_path).name
+            task_id = f"process-{file_name.replace('.', '-')}-{i}"
+            
+            # Determine task parameters based on method
+            if method.startswith("python/"):
+                # Python execution task
+                task_def = {
+                    "id": task_id,
+                    "name": f"Process {file_name}",
+                    "protocol": protocol,
+                    "method": method,
+                    "params": {
+                        "file": file_path
+                    },
+                    "priority": "normal"
+                }
+            else:
+                # LLM or other task
+                is_image = Path(file_path).suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']
+                
+                if is_image and method == "llm/vision":
+                    # Vision task
+                    task_def = {
+                        "id": task_id,
+                        "name": f"Process {file_name}",
+                        "protocol": protocol,
+                        "method": method,
+                        "params": {
+                            "model": model,
+                            "image_path": file_path,
+                            "messages": [
+                                {"role": "user", "content": prompt}
+                            ]
+                        },
+                        "priority": "normal"
+                    }
+                else:
+                    # Text/LLM task
+                    task_def = {
+                        "id": task_id,
+                        "name": f"Process {file_name}",
+                        "protocol": protocol,
+                        "method": method,
+                        "params": {
+                            "model": model,
+                            "file_path": file_path,
+                            "messages": [
+                                {"role": "user", "content": prompt}
+                            ]
+                        },
+                        "priority": "normal"
+                    }
+            
+            tasks.append(task_def)
+        
+        # Submit workflow
+        workflow = await self.submit_workflow(
+            name=workflow_name,
+            tasks=tasks,
+            metadata={
+                "batch": True,
+                "batch_id": batch_id,
+                "file_count": len(files),
+                "directory": directory,
+                "pattern": pattern
+            }
+        )
+        
+        # Wait for completion with timeout
+        import time
+        start_time = time.time()
+        timeout = 300  # 5 minutes timeout
+        
+        completed = 0
+        failed = 0
+        results = {}
+        
+        while time.time() - start_time < timeout:
+            # Check task statuses
+            workflow_tasks = await self.get_workflow_tasks(workflow.id)
+            
+            all_done = True
+            for task in workflow_tasks:
+                if task.status in ["completed", "failed"]:
+                    # Get file path from task params
+                    file_path = (task.params.get("file") or 
+                                task.params.get("file_path") or 
+                                task.params.get("image_path"))
+                    
+                    if file_path and file_path not in results:
+                        if task.status == "completed":
+                            # Get task result
+                            result = await self.get_task_result(task.id)
+                            if result and result.result:
+                                # Extract content based on provider type
+                                content = result.result.get('output',
+                                            result.result.get('response',
+                                                result.result.get('content', '')))
+                                results[file_path] = {
+                                    "status": "success",
+                                    "content": content
+                                }
+                                completed += 1
+                            else:
+                                results[file_path] = {
+                                    "status": "success",
+                                    "content": ""
+                                }
+                                completed += 1
+                        else:
+                            results[file_path] = {
+                                "status": "failed",
+                                "error": task.error or "Task failed"
+                            }
+                            failed += 1
+                else:
+                    all_done = False
+            
+            if all_done:
+                break
+            
+            # Wait before checking again
+            await asyncio.sleep(0.5)
+        
+        processing_time = time.time() - start_time
+        
+        return {
+            "batch_id": batch_id,
+            "workflow_id": workflow.id,
+            "total_files": len(files),
+            "successful": completed,
+            "failed": failed,
+            "processing_time": processing_time,
+            "results": results
+        }
+    
     # =========================================================================
     # Resource Management
     # =========================================================================
