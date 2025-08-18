@@ -592,12 +592,98 @@ The following error types trigger automatic retries:
 }
 ```
 
-### Common HTTP Status Codes
+### HTTP Status Codes
 - `200` - Success
-- `400` - Bad Request (validation error)
-- `404` - Resource not found
-- `500` - Internal server error
-- `503` - Service unavailable (system not initialized)
+- `201` - Created (resource created successfully)
+- `400` - Bad Request (validation error, malformed request)
+- `404` - Resource not found (workflow, task, or file not found)
+- `422` - Unprocessable Entity (semantic errors)
+- `500` - Internal server error (unexpected error)
+- `503` - Service unavailable (system not initialized, provider unavailable)
+
+### Error Codes
+
+#### Validation Errors
+- `VALIDATION_ERROR` - General validation failure
+- `TASK_VALIDATION_FAILED` - Task parameters validation failed
+- `WORKFLOW_VALIDATION_FAILED` - Workflow structure validation failed
+- `INVALID_PROTOCOL` - Protocol not registered or invalid
+- `INVALID_METHOD` - Method not supported by protocol
+- `INVALID_PARAMS` - Parameters don't match method schema
+- `MISSING_REQUIRED_FIELD` - Required field missing in request
+
+#### Provider Errors
+- `PROVIDER_NOT_FOUND` - No provider available for protocol
+- `PROVIDER_TIMEOUT` - Provider request timed out
+- `PROVIDER_OVERLOADED` - Provider is overloaded (rate limit)
+- `PROVIDER_ERROR` - General provider error
+- `PROVIDER_UNAVAILABLE` - Provider is not healthy or disconnected
+
+#### Task Execution Errors
+- `TASK_NOT_FOUND` - Task ID not found
+- `TASK_EXECUTION_FAILED` - Task execution failed (retryable)
+- `TASK_TIMEOUT` - Task execution timed out
+- `TASK_CANCELLED` - Task was cancelled
+- `TASK_DEPENDENCY_FAILED` - Task dependency failed
+
+#### Workflow Errors
+- `WORKFLOW_NOT_FOUND` - Workflow ID not found
+- `WORKFLOW_EXECUTION_FAILED` - Workflow execution failed
+- `WORKFLOW_CANCELLED` - Workflow was cancelled
+- `CYCLIC_DEPENDENCY` - Circular dependency detected in workflow
+
+#### System Errors
+- `SYSTEM_NOT_INITIALIZED` - API system not initialized
+- `PERSISTENCE_ERROR` - Database/cache operation failed
+- `PERSISTENCE_CONNECTION_FAILED` - Cannot connect to persistence backend
+- `RESOURCE_EXHAUSTED` - System resources exhausted
+- `RATE_LIMIT_EXCEEDED` - API rate limit exceeded
+
+#### Network Errors
+- `CONNECTION_TIMEOUT` - Network connection timeout
+- `CONNECTION_LOST` - Network connection lost
+- `NETWORK_UNREACHABLE` - Network unreachable
+
+### Error Response Examples
+
+#### Validation Error
+```json
+{
+  "detail": "Method 'invalid_method' not found in protocol 'python/v1'",
+  "status_code": 400,
+  "error_code": "INVALID_METHOD",
+  "request_id": "req_abc123"
+}
+```
+
+#### Provider Timeout
+```json
+{
+  "detail": "Provider 'api-ollama-provider' timed out after 30 seconds",
+  "status_code": 503,
+  "error_code": "PROVIDER_TIMEOUT",
+  "provider_id": "api-ollama-provider",
+  "task_id": "task_xyz789"
+}
+```
+
+#### Task Not Found
+```json
+{
+  "detail": "Task not found",
+  "status_code": 404,
+  "error_code": "TASK_NOT_FOUND",
+  "task_id": "task_nonexistent"
+}
+```
+
+#### System Not Initialized
+```json
+{
+  "detail": "System not initialized",
+  "status_code": 503,
+  "error_code": "SYSTEM_NOT_INITIALIZED"
+}
 
 ## Examples
 

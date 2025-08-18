@@ -175,6 +175,9 @@ async def setup_system():
         # Initialize batch processor
         app_state.batch_processor = BatchProcessor()
         
+        # Don't start the engine here - it will block!
+        # Tasks will be executed directly using _execute_task()
+        
         logger.info("System setup complete")
         
     except Exception as e:
@@ -229,11 +232,13 @@ async def register_providers():
 
 async def cleanup_system():
     """Clean up system resources"""
+    # Clean up providers
     if app_state.execution_engine and app_state.registry:
         for provider_id, provider in app_state.registry.provider_instances.items():
             if hasattr(provider, 'shutdown'):
                 await provider.shutdown()
     
+    # Shutdown persistence
     if app_state.persistence_backend:
         await app_state.persistence_backend.shutdown()
 
@@ -471,13 +476,15 @@ async def execute_task(task: TaskRequest, background_tasks: BackgroundTasks):
 async def execute_task_background(task: Task):
     """Execute task in background"""
     try:
+        # Submit task to engine
         await app_state.execution_engine.submit_task(task)
-        await app_state.execution_engine.start(ExecutionMode.SINGLE_SHOT)
+        
+        # Execute the task directly (without start/stop cycle)
+        result = await app_state.execution_engine._execute_task(task)
         
         # Update task status
         if task.id in app_state.active_tasks:
             response = app_state.active_tasks[task.id]
-            result = app_state.execution_engine.task_results.get(task.id)
             
             if result:
                 response.status = result.status
@@ -617,7 +624,7 @@ async def list_protocols():
         raise HTTPException(status_code=503, detail="System not initialized")
     
     return {
-        "protocols": list(app_state.registry.protocol_registry.keys())
+        "protocols": app_state.registry.protocol_registry.list_protocols()
     }
 
 

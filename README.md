@@ -45,6 +45,7 @@ A workflow orchestration system for coordinating LLM tasks, Python code executio
 - [Health Monitoring](docs/HEALTH_MONITORING.md) - Metrics and monitoring
 
 ### API Documentation
+- [REST API Documentation](docs/API_DOCUMENTATION.md) - Complete REST API reference with endpoints, error codes, and examples
 - [Python API](docs/PYTHON_API.md) - GleitzeitClient reference
 - [Configuration](docs/CONFIGURATION.md) - System configuration
 - [Troubleshooting](docs/TROUBLESHOOTING.md) - Common issues and solutions

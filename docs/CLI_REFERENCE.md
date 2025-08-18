@@ -12,6 +12,22 @@ pip install -e .
 gleitzeit --version
 ```
 
+## Quick Start
+
+```bash
+# Run a workflow (auto-starts API server if needed)
+gleitzeit run examples/simple_workflow.yaml
+
+# Process files in batch
+gleitzeit batch documents/ --pattern "*.txt" --prompt "Summarize this"
+
+# Check system status
+gleitzeit status
+
+# Manually start API server (optional - auto-starts with run command)
+gleitzeit serve
+```
+
 ## Global Options
 
 ```bash
@@ -24,11 +40,22 @@ gleitzeit [OPTIONS] COMMAND [ARGS]...
 - `--version`: Show version information
 - `--help`: Show help message
 
+## Commands Overview
+
+| Command | Description |
+|---------|-------------|
+| `run` | Execute a workflow from a YAML or JSON file |
+| `batch` | Process multiple files in batch |
+| `serve` | Start the REST API server |
+| `init` | Create a new workflow template |
+| `config` | Show current configuration |
+| `status` | Show system status and recent workflows |
+
 ## Commands
 
 ### run
 
-Execute a workflow from a YAML or JSON file.
+Execute a workflow from a YAML or JSON file (uses API by default).
 
 ```bash
 gleitzeit run WORKFLOW_FILE [OPTIONS]
@@ -39,23 +66,34 @@ gleitzeit run WORKFLOW_FILE [OPTIONS]
 
 **Options:**
 - `--watch, -w`: Watch execution progress in real-time
-- `--backend [sqlite|redis]`: Override persistence backend
+- `--host TEXT`: API server host (default: localhost)
+- `--port INT`: API server port (default: 8000)
+- `--local`: Run locally without API server (legacy mode)
+- `--no-auto-start`: Do not auto-start API server (by default, server starts automatically)
 
 **Examples:**
 
 ```bash
-# Run a simple workflow
+# Run via API (default) - auto-starts server if needed
 gleitzeit run workflow.yaml
 
-# Run with progress monitoring
+# Run and watch progress
 gleitzeit run workflow.yaml --watch
 
-# Force Redis backend
-gleitzeit run workflow.yaml --backend redis
+# Disable auto-start (will fail if server not running)
+gleitzeit run workflow.yaml --no-auto-start
+
+# Use custom API server
+gleitzeit run workflow.yaml --host api.example.com --port 9000
+
+# Run locally without API (legacy mode)
+gleitzeit run workflow.yaml --local
 
 # Debug mode for troubleshooting
 gleitzeit --debug run workflow.yaml
 ```
+
+**Note:** By default, `run` uses the API server and automatically starts it if not running. Use `--no-auto-start` to disable this behavior.
 
 ### batch
 
@@ -119,32 +157,40 @@ gleitzeit status
 gleitzeit status --backend redis
 ```
 
-### exec
+### serve
 
-Execute Python code directly.
+Start the Gleitzeit REST API server.
 
 ```bash
-gleitzeit exec CODE [OPTIONS]
+gleitzeit serve [OPTIONS]
 ```
 
-**Arguments:**
-- `CODE`: Python code to execute
-
 **Options:**
-- `--timeout INT`: Execution timeout in seconds (default: 10)
+- `-h, --host TEXT`: Host to bind the API server to (default: 0.0.0.0)
+- `-p, --port INT`: Port to bind the API server to (default: 8000)
+- `--reload`: Enable auto-reload for development
+- `-w, --workers INT`: Number of worker processes (default: 1)
 
 **Examples:**
 
 ```bash
-# Simple calculation
-gleitzeit exec "print(2 + 2)"
+# Start with defaults (0.0.0.0:8000)
+gleitzeit serve
 
-# Multi-line code
-gleitzeit exec "import math; print(math.sqrt(16))"
+# Custom host and port
+gleitzeit serve --host localhost --port 8080
 
-# With custom timeout
-gleitzeit exec "import time; time.sleep(5); print('Done')" --timeout 10
+# Development mode with auto-reload
+gleitzeit serve --reload
+
+# Production with multiple workers
+gleitzeit serve --workers 4
 ```
+
+**Notes:**
+- API documentation is available at `/docs` when the server is running
+- Use `CTRL+C` to stop the server
+- Auto-reload and multiple workers cannot be used together
 
 ### init
 
@@ -539,7 +585,15 @@ gleitzeit --debug run workflow.yaml
 
 ### Test Provider Connection
 ```bash
-gleitzeit exec "print('Python provider working')"
+# Create a simple test workflow
+echo 'name: test
+tasks:
+  - name: test_python
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: /path/to/test.py' > test.yaml
+gleitzeit run test.yaml
 ```
 
 ### Verify Configuration

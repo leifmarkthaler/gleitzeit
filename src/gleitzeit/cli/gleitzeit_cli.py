@@ -12,6 +12,9 @@ import os
 import sys
 import tempfile
 import yaml
+import subprocess
+import time
+import httpx
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any
@@ -331,15 +334,23 @@ def cli(verbose: bool, debug: bool):
 @cli.command()
 @click.argument('workflow_file', type=click.Path(exists=True))
 @click.option('--watch', '-w', is_flag=True, help='Watch execution progress')
-@click.option('--backend', type=click.Choice(['sqlite', 'redis']), 
-              help='Override persistence backend')
-def run(workflow_file: str, watch: bool, backend: Optional[str]):
-    """Execute a workflow from a YAML or JSON file"""
-    return asyncio.run(_run_workflow(workflow_file, watch, backend))
+@click.option('--host', default='localhost', help='API server host (default: localhost)')
+@click.option('--port', default=8000, type=int, help='API server port (default: 8000)')
+@click.option('--local', is_flag=True, help='Run locally without API server')
+@click.option('--no-auto-start', is_flag=True, help='Do not auto-start API server if not running')
+def run(workflow_file: str, watch: bool, host: str, port: int, local: bool, no_auto_start: bool):
+    """Execute a workflow from a YAML or JSON file (via API by default)"""
+    if local:
+        # Use the old local execution mode
+        return asyncio.run(_run_workflow_local(workflow_file, watch))
+    else:
+        # Use API mode (default) - auto-start server by default unless --no-auto-start is used
+        auto_start = not no_auto_start
+        return asyncio.run(_run_workflow_api(workflow_file, watch, host, port, auto_start))
 
 
-async def _run_workflow(workflow_file: str, watch: bool, backend: Optional[str]):
-    """Execute workflow implementation"""
+async def _run_workflow_local(workflow_file: str, watch: bool, backend: Optional[str] = None):
+    """Execute workflow locally (old implementation)"""
     try:
         # Override backend if specified
         if backend:
@@ -391,6 +402,187 @@ async def _run_workflow(workflow_file: str, watch: bool, backend: Optional[str])
             traceback.print_exc()
     finally:
         await cli_instance._shutdown_system()
+
+
+async def _check_api_server(host: str, port: int) -> bool:
+    """Check if API server is running"""
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(f"http://{host}:{port}/health", timeout=2.0)
+            return response.status_code == 200
+    except:
+        return False
+
+
+async def _start_api_server(host: str, port: int) -> Optional[subprocess.Popen]:
+    """Start API server in background"""
+    try:
+        # Start server process in background
+        process = subprocess.Popen(
+            [sys.executable, "-m", "gleitzeit.cli.gleitzeit_cli", "serve", "--host", host, "--port", str(port)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True
+        )
+        
+        # Wait for server to start
+        click.echo(f"⏳ Starting API server at {host}:{port}...")
+        for i in range(30):  # Wait up to 30 seconds
+            if await _check_api_server(host, port):
+                click.echo(f"✅ API server started successfully")
+                return process
+            await asyncio.sleep(1)
+        
+        # If server didn't start, terminate the process
+        process.terminate()
+        click.echo(f"❌ Failed to start API server")
+        return None
+    except Exception as e:
+        click.echo(f"❌ Error starting API server: {e}")
+        return None
+
+
+async def _run_workflow_api(workflow_file: str, watch: bool, host: str, port: int, start_server: bool):
+    """Execute workflow via API"""
+    api_url = f"http://{host}:{port}"
+    server_process = None
+    
+    try:
+        # Check if API server is running
+        if not await _check_api_server(host, port):
+            if start_server:
+                server_process = await _start_api_server(host, port)
+                if not server_process:
+                    click.echo(f"❌ Could not start API server. Please start it manually with: gleitzeit serve --host {host} --port {port}")
+                    return
+            else:
+                click.echo(f"❌ API server not running at {host}:{port}")
+                click.echo(f"   Start it manually with: gleitzeit serve --host {host} --port {port}")
+                click.echo(f"   Or remove --no-auto-start flag to start it automatically")
+                return
+        
+        # Load workflow file
+        with open(workflow_file, 'r') as f:
+            workflow_content = yaml.safe_load(f) if workflow_file.endswith('.yaml') else json.load(f)
+        
+        # Convert workflow to API format
+        api_workflow = {
+            "name": workflow_content.get("name", "CLI Workflow"),
+            "description": workflow_content.get("description", ""),
+            "tasks": []
+        }
+        
+        for task in workflow_content.get("tasks", []):
+            # Determine protocol from method or task
+            method = task.get("method", "")
+            if not method and "protocol" in task:
+                protocol = task["protocol"]
+            elif "/" in method:
+                protocol = method.split("/")[0] + "/v1"
+            else:
+                # Guess based on content
+                params = task.get("params", task.get("parameters", {}))
+                if "model" in params or "messages" in params:
+                    protocol = "llm/v1"
+                elif "file" in params or "code" in params:
+                    protocol = "python/v1"
+                elif "tool" in method:
+                    protocol = "mcp/v1"
+                else:
+                    protocol = "python/v1"
+            
+            # Handle priority
+            priority = task.get("priority", "normal")
+            if isinstance(priority, int):
+                priority_map = {0: "low", 1: "normal", 2: "high", 3: "urgent"}
+                priority = priority_map.get(priority, "normal")
+            elif isinstance(priority, str):
+                valid_priorities = ["low", "normal", "high", "urgent", "critical"]
+                if priority.lower() not in valid_priorities:
+                    priority = "normal"
+                else:
+                    priority = priority.lower()
+            
+            api_task = {
+                "id": task.get("id") or task.get("name") or f"task_{len(api_workflow['tasks'])}",
+                "name": task.get("name", task.get("id", f"Task {len(api_workflow['tasks']) + 1}")),
+                "protocol": protocol,
+                "method": method or f"{protocol.split('/')[0]}/execute",
+                "params": task.get("params", task.get("parameters", {})),
+                "dependencies": task.get("dependencies", []),
+                "priority": priority
+            }
+            
+            # Add retry config if present
+            if "retry" in task:
+                api_task["retry"] = task["retry"]
+            
+            api_workflow["tasks"].append(api_task)
+        
+        click.echo(f"📄 Submitting workflow: {api_workflow['name']}")
+        click.echo(f"   Tasks: {len(api_workflow['tasks'])}")
+        click.echo(f"   API Server: {api_url}")
+        
+        # Submit workflow
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{api_url}/workflows",
+                json=api_workflow,
+                timeout=30.0
+            )
+            
+            if response.status_code != 200:
+                click.echo(f"❌ Failed to submit workflow: {response.text}")
+                return
+            
+            result = response.json()
+            workflow_id = result["workflow_id"]
+            click.echo(f"✅ Workflow submitted: {workflow_id}")
+            
+            if watch:
+                click.echo("📊 Watching execution...")
+                # Poll for status
+                while True:
+                    await asyncio.sleep(2)
+                    status_response = await client.get(f"{api_url}/workflows/{workflow_id}")
+                    if status_response.status_code != 200:
+                        click.echo(f"❌ Failed to get status: {status_response.text}")
+                        break
+                    
+                    status = status_response.json()
+                    
+                    # Display progress
+                    click.echo(f"\r   Status: {status['status']} | Completed: {status['tasks_completed']}/{status['tasks_total']} | Failed: {status['tasks_failed']}", nl=False)
+                    
+                    if status["status"] in ["completed", "failed", "cancelled"]:
+                        click.echo()  # New line
+                        break
+                
+                # Display final results
+                if status["status"] == "completed":
+                    click.echo("\n✅ Workflow completed successfully!")
+                    if status.get("results"):
+                        click.echo("\n📊 Task Results:")
+                        for task_id, task_result in status["results"].items():
+                            if task_result["status"] == "completed":
+                                click.echo(f"   ✓ {task_id}: Success")
+                            else:
+                                click.echo(f"   ✗ {task_id}: {task_result.get('error', 'Failed')}")
+                else:
+                    click.echo(f"\n❌ Workflow {status['status']}")
+            else:
+                click.echo(f"\n💡 Check status with: curl {api_url}/workflows/{workflow_id}")
+                
+    except Exception as e:
+        click.echo(f"❌ Error: {e}")
+        if logger.isEnabledFor(logging.DEBUG):
+            import traceback
+            traceback.print_exc()
+    finally:
+        # If we started the server and not watching, keep it running
+        if server_process and not watch:
+            click.echo(f"\n📌 API server is running in background at {api_url}")
+            click.echo("   Stop it with: pkill -f 'gleitzeit.*serve'")
 
 
 @cli.command()
@@ -614,11 +806,45 @@ def batch(directory: str, pattern: str, prompt: str, model: str, vision: bool, o
 
 
 @cli.command()
-@click.argument('code')
-@click.option('--timeout', default=10, help='Execution timeout in seconds')
-def exec(code: str, timeout: int):
-    """Execute Python code directly"""
-    return asyncio.run(_exec_code(code, timeout))
+@click.option('--host', '-h', default='0.0.0.0', help='Host to bind the API server to')
+@click.option('--port', '-p', default=8000, type=int, help='Port to bind the API server to')
+@click.option('--reload', is_flag=True, help='Enable auto-reload for development')
+@click.option('--workers', '-w', default=1, type=int, help='Number of worker processes')
+def serve(host: str, port: int, reload: bool, workers: int):
+    """Start the Gleitzeit REST API server"""
+    try:
+        import uvicorn
+    except ImportError:
+        click.echo("❌ Error: uvicorn is not installed. Install it with: pip install uvicorn")
+        sys.exit(1)
+    
+    click.echo(f"🚀 Starting Gleitzeit API server...")
+    click.echo(f"   Host: {host}")
+    click.echo(f"   Port: {port}")
+    click.echo(f"   Workers: {workers}")
+    click.echo(f"   Reload: {'enabled' if reload else 'disabled'}")
+    click.echo(f"\n📍 API will be available at: http://{host if host != '0.0.0.0' else 'localhost'}:{port}")
+    click.echo("📚 API documentation available at: /docs")
+    click.echo("\nPress CTRL+C to stop the server\n")
+    
+    try:
+        # Import the FastAPI app
+        from gleitzeit.api.main import app
+        
+        # Run the server
+        uvicorn.run(
+            "gleitzeit.api.main:app",
+            host=host,
+            port=port,
+            reload=reload,
+            workers=workers if not reload else 1,  # Can't use multiple workers with reload
+            log_level="info"
+        )
+    except KeyboardInterrupt:
+        click.echo("\n✅ Server stopped")
+    except Exception as e:
+        click.echo(f"❌ Error starting server: {e}")
+        sys.exit(1)
 
 
 async def _batch_process(directory: str, pattern: str, prompt: str, model: str, vision: bool, output: Optional[str]):
@@ -691,50 +917,6 @@ async def _batch_process(directory: str, pattern: str, prompt: str, model: str, 
     except Exception as e:
         click.echo(f"❌ Batch processing failed: {e}")
         logger.error(f"Batch processing error: {e}", exc_info=True)
-    finally:
-        await cli_instance._shutdown_system()
-
-
-async def _exec_code(code: str, timeout: int):
-    """Execute code implementation"""
-    try:
-        if not await cli_instance._setup_system():
-            return
-        
-        click.echo("🐍 Executing Python code...")
-        
-        # Create and execute task
-        task = Task(
-            name="CLI Code Execution",
-            protocol="python/v1",
-            method="python/execute",
-            params={
-                "code": code,
-                "timeout": timeout
-            },
-            priority=Priority.HIGH
-        )
-        
-        await cli_instance.execution_engine.submit_task(task)
-        await cli_instance.execution_engine.start(ExecutionMode.SINGLE_SHOT)
-        
-        # Show result
-        result = cli_instance.execution_engine.task_results.get(task.id)
-        if result and result.status == "completed":
-            click.echo("✅ Code executed successfully")
-            if result.result and 'output' in result.result:
-                output = result.result['output'].strip()
-                if output:
-                    click.echo(f"\n📤 Output:\n{output}")
-            if result.result and 'result' in result.result and result.result['result']:
-                click.echo(f"\n📊 Result: {result.result['result']}")
-        else:
-            click.echo("❌ Code execution failed")
-            if result and result.error:
-                click.echo(f"   Error: {result.error}")
-        
-    except Exception as e:
-        click.echo(f"❌ Execution failed: {e}")
     finally:
         await cli_instance._shutdown_system()
 
