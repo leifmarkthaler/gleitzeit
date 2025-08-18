@@ -2,7 +2,9 @@
 
 ## Overview
 
-The Gleitzeit Unified Client (`client_v2.py`) provides a single, consistent interface for interacting with the Gleitzeit workflow orchestration system. It supports both local (native) execution and remote (API) execution, making it ideal for development, testing, and production use cases.
+The Gleitzeit Unified Client provides a single, consistent interface for interacting with the Gleitzeit workflow orchestration system. It supports both local (native) execution and remote (API) execution, making it ideal for development, testing, and production use cases.
+
+**Simple Import**: Just use `from gleitzeit import Client` - no need to import modes separately!
 
 ## Key Features
 
@@ -29,11 +31,11 @@ uv pip install -e .
 
 ```python
 import asyncio
-from gleitzeit.client_v2 import GleitzeitClient, ClientMode
+from gleitzeit import Client
 
 async def main():
-    # Auto mode - automatically selects best option
-    async with GleitzeitClient() as client:
+    # Auto mode (default) - automatically selects best option
+    async with Client() as client:
         # Execute a task
         result = await client.execute_task(
             protocol="mcp/v1",
@@ -60,7 +62,7 @@ Automatically selects the best execution mode:
 - Falls back to native mode if API is not available
 
 ```python
-async with GleitzeitClient(mode=ClientMode.AUTO) as client:
+async with Client(mode=ClientMode.AUTO) as client:
     print(f"Selected mode: {client.get_mode()}")
     # Use client normally - it handles mode selection
 ```
@@ -74,7 +76,7 @@ Direct execution using the local ExecutionEngine. Best for:
 - Debugging
 
 ```python
-async with GleitzeitClient(mode=ClientMode.NATIVE) as client:
+async with Client(mode=ClientMode.NATIVE) as client:
     # Executes directly without any server
     result = await client.execute_task(...)
 ```
@@ -94,7 +96,7 @@ Executes through the REST API server. Best for:
 - Service-oriented architectures
 
 ```python
-async with GleitzeitClient(
+async with Client(
     mode=ClientMode.API,
     api_host="localhost",
     api_port=8000
@@ -114,7 +116,7 @@ async with GleitzeitClient(
 ### Constructor Parameters
 
 ```python
-GleitzeitClient(
+Client(
     mode: ClientMode = ClientMode.AUTO,
     api_host: str = "localhost",
     api_port: int = 8000,
@@ -142,7 +144,7 @@ native_config = {
     "redis_url": "redis://localhost:6379/0"
 }
 
-async with GleitzeitClient(
+async with Client(
     mode=ClientMode.NATIVE,
     native_config=native_config
 ) as client:
@@ -277,13 +279,13 @@ elif client.is_native_mode:
 
 ```python
 import asyncio
-from gleitzeit.client_v2 import GleitzeitClient, ClientMode
+from gleitzeit import Client, ClientMode
 
 async def development_workflow():
     """Development workflow using native mode for speed"""
     
     # Use native mode for development
-    async with GleitzeitClient(mode=ClientMode.NATIVE) as client:
+    async with Client(mode=ClientMode.NATIVE) as client:
         print(f"Developing in {client.get_mode()} mode")
         
         # Test Python script
@@ -316,13 +318,13 @@ asyncio.run(development_workflow())
 
 ```python
 import asyncio
-from gleitzeit.client_v2 import GleitzeitClient, ClientMode
+from gleitzeit import Client, ClientMode
 
 async def production_workflow():
     """Production workflow using API mode"""
     
     # Force API mode for production
-    async with GleitzeitClient(
+    async with Client(
         mode=ClientMode.API,
         api_host="api.production.com",
         api_port=8000,
@@ -352,12 +354,12 @@ asyncio.run(production_workflow())
 ```python
 import asyncio
 from pathlib import Path
-from gleitzeit.client_v2 import GleitzeitClient
+from gleitzeit import Client
 
 async def process_documents():
     """Process a batch of documents"""
     
-    async with GleitzeitClient() as client:  # AUTO mode
+    async with Client() as client:  # AUTO mode
         print(f"Processing in {client.get_mode()} mode")
         
         # Process all markdown files
@@ -388,7 +390,7 @@ asyncio.run(process_documents())
 
 ```python
 import asyncio
-from gleitzeit.client_v2 import GleitzeitClient, ClientMode
+from gleitzeit import Client, ClientMode
 
 async def migrate_from_dev_to_prod():
     """Show how to migrate from development to production"""
@@ -397,14 +399,14 @@ async def migrate_from_dev_to_prod():
     
     # Phase 1: Development with native mode
     print("Phase 1: Development")
-    async with GleitzeitClient(mode=ClientMode.NATIVE) as client:
+    async with Client(mode=ClientMode.NATIVE) as client:
         result = await client.run_workflow(workflow_file)
         assert result['status'] == 'completed', "Development test failed"
         print("✓ Development test passed")
     
     # Phase 2: Integration testing with API mode
     print("\nPhase 2: Integration Testing")
-    async with GleitzeitClient(
+    async with Client(
         mode=ClientMode.API,
         auto_start_server=True
     ) as client:
@@ -414,7 +416,7 @@ async def migrate_from_dev_to_prod():
     
     # Phase 3: Production with AUTO mode
     print("\nPhase 3: Production")
-    async with GleitzeitClient(mode=ClientMode.AUTO) as client:
+    async with Client(mode=ClientMode.AUTO) as client:
         print(f"Auto-selected: {client.get_mode()} mode")
         result = await client.run_workflow(workflow_file)
         print(f"✓ Production execution: {result['status']}")
@@ -426,13 +428,13 @@ asyncio.run(migrate_from_dev_to_prod())
 
 ```python
 import asyncio
-from gleitzeit.client_v2 import GleitzeitClient, ClientMode
+from gleitzeit import Client, ClientMode
 
 async def robust_execution():
     """Example with proper error handling"""
     
     try:
-        async with GleitzeitClient(mode=ClientMode.API) as client:
+        async with Client(mode=ClientMode.API) as client:
             result = await client.execute_task(
                 protocol="python/v1",
                 method="python/execute",
@@ -470,7 +472,7 @@ Always use the async context manager to ensure proper cleanup:
 
 ```python
 # Good
-async with GleitzeitClient() as client:
+async with Client() as client:
     await client.execute_task(...)
 
 # Avoid manual management
@@ -488,7 +490,7 @@ await client.initialize()  # Don't do this
 ### 3. Handle Mode-Specific Behavior
 
 ```python
-async with GleitzeitClient() as client:
+async with Client() as client:
     if client.is_native_mode:
         # Native mode specific configuration
         print("Running locally")
@@ -503,7 +505,7 @@ For production environments, disable auto-start:
 
 ```python
 # Production configuration
-client = GleitzeitClient(
+client = Client(
     mode=ClientMode.API,
     auto_start_server=False,  # Don't auto-start in production
     keep_server_running=True   # But keep it running if we start it
@@ -515,11 +517,11 @@ client = GleitzeitClient(
 The client is fully typed for better IDE support:
 
 ```python
-from gleitzeit.client_v2 import GleitzeitClient, ClientMode
+from gleitzeit import Client, ClientMode
 from gleitzeit.core.models import TaskResult
 
 async def process() -> TaskResult:
-    async with GleitzeitClient() as client:
+    async with Client() as client:
         result: TaskResult = await client.execute_task(...)
         return result
 ```
@@ -535,7 +537,7 @@ await engine.submit_task(task)
 await engine.start(ExecutionMode.SINGLE_SHOT)
 
 # New approach
-async with GleitzeitClient(mode=ClientMode.NATIVE) as client:
+async with Client(mode=ClientMode.NATIVE) as client:
     result = await client.execute_task(
         protocol=task.protocol,
         method=task.method,
@@ -552,7 +554,7 @@ async with GleitzeitAPIClient() as api_client:
     result = await api_client.execute_task(task_dict)
 
 # New approach
-async with GleitzeitClient(mode=ClientMode.API) as client:
+async with Client(mode=ClientMode.API) as client:
     result = await client.execute_task(
         protocol=task_dict["protocol"],
         method=task_dict["method"],
@@ -567,7 +569,7 @@ async with GleitzeitClient(mode=ClientMode.API) as client:
 
 ```python
 # Check if server is running
-async with GleitzeitClient(
+async with Client(
     mode=ClientMode.API,
     auto_start_server=True  # Try auto-starting
 ) as client:
@@ -588,7 +590,7 @@ native_config = {
     }
 }
 
-async with GleitzeitClient(
+async with Client(
     mode=ClientMode.NATIVE,
     native_config=native_config
 ) as client:
@@ -600,7 +602,7 @@ async with GleitzeitClient(
 Control server lifecycle explicitly:
 
 ```python
-async with GleitzeitClient(
+async with Client(
     keep_server_running=False  # Stop server on shutdown
 ) as client:
     # Server will be stopped when client exits

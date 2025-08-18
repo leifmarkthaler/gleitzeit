@@ -50,11 +50,11 @@ class GleitzeitClient:
             result = await client.run_workflow("workflow.yaml")
         
         # Force API mode
-        async with GleitzeitClient(mode=ClientMode.API) as client:
+        async with GleitzeitClient(mode="api") as client:
             result = await client.run_workflow("workflow.yaml")
         
         # Force native mode (for development/testing)
-        async with GleitzeitClient(mode=ClientMode.NATIVE) as client:
+        async with GleitzeitClient(mode="native") as client:
             result = await client.run_workflow("workflow.yaml")
         
         # Use specific API server
@@ -62,9 +62,14 @@ class GleitzeitClient:
             result = await client.run_workflow("workflow.yaml")
     """
     
+    # Mode constants for convenience
+    API = "api"
+    NATIVE = "native"
+    AUTO = "auto"
+    
     def __init__(
         self,
-        mode: ClientMode = ClientMode.AUTO,
+        mode: Union[str, ClientMode] = "auto",
         api_host: str = "localhost",
         api_port: int = 8000,
         auto_start_server: bool = True,
@@ -75,14 +80,23 @@ class GleitzeitClient:
         Initialize the unified client
         
         Args:
-            mode: Operation mode (AUTO, API, or NATIVE)
+            mode: Operation mode ("auto", "api", or "native") or ClientMode enum
             api_host: API server host
             api_port: API server port
             auto_start_server: Auto-start API server if not running (in API/AUTO mode)
             keep_server_running: Keep API server running after client shutdown (if we started it)
             native_config: Configuration for native mode
         """
-        self.mode = mode
+        # Convert string mode to ClientMode enum if needed
+        if isinstance(mode, str):
+            mode_map = {
+                "auto": ClientMode.AUTO,
+                "api": ClientMode.API,
+                "native": ClientMode.NATIVE
+            }
+            self.mode = mode_map.get(mode.lower(), ClientMode.AUTO)
+        else:
+            self.mode = mode
         self.api_host = api_host
         self.api_port = api_port
         self.api_url = f"http://{api_host}:{api_port}"
