@@ -79,13 +79,12 @@ def sample_python_script():
     script_path = Path("examples/scripts/test_script.py")
     script_path.parent.mkdir(parents=True, exist_ok=True)
     
-    script_content = """
-# Test script for client_v2 tests
+    script_content = """# Test script for client_v2 tests
 result = 42
 print(f"Result: {result}")
 """
     script_path.write_text(script_content)
-    yield str(script_path.name)  # Return just the filename
+    yield "test_script.py"  # Return just the filename (Python provider will look in trusted dirs)
     
     # Cleanup
     if script_path.exists():

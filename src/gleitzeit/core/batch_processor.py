@@ -310,6 +310,15 @@ class BatchProcessor:
             'pattern': pattern if directory else None
         }
         
+        # Handle empty file list
+        if not files:
+            # No files to process - return empty result
+            batch_result.successful = 0
+            batch_result.failed = 0
+            batch_result.processing_time = asyncio.get_event_loop().time() - start_time
+            logger.info(f"No files found matching pattern '{pattern}' in {directory}")
+            return batch_result
+        
         # Create and execute workflow
         workflow = self.create_batch_workflow(
             files=files,

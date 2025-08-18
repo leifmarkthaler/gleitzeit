@@ -162,19 +162,32 @@ class SimpleMCPProvider(ProtocolProvider):
     
     async def _tool_concat(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Concatenate tool - joins strings"""
-        strings = args.get("strings", [])
-        separator = args.get("separator", " ")
-        
-        if isinstance(strings, list):
-            result = separator.join(str(s) for s in strings)
+        # Support both formats: {strings: [...]} and {a: "...", b: "..."}
+        if "a" in args and "b" in args:
+            # Simple two-string concatenation
+            a = str(args.get("a", ""))
+            b = str(args.get("b", ""))
+            result = a + b
+            return {
+                "response": result,
+                "joined": True,
+                "count": 2
+            }
         else:
-            result = str(strings)
-        
-        return {
-            "response": result,
-            "joined": True,
-            "count": len(strings) if isinstance(strings, list) else 1
-        }
+            # List-based concatenation
+            strings = args.get("strings", [])
+            separator = args.get("separator", " ")
+            
+            if isinstance(strings, list):
+                result = separator.join(str(s) for s in strings)
+            else:
+                result = str(strings)
+            
+            return {
+                "response": result,
+                "joined": True,
+                "count": len(strings) if isinstance(strings, list) else 1
+            }
     
     async def __aenter__(self) -> 'SimpleMCPProvider':
         """Async context manager entry"""

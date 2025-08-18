@@ -583,15 +583,15 @@ class GleitzeitClient:
         prompt: str, model: str, max_concurrent: int, name: Optional[str]
     ) -> Dict[str, Any]:
         """Batch process using native execution engine"""
+        # Note: BatchProcessor doesn't support max_concurrent or name params yet
+        # These could be added in future
         result = await self._batch_processor.process_batch(
             execution_engine=self._execution_engine,
             directory=directory,
             pattern=pattern,
             method=method,
             prompt=prompt,
-            model=model,
-            max_concurrent=max_concurrent,
-            name=name
+            model=model
         )
         
         return {
