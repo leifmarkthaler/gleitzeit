@@ -4,12 +4,81 @@ A flexible workflow orchestration system that executes LLM operations, Python sc
 
 ## Quick Start
 
+Get up and running with Gleitzeit in 5 minutes!
+
+### Prerequisites
+
+- Python 3.8 or higher
+- Ollama installed (for LLM features)
+- Redis (optional, for production persistence)
+- Docker (optional, for isolated Python execution)
+
+### Installation
+
 ```bash
-# Install
+# Install from PyPI
 pip install gleitzeit
 
-# Run a workflow (auto-detects best mode)
-gleitzeit run workflow.yaml
+# Or install from source
+git clone https://github.com/leifmarkthaler/gleitzeit.git
+cd gleitzeit
+pip install -e .
+```
+
+### Step 1: Start Ollama
+
+```bash
+# Start Ollama server
+ollama serve
+
+# In another terminal, pull a model
+ollama pull llama3.2
+```
+
+### Step 2: Create Your First Workflow
+
+Create `hello_workflow.yaml`:
+
+```yaml
+name: "Hello World Workflow"
+tasks:
+  - id: "greeting"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say hello and tell me an interesting fact!"
+
+  - id: "followup"
+    method: "llm/chat"
+    dependencies: ["greeting"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "That's interesting! Now tell me more about: ${greeting.response}"
+```
+
+### Step 3: Run the Workflow
+
+```bash
+# Using CLI
+gleitzeit run hello_workflow.yaml
+
+# Or using Python
+python -c "
+import asyncio
+from gleitzeit import GleitzeitClient
+
+async def main():
+    async with GleitzeitClient() as client:
+        results = await client.run_workflow('hello_workflow.yaml')
+        for task_id, result in results.items():
+            print(f'{task_id}: {result.get(\"response\", result)}')
+
+asyncio.run(main())
+"
 ```
 
 ## Architecture Overview
@@ -81,9 +150,9 @@ results = await client.batch_process(
 task_result = await client.execute_task(task)
 ```
 
-## Workflow Definition
+## Workflow Examples
 
-Workflows are defined in YAML with tasks and dependencies:
+### Basic Workflow with Dependencies
 
 ```yaml
 name: "Analysis Pipeline"
@@ -112,6 +181,79 @@ tasks:
       args:
         content: "${analyze.response}"
         output: "report.md"
+```
+
+### Chain Task Results
+
+Create a story by chaining LLM responses:
+
+```yaml
+name: "Story Chain"
+tasks:
+  - id: "character"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Create a unique character for a story in one sentence"
+
+  - id: "setting"
+    method: "llm/chat"
+    dependencies: ["character"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Create a setting for this character: ${character.response}"
+
+  - id: "plot"
+    method: "llm/chat"
+    dependencies: ["character", "setting"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Write a short story plot with:
+            Character: ${character.response}
+            Setting: ${setting.response}
+```
+
+### Multi-Model Workflow
+
+Use different models for different tasks:
+
+```yaml
+name: "Multi-Model Analysis"
+tasks:
+  - id: "fast_response"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2:1b"  # Fast small model
+      messages:
+        - role: "user"
+          content: "Quick summary of quantum computing"
+
+  - id: "detailed_response"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2:7b"  # Larger model for detail
+      messages:
+        - role: "user"
+          content: "Explain quantum computing in detail with examples"
+
+  - id: "combine"
+    method: "llm/chat"
+    dependencies: ["fast_response", "detailed_response"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Combine these two explanations into one comprehensive summary:
+            Quick: ${fast_response.response}
+            Detailed: ${detailed_response.response}
 ```
 
 ## Supported Protocols
@@ -271,7 +413,25 @@ tasks:
 ```
 
 ### Batch Processing
-Process multiple files efficiently:
+
+Process multiple files in parallel:
+
+#### Create Test Files
+```bash
+mkdir documents
+echo "Python is a great language" > documents/python.txt
+echo "JavaScript powers the web" > documents/javascript.txt
+echo "Rust is fast and safe" > documents/rust.txt
+```
+
+#### Using CLI
+```bash
+gleitzeit batch documents \
+  --pattern "*.txt" \
+  --prompt "Summarize this file and rate the programming language mentioned from 1-10"
+```
+
+#### Using Python API
 ```python
 results = await client.batch_process(
     directory="documents",
@@ -280,6 +440,77 @@ results = await client.batch_process(
     model="llama3.2",
     max_concurrent=10
 )
+```
+
+#### Batch Workflow
+```yaml
+name: "Batch Document Analysis"
+type: "batch"
+
+batch:
+  directory: "documents"
+  pattern: "*.txt"
+
+template:
+  method: "llm/chat"
+  model: "llama3.2"
+  messages:
+    - role: "user"
+      content: "Analyze this document and provide a summary"
+```
+
+### Dynamic Workflows with Python
+
+Create workflows programmatically:
+
+```python
+import asyncio
+from gleitzeit import GleitzeitClient
+
+async def dynamic_workflow():
+    async with GleitzeitClient() as client:
+        # Generate a question
+        question = await client.execute_task({
+            "method": "llm/chat",
+            "parameters": {
+                "model": "llama3.2",
+                "messages": [
+                    {"role": "user", "content": "Generate a random question about science"}
+                ]
+            }
+        })
+        
+        # Answer the generated question
+        answer = await client.execute_task({
+            "method": "llm/chat",
+            "parameters": {
+                "model": "llama3.2",
+                "messages": [
+                    {"role": "user", "content": f"Answer this: {question['response']}"}
+                ]
+            }
+        })
+        
+        # Fact-check the answer
+        verification = await client.execute_task({
+            "method": "llm/chat",
+            "parameters": {
+                "model": "llama3.2",
+                "messages": [
+                    {"role": "user", 
+                     "content": f"Is this answer correct? {answer['response']}"}
+                ]
+            }
+        })
+        
+        return {
+            "question": question['response'],
+            "answer": answer['response'],
+            "verification": verification['response']
+        }
+
+result = asyncio.run(dynamic_workflow())
+print(result)
 ```
 
 ### Error Handling & Retries
@@ -309,6 +540,34 @@ pytest tests/workflows/
 # Test with real execution
 python tests/workflow_test_suite.py --execute
 ```
+
+## Common Issues & Solutions
+
+### Ollama Connection Issues
+```bash
+# Check if Ollama is running
+curl http://localhost:11434/api/tags
+
+# Restart Ollama
+killall ollama
+ollama serve
+```
+
+### Workflow Debugging
+```bash
+# Enable debug mode
+export GLEITZEIT_DEBUG=true
+gleitzeit run workflow.yaml
+
+# Check task details
+gleitzeit status --verbose
+```
+
+### Performance Tips
+- Use `--local` flag to force native mode for development
+- Configure Redis for production persistence
+- Adjust `max_concurrent` for batch processing based on resources
+- Use smaller models (e.g., llama3.2:1b) for simple tasks
 
 ## Documentation
 
