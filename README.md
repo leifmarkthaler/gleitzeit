@@ -14,15 +14,10 @@ Get up and running with Gleitzeit in 5 minutes!
 - Docker (optional, for isolated Python execution)
 
 ### Installation
-
 ```bash
-# Install from PyPI
-pip install gleitzeit
-
-# Or install from source
 git clone https://github.com/leifmarkthaler/gleitzeit.git
 cd gleitzeit
-pip install -e .
+uv pip install -e .
 ```
 
 ### Step 1: Start Ollama
@@ -62,23 +57,21 @@ tasks:
 
 ### Step 3: Run the Workflow
 
-```bash
+
 # Using CLI
+```bash
 gleitzeit run hello_workflow.yaml
+```
 
 # Or using Python
-python -c "
+```python
 import asyncio
 from gleitzeit import GleitzeitClient
 
-async def main():
-    async with GleitzeitClient() as client:
-        results = await client.run_workflow('hello_workflow.yaml')
-        for task_id, result in results.items():
-            print(f'{task_id}: {result.get(\"response\", result)}')
+async with GleitzeitClient() as client:
+    # Auto-detects API or native mode
+    result = await client.run_workflow("workflow.yaml")
 
-asyncio.run(main())
-"
 ```
 
 ## Architecture Overview
@@ -281,14 +274,6 @@ tasks:
 **Provider**: SimpleMCPProvider  
 **Methods**: Tool-specific methods via Model Context Protocol
 
-### Template Protocol (`template/v1`)
-**Provider**: TemplateProvider  
-**Methods**:
-- `template/research` - Generate multi-step research workflows
-- `template/code` - Generate code development workflows
-- `template/analyze` - Generate analysis workflows
-- `template/chat` - Generate chat workflows
-
 ## CLI Commands
 
 ```bash
@@ -331,7 +316,7 @@ export GLEITZEIT_PERSISTENCE_TYPE=auto  # auto|redis|sql|memory
 
 ### OllamaHub
 Manages Ollama LLM server instances:
-- Auto-discovers running instances on ports 11434-11439
+- Auto-discovers running instances on configurable ports 
 - Health monitoring and metrics collection
 - Model-aware load balancing
 - Connection pooling for performance
