@@ -71,13 +71,6 @@ async with GleitzeitClient() as client:
     result = await client.run_workflow("workflow.yaml")
 ```
 
-## Architecture Overview
-
-Gleitzeit uses a **dual-mode architecture**:
-- **API Mode**: REST API server for production deployments
-- **Native Mode**: Direct execution engine for development/testing
-- **Auto Mode**: Automatically selects the best available mode
-
 ## Core Concepts
 
 ### Protocols & Providers
@@ -95,6 +88,12 @@ Gleitzeit uses a **dual-mode architecture**:
 - **TaskQueue**: Manages task scheduling with dependency resolution
 - **Parallel Execution**: Independent tasks run concurrently
 - **Parameter Substitution**: Pass results between tasks using `${task_id.field}`
+
+### Persistence
+Gleitzeit includes a unified persistence layer with automatic fallback:
+1. **Redis** (if available) - High performance
+2. **SQLite** (fallback) - Local database
+3. **Memory** (last resort) - In-process storage
 
 ## Python Client
 
