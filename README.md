@@ -57,13 +57,12 @@ tasks:
 
 ### Step 3: Run the Workflow
 
-
-### Using CLI
+*Using CLI*
 ```bash
 gleitzeit run hello_workflow.yaml
 ```
 
-### Or using Python
+*Or using Python*
 ```python
 import asyncio
 from gleitzeit import GleitzeitClient
