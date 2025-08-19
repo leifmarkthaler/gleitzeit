@@ -265,8 +265,33 @@ class GleitzeitClient:
         
     async def _init_native_client(self) -> None:
         """Initialize native execution engine"""
-        # Initialize persistence
-        self._persistence_adapter = await PersistenceFactory.create()
+        # Initialize persistence with configuration
+        factory_kwargs = {}
+        
+        # Check for persistence configuration in native_config
+        persistence_config = self.native_config.get('persistence', {})
+        
+        # Redis configuration
+        redis_url = persistence_config.get('redis_url')
+        if redis_url:
+            factory_kwargs['redis_url'] = redis_url
+        
+        # SQL configuration
+        sql_db_path = persistence_config.get('sql_db_path')
+        if sql_db_path:
+            factory_kwargs['sql_db_path'] = sql_db_path
+            
+        sql_connection = persistence_config.get('sql_connection')
+        if sql_connection:
+            factory_kwargs['sql_connection_string'] = sql_connection
+        
+        # Persistence type preference
+        persistence_type = persistence_config.get('type', 'auto')
+        if persistence_type != 'auto':
+            from gleitzeit.persistence.factory import PersistenceType
+            factory_kwargs['persistence_type'] = PersistenceType(persistence_type)
+        
+        self._persistence_adapter = await PersistenceFactory.create(**factory_kwargs)
         
         # Setup execution components
         queue_manager = QueueManager()

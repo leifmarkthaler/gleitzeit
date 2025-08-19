@@ -161,8 +161,31 @@ app = FastAPI(
 async def setup_system():
     """Initialize the Gleitzeit system with hub architecture"""
     try:
-        # Initialize persistence
-        app_state.persistence_backend = await PersistenceFactory.create()
+        # Initialize persistence with configuration from environment
+        import os
+        factory_kwargs = {}
+        
+        # Redis configuration from environment
+        redis_url = os.getenv('GLEITZEIT_REDIS_URL')
+        if redis_url:
+            factory_kwargs['redis_url'] = redis_url
+        
+        # SQL configuration from environment
+        sql_db_path = os.getenv('GLEITZEIT_SQL_DB_PATH')
+        if sql_db_path:
+            factory_kwargs['sql_db_path'] = sql_db_path
+        
+        sql_connection = os.getenv('GLEITZEIT_SQL_CONNECTION')
+        if sql_connection:
+            factory_kwargs['sql_connection_string'] = sql_connection
+        
+        # Persistence type preference
+        persistence_type = os.getenv('GLEITZEIT_PERSISTENCE_TYPE', 'auto')
+        if persistence_type != 'auto':
+            from gleitzeit.persistence.factory import PersistenceType
+            factory_kwargs['persistence_type'] = PersistenceType(persistence_type)
+        
+        app_state.persistence_backend = await PersistenceFactory.create(**factory_kwargs)
         logger.info(f"Persistence initialized: {type(app_state.persistence_backend).__name__}")
         
         # Setup execution components
@@ -170,12 +193,15 @@ async def setup_system():
         dependency_resolver = DependencyResolver()
         app_state.registry = ProtocolProviderRegistry()
         
+        # Get max concurrent tasks from environment
+        max_concurrent = int(os.getenv('GLEITZEIT_MAX_CONCURRENT_TASKS', '5'))
+        
         app_state.execution_engine = ExecutionEngine(
             registry=app_state.registry,
             queue_manager=queue_manager,
             dependency_resolver=dependency_resolver,
             persistence=app_state.persistence_backend,
-            max_concurrent_tasks=5
+            max_concurrent_tasks=max_concurrent
         )
         
         # Initialize Resource Management (Hub Architecture)
