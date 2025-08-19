@@ -1,6 +1,6 @@
 # Python API
 
-Simple, async Python API for programmatic workflow orchestration.
+Simple, async Python API for orchestrating Ollama LLM workflows and Python script execution.
 
 ## Quick Start
 
@@ -38,13 +38,13 @@ async with Client() as client:
 ### Chat with LLMs
 
 ```python
-# Simple chat
-response = await client.chat("What is Python?")
+# Simple chat with Ollama
+response = await client.chat("What is Python?", model="llama3.2")
 
-# With specific model
+# With specific Ollama model
 response = await client.chat(
     "Explain async/await",
-    model="gpt-4",
+    model="mistral",  # Must be an Ollama model
     temperature=0.7
 )
 
@@ -58,44 +58,41 @@ messages = [
 response = await client.chat_messages(messages)
 ```
 
-### Execute Python Code
+### Execute Python Scripts
 
 ```python
-# Simple execution
-result = await client.execute_python("return 2 + 2")
-print(result)  # 4
-
-# Multi-line code
-code = """
-import json
-data = {"name": "Alice", "age": 30}
-return json.dumps(data)
-"""
-result = await client.execute_python(code)
-
-# With timeout
-result = await client.execute_python(
-    code="import time; time.sleep(1); return 'done'",
-    timeout=10
+# Execute a Python script file
+result = await client.execute_python_script(
+    script="process_data.py",
+    args={"input": "data.txt", "output": "result.txt"}
 )
+
+# Scripts receive args as JSON via sys.argv
+# Script example (process_data.py):
+# import sys, json
+# args = json.loads(sys.argv[1])
+# input_file = args['input']
+# # Process file...
+# print(json.dumps({"status": "success"}))
 ```
 
 ### Batch Process Files
 
 ```python
-# Process all text files
+# Process all text files with Ollama
 results = await client.batch_process(
     directory="documents",
     pattern="*.txt",
-    prompt="Summarize this document in 3 sentences"
+    prompt="Summarize this document in 3 sentences",
+    model="llama3.2"  # Ollama model
 )
 
 # With options
 results = await client.batch_process(
     directory="reports",
-    pattern="**/*.pdf",  # Recursive
+    pattern="**/*.txt",  # Recursive
     prompt="Extract key metrics",
-    model="gpt-4",
+    model="mistral",  # Another Ollama model
     max_concurrent=10,
     output_dir="summaries"
 )
@@ -190,18 +187,18 @@ async with Client() as client:
     responses = await asyncio.gather(*tasks)
 ```
 
-### Custom Providers
+### Ollama Configuration
 
 ```python
-# Use specific provider
-response = await client.chat(
-    "Hello",
-    provider="openai",
-    api_key="sk-..."  # Or set OPENAI_API_KEY
-)
+# Default Ollama endpoint
+client = Client()  # Uses http://localhost:11434
 
-# Configure Ollama endpoint
-client = Client(ollama_url="http://localhost:11434")
+# Custom Ollama endpoint
+client = Client(ollama_url="http://remote-server:11434")
+
+# List available models
+models = await client.list_models()
+print(models)  # ['llama3.2', 'mistral', 'codellama', ...]
 ```
 
 ## Practical Examples
@@ -215,10 +212,10 @@ async def document_qa(file_path: str, question: str):
         with open(file_path) as f:
             content = f.read()
         
-        # Ask question
+        # Ask question using Ollama
         response = await client.chat(
             f"Document: {content}\n\nQuestion: {question}",
-            model="gpt-4"
+            model="llama3.2"  # Local Ollama model
         )
         return response
 
@@ -318,18 +315,18 @@ async def run_workflow(
 
 | Method | Description | Returns |
 |--------|-------------|---------|
-| `chat(prompt, **kwargs)` | Chat with LLM | `str` |
-| `chat_messages(messages, **kwargs)` | Chat with message history | `str` |
-| `execute_python(code, **kwargs)` | Execute Python code | `Any` |
-| `batch_process(directory, pattern, prompt, **kwargs)` | Process files in batch | `Dict[str, str]` |
+| `chat(prompt, model, **kwargs)` | Chat with Ollama model | `str` |
+| `chat_messages(messages, model, **kwargs)` | Chat with message history | `str` |
+| `execute_python_script(script, args, **kwargs)` | Execute Python script file | `Any` |
+| `batch_process(directory, pattern, prompt, model, **kwargs)` | Process files in batch | `Dict[str, str]` |
 | `run_workflow(workflow, **kwargs)` | Run workflow | `WorkflowResult` |
-| `chat_stream(prompt, **kwargs)` | Stream chat response | `AsyncIterator[str]` |
+| `list_models()` | List available Ollama models | `List[str]` |
 
 ### Common Parameters
 
 | Parameter | Type | Description | Default |
 |-----------|------|-------------|---------|
-| `model` | `str` | LLM model to use | `"llama3.2"` |
+| `model` | `str` | Ollama model to use (required) | `"llama3.2"` |
 | `temperature` | `float` | Randomness (0-1) | `0.7` |
 | `max_tokens` | `int` | Maximum response length | `None` |
 | `timeout` | `int` | Request timeout in seconds | `30` |

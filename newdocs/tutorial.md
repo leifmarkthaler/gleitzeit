@@ -1,18 +1,24 @@
 # 5-Minute Tutorial
 
-Let's build a real workflow that does something useful - analyze a document and create a summary report.
+Let's build a real workflow that analyzes documents using local Ollama models.
 
-## Step 1: Install and Start
+## Step 1: Setup
 
 ```bash
 # Install Gleitzeit
 pip install gleitzeit
 
-# Start Ollama (if not running)
+# Install Ollama (if not already installed)
+brew install ollama  # macOS
+# or see ollama.ai for Linux/Windows
+
+# Start Ollama
 ollama serve
 
-# Pull a model (one-time)
-ollama pull llama3.2
+# Pull models you'll use
+ollama pull llama3.2      # Fast general model
+ollama pull codellama     # For code analysis
+ollama pull llava         # For image analysis
 ```
 
 ## Step 2: Your First Workflow
@@ -76,12 +82,10 @@ tasks:
     method: "python/execute"
     dependencies: ["create_report"]
     parameters:
-      code: |
-        report = '''${create_report.response}'''
-        with open('executive_summary.txt', 'w') as f:
-            f.write(report)
-        print("Report saved to executive_summary.txt")
-        return "Report saved successfully"
+      script: "save_report.py"
+      args:
+        report: "${create_report.response}"
+        filename: "executive_summary.txt"
 ```
 
 ## Step 4: Process Multiple Files
@@ -110,9 +114,30 @@ Run it:
 gleitzeit run batch_analyzer.yaml
 ```
 
-## Step 5: Use from Python
+## Step 5: Create Python Scripts
 
-Create `analyze.py`:
+Create `save_report.py`:
+```python
+import sys
+import json
+
+# Get arguments passed from workflow
+args = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}
+report = args.get('report', '')
+filename = args.get('filename', 'report.txt')
+
+# Save the report
+with open(filename, 'w') as f:
+    f.write(report)
+
+print(json.dumps({
+    "status": "success",
+    "message": f"Report saved to {filename}",
+    "length": len(report)
+}))
+```
+
+## Step 6: Use from Python Client
 
 ```python
 import asyncio
@@ -120,18 +145,19 @@ from gleitzeit import Client
 
 async def analyze_documents():
     async with Client() as client:
-        # Analyze a single document
+        # Chat with Ollama models
         analysis = await client.chat(
-            "Analyze this text for sentiment: Customer service was terrible!",
-            model="llama3.2"
+            "Analyze sentiment: Customer service was terrible!",
+            model="llama3.2"  # Must be an Ollama model
         )
         print(f"Sentiment: {analysis}")
         
-        # Process multiple files
+        # Process files in batch
         results = await client.batch_process(
             directory="reports",
             pattern="*.txt",
             prompt="Summarize in 50 words",
+            model="mistral",  # Another Ollama model
             max_concurrent=5
         )
         
@@ -166,12 +192,14 @@ tasks:
         - content: "Process this data..."
 ```
 
-### Use Different Models
+### Use Different Ollama Models
 ```yaml
 parameters:
-  model: "gpt-4"  # OpenAI (set OPENAI_API_KEY)
-  # model: "claude-3"  # Anthropic (set ANTHROPIC_API_KEY)
-  # model: "mistral"  # Local Ollama
+  model: "llama3.2"      # Fast, general purpose
+  # model: "mistral"     # Good for reasoning
+  # model: "codellama"   # For code generation
+  # model: "llava"       # For image analysis
+  # model: "phi"         # Small and fast
 ```
 
 ### Parallel Processing

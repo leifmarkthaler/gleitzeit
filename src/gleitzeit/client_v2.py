@@ -465,6 +465,9 @@ class GleitzeitClient:
         
         # Watch if requested
         if watch:
+            start_time = asyncio.get_event_loop().time()
+            timeout = 120.0  # 2 minutes timeout for workflows
+            
             while True:
                 await asyncio.sleep(2)
                 status = await self._api_client.get_workflow_status(workflow_id)
@@ -472,8 +475,11 @@ class GleitzeitClient:
                 if status["status"] in ["completed", "failed", "cancelled"]:
                     return status
                 
-                # Add a reasonable timeout to prevent infinite loops
-                # (this could be made configurable)
+                # Check timeout
+                if asyncio.get_event_loop().time() - start_time > timeout:
+                    status["status"] = "timeout"
+                    status["error"] = "Workflow execution timed out"
+                    return status
                     
         return result
         
@@ -491,17 +497,29 @@ class GleitzeitClient:
         result = await self._api_client.execute_task(api_task)
         task_id = result["task_id"]
         
-        # Wait for completion
+        # Wait for completion with timeout
+        start_time = asyncio.get_event_loop().time()
+        timeout = 60.0  # 60 seconds timeout
+        
         while True:
             await asyncio.sleep(1)
             status = await self._api_client.get_task_status(task_id)
             
-            if status["status"] in ["completed", "failed"]:
+            if status["status"] in ["completed", "failed", "retry_pending"]:
                 return TaskResult(
                     task_id=task_id,
                     status=status["status"],
                     result=status.get("result"),
                     error=status.get("error")
+                )
+            
+            # Check timeout
+            if asyncio.get_event_loop().time() - start_time > timeout:
+                return TaskResult(
+                    task_id=task_id,
+                    status="timeout",
+                    result=None,
+                    error="Task execution timed out"
                 )
                 
     async def _batch_process_api(

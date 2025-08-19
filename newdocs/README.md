@@ -1,6 +1,17 @@
-# Gleitzeit - Simple LLM Workflow Orchestration
+# Gleitzeit - Local LLM Workflow Orchestration
 
-Run LLM workflows with a single command. Chain tasks, process files in batch, and integrate Python code - all without complexity.
+Run LLM workflows locally with Ollama. Chain tasks, process files in batch, and execute Python scripts - all on your machine.
+
+## Prerequisites
+
+```bash
+# Install and start Ollama
+brew install ollama  # or see ollama.ai for other platforms
+ollama serve
+
+# Pull a model
+ollama pull llama3.2
+```
 
 ## Install
 
@@ -17,6 +28,7 @@ tasks:
   - id: "chat"
     method: "llm/chat"
     parameters:
+      model: "llama3.2"  # Must be an Ollama model
       messages:
         - role: "user"
           content: "Write a haiku about coding"
@@ -27,7 +39,7 @@ Run it:
 gleitzeit run workflow.yaml
 ```
 
-That's it. No configuration needed - it uses local Ollama by default.
+Uses your local Ollama instance - no API keys needed.
 
 ## Three Ways to Use Gleitzeit
 
@@ -50,14 +62,15 @@ gleitzeit run workflow.yaml
 from gleitzeit import Client
 
 async with Client() as client:
-    # Simple chat
-    response = await client.chat("Hello, how are you?")
+    # Chat with local Ollama models
+    response = await client.chat("Hello, how are you?", model="llama3.2")
     
     # Process files in batch
     results = await client.batch_process(
         directory="reports",
         pattern="*.txt",
-        prompt="Extract key points"
+        prompt="Extract key points",
+        model="llama3.2"
     )
 ```
 
@@ -69,15 +82,15 @@ tasks:
   - id: "read"
     method: "python/execute"
     parameters:
-      code: |
-        with open('data.txt') as f:
-            content = f.read()
-        return content
+      script: "scripts/read_file.py"  # Python scripts as files
+      args:
+        filename: "data.txt"
 
   - id: "analyze"
     method: "llm/chat"
     dependencies: ["read"]
     parameters:
+      model: "llama3.2"
       messages:
         - role: "user"
           content: "Analyze this: ${read.result}"
@@ -86,9 +99,10 @@ tasks:
     method: "python/execute"
     dependencies: ["analyze"]
     parameters:
-      code: |
-        with open('analysis.txt', 'w') as f:
-            f.write('${analyze.response}')
+      script: "scripts/save_file.py"
+      args:
+        content: "${analyze.response}"
+        filename: "analysis.txt"
 ```
 
 ## Common Use Cases
@@ -104,6 +118,7 @@ tasks:
   - id: "step1"
     method: "llm/chat"
     parameters:
+      model: "llama3.2"
       messages:
         - content: "Generate a story idea"
   
@@ -111,31 +126,68 @@ tasks:
     method: "llm/chat"
     dependencies: ["step1"]
     parameters:
+      model: "llama3.2"
       messages:
         - content: "Expand this idea: ${step1.response}"
 ```
 
-### Mix Python and LLMs
+### Mix Python Scripts and LLMs
+
+Create `process_data.py`:
 ```python
-async with Client() as client:
-    # Get LLM response
-    analysis = await client.chat("Analyze this sales data: ...")
-    
-    # Process with Python
-    result = await client.execute_python(f"""
-        data = '{analysis}'
-        # Process the analysis
-        return processed_data
-    """)
+import sys
+import json
+
+def main(data):
+    # Process the LLM analysis
+    processed = data.upper()  # Your processing logic
+    return {"processed": processed}
+
+if __name__ == "__main__":
+    data = sys.argv[1]
+    result = main(data)
+    print(json.dumps(result))
+```
+
+Use in workflow:
+```yaml
+tasks:
+  - id: "analyze"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2"
+      messages:
+        - content: "Analyze this sales data..."
+  
+  - id: "process"
+    method: "python/execute"
+    dependencies: ["analyze"]
+    parameters:
+      script: "process_data.py"
+      args:
+        data: "${analyze.response}"
 ```
 
 ## Why Gleitzeit?
 
-- **Zero Config** - Works out of the box with local Ollama
+- **100% Local** - All processing on your machine with Ollama
+- **No API Keys** - No cloud dependencies or costs
 - **Simple** - One command to run workflows
-- **Flexible** - Use CLI, Python, or YAML
 - **Fast** - Parallel task execution
 - **Reliable** - Automatic retries and error handling
+
+## Available Ollama Models
+
+```bash
+# Text generation
+ollama pull llama3.2       # Fast, general purpose
+ollama pull mistral        # Good for code
+ollama pull codellama      # Specialized for coding
+
+# Vision models (for images)
+ollama pull llava          # Image understanding
+ollama pull bakllava       # Alternative vision model
+```
 
 ## Next Steps
 
@@ -147,7 +199,8 @@ async with Client() as client:
 ## Requirements
 
 - Python 3.9+
-- Ollama (for local LLMs) or API keys for cloud providers
+- Ollama installed and running
+- At least one Ollama model pulled
 
 ---
 

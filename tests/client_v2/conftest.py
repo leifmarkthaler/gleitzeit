@@ -19,13 +19,68 @@ async def native_client() -> AsyncGenerator[Client, None]:
         yield client
 
 
+import subprocess
+import asyncio as aio
+
+@pytest.fixture(scope="session")
+def api_server():
+    """Start API server once for all tests"""
+    # Check if server is already running
+    import httpx
+    import time
+    
+    try:
+        response = httpx.get("http://localhost:8000/health", timeout=1.0)
+        if response.status_code == 200:
+            # Server already running
+            yield "http://localhost:8000"
+            return
+    except:
+        pass
+    
+    # Start server in background
+    import os
+    import sys
+    
+    # Use sys.executable to ensure we use the same Python interpreter
+    process = subprocess.Popen(
+        [sys.executable, "-m", "gleitzeit.cli.gleitzeit_cli", "serve", "--host", "localhost", "--port", "8000"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True
+    )
+    
+    # Wait for server to be ready with better error handling
+    server_ready = False
+    for i in range(30):  # 30 seconds timeout
+        try:
+            response = httpx.get("http://localhost:8000/health", timeout=1.0)
+            if response.status_code == 200:
+                server_ready = True
+                break
+        except:
+            pass
+        time.sleep(1)
+    
+    if not server_ready:
+        # Kill the process if server didn't start
+        process.terminate()
+        raise RuntimeError("Failed to start API server within 30 seconds")
+    
+    yield "http://localhost:8000"
+    
+    # Cleanup - keep server running for other tests
+    # process.terminate()
+    # process.wait(timeout=5)
+
+
 @pytest.fixture
-async def api_client() -> AsyncGenerator[Client, None]:
+async def api_client(api_server) -> AsyncGenerator[Client, None]:
     """Create an API mode client for testing"""
-    # Auto-start server if needed
+    # Use existing server, don't auto-start
     async with Client(
         mode="api",
-        auto_start_server=True,
+        auto_start_server=False,  # Server already started by fixture
         keep_server_running=True
     ) as client:
         yield client
