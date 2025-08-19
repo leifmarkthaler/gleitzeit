@@ -1,548 +1,532 @@
-# Configuration Guide
+# Configuration
 
-## Overview
+Gleitzeit can be configured through configuration files, environment variables, and command-line options.
 
-Gleitzeit v0.0.5 can be configured through multiple methods with a clear precedence order:
-1. Command-line arguments (highest priority)
+## Configuration Priority
+
+Configuration is applied in this order (highest priority first):
+
+1. Command-line options
 2. Environment variables
-3. Configuration files
-4. Default values (lowest priority)
+3. Configuration file
+4. Default values
 
-## Configuration Methods
+## Configuration File
 
-### 1. Configuration Files
+Default location: `~/.gleitzeit/config.yaml`
 
-#### Default Configuration File Location
-```bash
-# Linux/macOS
-~/.config/gleitzeit/config.yaml
+### Complete Configuration Example
 
-# Windows
-%APPDATA%\gleitzeit\config.yaml
-
-# Custom location
-gleitzeit --config /path/to/config.yaml
-```
-
-#### Configuration File Format
 ```yaml
-# config.yaml
+# Gleitzeit Configuration
+
+# General settings
+general:
+  log_level: INFO           # DEBUG, INFO, WARNING, ERROR
+  log_file: ~/.gleitzeit/gleitzeit.log
+  working_directory: ~/workflows
+
+# Ollama settings
+ollama:
+  url: http://localhost:11434
+  default_model: llama3.2
+  timeout: 30
+  max_retries: 3
+  discovery:
+    enabled: true
+    ports: [11434, 11435, 11436, 11437, 11438, 11439]
+    interval: 60  # seconds
+  models:
+    chat: llama3.2
+    vision: llava
+    code: codellama
+    small: phi
+
+# Persistence configuration
 persistence:
-  type: redis  # redis, sqlite, memory, auto
+  type: auto  # auto, redis, sqlite, memory
+  
   redis:
-    url: redis://localhost:6379
-    password: ${REDIS_PASSWORD}  # Environment variable substitution
-    db: 0
-    max_connections: 50
+    url: redis://localhost:6379/0
+    password: null
+    key_prefix: gleitzeit
+    ttl: 86400  # 24 hours
+    max_connections: 10
+  
   sqlite:
-    path: ./gleitzeit.db
-    timeout: 30
-    check_same_thread: false
+    db_path: ~/.gleitzeit/workflows.db
+    journal_mode: WAL
+    timeout: 5.0
+  
+  memory:
+    max_size: 1000  # Maximum entries
 
+# Execution settings
 execution:
-  max_parallel_tasks: 20
-  task_timeout: 300
-  retry_enabled: true
-  retry_max_attempts: 3
-  retry_backoff_factor: 2.0
+  max_parallel_tasks: 5
+  default_timeout: 30
+  continue_on_error: false
+  retry:
+    enabled: true
+    max_attempts: 3
+    initial_delay: 1
+    exponential_backoff: true
+    max_delay: 30
 
-resources:
-  ollama:
-    default_host: localhost
-    default_port: 11434
-    health_check_interval: 30
-    auto_recovery: true
-    max_instances: 10
-  docker:
-    socket: unix:///var/run/docker.sock
-    default_image: python:3.11-slim
-    max_containers: 20
-    cleanup_interval: 300
-    enable_reuse: true
+# Python provider settings
+python:
+  timeout: 60
+  sandbox: true
+  max_memory: 512M
+  allowed_modules:
+    - json
+    - csv
+    - math
+    - datetime
+    - os
+    - sys
+    - pathlib
+  scripts_directory: ./scripts
 
+# Template provider settings
+template:
+  cache_compiled: true
+  strict_undefined: false
+  auto_reload: true
+
+# Batch processing
+batch:
+  max_concurrent: 5
+  max_file_size: 1048576  # 1MB
+  recursive: false
+  ignore_patterns:
+    - "*.pyc"
+    - "__pycache__"
+    - ".git"
+
+# API server settings
 api:
   host: 0.0.0.0
   port: 8000
-  cors_enabled: true
-  cors_origins: ["*"]
-  rate_limit_enabled: true
-  rate_limit_requests: 100
-  rate_limit_window: 60
+  auto_start: true
+  keep_running: true
+  cors:
+    enabled: true
+    origins: ["*"]
+  authentication:
+    enabled: false
+    token: null
 
-logging:
-  level: INFO  # DEBUG, INFO, WARNING, ERROR, CRITICAL
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-  file: ./logs/gleitzeit.log
-  max_size: 10485760  # 10MB
-  backup_count: 5
-  console: true
+# Resource management
+resources:
+  enabled: false
+  ollama_hub:
+    min_instances: 1
+    max_instances: 5
+    scale_up_threshold: 0.8
+    scale_down_threshold: 0.2
+  docker_hub:
+    enabled: false
+    max_containers: 10
+    image: gleitzeit/python:latest
 
-security:
-  api_key_required: false
-  api_key: ${GLEITZEIT_API_KEY}
-  jwt_enabled: false
-  jwt_secret: ${JWT_SECRET}
-  jwt_expiration: 3600
+# Development settings
+development:
+  debug: false
+  reload: false
+  profile: false
+  trace_tasks: false
 ```
 
-### 2. Environment Variables
+### Minimal Configuration
 
-All configuration options can be set via environment variables with the prefix `GLEITZEIT_`:
+```yaml
+# Minimal config - uses defaults for everything else
+ollama:
+  default_model: mistral
+
+persistence:
+  type: redis
+  redis:
+    url: redis://localhost:6379
+```
+
+## Environment Variables
+
+All configuration options can be set via environment variables.
+
+### General Variables
 
 ```bash
-# Persistence Configuration
-export GLEITZEIT_PERSISTENCE_TYPE=redis
-export GLEITZEIT_REDIS_URL=redis://localhost:6379
-export GLEITZEIT_REDIS_PASSWORD=secret
-export GLEITZEIT_REDIS_DB=0
-export GLEITZEIT_SQLITE_PATH=./gleitzeit.db
-export GLEITZEIT_SQLITE_TIMEOUT=30
+export GLEITZEIT_LOG_LEVEL=DEBUG
+export GLEITZEIT_LOG_FILE=/var/log/gleitzeit.log
+export GLEITZEIT_WORKING_DIR=/workspace
+```
 
-# Execution Configuration
-export GLEITZEIT_MAX_PARALLEL_TASKS=20
-export GLEITZEIT_TASK_TIMEOUT=300
+### Ollama Configuration
+
+```bash
+export GLEITZEIT_OLLAMA_URL=http://localhost:11434
+export GLEITZEIT_DEFAULT_MODEL=llama3.2
+export GLEITZEIT_OLLAMA_TIMEOUT=30
+export GLEITZEIT_OLLAMA_MAX_RETRIES=3
+```
+
+### Persistence Configuration
+
+```bash
+# Persistence type
+export GLEITZEIT_PERSISTENCE_TYPE=redis  # auto, redis, sqlite, memory
+
+# Redis
+export GLEITZEIT_REDIS_URL=redis://localhost:6379/0
+export GLEITZEIT_REDIS_PASSWORD=secret
+export GLEITZEIT_REDIS_KEY_PREFIX=gleitzeit
+export GLEITZEIT_REDIS_TTL=86400
+
+# SQLite
+export GLEITZEIT_SQL_DB_PATH=~/.gleitzeit/workflows.db
+export GLEITZEIT_SQL_JOURNAL_MODE=WAL
+```
+
+### Execution Configuration
+
+```bash
+export GLEITZEIT_MAX_PARALLEL_TASKS=10
+export GLEITZEIT_DEFAULT_TIMEOUT=60
+export GLEITZEIT_CONTINUE_ON_ERROR=true
 export GLEITZEIT_RETRY_ENABLED=true
 export GLEITZEIT_RETRY_MAX_ATTEMPTS=3
-
-# Resource Configuration
-export GLEITZEIT_OLLAMA_HOST=localhost
-export GLEITZEIT_OLLAMA_PORT=11434
-export GLEITZEIT_OLLAMA_HEALTH_CHECK_INTERVAL=30
-export GLEITZEIT_DOCKER_SOCKET=unix:///var/run/docker.sock
-export GLEITZEIT_DOCKER_DEFAULT_IMAGE=python:3.11-slim
-
-# API Configuration
-export GLEITZEIT_API_HOST=0.0.0.0
-export GLEITZEIT_API_PORT=8000
-export GLEITZEIT_API_KEY=your-secret-key
-
-# Logging Configuration
-export GLEITZEIT_LOG_LEVEL=INFO
-export GLEITZEIT_LOG_FILE=./gleitzeit.log
-export GLEITZEIT_LOG_FORMAT="%(asctime)s - %(levelname)s - %(message)s"
 ```
 
-### 3. Command-Line Arguments
-
-Override any configuration at runtime:
+### API Server Configuration
 
 ```bash
-# Override persistence type
-gleitzeit --persistence redis --redis-url redis://prod-server:6379
-
-# Override execution settings
-gleitzeit --max-parallel 50 --task-timeout 600
-
-# Override logging
-gleitzeit --log-level DEBUG --log-file debug.log
-
-# Use custom config file
-gleitzeit --config production.yaml
+export GLEITZEIT_API_HOST=0.0.0.0
+export GLEITZEIT_API_PORT=8000
+export GLEITZEIT_API_AUTO_START=true
+export GLEITZEIT_API_CORS_ENABLED=true
 ```
 
-### 4. Python API Configuration
+## Command-Line Options
+
+Override configuration at runtime:
+
+```bash
+# Override model
+gleitzeit run workflow.yaml --model mistral
+
+# Override API settings
+gleitzeit run workflow.yaml --host localhost --port 9000
+
+# Force local execution
+gleitzeit run workflow.yaml --local
+
+# Set log level
+gleitzeit --verbose run workflow.yaml
+gleitzeit --debug run workflow.yaml
+```
+
+## Client Configuration
+
+### Python Client
 
 ```python
 from gleitzeit import GleitzeitClient
 
-# Direct configuration
-client = GleitzeitClient(
-    persistence="redis",
-    redis_url="redis://localhost:6379",
-    max_parallel_tasks=30,
-    task_timeout=600,
-    log_level="DEBUG"
-)
+# Use environment variables
+client = GleitzeitClient()
 
-# Using configuration dict
+# Override with parameters
+client = GleitzeitClient(
+    mode="api",
+    api_host="custom.host",
+    api_port=9000,
+    native_config={
+        "max_parallel_tasks": 10,
+        "default_timeout": 60,
+        "enable_resource_management": True
+    }
+)
+```
+
+### Client Config Dictionary
+
+```python
 config = {
-    "persistence": {
-        "type": "redis",
-        "redis": {
-            "url": "redis://localhost:6379"
+    "mode": "native",
+    "native_config": {
+        "enable_resource_management": True,
+        "max_parallel_tasks": 10,
+        "default_timeout": 60,
+        "persistence": {
+            "type": "redis",
+            "redis": {
+                "url": "redis://localhost:6379"
+            }
+        },
+        "ollama": {
+            "url": "http://localhost:11434",
+            "default_model": "llama3.2"
         }
-    },
-    "execution": {
-        "max_parallel_tasks": 30
     }
 }
-client = GleitzeitClient.from_config(config)
 
-# Load from file
-client = GleitzeitClient.from_config_file("config.yaml")
+client = GleitzeitClient(**config)
 ```
 
-## Configuration Options Reference
+## Per-Workflow Configuration
 
-### Persistence Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `persistence.type` | string | auto | Persistence backend (redis, sqlite, memory, auto) |
-| `persistence.redis.url` | string | redis://localhost:6379 | Redis connection URL |
-| `persistence.redis.password` | string | - | Redis password |
-| `persistence.redis.db` | int | 0 | Redis database number |
-| `persistence.redis.max_connections` | int | 50 | Maximum Redis connections |
-| `persistence.redis.socket_keepalive` | bool | true | Enable TCP keepalive |
-| `persistence.sqlite.path` | string | ./gleitzeit.db | SQLite database path |
-| `persistence.sqlite.timeout` | int | 30 | SQLite connection timeout |
-| `persistence.sqlite.journal_mode` | string | WAL | SQLite journal mode |
-| `persistence.memory.max_size` | int | - | Maximum memory cache size (bytes) |
-
-### Execution Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `execution.max_parallel_tasks` | int | 10 | Maximum parallel task execution |
-| `execution.task_timeout` | int | 300 | Default task timeout (seconds) |
-| `execution.retry_enabled` | bool | true | Enable automatic retry |
-| `execution.retry_max_attempts` | int | 3 | Maximum retry attempts |
-| `execution.retry_backoff_factor` | float | 2.0 | Exponential backoff factor |
-| `execution.retry_max_backoff` | int | 60 | Maximum backoff time (seconds) |
-| `execution.queue_type` | string | memory | Task queue type |
-| `execution.checkpoint_enabled` | bool | false | Enable workflow checkpointing |
-| `execution.checkpoint_interval` | int | 60 | Checkpoint save interval |
-
-### Resource Options
-
-#### Ollama Configuration
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `resources.ollama.default_host` | string | localhost | Default Ollama host |
-| `resources.ollama.default_port` | int | 11434 | Default Ollama port |
-| `resources.ollama.health_check_interval` | int | 30 | Health check interval (seconds) |
-| `resources.ollama.auto_recovery` | bool | true | Enable auto-recovery |
-| `resources.ollama.max_instances` | int | 10 | Maximum Ollama instances |
-| `resources.ollama.connection_timeout` | int | 30 | Connection timeout |
-| `resources.ollama.request_timeout` | int | 300 | Request timeout |
-| `resources.ollama.retry_on_failure` | bool | true | Retry failed requests |
-
-#### Docker Configuration
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `resources.docker.socket` | string | unix:///var/run/docker.sock | Docker socket path |
-| `resources.docker.default_image` | string | python:3.11-slim | Default container image |
-| `resources.docker.max_containers` | int | 20 | Maximum containers |
-| `resources.docker.memory_limit` | string | 512m | Container memory limit |
-| `resources.docker.cpu_limit` | float | 1.0 | Container CPU limit |
-| `resources.docker.cleanup_interval` | int | 300 | Cleanup interval (seconds) |
-| `resources.docker.enable_reuse` | bool | true | Enable container reuse |
-| `resources.docker.network_mode` | string | none | Container network mode |
-
-### API Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `api.host` | string | 0.0.0.0 | API server host |
-| `api.port` | int | 8000 | API server port |
-| `api.workers` | int | 4 | Number of API workers |
-| `api.cors_enabled` | bool | true | Enable CORS |
-| `api.cors_origins` | list | ["*"] | Allowed CORS origins |
-| `api.rate_limit_enabled` | bool | false | Enable rate limiting |
-| `api.rate_limit_requests` | int | 100 | Rate limit requests |
-| `api.rate_limit_window` | int | 60 | Rate limit window (seconds) |
-| `api.max_request_size` | int | 10485760 | Maximum request size (bytes) |
-
-### Logging Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `logging.level` | string | INFO | Log level |
-| `logging.format` | string | %(asctime)s - %(levelname)s - %(message)s | Log format |
-| `logging.file` | string | - | Log file path |
-| `logging.max_size` | int | 10485760 | Max log file size (bytes) |
-| `logging.backup_count` | int | 5 | Number of backup files |
-| `logging.console` | bool | true | Enable console output |
-| `logging.json` | bool | false | JSON formatted logs |
-| `logging.syslog` | bool | false | Send to syslog |
-
-### Security Options
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `security.api_key_required` | bool | false | Require API key |
-| `security.api_key` | string | - | API key value |
-| `security.jwt_enabled` | bool | false | Enable JWT auth |
-| `security.jwt_secret` | string | - | JWT secret key |
-| `security.jwt_algorithm` | string | HS256 | JWT algorithm |
-| `security.jwt_expiration` | int | 3600 | Token expiration (seconds) |
-| `security.tls_enabled` | bool | false | Enable TLS |
-| `security.tls_cert` | string | - | TLS certificate path |
-| `security.tls_key` | string | - | TLS key path |
-
-## Configuration Profiles
-
-### Development Profile
+Override settings in workflow files:
 
 ```yaml
-# config-dev.yaml
-persistence:
-  type: sqlite
-  sqlite:
-    path: ./dev.db
+name: "Custom Config Workflow"
+config:
+  timeout: 120
+  max_parallel: 10
+  continue_on_error: true
+  
+tasks:
+  - id: "task1"
+    method: "llm/chat"
+    # Inherits workflow config
+```
 
-execution:
-  max_parallel_tasks: 5
-  task_timeout: 60
+## Model-Specific Configuration
 
-logging:
-  level: DEBUG
-  console: true
+Configure model parameters:
 
+```yaml
+# In config.yaml
+models:
+  llama3.2:
+    temperature: 0.7
+    max_tokens: 500
+    top_p: 0.9
+  
+  mistral:
+    temperature: 0.5
+    max_tokens: 1000
+  
+  codellama:
+    temperature: 0.3
+    max_tokens: 2000
+```
+
+## Security Configuration
+
+### API Authentication
+
+```yaml
 api:
-  host: localhost
-  port: 8000
+  authentication:
+    enabled: true
+    type: bearer  # bearer, basic, api_key
+    token: "your-secret-token"
+    users:
+      - username: admin
+        password_hash: "$2b$12$..."
 ```
 
-### Production Profile
+### Python Sandbox
 
 ```yaml
-# config-prod.yaml
+python:
+  sandbox: true
+  allowed_paths:
+    - /workspace
+    - /tmp
+  blocked_modules:
+    - subprocess
+    - socket
+    - requests
+  max_execution_time: 60
+  max_memory: 512M
+```
+
+## Logging Configuration
+
+### Log Levels
+
+- `DEBUG`: Detailed debugging information
+- `INFO`: General information
+- `WARNING`: Warning messages
+- `ERROR`: Error messages only
+
+### Log Format
+
+```yaml
+logging:
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  date_format: "%Y-%m-%d %H:%M:%S"
+  file:
+    enabled: true
+    path: ~/.gleitzeit/gleitzeit.log
+    max_size: 10485760  # 10MB
+    backup_count: 5
+  console:
+    enabled: true
+    colorize: true
+```
+
+## Performance Tuning
+
+### Connection Pooling
+
+```yaml
+performance:
+  connection_pool:
+    max_size: 100
+    min_size: 10
+    timeout: 30
+  
+  cache:
+    enabled: true
+    size: 1000
+    ttl: 3600
+```
+
+### Resource Limits
+
+```yaml
+limits:
+  max_workflow_size: 10485760  # 10MB
+  max_task_output: 1048576     # 1MB
+  max_parallel_workflows: 10
+  max_queue_size: 1000
+```
+
+## Development Configuration
+
+### Debug Mode
+
+```yaml
+development:
+  debug: true
+  reload: true          # Auto-reload on file changes
+  profile: true         # Enable profiling
+  trace_tasks: true     # Detailed task tracing
+  mock_providers: false # Use mock providers for testing
+```
+
+### Testing Configuration
+
+```yaml
+testing:
+  use_mock_ollama: true
+  mock_responses:
+    default: "Mock response"
+  disable_retries: true
+  fast_timeouts: true
+```
+
+## Configuration Validation
+
+Validate configuration file:
+
+```bash
+gleitzeit config validate
+
+# Or with specific file
+gleitzeit config validate --file custom-config.yaml
+```
+
+## Default Paths
+
+| Item | Default Path |
+|------|-------------|
+| Config file | `~/.gleitzeit/config.yaml` |
+| Log file | `~/.gleitzeit/gleitzeit.log` |
+| SQLite DB | `~/.gleitzeit/workflows.db` |
+| Scripts | `./scripts/` |
+| Workflows | `./workflows/` |
+
+## Migration from Older Versions
+
+### From v0.0.4 to v0.0.5
+
+Old configuration (v0.0.4):
+```yaml
+ollama_url: http://localhost:11434
+default_model: llama3.2
+redis_url: redis://localhost:6379
+```
+
+New configuration (v0.0.5):
+```yaml
+ollama:
+  url: http://localhost:11434
+  default_model: llama3.2
+
 persistence:
   type: redis
   redis:
-    url: redis://redis-cluster:6379
-    password: ${REDIS_PASSWORD}
-    max_connections: 100
-
-execution:
-  max_parallel_tasks: 50
-  task_timeout: 600
-  retry_enabled: true
-
-logging:
-  level: WARNING
-  file: /var/log/gleitzeit/app.log
-  json: true
-
-security:
-  api_key_required: true
-  api_key: ${API_KEY}
-  tls_enabled: true
-```
-
-### Testing Profile
-
-```yaml
-# config-test.yaml
-persistence:
-  type: memory
-
-execution:
-  max_parallel_tasks: 2
-  task_timeout: 10
-
-logging:
-  level: ERROR
-  console: false
-```
-
-## Dynamic Configuration
-
-### Hot Reload
-
-Configuration can be reloaded without restart:
-
-```python
-# Signal handler for config reload
-import signal
-
-def reload_config(signum, frame):
-    client.reload_config()
-
-signal.signal(signal.SIGHUP, reload_config)
-```
-
-### Runtime Updates
-
-```python
-# Update configuration at runtime
-client.update_config({
-    "execution": {
-        "max_parallel_tasks": 50
-    }
-})
-
-# Get current configuration
-config = client.get_config()
-print(config)
-```
-
-## Provider-Specific Configuration
-
-### Ollama Provider
-
-```yaml
-providers:
-  ollama:
-    enabled: true
-    default_model: llama3.2
-    default_temperature: 0.7
-    streaming_enabled: true
-    timeout: 300
-    retry_attempts: 3
-```
-
-### Python Provider
-
-```yaml
-providers:
-  python:
-    enabled: true
-    execution_mode: docker  # docker or disabled
-    allowed_imports:
-      - numpy
-      - pandas
-      - json
-    max_execution_time: 60
-    max_memory: 512m
-```
-
-### MCP Provider
-
-```yaml
-providers:
-  mcp:
-    enabled: true
-    servers:
-      - name: calculator
-        command: python
-        args: [mcp_calculator.py]
-        env:
-          PYTHONPATH: /app
-      - name: database
-        command: node
-        args: [mcp_database.js]
-```
-
-## Validation
-
-### Configuration Validation
-
-```bash
-# Validate configuration file
-gleitzeit config validate config.yaml
-
-# Test configuration
-gleitzeit config test --persistence --resources
-```
-
-### Schema Validation
-
-```python
-from gleitzeit.config import ConfigSchema
-
-# Validate configuration
-schema = ConfigSchema()
-errors = schema.validate(config)
-if errors:
-    print("Configuration errors:", errors)
+    url: redis://localhost:6379
 ```
 
 ## Best Practices
 
-### 1. Use Environment Variables for Secrets
-```yaml
-# Never hardcode secrets
-security:
-  api_key: ${API_KEY}  # Good
-  # api_key: "hardcoded-secret"  # Bad
-```
+1. **Use configuration files** for static settings
+2. **Use environment variables** for deployment-specific settings
+3. **Use command-line options** for one-time overrides
+4. **Keep secrets in environment variables**, not config files
+5. **Version control config templates**, not actual configs
+6. **Validate configuration** before deployment
+7. **Use appropriate log levels** (INFO for production, DEBUG for development)
+8. **Set reasonable timeouts** to prevent hanging
+9. **Configure retries** for reliability
+10. **Monitor resource limits** in production
 
-### 2. Profile-Based Configuration
-```bash
-# Use different configs for different environments
-gleitzeit --config config-${ENVIRONMENT}.yaml
-```
+## Examples
 
-### 3. Configuration Hierarchy
-```yaml
-# base.yaml - Shared configuration
-# dev.yaml - Extends base.yaml
-# prod.yaml - Extends base.yaml
-```
-
-### 4. Validate Before Deployment
-```bash
-# Always validate configuration
-gleitzeit config validate config.yaml && gleitzeit serve
-```
-
-### 5. Use Sensible Defaults
-```python
-# Provide defaults in code
-config = {
-    "persistence": {
-        "type": os.getenv("GLEITZEIT_PERSISTENCE_TYPE", "auto")
-    }
-}
-```
-
-## Troubleshooting Configuration
-
-### Configuration Not Loading
-
-```bash
-# Check configuration file location
-gleitzeit config show --sources
-
-# Debug configuration loading
-GLEITZEIT_LOG_LEVEL=DEBUG gleitzeit config show
-```
-
-### Environment Variables Not Working
-
-```bash
-# Check environment variables
-env | grep GLEITZEIT
-
-# Debug with explicit values
-GLEITZEIT_PERSISTENCE_TYPE=redis gleitzeit --debug
-```
-
-### Validation Errors
-
-```bash
-# Get detailed validation errors
-gleitzeit config validate --verbose config.yaml
-
-# Check schema version
-gleitzeit config schema --version
-```
-
-## Migration from v0.0.4
-
-### Changed Configuration Keys
+### Production Configuration
 
 ```yaml
-# v0.0.4
-task_queue:
-  backend: redis
+general:
+  log_level: INFO
+  
+ollama:
+  url: http://ollama.internal:11434
+  timeout: 60
+  max_retries: 5
 
-# v0.0.5
 persistence:
   type: redis
+  redis:
+    url: redis://redis.internal:6379
+    password: ${REDIS_PASSWORD}  # From environment
+
+execution:
+  max_parallel_tasks: 20
+  default_timeout: 120
+
+api:
+  host: 0.0.0.0
+  port: 8000
+  authentication:
+    enabled: true
+    token: ${API_TOKEN}  # From environment
 ```
 
-### New Required Configuration
+### Development Configuration
 
 ```yaml
-# v0.0.5 requires hub configuration
-resources:
-  ollama:
-    default_host: localhost
-  docker:
-    socket: unix:///var/run/docker.sock
+general:
+  log_level: DEBUG
+
+ollama:
+  url: http://localhost:11434
+  default_model: llama3.2
+
+persistence:
+  type: memory  # Fast for development
+
+execution:
+  max_parallel_tasks: 2
+  continue_on_error: true
+
+development:
+  debug: true
+  reload: true
+  trace_tasks: true
 ```
-
-## Summary
-
-Gleitzeit's configuration system provides:
-- **Multiple configuration methods** with clear precedence
-- **Environment variable substitution** for secrets
-- **Profile-based configuration** for different environments
-- **Runtime configuration updates** without restart
-- **Comprehensive validation** before deployment
-- **Sensible defaults** for zero-configuration startup

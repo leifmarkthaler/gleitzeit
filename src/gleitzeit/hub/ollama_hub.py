@@ -249,7 +249,8 @@ class OllamaHub(ResourceHub[OllamaConfig]):
                 
                 # Wait for graceful shutdown
                 try:
-                    process.wait(timeout=10)
+                    loop = asyncio.get_event_loop()
+                    await loop.run_in_executor(None, process.wait, 10)
                 except psutil.TimeoutExpired:
                     process.kill()
                 

@@ -179,7 +179,8 @@ class GleitzeitClient:
                 logger.info("Stopping API server that was started by this client")
                 self._server_process.terminate()
                 try:
-                    self._server_process.wait(timeout=5)
+                    loop = asyncio.get_event_loop()
+                    await loop.run_in_executor(None, self._server_process.wait, 5)
                 except subprocess.TimeoutExpired:
                     self._server_process.kill()
                 self._server_process = None

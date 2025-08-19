@@ -1,143 +1,133 @@
-# Installation Guide
+# Installation
 
 ## Requirements
 
 - Python 3.8 or higher
-- Optional: Redis (for production persistence)
-- Optional: Docker (for isolated Python execution)
-- Optional: Ollama (for LLM support)
+- Ollama for LLM operations (optional)
+- Redis or SQLite for persistence (optional)
 
-## Installation Methods
-
-### Using uv (Recommended)
+## Install from PyPI
 
 ```bash
-# Install from source
-git clone https://github.com/leifmarkthaler/gleitzeit.git
-cd gleitzeit
-uv pip install -e .
-
-# Or install specific variants
-uv pip install -e ".[dev]"     # Development tools
-uv pip install -e ".[llm]"     # LLM providers
-uv pip install -e ".[docker]"  # Docker support
-uv pip install -e ".[all]"     # Everything
+pip install gleitzeit
 ```
 
-### Using pip
+## Install from Source
 
 ```bash
-# Install from source
 git clone https://github.com/leifmarkthaler/gleitzeit.git
 cd gleitzeit
 pip install -e .
+```
 
-# Install with optional dependencies
-pip install -e ".[dev,llm,docker]"
+## Install with Optional Dependencies
+
+```bash
+# For LLM support
+pip install gleitzeit[llm]
+
+# For Docker support
+pip install gleitzeit[docker]
+
+# For development
+pip install gleitzeit[dev]
+
+# Everything
+pip install gleitzeit[all]
+```
+
+## Install Ollama
+
+Gleitzeit uses Ollama for LLM operations. Install it based on your platform:
+
+### macOS
+```bash
+brew install ollama
+ollama serve
+```
+
+### Linux
+```bash
+curl -fsSL https://ollama.ai/install.sh | sh
+ollama serve
+```
+
+### Windows
+Download from [ollama.ai](https://ollama.ai) and run the installer.
+
+## Pull Models
+
+After installing Ollama, pull the models you need:
+
+```bash
+# General purpose
+ollama pull llama3.2
+
+# Code generation
+ollama pull codellama
+
+# Vision/image analysis
+ollama pull llava
+
+# Smaller, faster model
+ollama pull phi
 ```
 
 ## Verify Installation
 
 ```bash
-# Check CLI is available
-gleitzeit --help
-gz --help
+# Check CLI
+gleitzeit --version
+
+# Test Ollama connection
+gleitzeit status
 
 # Run a simple workflow
-gleitzeit run examples/simple_llm_workflow.yaml
+echo 'name: "test"
+tasks:
+  - id: "hello"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say hello"' > test.yaml
+
+gleitzeit run test.yaml
 ```
 
-## Optional Dependencies
+## Python Client Verification
 
-### Redis (Production Persistence)
+```python
+import asyncio
+from gleitzeit import GleitzeitClient
+
+async def test():
+    async with GleitzeitClient() as client:
+        response = await client.chat("Hello", model="llama3.2")
+        print(response)
+
+asyncio.run(test())
+```
+
+## Optional: Redis Setup
+
+For production use with persistence:
 
 ```bash
-# macOS
-brew install redis
+# Install Redis
+brew install redis  # macOS
+apt-get install redis-server  # Ubuntu
+
+# Start Redis
 redis-server
 
-# Ubuntu/Debian
-sudo apt-get install redis-server
-sudo systemctl start redis
-
-# Configure connection
-export GLEITZEIT_REDIS_URL=redis://localhost:6379/0
+# Configure Gleitzeit to use Redis
+export GLEITZEIT_REDIS_URL=redis://localhost:6379
 ```
 
-### Ollama (LLM Support)
+## Next Steps
 
-```bash
-# Install Ollama
-curl -fsSL https://ollama.ai/install.sh | sh
-
-# Start Ollama service
-ollama serve
-
-# Pull a model
-ollama pull llama3.2:latest
-```
-
-### Docker (Isolated Python Execution)
-
-```bash
-# Install Docker Desktop or Docker Engine
-# Verify Docker is running
-docker --version
-
-# Test Docker integration
-gleitzeit run examples/python_only_workflow.yaml
-```
-
-## Configuration
-
-Create configuration file at `~/.gleitzeit/config.yaml`:
-
-```yaml
-persistence:
-  type: auto  # auto|redis|sql|memory
-  redis:
-    url: redis://localhost:6379/0
-  sql:
-    db_path: ~/.gleitzeit/workflows.db
-
-providers:
-  ollama:
-    endpoint: http://localhost:11434
-    default_models:
-      chat: llama3.2:latest
-      vision: llava:latest
-
-batch:
-  max_file_size: 1048576  # 1MB
-  max_concurrent: 5
-```
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Command not found**: Ensure Python's bin directory is in PATH
-2. **Redis connection failed**: Check Redis is running and URL is correct
-3. **Ollama unavailable**: Verify Ollama service is running
-4. **Permission denied**: Check file permissions and Docker access
-
-### Development Setup
-
-```bash
-# Clone repository
-git clone https://github.com/leifmarkthaler/gleitzeit.git
-cd gleitzeit
-
-# Install development dependencies
-uv pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Format code
-black src/ tests/
-ruff check src/ tests/
-
-# Type checking
-mypy src/
-```
+- Read the [Quick Start](quickstart.md) guide
+- Learn about [Core Concepts](concepts.md)
+- Explore [Workflows](workflows.md)
