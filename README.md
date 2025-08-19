@@ -68,9 +68,7 @@ import asyncio
 from gleitzeit import GleitzeitClient
 
 async with GleitzeitClient() as client:
-    # Auto-detects API or native mode
     result = await client.run_workflow("workflow.yaml")
-
 ```
 
 ## Architecture Overview
