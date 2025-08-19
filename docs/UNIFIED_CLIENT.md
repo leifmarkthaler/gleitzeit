@@ -62,7 +62,7 @@ Automatically selects the best execution mode:
 - Falls back to native mode if API is not available
 
 ```python
-async with Client(mode=ClientMode.AUTO) as client:
+async with Client(mode=Client.Mode.AUTO) as client:
     print(f"Selected mode: {client.get_mode()}")
     # Use client normally - it handles mode selection
 ```
@@ -76,7 +76,7 @@ Direct execution using the local ExecutionEngine. Best for:
 - Debugging
 
 ```python
-async with Client(mode=ClientMode.NATIVE) as client:
+async with Client(mode=Client.Mode.NATIVE) as client:
     # Executes directly without any server
     result = await client.execute_task(...)
 ```
@@ -97,7 +97,7 @@ Executes through the REST API server. Best for:
 
 ```python
 async with Client(
-    mode=ClientMode.API,
+    mode=Client.Mode.API,
     api_host="localhost",
     api_port=8000
 ) as client:
@@ -117,7 +117,7 @@ async with Client(
 
 ```python
 Client(
-    mode: ClientMode = ClientMode.AUTO,
+    mode: ClientMode = Client.Mode.AUTO,
     api_host: str = "localhost",
     api_port: int = 8000,
     auto_start_server: bool = True,
@@ -128,7 +128,7 @@ Client(
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `mode` | `ClientMode` | `AUTO` | Execution mode (AUTO, NATIVE, or API) |
+| `mode` | `Client.Mode` | `AUTO` | Execution mode (AUTO, NATIVE, or API) |
 | `api_host` | `str` | `"localhost"` | API server hostname |
 | `api_port` | `int` | `8000` | API server port |
 | `auto_start_server` | `bool` | `True` | Auto-start API server if not running (API/AUTO modes) |
@@ -145,7 +145,7 @@ native_config = {
 }
 
 async with Client(
-    mode=ClientMode.NATIVE,
+    mode=Client.Mode.NATIVE,
     native_config=native_config
 ) as client:
     # Use configured native client
@@ -279,13 +279,13 @@ elif client.is_native_mode:
 
 ```python
 import asyncio
-from gleitzeit import Client, ClientMode
+from gleitzeit import Client
 
 async def development_workflow():
     """Development workflow using native mode for speed"""
     
     # Use native mode for development
-    async with Client(mode=ClientMode.NATIVE) as client:
+    async with Client(mode=Client.Mode.NATIVE) as client:
         print(f"Developing in {client.get_mode()} mode")
         
         # Test Python script
@@ -318,14 +318,14 @@ asyncio.run(development_workflow())
 
 ```python
 import asyncio
-from gleitzeit import Client, ClientMode
+from gleitzeit import Client
 
 async def production_workflow():
     """Production workflow using API mode"""
     
     # Force API mode for production
     async with Client(
-        mode=ClientMode.API,
+        mode=Client.Mode.API,
         api_host="api.production.com",
         api_port=8000,
         auto_start_server=False  # Don't auto-start in production
@@ -390,7 +390,7 @@ asyncio.run(process_documents())
 
 ```python
 import asyncio
-from gleitzeit import Client, ClientMode
+from gleitzeit import Client
 
 async def migrate_from_dev_to_prod():
     """Show how to migrate from development to production"""
@@ -399,7 +399,7 @@ async def migrate_from_dev_to_prod():
     
     # Phase 1: Development with native mode
     print("Phase 1: Development")
-    async with Client(mode=ClientMode.NATIVE) as client:
+    async with Client(mode=Client.Mode.NATIVE) as client:
         result = await client.run_workflow(workflow_file)
         assert result['status'] == 'completed', "Development test failed"
         print("✓ Development test passed")
@@ -407,7 +407,7 @@ async def migrate_from_dev_to_prod():
     # Phase 2: Integration testing with API mode
     print("\nPhase 2: Integration Testing")
     async with Client(
-        mode=ClientMode.API,
+        mode=Client.Mode.API,
         auto_start_server=True
     ) as client:
         result = await client.run_workflow(workflow_file)
@@ -416,7 +416,7 @@ async def migrate_from_dev_to_prod():
     
     # Phase 3: Production with AUTO mode
     print("\nPhase 3: Production")
-    async with Client(mode=ClientMode.AUTO) as client:
+    async with Client(mode=Client.Mode.AUTO) as client:
         print(f"Auto-selected: {client.get_mode()} mode")
         result = await client.run_workflow(workflow_file)
         print(f"✓ Production execution: {result['status']}")
@@ -428,13 +428,13 @@ asyncio.run(migrate_from_dev_to_prod())
 
 ```python
 import asyncio
-from gleitzeit import Client, ClientMode
+from gleitzeit import Client
 
 async def robust_execution():
     """Example with proper error handling"""
     
     try:
-        async with Client(mode=ClientMode.API) as client:
+        async with Client(mode=Client.Mode.API) as client:
             result = await client.execute_task(
                 protocol="python/v1",
                 method="python/execute",
@@ -506,7 +506,7 @@ For production environments, disable auto-start:
 ```python
 # Production configuration
 client = Client(
-    mode=ClientMode.API,
+    mode=Client.Mode.API,
     auto_start_server=False,  # Don't auto-start in production
     keep_server_running=True   # But keep it running if we start it
 )
@@ -517,7 +517,7 @@ client = Client(
 The client is fully typed for better IDE support:
 
 ```python
-from gleitzeit import Client, ClientMode
+from gleitzeit import Client
 from gleitzeit.core.models import TaskResult
 
 async def process() -> TaskResult:
@@ -537,7 +537,7 @@ await engine.submit_task(task)
 await engine.start(ExecutionMode.SINGLE_SHOT)
 
 # New approach
-async with Client(mode=ClientMode.NATIVE) as client:
+async with Client(mode=Client.Mode.NATIVE) as client:
     result = await client.execute_task(
         protocol=task.protocol,
         method=task.method,
@@ -554,7 +554,7 @@ async with GleitzeitAPIClient() as api_client:
     result = await api_client.execute_task(task_dict)
 
 # New approach
-async with Client(mode=ClientMode.API) as client:
+async with Client(mode=Client.Mode.API) as client:
     result = await client.execute_task(
         protocol=task_dict["protocol"],
         method=task_dict["method"],
@@ -570,7 +570,7 @@ async with Client(mode=ClientMode.API) as client:
 ```python
 # Check if server is running
 async with Client(
-    mode=ClientMode.API,
+    mode=Client.Mode.API,
     auto_start_server=True  # Try auto-starting
 ) as client:
     if not client.is_api_mode:
@@ -591,7 +591,7 @@ native_config = {
 }
 
 async with Client(
-    mode=ClientMode.NATIVE,
+    mode=Client.Mode.NATIVE,
     native_config=native_config
 ) as client:
     # Providers will be configured with these settings

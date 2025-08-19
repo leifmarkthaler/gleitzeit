@@ -63,7 +63,10 @@ class GleitzeitClient:
             result = await client.run_workflow("workflow.yaml")
     """
     
-    # Mode constants for convenience
+    # Make ClientMode available as a class attribute
+    Mode = ClientMode
+    
+    # Mode constants for convenience (string versions)
     API = "api"
     NATIVE = "native"
     AUTO = "auto"
