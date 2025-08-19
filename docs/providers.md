@@ -197,63 +197,76 @@ parameters:
 
 ### TemplateProvider
 
-Renders Jinja2 templates.
+Generates pre-built workflow templates for common multi-step patterns.
 
 **Protocol:** `template/v1`
 
+**Purpose:** Provides convenience templates that automatically create complex workflows with proper dependencies and parameter substitution.
+
 **Methods:**
 
-#### template/render
+#### template/research
 
-Render a template with context.
-
-```yaml
-method: "template/render"
-parameters:
-  template: |
-    # Report for {{ date }}
-    
-    ## Summary
-    Total items: {{ total }}
-    Average value: {{ average }}
-    
-    ## Items
-    {% for item in items %}
-    - {{ item.name }}: {{ item.value }}
-    {% endfor %}
-  context:
-    date: "2024-08-19"
-    total: 100
-    average: 25.5
-    items:
-      - name: "Item A"
-        value: 30
-      - name: "Item B"
-        value: 20
-```
-
-#### template/execute
-
-Render template and execute as workflow.
+Generate a multi-step research workflow.
 
 ```yaml
-method: "template/execute"
+method: "template/research"
 parameters:
-  template: |
-    name: "Generated Workflow"
-    tasks:
-      {% for topic in topics %}
-      - id: "analyze_{{ loop.index }}"
-        method: "llm/chat"
-        parameters:
-          model: "llama3.2"
-          messages:
-            - role: "user"
-              content: "Analyze: {{ topic }}"
-      {% endfor %}
-  context:
-    topics: ["AI", "ML", "Deep Learning"]
+  topic: "Quantum Computing"     # Required: Research topic
+  max_steps: 5                   # Optional: Number of research steps
+  depth: "medium"                 # Optional: Research depth (shallow/medium/deep)
 ```
+
+Creates a workflow that:
+1. Plans research strategy
+2. Gathers background information
+3. Analyzes current trends
+4. Performs analysis and implications
+5. Generates comprehensive research report
+
+#### template/code
+
+Generate a code development workflow.
+
+```yaml
+method: "template/code"
+parameters:
+  task: "Create a REST API for user management"  # Required: Coding task
+  language: "python"                              # Optional: Programming language
+```
+
+Creates a workflow that:
+1. Analyzes requirements and plans approach
+2. Generates initial code
+3. Tests and validates code (for Python)
+4. Reviews and optimizes code
+5. Generates documentation
+
+#### template/analyze
+
+Generate a content analysis workflow.
+
+```yaml
+method: "template/analyze"
+parameters:
+  content: "Long document text..."              # Required: Content to analyze
+  question: "What are the key insights?"        # Optional: Specific question
+```
+
+Creates a single-step analysis workflow that provides structured analysis of the content.
+
+#### template/chat
+
+Generate a simple chat workflow.
+
+```yaml
+method: "template/chat"
+parameters:
+  message: "Hello, how are you?"               # Required: Chat message
+  session_id: "session_123"                    # Optional: Session identifier
+```
+
+Creates a single-step chat interaction workflow.
 
 ## Provider Configuration
 
@@ -475,21 +488,44 @@ tasks:
       messages:
         - content: "Analyze: ${generate.data}"
   
-  # Format with template
-  - id: "format"
-    method: "template/render"
+  # Use MCP tool for calculation
+  - id: "calculate"
+    method: "mcp/tool.add"
     dependencies: ["analyze"]
     parameters:
-      template: |
-        # Analysis Report
-        {{ analysis }}
-      context:
-        analysis: "${analyze.response}"
+      a: 100
+      b: 50
   
-  # Use MCP tool
-  - id: "notify"
-    method: "mcp/tool.echo"
-    dependencies: ["format"]
+  # Generate final report
+  - id: "report"
+    method: "llm/chat"
+    dependencies: ["analyze", "calculate"]
     parameters:
-      message: "Analysis complete"
+      model: "llama3.2"
+      messages:
+        - content: |
+            Create a report with:
+            Analysis: ${analyze.response}
+            Calculation result: ${calculate.result}
+```
+
+### Using Template Provider
+
+```yaml
+name: "Template Provider Example"
+tasks:
+  # Generate a complete research workflow
+  - id: "research_workflow"
+    method: "template/research"
+    parameters:
+      topic: "Artificial Intelligence in Healthcare"
+      depth: "deep"
+      max_steps: 5
+  
+  # Or generate a code development workflow
+  - id: "code_workflow"
+    method: "template/code"
+    parameters:
+      task: "Create a Python script to parse CSV files"
+      language: "python"
 ```

@@ -90,9 +90,13 @@ python:
 
 # Template provider settings
 template:
-  cache_compiled: true
-  strict_undefined: false
-  auto_reload: true
+  default_depth: "medium"  # shallow, medium, deep
+  max_research_steps: 5
+  code_languages:
+    - python
+    - javascript
+    - java
+  enable_testing: true  # Enable code testing for supported languages
 
 # Batch processing
 batch:

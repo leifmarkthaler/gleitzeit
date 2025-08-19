@@ -2,7 +2,7 @@
 
 ## Overview
 
-Gleitzeit orchestrates workflows by executing tasks in sequence or parallel. Each task uses a provider to perform specific operations like LLM chat, Python execution, or template rendering.
+Gleitzeit orchestrates workflows by executing tasks in sequence or parallel. Each task uses a provider to perform specific operations like LLM chat, Python execution, or workflow template generation.
 
 ## Key Components
 
@@ -33,7 +33,7 @@ Providers implement protocols and execute tasks. Built-in providers:
 - **OllamaProvider**: LLM operations via Ollama
 - **PythonProvider**: Python script execution
 - **SimpleMCPProvider**: Model Context Protocol tools
-- **TemplateProvider**: Jinja2 template rendering
+- **TemplateProvider**: Pre-built workflow template generation
 
 ### Protocols
 
@@ -41,7 +41,7 @@ Protocols define the interface between tasks and providers. Each protocol specif
 - **llm/v1**: Language model operations
 - **python/v1**: Python execution
 - **mcp/v1**: MCP tool usage
-- **template/v1**: Template rendering
+- **template/v1**: Workflow template generation
 
 ## Execution Model
 

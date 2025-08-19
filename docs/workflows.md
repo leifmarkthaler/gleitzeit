@@ -290,22 +290,19 @@ tasks:
       timeout: 60
 ```
 
-### Template Rendering
+### Workflow Template Generation
 
 ```yaml
 tasks:
-  - id: "render"
-    method: "template/render"
+  - id: "generate_research"
+    method: "template/research"
     parameters:
-      template: |
-        # Report for {{ date }}
-        Total: {{ total }}
-        Average: {{ average }}
-      context:
-        date: "2024-08-19"
-        total: 100
-        average: 25
+      topic: "Machine Learning Trends"
+      depth: "deep"
+      max_steps: 5
 ```
+
+This generates a complete multi-step research workflow.
 
 ### Vision Analysis
 
@@ -453,22 +450,22 @@ tasks:
         - content: "Review code quality: ${input.text}"
   
   - id: "combine"
-    method: "template/render"
+    method: "llm/chat"
     dependencies: ["fast_analysis", "detailed_analysis", "code_review"]
     parameters:
-      template: |
-        # Analysis Report
-        
-        ## Quick Analysis
-        {{ fast }}
-        
-        ## Detailed Analysis
-        {{ detailed }}
-        
-        ## Code Review
-        {{ code }}
-      context:
-        fast: "${fast_analysis.response}"
-        detailed: "${detailed_analysis.response}"
-        code: "${code_review.response}"
+      model: "llama3.2"
+      messages:
+        - role: "system"
+          content: "You are a report generator. Create well-formatted reports."
+        - role: "user"
+          content: |
+            Create a comprehensive analysis report combining:
+            
+            Quick Analysis: ${fast_analysis.response}
+            
+            Detailed Analysis: ${detailed_analysis.response}
+            
+            Code Review: ${code_review.response}
+            
+            Format as a professional report with sections.
 ```
