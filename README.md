@@ -1,6 +1,6 @@
 # Gleitzeit
 
-A workflow orchestration system for coordinating LLM tasks, Python code execution, and tool integrations. 
+A workflow orchestration system for coordinating LLM tasks, Python code execution, and tool integrations.
 Supports parallel task execution, dependency management, and batch file processing.
 
 ## Quick Start
