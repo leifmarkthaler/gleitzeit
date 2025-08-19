@@ -36,6 +36,13 @@ from gleitzeit.providers.template_provider import TemplateProvider
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1, TEMPLATE_PROTOCOL_V1
 from gleitzeit.persistence.factory import PersistenceFactory, PersistenceType
 from gleitzeit.core.batch_processor import BatchProcessor, BatchResult
+from gleitzeit.common.shutdown import unified_shutdown
+
+# Import hub system for resource management
+from gleitzeit.hub.resource_manager import ResourceManager
+from gleitzeit.hub.ollama_hub import OllamaHub
+from gleitzeit.hub.docker_hub import DockerHub
+from gleitzeit.hub.base import ResourceStatus
 
 # Import error formatter
 from gleitzeit.core.error_formatter import set_debug_mode, get_clean_logger
@@ -100,8 +107,8 @@ class GleitzeitCLI:
                 }
             }
     
-    async def _setup_system(self) -> bool:
-        """Set up the execution system"""
+    async def _setup_system(self, enable_resource_management: bool = True) -> bool:
+        """Set up the execution system with hub architecture"""
         try:
             # Initialize unified persistence backend
             # This will automatically try Redis -> SQL -> Memory fallback chain
@@ -144,28 +151,79 @@ class GleitzeitCLI:
                 max_concurrent_tasks=max_concurrent
             )
             
-            # Register protocols and providers
+            # Initialize Resource Management (Hub Architecture)
+            ollama_hub = None
+            docker_hub = None
+            
+            if enable_resource_management:
+                try:
+                    # Initialize ResourceManager
+                    self.resource_manager = ResourceManager("cli-resources")
+                    
+                    # Create and add OllamaHub
+                    provider_config = self.config.get('providers', {})
+                    ollama_config = provider_config.get('ollama', {})
+                    if ollama_config.get('enabled', True):
+                        ollama_hub = OllamaHub(
+                            hub_id="ollama-hub",
+                            auto_discover=True,  # Auto-discover running Ollama instances
+                            persistence=self.persistence_backend
+                        )
+                        await ollama_hub.initialize()
+                        await self.resource_manager.add_hub("ollama", ollama_hub)
+                        click.echo("✓ OllamaHub initialized with auto-discovery")
+                    
+                    # Create and add DockerHub if configured
+                    docker_config = provider_config.get('docker', {})
+                    if docker_config.get('enabled', False):
+                        docker_hub = DockerHub(
+                            hub_id="docker-hub",
+                            max_instances=docker_config.get('max_instances', 5),
+                            persistence=self.persistence_backend
+                        )
+                        await docker_hub.initialize()
+                        await self.resource_manager.add_hub("docker", docker_hub)
+                        click.echo("✓ DockerHub initialized")
+                    
+                    await self.resource_manager.start()
+                    click.echo("✓ Resource management enabled")
+                except Exception as e:
+                    click.echo(f"⚠️  Resource management initialization failed: {e}")
+                    self.resource_manager = None
+            else:
+                self.resource_manager = None
+            
+            # Register protocols and providers with hub support
             provider_config = self.config.get('providers', {})
             
             # Python provider
             python_config = provider_config.get('python', {})
             if python_config.get('enabled', True):
                 registry.register_protocol(PYTHON_PROTOCOL_V1)
-                python_provider = PythonProvider("cli-python-provider", allow_local=True)
+                python_provider = PythonProvider(
+                    "cli-python-provider",
+                    allow_local=True,
+                    resource_manager=self.resource_manager,
+                    hub=docker_hub  # Python provider can use Docker hub for isolation
+                )
                 await python_provider.initialize()
                 registry.register_provider("cli-python-provider", "python/v1", python_provider)
                 click.echo("✓ Python provider registered")
             
-            # Ollama provider
+            # Ollama provider with hub
             ollama_config = provider_config.get('ollama', {})
             if ollama_config.get('enabled', True):
                 try:
                     registry.register_protocol(LLM_PROTOCOL_V1)
-                    ollama_endpoint = ollama_config.get('endpoint', 'http://localhost:11434')
-                    ollama_provider = OllamaProvider("cli-ollama-provider", auto_discover=False)
+                    ollama_provider = OllamaProvider(
+                        "cli-ollama-provider",
+                        auto_discover=False,  # Hub handles discovery
+                        resource_manager=self.resource_manager,
+                        hub=ollama_hub
+                    )
                     await ollama_provider.initialize()
                     registry.register_provider("cli-ollama-provider", "llm/v1", ollama_provider)
-                    click.echo("✓ Ollama provider registered")
+                    click.echo("✓ Ollama provider registered with hub")
                 except Exception as e:
                     click.echo(f"⚠️  Ollama provider failed to initialize: {e}")
             
@@ -174,7 +232,11 @@ class GleitzeitCLI:
             if mcp_config.get('enabled', True):
                 try:
                     registry.register_protocol(MCP_PROTOCOL_V1)
-                    mcp_provider = SimpleMCPProvider("cli-mcp-provider")
+                    mcp_provider = SimpleMCPProvider(
+                        "cli-mcp-provider",
+                        resource_manager=self.resource_manager,
+                        hub=None  # MCP doesn't use a specific hub
+                    )
                     await mcp_provider.initialize()
                     registry.register_provider("cli-mcp-provider", "mcp/v1", mcp_provider)
                     click.echo("✓ MCP provider registered")
@@ -186,7 +248,12 @@ class GleitzeitCLI:
             if template_config.get('enabled', True):
                 try:
                     registry.register_protocol(TEMPLATE_PROTOCOL_V1)
-                    template_provider = TemplateProvider("cli-template-provider", execution_engine=self.execution_engine)
+                    template_provider = TemplateProvider(
+                        "cli-template-provider",
+                        execution_engine=self.execution_engine,
+                        resource_manager=self.resource_manager,
+                        hub=None  # Template provider doesn't use a specific hub
+                    )
                     await template_provider.initialize()
                     registry.register_provider("cli-template-provider", "template/v1", template_provider)
                     click.echo("✓ Template provider registered")
@@ -280,19 +347,18 @@ class GleitzeitCLI:
                 click.echo(f"      Result: {display_text}")
     
     async def _shutdown_system(self):
-        """Clean shutdown of the system"""
+        """Clean shutdown of the system including hubs and resource manager"""
+        # Use unified shutdown
+        await unified_shutdown(
+            execution_engine=self.execution_engine,
+            resource_manager=self.resource_manager,
+            persistence_backend=self.persistence_backend,
+            verbose=False  # CLI uses click.echo for output
+        )
         
-        # Shutdown all providers
-        if self.execution_engine and self.execution_engine.registry:
-            for provider_id, provider_instance in self.execution_engine.registry.provider_instances.items():
-                if hasattr(provider_instance, 'shutdown'):
-                    await provider_instance.shutdown()
-                elif hasattr(provider_instance, 'cleanup'):
-                    await provider_instance.cleanup()
-        
-        # Shutdown persistence backend
-        if self.persistence_backend:
-            await self.persistence_backend.shutdown()
+        # CLI-specific output for resource manager
+        if self.resource_manager:
+            click.echo("✓ Resource manager stopped")
 
 
 # CLI instance
@@ -338,26 +404,31 @@ def cli(verbose: bool, debug: bool):
 @click.option('--port', default=8000, type=int, help='API server port (default: 8000)')
 @click.option('--local', is_flag=True, help='Run locally without API server')
 @click.option('--no-auto-start', is_flag=True, help='Do not auto-start API server if not running')
-def run(workflow_file: str, watch: bool, host: str, port: int, local: bool, no_auto_start: bool):
+@click.option('--no-resource-management', is_flag=True, help='Disable hub-based resource management')
+@click.option('--auto-discover', is_flag=True, default=True, help='Auto-discover Ollama instances (default: True)')
+def run(workflow_file: str, watch: bool, host: str, port: int, local: bool, no_auto_start: bool, 
+        no_resource_management: bool, auto_discover: bool):
     """Execute a workflow from a YAML or JSON file (via API by default)"""
     if local:
-        # Use the old local execution mode
-        return asyncio.run(_run_workflow_local(workflow_file, watch))
+        # Use the old local execution mode with optional resource management
+        enable_rm = not no_resource_management
+        return asyncio.run(_run_workflow_local(workflow_file, watch, enable_resource_management=enable_rm))
     else:
         # Use API mode (default) - auto-start server by default unless --no-auto-start is used
         auto_start = not no_auto_start
         return asyncio.run(_run_workflow_api(workflow_file, watch, host, port, auto_start))
 
 
-async def _run_workflow_local(workflow_file: str, watch: bool, backend: Optional[str] = None):
-    """Execute workflow locally (old implementation)"""
+async def _run_workflow_local(workflow_file: str, watch: bool, backend: Optional[str] = None, 
+                             enable_resource_management: bool = True):
+    """Execute workflow locally with hub-based resource management"""
     try:
         # Override backend if specified
         if backend:
             cli_instance.config['persistence']['backend'] = backend
         
-        # Setup system
-        if not await cli_instance._setup_system():
+        # Setup system with resource management option
+        if not await cli_instance._setup_system(enable_resource_management=enable_resource_management):
             return
         
         # Use the unified workflow loader
@@ -588,18 +659,19 @@ async def _run_workflow_api(workflow_file: str, watch: bool, host: str, port: in
 @cli.command()
 @click.option('--backend', type=click.Choice(['sqlite', 'redis']), 
               help='Persistence backend to query')
-def status(backend: Optional[str]):
+@click.option('--resources', is_flag=True, help='Show resource manager status')
+def status(backend: Optional[str], resources: bool):
     """Show system status and recent workflows"""
-    return asyncio.run(_show_status(backend))
+    return asyncio.run(_show_status(backend, resources))
 
 
-async def _show_status(backend: Optional[str]):
-    """Show status implementation"""
+async def _show_status(backend: Optional[str], resources: bool = False):
+    """Show status implementation with optional resource information"""
     try:
         if backend:
             cli_instance.config['persistence']['backend'] = backend
         
-        if not await cli_instance._setup_system():
+        if not await cli_instance._setup_system(enable_resource_management=resources):
             return
         
         click.echo("📊 Gleitzeit V4 System Status")
@@ -625,6 +697,38 @@ async def _show_status(backend: Optional[str]):
                     click.echo(f"   ✅ {task.name} ({task.protocol})")
         except Exception as e:
             click.echo(f"   ⚠️  Could not load recent tasks: {e}")
+        
+        # Show resource manager status if requested
+        if resources and cli_instance.resource_manager:
+            click.echo("\n🔧 Resource Manager Status:")
+            try:
+                metrics = await cli_instance.resource_manager.get_global_metrics()
+                click.echo(f"   Total resources: {metrics.get('total_resources', 0)}")
+                click.echo(f"   Active resources: {metrics.get('active_resources', 0)}")
+                
+                # Show hub-specific information
+                hubs = await cli_instance.resource_manager.get_hubs()
+                for hub_name, hub in hubs.items():
+                    # Get instance count and health info
+                    instances = await hub.list_instances()
+                    healthy_count = sum(1 for i in instances if i.status == ResourceStatus.HEALTHY)
+                    
+                    click.echo(f"\n   📦 {hub_name.upper()} Hub:")
+                    click.echo(f"      Instances: {len(instances)}")
+                    click.echo(f"      Healthy: {healthy_count}")
+                    
+                    # Get aggregated metrics if available
+                    try:
+                        metrics_summary = await hub.get_metrics_summary()
+                        if metrics_summary:
+                            if 'total_cpu' in metrics_summary:
+                                click.echo(f"      Total CPU: {metrics_summary['total_cpu']:.1f}%")
+                            if 'total_memory' in metrics_summary:
+                                click.echo(f"      Total Memory: {metrics_summary['total_memory']:.0f} MB")
+                    except Exception:
+                        pass  # Metrics not available
+            except Exception as e:
+                click.echo(f"   ⚠️  Could not load resource metrics: {e}")
         
     except Exception as e:
         click.echo(f"❌ Status check failed: {e}")
@@ -800,9 +904,12 @@ def config():
 @click.option('--model', default='llama3.2:latest', help='Model to use')
 @click.option('--vision', is_flag=True, help='Use vision model for images')
 @click.option('--output', type=click.Path(), help='Save results to file')
-def batch(directory: str, pattern: str, prompt: str, model: str, vision: bool, output: Optional[str]):
+@click.option('--no-resource-management', is_flag=True, help='Disable hub-based resource management')
+def batch(directory: str, pattern: str, prompt: str, model: str, vision: bool, output: Optional[str], 
+          no_resource_management: bool):
     """Process multiple files in batch"""
-    return asyncio.run(_batch_process(directory, pattern, prompt, model, vision, output))
+    enable_rm = not no_resource_management
+    return asyncio.run(_batch_process(directory, pattern, prompt, model, vision, output, enable_rm))
 
 
 @cli.command()
@@ -847,10 +954,11 @@ def serve(host: str, port: int, reload: bool, workers: int):
         sys.exit(1)
 
 
-async def _batch_process(directory: str, pattern: str, prompt: str, model: str, vision: bool, output: Optional[str]):
-    """Process files in batch using BatchProcessor"""
+async def _batch_process(directory: str, pattern: str, prompt: str, model: str, vision: bool, 
+                        output: Optional[str], enable_resource_management: bool = True):
+    """Process files in batch using BatchProcessor with hub architecture"""
     try:
-        if not await cli_instance._setup_system():
+        if not await cli_instance._setup_system(enable_resource_management=enable_resource_management):
             return
         
         click.echo(f"📁 Scanning directory: {directory}")

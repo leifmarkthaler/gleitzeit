@@ -33,6 +33,12 @@ from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCO
 from gleitzeit.persistence.factory import PersistenceFactory
 from gleitzeit.core.batch_processor import BatchProcessor
 from gleitzeit.core.workflow_loader import load_workflow_from_file, validate_workflow
+from gleitzeit.common.shutdown import unified_shutdown
+
+# Hub architecture imports
+from gleitzeit.hub.resource_manager import ResourceManager
+from gleitzeit.hub.ollama_hub import OllamaHub
+from gleitzeit.hub.docker_hub import DockerHub
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -120,6 +126,9 @@ class AppState:
         self.persistence_backend = None
         self.registry: Optional[ProtocolProviderRegistry] = None
         self.batch_processor: Optional[BatchProcessor] = None
+        self.resource_manager: Optional[ResourceManager] = None
+        self.ollama_hub: Optional[OllamaHub] = None
+        self.docker_hub: Optional[DockerHub] = None
         self.active_workflows: Dict[str, WorkflowResponse] = {}
         self.active_tasks: Dict[str, TaskResponse] = {}
         self.start_time = datetime.now()
@@ -150,7 +159,7 @@ app = FastAPI(
 
 
 async def setup_system():
-    """Initialize the Gleitzeit system"""
+    """Initialize the Gleitzeit system with hub architecture"""
     try:
         # Initialize persistence
         app_state.persistence_backend = await PersistenceFactory.create()
@@ -169,7 +178,37 @@ async def setup_system():
             max_concurrent_tasks=5
         )
         
-        # Register protocols and providers
+        # Initialize Resource Management (Hub Architecture)
+        try:
+            app_state.resource_manager = ResourceManager("api-resources")
+            
+            # Create and add OllamaHub with auto-discovery
+            app_state.ollama_hub = OllamaHub(
+                hub_id="ollama-hub",
+                auto_discover=True,  # Auto-discover running Ollama instances
+                persistence=app_state.persistence_backend
+            )
+            await app_state.ollama_hub.initialize()
+            await app_state.resource_manager.add_hub("ollama", app_state.ollama_hub)
+            logger.info("OllamaHub initialized with auto-discovery")
+            
+            # Optionally create DockerHub if Docker is available
+            # app_state.docker_hub = DockerHub(
+            #     hub_id="docker-hub",
+            #     max_instances=5,
+            #     persistence=app_state.persistence_backend
+            # )
+            # await app_state.docker_hub.initialize()
+            # await app_state.resource_manager.add_hub("docker", app_state.docker_hub)
+            
+            await app_state.resource_manager.start()
+            logger.info("Resource management enabled")
+        except Exception as e:
+            logger.warning(f"Resource management initialization failed: {e}")
+            app_state.resource_manager = None
+            app_state.ollama_hub = None
+        
+        # Register protocols and providers with hub support
         await register_providers()
         
         # Initialize batch processor
@@ -186,33 +225,47 @@ async def setup_system():
 
 
 async def register_providers():
-    """Register all protocol providers"""
+    """Register all protocol providers with hub support"""
     registry = app_state.registry
     
     # Python provider
     try:
         registry.register_protocol(PYTHON_PROTOCOL_V1)
-        python_provider = PythonProvider("api-python-provider", allow_local=True)
+        python_provider = PythonProvider(
+            "api-python-provider",
+            allow_local=True,
+            resource_manager=app_state.resource_manager,
+            hub=app_state.docker_hub  # Python can use Docker hub if available
+        )
         await python_provider.initialize()
         registry.register_provider("api-python-provider", "python/v1", python_provider)
         logger.info("Python provider registered")
     except Exception as e:
         logger.warning(f"Python provider registration failed: {e}")
     
-    # Ollama provider
+    # Ollama provider with hub
     try:
         registry.register_protocol(LLM_PROTOCOL_V1)
-        ollama_provider = OllamaProvider("api-ollama-provider", auto_discover=False)
+        ollama_provider = OllamaProvider(
+            "api-ollama-provider",
+            auto_discover=False,  # Hub handles discovery
+            resource_manager=app_state.resource_manager,
+            hub=app_state.ollama_hub
+        )
         await ollama_provider.initialize()
         registry.register_provider("api-ollama-provider", "llm/v1", ollama_provider)
-        logger.info("Ollama provider registered")
+        logger.info("Ollama provider registered with hub")
     except Exception as e:
         logger.warning(f"Ollama provider registration failed: {e}")
     
     # MCP provider
     try:
         registry.register_protocol(MCP_PROTOCOL_V1)
-        mcp_provider = SimpleMCPProvider("api-mcp-provider")
+        mcp_provider = SimpleMCPProvider(
+            "api-mcp-provider",
+            resource_manager=app_state.resource_manager,
+            hub=None  # MCP doesn't use a specific hub
+        )
         await mcp_provider.initialize()
         registry.register_provider("api-mcp-provider", "mcp/v1", mcp_provider)
         logger.info("MCP provider registered")
@@ -222,7 +275,12 @@ async def register_providers():
     # Template provider
     try:
         registry.register_protocol(TEMPLATE_PROTOCOL_V1)
-        template_provider = TemplateProvider("api-template-provider", execution_engine=app_state.execution_engine)
+        template_provider = TemplateProvider(
+            "api-template-provider",
+            execution_engine=app_state.execution_engine,
+            resource_manager=app_state.resource_manager,
+            hub=None  # Template provider doesn't use a specific hub
+        )
         await template_provider.initialize()
         registry.register_provider("api-template-provider", "template/v1", template_provider)
         logger.info("Template provider registered")
@@ -231,16 +289,15 @@ async def register_providers():
 
 
 async def cleanup_system():
-    """Clean up system resources"""
-    # Clean up providers
-    if app_state.execution_engine and app_state.registry:
-        for provider_id, provider in app_state.registry.provider_instances.items():
-            if hasattr(provider, 'shutdown'):
-                await provider.shutdown()
-    
-    # Shutdown persistence
-    if app_state.persistence_backend:
-        await app_state.persistence_backend.shutdown()
+    """Clean up system resources including hubs and resource manager"""
+    # Use unified shutdown
+    await unified_shutdown(
+        execution_engine=app_state.execution_engine,
+        resource_manager=app_state.resource_manager,
+        persistence_backend=app_state.persistence_backend,
+        registry=app_state.registry,
+        verbose=True  # Log info messages
+    )
 
 
 # API Endpoints
@@ -286,6 +343,65 @@ async def get_status():
         task_statistics=task_stats,
         uptime_seconds=uptime
     )
+
+
+@app.get("/resources")
+async def get_resources_status():
+    """Get resource manager and hub status"""
+    if not app_state.resource_manager:
+        return JSONResponse(
+            status_code=200,
+            content={"message": "Resource management not enabled"}
+        )
+    
+    result = {
+        "resource_manager": {
+            "id": app_state.resource_manager.manager_id,
+            "running": app_state.resource_manager.running,
+            "stats": app_state.resource_manager.stats
+        },
+        "hubs": {}
+    }
+    
+    # Get hub information
+    hubs = await app_state.resource_manager.get_hubs()
+    for hub_name, hub in hubs.items():
+        instances = await hub.list_instances()
+        from gleitzeit.hub.base import ResourceStatus
+        healthy_count = sum(1 for i in instances if i.status == ResourceStatus.HEALTHY)
+        
+        result["hubs"][hub_name] = {
+            "hub_id": hub.hub_id,
+            "resource_type": hub.resource_type.value,
+            "total_instances": len(instances),
+            "healthy_instances": healthy_count,
+            "instances": [
+                {
+                    "id": inst.id,
+                    "name": inst.name,
+                    "status": inst.status.value,
+                    "endpoint": inst.endpoint
+                }
+                for inst in instances
+            ]
+        }
+        
+        # Try to get metrics if available
+        try:
+            metrics_summary = await hub.get_metrics_summary()
+            if metrics_summary:
+                result["hubs"][hub_name]["metrics"] = metrics_summary
+        except:
+            pass
+    
+    # Get global metrics
+    try:
+        global_metrics = await app_state.resource_manager.get_global_metrics()
+        result["global_metrics"] = global_metrics
+    except:
+        pass
+    
+    return JSONResponse(content=result)
 
 
 @app.post("/workflows", response_model=WorkflowResponse)
@@ -512,6 +628,35 @@ async def get_task_status(task_id: str):
         raise HTTPException(status_code=404, detail="Task not found")
     
     return app_state.active_tasks[task_id]
+
+
+@app.delete("/tasks/{task_id}")
+async def cancel_task(task_id: str):
+    """Cancel a running task"""
+    if not app_state.execution_engine:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    if task_id not in app_state.active_tasks:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    # Try to cancel the task
+    try:
+        # Mark task as cancelled in active tasks
+        task_response = app_state.active_tasks.get(task_id)
+        if task_response and task_response.status in ["pending", "running"]:
+            task_response.status = "cancelled"
+            task_response.completed_at = datetime.now()
+            
+            # Try to cancel in execution engine if it has the method
+            if hasattr(app_state.execution_engine, 'cancel_task'):
+                await app_state.execution_engine.cancel_task(task_id)
+            
+            return {"message": f"Task {task_id} cancelled", "status": "cancelled"}
+        else:
+            return {"message": f"Task {task_id} already completed", "status": task_response.status}
+    except Exception as e:
+        logger.error(f"Failed to cancel task {task_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to cancel task: {str(e)}")
 
 
 

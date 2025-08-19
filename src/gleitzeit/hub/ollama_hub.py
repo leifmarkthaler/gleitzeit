@@ -326,13 +326,12 @@ class OllamaHub(ResourceHub[OllamaConfig]):
         from gleitzeit.hub.base import ResourceMetrics
         
         metrics = ResourceMetrics(
-            cpu_usage=0.0,
-            memory_usage=0.0,
-            gpu_usage=0.0,
+            cpu_percent=0.0,
+            memory_percent=0.0,
+            memory_mb=0.0,
             request_count=0,
             error_count=0,
-            average_latency=0.0,
-            active_requests=0
+            avg_response_time_ms=0.0
         )
         
         # If we have tracked metrics, use them

@@ -94,6 +94,10 @@ class ResourceManager:
         """Get a hub by ID"""
         return self.hubs.get(hub_id)
     
+    async def get_hubs(self) -> Dict[str, ResourceHub]:
+        """Get all registered hubs"""
+        return self.hubs.copy()
+    
     async def create_ollama_hub(
         self,
         hub_id: str = "ollama",

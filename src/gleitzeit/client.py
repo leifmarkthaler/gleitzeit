@@ -28,6 +28,7 @@ from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
 from gleitzeit.providers.template_provider import TemplateProvider
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1, TEMPLATE_PROTOCOL_V1
 from gleitzeit.core.batch_processor import BatchProcessor
+from gleitzeit.common.shutdown import unified_shutdown
 from gleitzeit.api.client import GleitzeitAPIClient
 # Resource management is now handled via hub system
 
@@ -185,15 +186,13 @@ class GleitzeitClient:
             elif self._we_started_server and self.keep_server_running:
                 logger.info(f"Keeping API server running at {self.api_url}")
         else:
-            if self._resource_manager:
-                await self._resource_manager.stop()
-            if self._execution_engine:
-                # Shutdown providers
-                for provider_id, provider in self._execution_engine.registry.provider_instances.items():
-                    if hasattr(provider, 'shutdown'):
-                        await provider.shutdown()
-            if self._persistence_backend:
-                await self._persistence_backend.shutdown()
+            # Native mode shutdown - use unified shutdown
+            await unified_shutdown(
+                execution_engine=self._execution_engine,
+                resource_manager=self._resource_manager,
+                persistence_backend=self._persistence_backend,
+                verbose=True  # Log info messages
+            )
                 
     async def _check_api_available(self) -> bool:
         """Check if API server is available"""
@@ -286,7 +285,7 @@ class GleitzeitClient:
         self._batch_processor = BatchProcessor()
         
         # Initialize resource manager and hubs BEFORE registering providers
-        if self.native_config.get('enable_resource_management', False):
+        if self.native_config.get('enable_resource_management', True):  # Default to True for consistency
             from gleitzeit.hub.resource_manager import ResourceManager
             from gleitzeit.hub.ollama_hub import OllamaHub
             
@@ -295,7 +294,8 @@ class GleitzeitClient:
             # Create and add OllamaHub
             self._ollama_hub = OllamaHub(
                 hub_id="ollama-hub",
-                auto_discover=True  # Auto-discover running Ollama instances
+                auto_discover=True,  # Auto-discover running Ollama instances
+                persistence=self._persistence_adapter  # Pass persistence for consistency
             )
             await self._ollama_hub.initialize()
             await self._resource_manager.add_hub("ollama", self._ollama_hub)
