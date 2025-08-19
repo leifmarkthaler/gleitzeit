@@ -41,6 +41,8 @@ class PythonProvider(ProtocolProvider):
         protocol_id: str = "python/v1",
         allow_local: bool = True,
         trusted_dirs: Optional[List[str]] = None,
+        resource_manager=None,  # Accept resource_manager
+        hub=None,  # Accept hub (DockerHub)
         **kwargs  # Accept and ignore other params for compatibility
     ):
         """
@@ -51,13 +53,17 @@ class PythonProvider(ProtocolProvider):
             protocol_id: Protocol this provider implements
             allow_local: Allow local execution of trusted files
             trusted_dirs: List of directories containing trusted code
+            resource_manager: Optional ResourceManager for Docker allocation
+            hub: Optional DockerHub for container execution
             **kwargs: Additional arguments for compatibility
         """
         super().__init__(
             provider_id=provider_id,
             protocol_id=protocol_id,
             name="Python Provider",
-            description="Execute Python files locally or in containers"
+            description="Execute Python files locally or in containers",
+            resource_manager=resource_manager,
+            hub=hub
         )
         
         self.allow_local = allow_local

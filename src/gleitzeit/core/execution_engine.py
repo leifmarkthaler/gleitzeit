@@ -700,84 +700,69 @@ class ExecutionEngine:
     
     async def _route_task_to_provider(self, task: Task, params: Dict[str, Any]) -> Any:
         """Route task to appropriate protocol provider"""
-        try:
-            # Check if pooling adapter is available and supports this protocol
-            if (self.pooling_adapter and 
-                hasattr(self.pooling_adapter, 'is_protocol_available') and
-                self.pooling_adapter.is_protocol_available(task.protocol)):
-                
-                # Use pooling adapter for execution
-                logger.debug(f"Routing task {task.id} via pooling adapter")
-                
-                # Execute via pooling system
-                task_result = await self.pooling_adapter.execute_task(task)
-                
-                # Handle the result and check workflow completion
-                if task_result.status == TaskStatus.COMPLETED:
-                    # Save result to persistence BEFORE checking workflow completion
-                    # This ensures the dependency resolution can find the completed task
-                    if self.persistence:
-                        await self.persistence.save_task_result(task_result)
-                    
-                    # Also store in memory for consistency
-                    self.task_results[task.id] = task_result
-                    
-                    # Now check if workflow is complete and process dependencies
-                    if task.workflow_id:
-                        await self._check_workflow_completion(task.workflow_id)
-                    
-                    return task_result
-                else:
-                    error_msg = task_result.error or "Task execution failed via pooling"
-                    raise TaskError(
-                        message=error_msg,
-                        code=ErrorCode.TASK_EXECUTION_FAILED,
-                        task_id=task.id
-                    )
+        # Check if pooling adapter is available and supports this protocol
+        if (self.pooling_adapter and 
+            hasattr(self.pooling_adapter, 'is_protocol_available') and
+            self.pooling_adapter.is_protocol_available(task.protocol)):
             
-            # Fallback to direct registry execution
-            logger.debug(f"Routing task {task.id} via direct registry")
+            # Use pooling adapter for execution
+            logger.debug(f"Routing task {task.id} via pooling adapter")
             
-            # Create JSON-RPC request
-            jsonrpc_request = JSONRPCRequest(
-                method=task.method,
-                params=params,
-                id=task.id
-            )
+            # Execute via pooling system
+            task_result = await self.pooling_adapter.execute_task(task)
             
-            # Execute request via registry
-            try:
-                response = await self.registry.execute_request(
-                    protocol_id=task.protocol,
-                    request=jsonrpc_request
-                )
+            # Handle the result and check workflow completion
+            if task_result.status == TaskStatus.COMPLETED:
+                # Save result to persistence BEFORE checking workflow completion
+                # This ensures the dependency resolution can find the completed task
+                if self.persistence:
+                    await self.persistence.save_task_result(task_result)
                 
-                # Check for JSON-RPC error
-                if hasattr(response, 'error') and response.error is not None:
-                    raise TaskError(
-                        message=f"Provider error: {response.error.message}",
-                        code=ErrorCode.TASK_EXECUTION_FAILED,
-                        task_id=task.id,
-                        data={"provider_error_code": getattr(response.error, 'code', None)}
-                    )
+                # Also store in memory for consistency
+                self.task_results[task.id] = task_result
                 
-                # Return the result
-                result = response.result if hasattr(response, 'result') else response
-                logger.debug(f"Task {task.id} executed successfully")
-                return result
+                # Now check if workflow is complete and process dependencies
+                if task.workflow_id:
+                    await self._check_workflow_completion(task.workflow_id)
                 
-            except GleitzeitError:
-                # Already structured, just re-raise
-                raise
-                
-            except Exception as e:
-                logger.error(f"Provider execution failed for task {task.id}: {e}")
+                return task_result
+            else:
+                error_msg = task_result.error or "Task execution failed via pooling"
                 raise TaskError(
-                    message=f"Provider routing failed: {e}",
+                    message=error_msg,
                     code=ErrorCode.TASK_EXECUTION_FAILED,
-                    task_id=task.id,
-                    cause=e
+                    task_id=task.id
                 )
+        
+        # Fallback to direct registry execution
+        logger.debug(f"Routing task {task.id} via direct registry")
+        
+        # Create JSON-RPC request
+        jsonrpc_request = JSONRPCRequest(
+            method=task.method,
+            params=params,
+            id=task.id
+        )
+        
+        # Execute request via registry
+        response = await self.registry.execute_request(
+            protocol_id=task.protocol,
+            request=jsonrpc_request
+        )
+        
+        # Check for JSON-RPC error
+        if hasattr(response, 'error') and response.error is not None:
+            raise TaskError(
+                message=f"Provider error: {response.error.message}",
+                code=ErrorCode.TASK_EXECUTION_FAILED,
+                task_id=task.id,
+                data={"provider_error_code": getattr(response.error, 'code', None)}
+            )
+        
+        # Return the result
+        result = response.result if hasattr(response, 'result') else response
+        logger.debug(f"Task {task.id} executed successfully")
+        return result
     
     async def _execute_workflow(self, workflow: Workflow) -> None:
         """Execute all tasks in a workflow with dependency ordering"""

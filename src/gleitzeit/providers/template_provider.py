@@ -58,12 +58,21 @@ class TemplateProvider(ProtocolProvider):
     then submitted to the execution engine for orchestration.
     """
     
-    def __init__(self, provider_id: str, execution_engine=None):
+    def __init__(
+        self, 
+        provider_id: str, 
+        execution_engine=None,
+        resource_manager=None,
+        hub=None,
+        **kwargs
+    ):
         super().__init__(
             provider_id=provider_id,
             protocol_id="template/v1",
             name="WorkflowTemplateGenerator",
-            description="Generates pre-built workflow templates for common patterns"
+            description="Generates pre-built workflow templates for common patterns",
+            resource_manager=resource_manager,
+            hub=hub
         )
         self.execution_engine = execution_engine
         self.logger = logging.getLogger(__name__)

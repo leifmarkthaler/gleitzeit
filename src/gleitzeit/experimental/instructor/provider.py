@@ -53,6 +53,8 @@ class InstructorProvider(ProtocolProvider):
         default_provider: str = "openai",
         default_model: Optional[str] = None,
         max_retries: int = 3,
+        resource_manager=None,
+        hub=None,
         **kwargs
     ):
         """
@@ -64,12 +66,16 @@ class InstructorProvider(ProtocolProvider):
             default_provider: Default LLM provider to use
             default_model: Default model for the provider
             max_retries: Maximum validation retry attempts
+            resource_manager: Optional ResourceManager for allocation
+            hub: Optional hub for resource management
         """
         super().__init__(
             provider_id=provider_id,
             protocol_id=protocol_id,
             name="Instructor Provider",
-            description="Provides structured, validated LLM outputs using Instructor"
+            description="Provides structured, validated LLM outputs using Instructor",
+            resource_manager=resource_manager,
+            hub=hub
         )
         
         self.default_provider = default_provider

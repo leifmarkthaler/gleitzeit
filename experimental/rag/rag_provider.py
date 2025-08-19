@@ -13,14 +13,22 @@ from embeddings_provider import EmbeddingsProvider
 class RAGProvider(ProtocolProvider):
     """Provider for RAG workflows combining retrieval and generation."""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+        self, 
+        config: Optional[Dict[str, Any]] = None,
+        resource_manager=None,
+        hub=None,
+        **kwargs
+    ) -> None:
         """Initialize RAG provider."""
         config = config or {}
         super().__init__(
             provider_id="rag_provider",
             protocol_id="rag/v1",
             name="RAG Provider",
-            description="Provider for RAG workflows combining retrieval and generation"
+            description="Provider for RAG workflows combining retrieval and generation",
+            resource_manager=resource_manager,
+            hub=hub
         )
         self.config = config
         

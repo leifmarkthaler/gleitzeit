@@ -25,14 +25,22 @@ class Document:
 class EmbeddingsProvider(ProtocolProvider):
     """Provider for document embeddings and vector operations."""
     
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(
+        self, 
+        config: Optional[Dict[str, Any]] = None,
+        resource_manager=None,
+        hub=None,
+        **kwargs
+    ) -> None:
         """Initialize embeddings provider."""
         config = config or {}
         super().__init__(
             provider_id="embeddings_provider",
             protocol_id="embeddings/v1",
             name="Embeddings Provider",
-            description="Provider for document embeddings and vector operations"
+            description="Provider for document embeddings and vector operations",
+            resource_manager=resource_manager,
+            hub=hub
         )
         self.config = config
         self.ollama_endpoint = config.get('ollama_endpoint', 'http://localhost:11434')

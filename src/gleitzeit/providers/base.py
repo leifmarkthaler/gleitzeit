@@ -6,7 +6,7 @@ JSON-RPC 2.0 compliant interfaces.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional, Set, TYPE_CHECKING
 import asyncio
 import logging
 from datetime import datetime
@@ -16,6 +16,11 @@ from gleitzeit.core.errors import (
     ProviderTimeoutError, SystemError, ConnectionTimeoutError,
     AuthenticationError, NetworkError, is_retryable_error
 )
+
+# Avoid circular imports
+if TYPE_CHECKING:
+    from gleitzeit.hub.resource_manager import ResourceManager
+    from gleitzeit.hub.base import ResourceHub, ResourceInstance
 
 logger = logging.getLogger(__name__)
 
@@ -34,13 +39,19 @@ class ProtocolProvider(ABC):
         protocol_id: str,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        version: str = "1.0.0"
+        version: str = "1.0.0",
+        resource_manager: Optional['ResourceManager'] = None,
+        hub: Optional['ResourceHub'] = None
     ):
         self.provider_id = provider_id
         self.protocol_id = protocol_id
         self.name = name or self.__class__.__name__
         self.description = description or f"Provider for {protocol_id}"
         self.version = version
+        
+        # Resource management integration
+        self.resource_manager = resource_manager
+        self.hub = hub  # Direct hub connection for providers that need specific hub
         
         # State tracking
         self._initialized = False
@@ -152,6 +163,84 @@ class ProtocolProvider(ABC):
     def is_initialized(self) -> bool:
         """Check if provider is initialized"""
         return self._initialized
+    
+    async def allocate_resource(
+        self,
+        capabilities: Optional[Set[str]] = None,
+        tags: Optional[Set[str]] = None,
+        strategy: str = "least_loaded"
+    ) -> Optional['ResourceInstance']:
+        """
+        Allocate a resource from the connected hub or resource manager.
+        
+        This method attempts to get an available resource instance that matches
+        the specified requirements. It will try the following in order:
+        1. Direct hub if connected
+        2. Resource manager if available
+        3. Return None if no resource management is configured
+        
+        Args:
+            capabilities: Required capabilities (e.g., model names for Ollama)
+            tags: Required tags for filtering
+            strategy: Allocation strategy (least_loaded, round_robin, etc.)
+            
+        Returns:
+            ResourceInstance if allocated, None otherwise
+        """
+        # Try direct hub first (most specific)
+        if self.hub:
+            try:
+                instance = await self.hub.get_available_instance(
+                    capabilities=capabilities,
+                    tags=tags,
+                    strategy=strategy
+                )
+                if instance:
+                    logger.debug(f"Allocated resource {instance.id} from hub {self.hub.hub_id}")
+                    return instance
+            except Exception as e:
+                logger.warning(f"Failed to allocate from hub: {e}")
+        
+        # Try resource manager (can allocate from any hub)
+        if self.resource_manager:
+            try:
+                # Determine resource type based on provider
+                from gleitzeit.hub.base import ResourceType
+                
+                # Map provider types to resource types
+                resource_type_map = {
+                    'ollama': ResourceType.OLLAMA,
+                    'docker': ResourceType.DOCKER,
+                    'python': ResourceType.DOCKER,  # Python uses Docker
+                    'custom': ResourceType.CUSTOM
+                }
+                
+                # Get resource type from provider_id or protocol_id
+                resource_type = None
+                for key, rtype in resource_type_map.items():
+                    if key in self.provider_id.lower() or key in self.protocol_id.lower():
+                        resource_type = rtype
+                        break
+                
+                if not resource_type:
+                    resource_type = ResourceType.CUSTOM
+                
+                instance = await self.resource_manager.allocate_resource(
+                    resource_type=resource_type,
+                    requirements={
+                        'capabilities': capabilities,
+                        'tags': tags,
+                        'strategy': strategy
+                    }
+                )
+                if instance:
+                    logger.debug(f"Allocated resource {instance.id} from resource manager")
+                    return instance
+            except Exception as e:
+                logger.warning(f"Failed to allocate from resource manager: {e}")
+        
+        logger.debug("No resource management configured, using default endpoint")
+        return None
     
     async def _preprocess_params(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """

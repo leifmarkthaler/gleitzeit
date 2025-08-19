@@ -17,12 +17,20 @@ class SimpleMCPProvider(ProtocolProvider):
     No subprocess needed - perfect for testing
     """
     
-    def __init__(self, provider_id: str = "simple-mcp"):
+    def __init__(
+        self, 
+        provider_id: str = "simple-mcp",
+        resource_manager=None,
+        hub=None,
+        **kwargs
+    ):
         super().__init__(
             provider_id=provider_id,
             protocol_id="mcp/v1",
             name="Simple MCP Provider",
-            description="Direct MCP tool implementation for testing"
+            description="Direct MCP tool implementation for testing",
+            resource_manager=resource_manager,
+            hub=hub
         )
         
         # Built-in tools
