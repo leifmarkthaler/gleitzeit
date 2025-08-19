@@ -300,73 +300,502 @@ providers:
     sandbox: true  # Enable sandboxing
 ```
 
-## Custom Providers
+## Creating Custom Protocols and Providers
 
-### Creating a Custom Provider
+### Step 1: Define Your Protocol
 
-Create a provider by extending the base class:
+First, create a protocol definition file that specifies your protocol's interface:
 
 ```python
-from gleitzeit.providers.base import BaseProvider
-from gleitzeit.core.models import TaskResult
-from typing import Dict, Any
+# my_protocol.py
+from dataclasses import dataclass
+from typing import List, Dict, Any, Optional
+from enum import Enum
 
-class MyCustomProvider(BaseProvider):
-    """Custom provider implementation"""
-    
-    def __init__(self):
-        super().__init__()
-        self.protocol = "custom/v1"
-    
-    async def execute(
-        self,
-        method: str,
-        parameters: Dict[str, Any]
-    ) -> TaskResult:
-        """Execute a method"""
-        
-        if method == "custom/process":
-            result = await self.process(parameters)
-            return TaskResult(
-                task_id=parameters.get("task_id"),
-                status="completed",
-                result=result
-            )
-        
-        raise ValueError(f"Unknown method: {method}")
-    
-    async def process(self, params: Dict[str, Any]) -> Any:
-        """Custom processing logic"""
-        data = params.get("data")
-        # Your processing here
-        return {"processed": data}
-    
-    async def validate(self, method: str, parameters: Dict[str, Any]) -> bool:
-        """Validate parameters"""
-        if method == "custom/process":
-            return "data" in parameters
-        return False
+# Define protocol version
+MY_PROTOCOL_V1 = "myprotocol/v1"
+
+# Define method names as constants
+class MyProtocolMethods(Enum):
+    PROCESS = "myprotocol/process"
+    ANALYZE = "myprotocol/analyze"
+    TRANSFORM = "myprotocol/transform"
+
+# Define data models for your protocol
+@dataclass
+class ProcessRequest:
+    """Request model for process method"""
+    data: str
+    options: Dict[str, Any]
+    timeout: Optional[int] = 30
+
+@dataclass
+class ProcessResponse:
+    """Response model for process method"""
+    result: Any
+    metadata: Dict[str, Any]
+    execution_time: float
+
+# Define protocol specification
+PROTOCOL_SPEC = {
+    "id": MY_PROTOCOL_V1,
+    "name": "My Custom Protocol",
+    "version": "1.0.0",
+    "description": "Protocol for custom data processing",
+    "methods": {
+        "myprotocol/process": {
+            "description": "Process data with custom logic",
+            "parameters": {
+                "data": {"type": "string", "required": True},
+                "options": {"type": "object", "required": False},
+                "timeout": {"type": "integer", "default": 30}
+            },
+            "returns": {
+                "result": {"type": "any"},
+                "metadata": {"type": "object"}
+            }
+        },
+        "myprotocol/analyze": {
+            "description": "Analyze data patterns",
+            "parameters": {
+                "data": {"type": "string", "required": True},
+                "depth": {"type": "string", "enum": ["shallow", "deep"]}
+            }
+        },
+        "myprotocol/transform": {
+            "description": "Transform data format",
+            "parameters": {
+                "input": {"type": "string", "required": True},
+                "format": {"type": "string", "required": True}
+            }
+        }
+    }
+}
 ```
 
-### Registering a Custom Provider
+### Step 2: Create Your Provider
+
+Implement a provider that handles your protocol's methods:
 
 ```python
+# my_provider.py
+import asyncio
+import logging
+from typing import Dict, Any, List, Optional
+from datetime import datetime
+
+from gleitzeit.providers.base import ProtocolProvider
+from gleitzeit.core.models import TaskResult
+from gleitzeit.core.errors import ProviderError, ValidationError
+from my_protocol import (
+    MY_PROTOCOL_V1, 
+    MyProtocolMethods,
+    ProcessRequest,
+    ProcessResponse,
+    PROTOCOL_SPEC
+)
+
+class MyCustomProvider(ProtocolProvider):
+    """Provider implementation for my custom protocol"""
+    
+    def __init__(
+        self,
+        provider_id: str,
+        config: Optional[Dict[str, Any]] = None,
+        resource_manager=None,
+        hub=None,
+        **kwargs
+    ):
+        """Initialize the custom provider"""
+        super().__init__(
+            provider_id=provider_id,
+            protocol_id=MY_PROTOCOL_V1,
+            name="MyCustomProvider",
+            description="Handles custom data processing operations",
+            resource_manager=resource_manager,
+            hub=hub
+        )
+        self.config = config or {}
+        self.logger = logging.getLogger(__name__)
+        
+        # Initialize any resources (connections, clients, etc.)
+        self._initialize_resources()
+    
+    def _initialize_resources(self):
+        """Initialize provider resources"""
+        # Example: Initialize connection pools, clients, etc.
+        self.max_workers = self.config.get("max_workers", 5)
+        self.default_timeout = self.config.get("default_timeout", 30)
+        
+    async def initialize(self):
+        """Async initialization"""
+        self.logger.info(f"Initializing {self.name} with ID {self.provider_id}")
+        # Perform any async initialization here
+        await self._connect_to_service()
+        
+    async def _connect_to_service(self):
+        """Connect to external service if needed"""
+        # Example: Connect to database, API, etc.
+        pass
+    
+    def get_supported_methods(self) -> List[str]:
+        """Return list of supported methods"""
+        return [method.value for method in MyProtocolMethods]
+    
+    async def validate_request(self, method: str, parameters: Dict[str, Any]) -> None:
+        """Validate request parameters"""
+        if method not in self.get_supported_methods():
+            raise ValidationError(f"Unsupported method: {method}")
+        
+        # Get method spec from protocol
+        method_spec = PROTOCOL_SPEC["methods"].get(method)
+        if not method_spec:
+            raise ValidationError(f"No specification for method: {method}")
+        
+        # Validate required parameters
+        param_spec = method_spec.get("parameters", {})
+        for param_name, param_info in param_spec.items():
+            if param_info.get("required") and param_name not in parameters:
+                raise ValidationError(f"Missing required parameter: {param_name}")
+            
+            # Type validation (simplified example)
+            if param_name in parameters:
+                value = parameters[param_name]
+                expected_type = param_info.get("type")
+                if expected_type == "string" and not isinstance(value, str):
+                    raise ValidationError(f"Parameter {param_name} must be a string")
+                elif expected_type == "integer" and not isinstance(value, int):
+                    raise ValidationError(f"Parameter {param_name} must be an integer")
+    
+    async def handle_request(self, method: str, parameters: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle incoming requests"""
+        # Validate request
+        await self.validate_request(method, parameters)
+        
+        # Route to appropriate handler
+        if method == MyProtocolMethods.PROCESS.value:
+            return await self._handle_process(parameters)
+        elif method == MyProtocolMethods.ANALYZE.value:
+            return await self._handle_analyze(parameters)
+        elif method == MyProtocolMethods.TRANSFORM.value:
+            return await self._handle_transform(parameters)
+        else:
+            raise ProviderError(f"Method not implemented: {method}")
+    
+    async def _handle_process(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle process method"""
+        start_time = datetime.now()
+        
+        # Create request object
+        request = ProcessRequest(
+            data=params["data"],
+            options=params.get("options", {}),
+            timeout=params.get("timeout", self.default_timeout)
+        )
+        
+        try:
+            # Process the data (your custom logic here)
+            result = await self._process_data(request)
+            
+            # Create response
+            execution_time = (datetime.now() - start_time).total_seconds()
+            response = ProcessResponse(
+                result=result,
+                metadata={
+                    "processed_at": datetime.now().isoformat(),
+                    "provider": self.provider_id
+                },
+                execution_time=execution_time
+            )
+            
+            return {
+                "success": True,
+                "result": response.result,
+                "metadata": response.metadata,
+                "execution_time": response.execution_time
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Process failed: {e}")
+            raise ProviderError(f"Processing failed: {str(e)}")
+    
+    async def _process_data(self, request: ProcessRequest) -> Any:
+        """Actual data processing logic"""
+        # Implement your custom processing here
+        await asyncio.sleep(0.1)  # Simulate processing
+        
+        # Example processing
+        processed = request.data.upper()
+        if "reverse" in request.options:
+            processed = processed[::-1]
+        
+        return processed
+    
+    async def _handle_analyze(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle analyze method"""
+        data = params["data"]
+        depth = params.get("depth", "shallow")
+        
+        # Perform analysis
+        analysis = {
+            "length": len(data),
+            "type": type(data).__name__,
+            "depth": depth
+        }
+        
+        if depth == "deep":
+            # Add more detailed analysis
+            analysis["word_count"] = len(data.split())
+            analysis["unique_chars"] = len(set(data))
+        
+        return {"analysis": analysis}
+    
+    async def _handle_transform(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle transform method"""
+        input_data = params["input"]
+        target_format = params["format"]
+        
+        # Transform based on format
+        if target_format == "upper":
+            result = input_data.upper()
+        elif target_format == "lower":
+            result = input_data.lower()
+        elif target_format == "title":
+            result = input_data.title()
+        else:
+            raise ValidationError(f"Unsupported format: {target_format}")
+        
+        return {"transformed": result, "format": target_format}
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """Provider health check"""
+        return {
+            "status": "healthy",
+            "provider": self.provider_id,
+            "protocol": self.protocol_id,
+            "supported_methods": len(self.get_supported_methods())
+        }
+    
+    async def shutdown(self):
+        """Clean shutdown"""
+        self.logger.info(f"Shutting down {self.name}")
+        # Clean up resources
+        await self._cleanup_resources()
+    
+    async def _cleanup_resources(self):
+        """Clean up provider resources"""
+        # Close connections, clean up temp files, etc.
+        pass
+```
+
+### Step 3: Register Your Protocol and Provider
+
+Create a registration module to integrate with Gleitzeit:
+
+```python
+# register_my_protocol.py
 from gleitzeit.registry import ProtocolProviderRegistry
-from my_providers import MyCustomProvider
+from gleitzeit.core.protocol import Protocol
+from my_protocol import MY_PROTOCOL_V1, PROTOCOL_SPEC
+from my_provider import MyCustomProvider
 
-# Register provider
-registry = ProtocolProviderRegistry.get_instance()
-provider = MyCustomProvider()
-registry.register_provider("custom/v1", provider)
+def register_my_protocol():
+    """Register custom protocol and provider with Gleitzeit"""
+    
+    # Get registry instance
+    registry = ProtocolProviderRegistry.get_instance()
+    
+    # Create protocol object
+    protocol = Protocol(
+        id=MY_PROTOCOL_V1,
+        name=PROTOCOL_SPEC["name"],
+        version=PROTOCOL_SPEC["version"],
+        description=PROTOCOL_SPEC["description"],
+        methods=list(PROTOCOL_SPEC["methods"].keys())
+    )
+    
+    # Register protocol
+    registry.register_protocol(protocol)
+    
+    # Create and register provider
+    provider = MyCustomProvider(
+        provider_id="my-provider-1",
+        config={
+            "max_workers": 10,
+            "default_timeout": 60
+        }
+    )
+    
+    # Register provider for the protocol
+    registry.register_provider(MY_PROTOCOL_V1, provider)
+    
+    # Register individual method handlers (optional, for fine-grained control)
+    for method in PROTOCOL_SPEC["methods"].keys():
+        registry.register_method_handler(method, provider)
+    
+    return provider
 
-# Use in workflow
-workflow = {
-    "tasks": [{
-        "id": "custom_task",
-        "method": "custom/process",
-        "parameters": {"data": "input"}
-    }]
-}
+# Auto-register when imported
+if __name__ != "__main__":
+    register_my_protocol()
+```
+
+### Step 4: Use Your Custom Protocol in Workflows
+
+Once registered, use your protocol in workflows:
+
+```yaml
+name: "Custom Protocol Example"
+tasks:
+  - id: "process_data"
+    method: "myprotocol/process"
+    parameters:
+      data: "Hello World"
+      options:
+        reverse: true
+      timeout: 30
+  
+  - id: "analyze_result"
+    method: "myprotocol/analyze"
+    dependencies: ["process_data"]
+    parameters:
+      data: "${process_data.result}"
+      depth: "deep"
+  
+  - id: "transform_output"
+    method: "myprotocol/transform"
+    dependencies: ["analyze_result"]
+    parameters:
+      input: "${process_data.result}"
+      format: "title"
+```
+
+### Step 5: Integrate with Gleitzeit Client
+
+Use your custom protocol from Python:
+
+```python
+import asyncio
+from gleitzeit import GleitzeitClient
+from register_my_protocol import register_my_protocol
+
+async def use_custom_protocol():
+    # Register protocol (if not auto-registered)
+    register_my_protocol()
+    
+    async with GleitzeitClient(mode="native") as client:
+        # Execute custom task
+        result = await client.execute_task({
+            "id": "custom_task",
+            "method": "myprotocol/process",
+            "parameters": {
+                "data": "test data",
+                "options": {"reverse": True}
+            }
+        })
+        
+        print(f"Result: {result}")
+        
+        # Run workflow with custom protocol
+        workflow_result = await client.run_workflow("custom_workflow.yaml")
+        print(f"Workflow result: {workflow_result}")
+
+asyncio.run(use_custom_protocol())
+```
+
+### Best Practices for Custom Protocols
+
+1. **Protocol Design**
+   - Keep protocols focused on a single domain
+   - Use versioning (e.g., `myprotocol/v1`, `myprotocol/v2`)
+   - Define clear method signatures
+   - Document all parameters and return types
+
+2. **Provider Implementation**
+   - Inherit from `ProtocolProvider` base class
+   - Implement proper validation
+   - Handle errors gracefully
+   - Include health checks
+   - Clean up resources on shutdown
+
+3. **Error Handling**
+   - Use specific exception types
+   - Provide helpful error messages
+   - Log errors appropriately
+   - Implement retry logic where appropriate
+
+4. **Performance**
+   - Use connection pooling
+   - Implement caching where beneficial
+   - Handle concurrent requests properly
+   - Set appropriate timeouts
+
+5. **Testing**
+   ```python
+   import pytest
+   from my_provider import MyCustomProvider
+   
+   @pytest.mark.asyncio
+   async def test_process_method():
+       provider = MyCustomProvider("test-provider")
+       await provider.initialize()
+       
+       result = await provider.handle_request(
+           "myprotocol/process",
+           {"data": "test", "options": {}}
+       )
+       
+       assert result["success"] == True
+       assert "result" in result
+   ```
+
+### Example: Database Protocol
+
+Here's a complete example of a database protocol:
+
+```python
+# db_protocol.py
+DATABASE_PROTOCOL_V1 = "database/v1"
+
+class DatabaseProvider(ProtocolProvider):
+    def __init__(self, provider_id: str, connection_string: str):
+        super().__init__(
+            provider_id=provider_id,
+            protocol_id=DATABASE_PROTOCOL_V1,
+            name="DatabaseProvider"
+        )
+        self.connection_string = connection_string
+        self.pool = None
+    
+    async def initialize(self):
+        # Create connection pool
+        import asyncpg
+        self.pool = await asyncpg.create_pool(self.connection_string)
+    
+    async def handle_request(self, method: str, parameters: Dict[str, Any]):
+        if method == "database/query":
+            return await self._execute_query(parameters)
+        elif method == "database/insert":
+            return await self._execute_insert(parameters)
+    
+    async def _execute_query(self, params):
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(params["sql"], *params.get("values", []))
+            return {"rows": [dict(row) for row in rows]}
+    
+    async def shutdown(self):
+        if self.pool:
+            await self.pool.close()
+```
+
+Use in workflow:
+```yaml
+tasks:
+  - id: "fetch_users"
+    method: "database/query"
+    parameters:
+      sql: "SELECT * FROM users WHERE active = $1"
+      values: [true]
 ```
 
 ## Provider Selection

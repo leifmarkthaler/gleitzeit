@@ -128,6 +128,6 @@ export GLEITZEIT_REDIS_URL=redis://localhost:6379
 
 ## Next Steps
 
-- Read the [Quick Start](quickstart.md) guide
+- Read the [Quick Start section](../README.md#quick-start) in the main documentation
 - Learn about [Core Concepts](concepts.md)
 - Explore [Workflows](workflows.md)
