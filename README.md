@@ -1,6 +1,6 @@
-# Gleitzeit - Protocol-Based Workflow Orchestration
+# Gleitzeit
 
-A flexible workflow orchestration system that executes LLM operations, Python scripts, and tool integrations through a protocol-based architecture.
+A workflow orchestration system for coordinating LLM tasks, Python code execution, and tool integrations. Supports parallel task execution, dependency management, and batch file processing.
 
 ## Quick Start
 
