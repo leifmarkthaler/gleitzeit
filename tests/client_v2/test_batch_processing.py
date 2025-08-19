@@ -144,7 +144,6 @@ class TestBatchProcessing:
         assert result["successful"] == 5
 
 
-@pytest.mark.skip(reason="Multi-mode tests need server fixture improvements")
 class TestBatchProcessingModes:
     """Test batch processing across different client modes"""
     

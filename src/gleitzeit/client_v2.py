@@ -16,7 +16,7 @@ from typing import Optional, Dict, Any, List, Union
 from enum import Enum
 from pathlib import Path
 
-from gleitzeit.core.models import Task, Workflow, TaskResult, Priority
+from gleitzeit.core.models import Task, Workflow, TaskResult, Priority, WorkflowExecution
 from gleitzeit.core import ExecutionEngine, ExecutionMode
 from gleitzeit.core.workflow_loader import load_workflow_from_file
 from gleitzeit.task_queue import QueueManager, DependencyResolver
@@ -29,6 +29,7 @@ from gleitzeit.providers.template_provider import TemplateProvider
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1, TEMPLATE_PROTOCOL_V1
 from gleitzeit.core.batch_processor import BatchProcessor
 from gleitzeit.api.client import GleitzeitAPIClient
+from gleitzeit.resources import ResourceManager, ResourceType, ResourceInstance, ResourceRequirements
 
 logger = logging.getLogger(__name__)
 
@@ -112,6 +113,7 @@ class GleitzeitClient:
         self._execution_engine: Optional[ExecutionEngine] = None
         self._persistence_backend = None
         self._batch_processor: Optional[BatchProcessor] = None
+        self._resource_manager: Optional[ResourceManager] = None
         
     async def __aenter__(self):
         """Async context manager entry"""
@@ -180,6 +182,8 @@ class GleitzeitClient:
             elif self._we_started_server and self.keep_server_running:
                 logger.info(f"Keeping API server running at {self.api_url}")
         else:
+            if self._resource_manager:
+                await self._resource_manager.stop()
             if self._execution_engine:
                 # Shutdown providers
                 for provider_id, provider in self._execution_engine.registry.provider_instances.items():
@@ -260,7 +264,7 @@ class GleitzeitClient:
     async def _init_native_client(self) -> None:
         """Initialize native execution engine"""
         # Initialize persistence
-        self._persistence_backend = await PersistenceFactory.create()
+        self._persistence_adapter = await PersistenceFactory.create()
         
         # Setup execution components
         queue_manager = QueueManager()
@@ -271,7 +275,7 @@ class GleitzeitClient:
             registry=registry,
             queue_manager=queue_manager,
             dependency_resolver=dependency_resolver,
-            persistence=self._persistence_backend,
+            persistence=self._persistence_adapter,
             max_concurrent_tasks=self.native_config.get('max_concurrent_tasks', 5)
         )
         
@@ -280,6 +284,11 @@ class GleitzeitClient:
         
         # Initialize batch processor
         self._batch_processor = BatchProcessor()
+        
+        # Initialize resource manager if enabled
+        if self.native_config.get('enable_resource_management', False):
+            self._resource_manager = ResourceManager("client-resources")
+            await self._resource_manager.start()
         
     async def _register_native_providers(self, registry: ProtocolProviderRegistry) -> None:
         """Register providers for native mode"""
@@ -343,29 +352,6 @@ class GleitzeitClient:
         else:
             return await self._run_workflow_native(workflow_file, watch)
             
-    async def execute_task(
-        self,
-        protocol: str,
-        method: str,
-        params: Dict[str, Any],
-        name: Optional[str] = None
-    ) -> TaskResult:
-        """
-        Execute a single task
-        
-        Args:
-            protocol: Protocol ID (e.g., "python/v1")
-            method: Method name
-            params: Task parameters
-            name: Optional task name
-            
-        Returns:
-            Task execution result
-        """
-        if self._active_mode == ClientMode.API:
-            return await self._execute_task_api(protocol, method, params, name)
-        else:
-            return await self._execute_task_native(protocol, method, params, name)
             
     async def batch_process(
         self,
@@ -483,45 +469,6 @@ class GleitzeitClient:
                     
         return result
         
-    async def _execute_task_api(
-        self, protocol: str, method: str, params: Dict[str, Any], name: Optional[str]
-    ) -> TaskResult:
-        """Execute task via API"""
-        api_task = {
-            "name": name or "API Task",
-            "protocol": protocol,
-            "method": method,
-            "params": params
-        }
-        
-        result = await self._api_client.execute_task(api_task)
-        task_id = result["task_id"]
-        
-        # Wait for completion with timeout
-        start_time = asyncio.get_event_loop().time()
-        timeout = 60.0  # 60 seconds timeout
-        
-        while True:
-            await asyncio.sleep(1)
-            status = await self._api_client.get_task_status(task_id)
-            
-            if status["status"] in ["completed", "failed", "retry_pending"]:
-                return TaskResult(
-                    task_id=task_id,
-                    status=status["status"],
-                    result=status.get("result"),
-                    error=status.get("error")
-                )
-            
-            # Check timeout
-            if asyncio.get_event_loop().time() - start_time > timeout:
-                return TaskResult(
-                    task_id=task_id,
-                    status="timeout",
-                    result=None,
-                    error="Task execution timed out"
-                )
-                
     async def _batch_process_api(
         self, directory: str, pattern: str, method: str, 
         prompt: str, model: str, max_concurrent: int, name: Optional[str]
@@ -576,25 +523,598 @@ class GleitzeitClient:
             "results": results
         }
         
-    async def _execute_task_native(
-        self, protocol: str, method: str, params: Dict[str, Any], name: Optional[str]
-    ) -> TaskResult:
-        """Execute task using native execution engine"""
+    
+    # =========================================================================
+    # Task Management Methods (from old client)
+    # =========================================================================
+    
+    async def get_task(self, task_id: str) -> Optional[Task]:
+        """Get a task by ID"""
+        if self.get_mode() == "api":
+            # In API mode, query the server
+            try:
+                response = await self._api_client.get(f"/tasks/{task_id}")
+                if response.status_code == 200:
+                    task_data = response.json()
+                    return Task(**task_data)
+                return None
+            except Exception as e:
+                logger.error(f"Failed to get task {task_id}: {e}")
+                return None
+        else:
+            # In native mode, get from persistence
+            if not self._persistence_adapter:
+                return None
+            return await self._persistence_adapter.get_task(task_id)
+    
+    async def get_task_status(self, task_id: str) -> Optional[str]:
+        """Get the status of a task"""
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.get(f"/tasks/{task_id}/status")
+                if response.status_code == 200:
+                    return response.json().get("status")
+                return None
+            except Exception:
+                return None
+        else:
+            task = await self.get_task(task_id)
+            return task.status if task else None
+    
+    async def get_task_result(self, task_id: str) -> Optional[TaskResult]:
+        """Get the result of a completed task"""
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.get(f"/tasks/{task_id}/result")
+                if response.status_code == 200:
+                    result_data = response.json()
+                    return TaskResult(**result_data)
+                return None
+            except Exception as e:
+                logger.error(f"Failed to get task result {task_id}: {e}")
+                return None
+        else:
+            if not self._persistence_adapter:
+                return None
+            return await self._persistence_adapter.get_task_result(task_id)
+    
+    async def wait_for_task(
+        self,
+        task_id: str,
+        timeout: Optional[float] = None,
+        poll_interval: float = 1.0
+    ) -> Optional[TaskResult]:
+        """
+        Wait for a task to complete and return its result
+        
+        Args:
+            task_id: Task ID to wait for
+            timeout: Maximum time to wait in seconds
+            poll_interval: Interval between status checks
+            
+        Returns:
+            Task result if completed, None if timeout
+        """
+        start_time = asyncio.get_event_loop().time()
+        
+        while True:
+            # Check task status
+            status = await self.get_task_status(task_id)
+            if not status:
+                logger.warning(f"Task {task_id} not found")
+                return None
+            
+            # Check if completed
+            if status in ["completed", "failed"]:
+                return await self.get_task_result(task_id)
+            
+            # Check timeout
+            if timeout:
+                elapsed = asyncio.get_event_loop().time() - start_time
+                if elapsed >= timeout:
+                    logger.warning(f"Timeout waiting for task {task_id}")
+                    return None
+            
+            # Wait before next check
+            await asyncio.sleep(poll_interval)
+    
+    async def cancel_task(self, task_id: str) -> bool:
+        """
+        Cancel a queued task
+        
+        Args:
+            task_id: Task ID to cancel
+            
+        Returns:
+            True if task was cancelled, False if not found or already executing
+        """
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.post(f"/tasks/{task_id}/cancel")
+                return response.status_code == 200
+            except Exception:
+                return False
+        else:
+            # In native mode, need to check task status and update
+            task = await self.get_task(task_id)
+            if not task:
+                return False
+            
+            if task.status not in ["pending", "queued"]:
+                logger.warning(f"Cannot cancel task {task_id} with status {task.status}")
+                return False
+            
+            # Update task status
+            task.status = "cancelled"
+            if self._persistence_adapter:
+                await self._persistence_adapter.save_task(task)
+                logger.info(f"Cancelled task {task_id}")
+                return True
+            return False
+    
+    async def submit_task(
+        self,
+        name: str,
+        protocol: str,
+        method: str,
+        params: Dict[str, Any],
+        priority: Priority = Priority.NORMAL,
+        queue: str = "default"
+    ) -> Task:
+        """
+        Submit a task for execution (primary method)
+        
+        This method submits a task to the queue and returns immediately.
+        The task will be executed asynchronously by the execution engine.
+        
+        Args:
+            name: Task name
+            protocol: Protocol identifier
+            method: Method to execute
+            params: Method parameters
+            priority: Task priority
+            queue: Queue name
+            
+        Returns:
+            Task object with ID for tracking
+        """
+        # Create task object
         task = Task(
-            name=name or "Native Task",
+            name=name,
+            protocol=protocol,
+            method=method,
+            params=params,
+            priority=priority,
+            status="pending"
+        )
+        
+        if self.get_mode() == "api":
+            # Submit to API server using execute_task
+            try:
+                api_task = {
+                    "name": name,
+                    "protocol": protocol,
+                    "method": method,
+                    "params": params
+                }
+                result = await self._api_client.execute_task(api_task)
+                task.id = result.get("task_id", result.get("id"))
+                task.status = "pending"  # API returns immediately
+            except Exception as e:
+                logger.error(f"Failed to submit task via API: {e}")
+                raise
+        else:
+            # Submit to native execution engine
+            if self._execution_engine:
+                await self._execution_engine.submit_task(task)
+                # Save to persistence
+                if self._persistence_adapter:
+                    await self._persistence_adapter.save_task(task)
+                
+                # In native mode, start processing the task immediately
+                # This runs the task asynchronously without blocking
+                asyncio.create_task(self._process_task_async(task))
+            else:
+                raise RuntimeError("Execution engine not initialized")
+        
+        return task
+    
+    async def _process_task_async(self, task: Task) -> None:
+        """Process a task asynchronously in the background"""
+        try:
+            # Execute the task
+            result = await self._execution_engine._execute_task(task)
+            # Update task status
+            task.status = result.status
+            # Save result to persistence
+            if self._persistence_adapter:
+                await self._persistence_adapter.save_task(task)
+                await self._persistence_adapter.save_task_result(result)
+        except Exception as e:
+            logger.error(f"Error processing task {task.id}: {e}")
+            task.status = "failed"
+            if self._persistence_adapter:
+                await self._persistence_adapter.save_task(task)
+    
+    async def execute_task(
+        self,
+        protocol: str,
+        method: str,
+        params: Dict[str, Any],
+        name: Optional[str] = None,
+        wait: bool = True
+    ) -> TaskResult:
+        """
+        Execute a task and optionally wait for result (optional method)
+        
+        This is a convenience method that submits a task and waits for completion.
+        For fire-and-forget operations, use submit_task instead.
+        
+        Args:
+            protocol: Protocol ID (e.g., "python/v1")
+            method: Method name
+            params: Task parameters
+            name: Optional task name
+            wait: Whether to wait for completion (default True)
+            
+        Returns:
+            Task execution result
+        """
+        # Submit the task
+        task = await self.submit_task(
+            name=name or "Direct Execution",
             protocol=protocol,
             method=method,
             params=params,
             priority=Priority.NORMAL
         )
         
-        # Submit and execute task directly
-        await self._execution_engine.submit_task(task)
+        if not wait:
+            # Return immediately with pending status
+            return TaskResult(
+                task_id=task.id,
+                status="pending",
+                result=None,
+                error=None
+            )
         
-        # Execute task directly
-        result = await self._execution_engine._execute_task(task)
+        # Wait for completion
+        result = await self.wait_for_task(task.id, timeout=300)  # 5 minute timeout
+        if result:
+            return result
+        else:
+            # Timeout or error
+            return TaskResult(
+                task_id=task.id,
+                status="failed",
+                result=None,
+                error="Task execution timed out"
+            )
+    
+    # =========================================================================
+    # Workflow Management Methods (from old client)
+    # =========================================================================
+    
+    async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
+        """Get a workflow by ID"""
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.get(f"/workflows/{workflow_id}")
+                if response.status_code == 200:
+                    return Workflow(**response.json())
+                return None
+            except Exception:
+                return None
+        else:
+            if not self._persistence_adapter:
+                return None
+            return await self._persistence_adapter.get_workflow(workflow_id)
+    
+    async def get_workflow_execution(self, execution_id: str) -> Optional[WorkflowExecution]:
+        """Get workflow execution details"""
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.get(f"/workflow-executions/{execution_id}")
+                if response.status_code == 200:
+                    return WorkflowExecution(**response.json())
+                return None
+            except Exception:
+                return None
+        else:
+            if not self._persistence_adapter:
+                return None
+            return await self._persistence_adapter.get_workflow_execution(execution_id)
+    
+    async def get_workflow_tasks(self, workflow_id: str) -> List[Task]:
+        """Get all tasks for a workflow"""
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.get(f"/workflows/{workflow_id}/tasks")
+                if response.status_code == 200:
+                    return [Task(**task) for task in response.json()]
+                return []
+            except Exception:
+                return []
+        else:
+            if not self._persistence_adapter:
+                return []
+            # get_workflow_tasks is get_tasks_by_workflow in the adapter
+            return await self._persistence_adapter.get_tasks_by_workflow(workflow_id)
+    
+    # =========================================================================
+    # Statistics and Monitoring Methods (from old client)
+    # =========================================================================
+    
+    async def get_task_statistics(self) -> Dict[str, int]:
+        """Get task count by status"""
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.get("/statistics/tasks")
+                if response.status_code == 200:
+                    return response.json()
+                return {}
+            except Exception:
+                return {}
+        else:
+            if not self._persistence_adapter:
+                return {}
+            return await self._persistence_adapter.get_task_count_by_status()
+    
+    async def get_queue_statistics(self) -> Dict[str, Any]:
+        """Get queue statistics"""
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.get("/statistics/queues")
+                if response.status_code == 200:
+                    return response.json()
+                return {}
+            except Exception:
+                return {}
+        else:
+            # In native mode, we don't have direct queue access in v2
+            # Return basic statistics from execution engine
+            if self._execution_engine:
+                return {
+                    "active_tasks": len(self._execution_engine.task_results),
+                    "max_concurrent": self._execution_engine.max_concurrent_tasks
+                }
+            return {}
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """
+        Perform a health check on the client
         
-        return result
+        Returns:
+            Dictionary with health status information
+        """
+        health = {
+            "status": "healthy",
+            "mode": self.get_mode(),
+            "initialized": self._execution_engine is not None or self._api_client is not None
+        }
+        
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.get("/health")
+                health["api_server"] = response.status_code == 200
+            except Exception:
+                health["api_server"] = False
+                health["status"] = "degraded"
+        else:
+            # Check native components
+            health["persistence"] = self._persistence_adapter is not None
+            health["execution_engine"] = self._execution_engine is not None
+            health["batch_processor"] = self._batch_processor is not None
+            
+            if self._persistence_adapter:
+                health["persistence_backend"] = type(self._persistence_adapter).__name__
+            
+            if not all([health["persistence"], health["execution_engine"]]):
+                health["status"] = "degraded"
+        
+        return health
+    
+    async def cleanup_old_data(self, days: int = 30) -> int:
+        """
+        Clean up old completed tasks and results
+        
+        Args:
+            days: Number of days to keep data
+            
+        Returns:
+            Number of items deleted
+        """
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.post(
+                    "/cleanup",
+                    json={"days": days}
+                )
+                if response.status_code == 200:
+                    return response.json().get("deleted", 0)
+                return 0
+            except Exception:
+                return 0
+        else:
+            if not self._persistence_adapter:
+                return 0
+            
+            from datetime import datetime, timedelta
+            cutoff = datetime.utcnow() - timedelta(days=days)
+            return await self._persistence_adapter.cleanup_old_data(cutoff)
+    
+    # ============== Resource Management Methods ==============
+    
+    async def create_resource_pool(
+        self,
+        pool_id: str,
+        resource_type: str,
+        min_instances: int = 0,
+        max_instances: int = 10,
+        endpoints: Optional[List[str]] = None
+    ) -> bool:
+        """
+        Create a resource pool
+        
+        Args:
+            pool_id: Unique pool identifier
+            resource_type: Type of resource ("ollama", "docker", "python")
+            min_instances: Minimum instances to maintain
+            max_instances: Maximum instances allowed
+            endpoints: Optional list of endpoints for initial instances
+            
+        Returns:
+            Success status
+        """
+        if not self._resource_manager:
+            logger.warning("Resource management not enabled")
+            return False
+        
+        try:
+            res_type = ResourceType(resource_type)
+            
+            if res_type == ResourceType.OLLAMA and endpoints:
+                pool = await self._resource_manager.create_ollama_pool(
+                    pool_id=pool_id,
+                    endpoints=endpoints,
+                    min_instances=min_instances,
+                    max_instances=max_instances
+                )
+            elif res_type == ResourceType.DOCKER:
+                pool = await self._resource_manager.create_docker_pool(
+                    pool_id=pool_id,
+                    min_instances=min_instances,
+                    max_instances=max_instances
+                )
+            else:
+                pool = await self._resource_manager.create_pool(
+                    pool_id=pool_id,
+                    resource_type=res_type,
+                    min_instances=min_instances,
+                    max_instances=max_instances
+                )
+            
+            return pool is not None
+            
+        except Exception as e:
+            logger.error(f"Failed to create resource pool: {e}")
+            return False
+    
+    async def register_resource(
+        self,
+        pool_id: str,
+        instance_id: str,
+        endpoint: str,
+        resource_type: str = "ollama",
+        capabilities: Optional[List[str]] = None,
+        max_concurrent: int = 3
+    ) -> bool:
+        """
+        Register a resource instance with a pool
+        
+        Args:
+            pool_id: Pool to register with
+            instance_id: Unique instance identifier
+            endpoint: Connection endpoint
+            resource_type: Type of resource
+            capabilities: List of capabilities (e.g., models)
+            max_concurrent: Max concurrent tasks
+            
+        Returns:
+            Success status
+        """
+        if not self._resource_manager:
+            logger.warning("Resource management not enabled")
+            return False
+        
+        try:
+            instance = ResourceInstance(
+                id=instance_id,
+                name=f"{resource_type} instance {instance_id}",
+                resource_type=ResourceType(resource_type),
+                endpoint=endpoint,
+                capabilities=set(capabilities) if capabilities else set(),
+                max_concurrent_tasks=max_concurrent
+            )
+            
+            return await self._resource_manager.register_instance(pool_id, instance)
+            
+        except Exception as e:
+            logger.error(f"Failed to register resource: {e}")
+            return False
+    
+    async def allocate_resource(
+        self,
+        task_id: str,
+        resource_type: str,
+        capabilities: Optional[List[str]] = None,
+        strategy: str = "least_loaded"
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Allocate a resource for a task
+        
+        Args:
+            task_id: Task requiring resource
+            resource_type: Type of resource needed
+            capabilities: Required capabilities
+            strategy: Allocation strategy
+            
+        Returns:
+            Allocated resource info or None
+        """
+        if not self._resource_manager:
+            return None
+        
+        try:
+            instance = await self._resource_manager.allocate_resource(
+                task_id=task_id,
+                resource_type=ResourceType(resource_type),
+                capabilities=set(capabilities) if capabilities else None,
+                strategy=strategy
+            )
+            
+            if instance:
+                return instance.to_dict()
+            
+        except Exception as e:
+            logger.error(f"Resource allocation failed: {e}")
+        
+        return None
+    
+    async def release_resource(self, task_id: str) -> bool:
+        """Release resources allocated to a task"""
+        if not self._resource_manager:
+            return False
+        
+        return await self._resource_manager.release_resource(task_id)
+    
+    async def get_resource_metrics(self) -> Dict[str, Any]:
+        """Get resource management metrics"""
+        if not self._resource_manager:
+            return {"enabled": False}
+        
+        return await self._resource_manager.get_metrics()
+    
+    async def enable_auto_scaling(
+        self,
+        scale_up_threshold: float = 0.8,
+        scale_down_threshold: float = 0.2
+    ) -> None:
+        """Enable auto-scaling for resource pools"""
+        if self._resource_manager:
+            await self._resource_manager.enable_auto_scaling(
+                scale_up_threshold=scale_up_threshold,
+                scale_down_threshold=scale_down_threshold
+            )
+    
+    @property
+    def persistence_backend(self) -> str:
+        """Get the name of the current persistence backend"""
+        if self.get_mode() == "api":
+            return "API Server"
+        elif self._persistence_adapter:
+            return type(self._persistence_adapter).__name__
+        return "Not initialized"
         
     async def _batch_process_native(
         self, directory: str, pattern: str, method: str,

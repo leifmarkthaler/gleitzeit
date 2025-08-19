@@ -85,6 +85,12 @@ class Task(BaseModel):
                                   description="Execution timeout in seconds")
     retry_config: Optional[RetryConfig] = None
     
+    # Resource requirements
+    resource_requirements: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Resource requirements for task execution (e.g., GPU, memory, specific models)"
+    )
+    
     # Status tracking
     status: TaskStatus = TaskStatus.PENDING
     attempt_count: int = Field(default=0, ge=0)
