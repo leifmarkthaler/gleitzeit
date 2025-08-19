@@ -1,238 +1,313 @@
-# Gleitzeit Documentation
+# Gleitzeit - Protocol-Based Workflow Orchestration
 
-Gleitzeit is a workflow orchestration system for running LLM operations, Python scripts, and other tasks in sequence or parallel.
+A flexible workflow orchestration system that executes LLM operations, Python scripts, and tool integrations through a unified protocol-based architecture. Supports both API and native execution modes.
 
 ## Quick Start
 
-### Install
-
 ```bash
+# Install
 pip install gleitzeit
-ollama pull llama3.2
+
+# Run a workflow (auto-detects best mode)
+gleitzeit run workflow.yaml
 ```
 
-### Basic Example
+## Architecture Overview
 
-Create a workflow file `example.yaml`:
+Gleitzeit uses a **dual-mode architecture**:
+- **API Mode**: REST API server for production deployments
+- **Native Mode**: Direct execution engine for development/testing
+- **Auto Mode**: Automatically selects the best available mode
 
-```yaml
-name: "Example"
-tasks:
-  - id: "greet"
-    method: "llm/chat"
-    parameters:
-      model: "llama3.2"
-      messages:
-        - role: "user"
-          content: "Say hello"
-```
+## Core Concepts
 
-Run it:
+### Protocols & Providers
+- **Protocols**: Define standardized interfaces (LLM, Python, MCP, Template)
+- **Providers**: Implement protocol methods (OllamaProvider, PythonProvider, etc.)
+- **Registry**: Maps methods to providers and validates calls
 
-```bash
-gleitzeit run example.yaml
-```
+### Resource Management
+- **Hubs**: Manage compute resources (OllamaHub for LLM servers, DockerHub for containers)
+- **ResourceManager**: Orchestrates multiple hubs and allocates resources
+- **Auto-discovery**: Automatically finds available Ollama instances
 
-### Use from Python
+### Workflow Execution
+- **ExecutionEngine**: Central orchestrator for workflow execution
+- **TaskQueue**: Manages task scheduling with dependency resolution
+- **Parallel Execution**: Independent tasks run concurrently
+- **Parameter Substitution**: Pass results between tasks using `${task_id.field}`
+
+## Python Client
 
 ```python
-import asyncio
 from gleitzeit import GleitzeitClient
 
-async def main():
-    async with GleitzeitClient() as client:
-        # Run a workflow
-        result = await client.run_workflow("example.yaml")
-        print(result)
-        
-        # Or chat directly
-        response = await client.chat(
-            "What is Python?",
-            model="llama3.2"
-        )
-        print(response)
-
-asyncio.run(main())
+async with GleitzeitClient() as client:
+    # Auto-detects API or native mode
+    result = await client.run_workflow("workflow.yaml")
+    
+    # Force specific mode
+    async with GleitzeitClient(mode="api") as client:
+        # Uses REST API
+        pass
+    
+    async with GleitzeitClient(mode="native") as client:
+        # Direct execution engine
+        pass
 ```
 
-## Core Examples
+### Available Methods
 
-### Chain Tasks Together
+```python
+# Run workflows
+result = await client.run_workflow("workflow.yaml")
+result = await client.run_workflow(workflow_dict)
 
-Create `pipeline.yaml`:
+# Chat with LLMs (via Ollama)
+response = await client.chat("Hello", model="llama3.2")
+
+# Execute Python scripts
+result = await client.execute_python_script("script.py", args={"key": "value"})
+
+# Batch process files
+results = await client.batch_process(
+    directory="docs",
+    pattern="*.txt",
+    prompt="Summarize",
+    model="llama3.2"
+)
+
+# Direct task execution
+task_result = await client.execute_task(task)
+```
+
+## Workflow Definition
+
+Workflows are defined in YAML with tasks and dependencies:
 
 ```yaml
 name: "Analysis Pipeline"
 tasks:
-  - id: "extract"
-    method: "llm/chat"
-    parameters:
-      model: "llama3.2"
-      messages:
-        - role: "user"
-          content: "Extract key points from: Meeting was productive, discussed Q2 goals"
-  
-  - id: "summarize"
-    method: "llm/chat"
-    dependencies: ["extract"]
-    parameters:
-      model: "llama3.2"
-      messages:
-        - role: "user"
-          content: "Create summary from: ${extract.response}"
-```
-
-### Process Multiple Files
-
-```yaml
-name: "Batch Processor"
-type: "batch"
-batch:
-  directory: "documents"
-  pattern: "*.txt"
-template:
-  method: "llm/chat"
-  model: "llama3.2"
-  messages:
-    - role: "user"
-      content: "Summarize: ${file_content}"
-```
-
-Or from Python:
-
-```python
-async with GleitzeitClient() as client:
-    results = await client.batch_process(
-        directory="documents",
-        pattern="*.txt",
-        prompt="Summarize this document",
-        model="llama3.2"
-    )
-    for file, summary in results.items():
-        print(f"{file}: {summary}")
-```
-
-### Execute Python Scripts
-
-Create `process.py`:
-
-```python
-import sys
-import json
-
-args = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}
-data = args.get('data', '')
-
-# Process the data
-result = {"processed": data.upper(), "length": len(data)}
-
-print(json.dumps(result))
-```
-
-Use in workflow:
-
-```yaml
-name: "Mixed Workflow"
-tasks:
-  - id: "generate"
-    method: "llm/chat"
-    parameters:
-      model: "llama3.2"
-      messages:
-        - role: "user"
-          content: "Generate a sentence about AI"
-  
-  - id: "process"
+  - id: "load_data"
     method: "python/execute"
-    dependencies: ["generate"]
     parameters:
-      script: "process.py"
+      script: "scripts/load_data.py"
       args:
-        data: "${generate.response}"
+        input: "data.csv"
+  
+  - id: "analyze"
+    method: "llm/chat"
+    dependencies: ["load_data"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Analyze this data: ${load_data.result}"
+  
+  - id: "save_results"
+    method: "python/execute"
+    dependencies: ["analyze"]
+    parameters:
+      script: "scripts/save_results.py"
+      args:
+        content: "${analyze.response}"
+        output: "report.md"
 ```
 
-## Key Features
+## Supported Protocols
 
-### Parallel Execution
+### LLM Protocol (`llm/v1`)
+**Provider**: OllamaProvider  
+**Methods**:
+- `llm/chat` - Text generation with conversation history
+- `llm/vision` - Image analysis with vision models
+- `llm/generate` - Direct text generation
+- `llm/embeddings` - Generate text embeddings
 
-Tasks without dependencies run in parallel:
+**Models**: Any Ollama model (llama3.2, mistral, codellama, llava, etc.)
 
+### Python Protocol (`python/v1`)
+**Provider**: PythonProvider  
+**Methods**:
+- `python/execute` - Execute Python script files
+- `python/validate` - Validate Python syntax
+- `python/info` - Get provider information
+
+**Security**: Scripts run in subprocess isolation or Docker containers
+
+### MCP Protocol (`mcp/v1`)
+**Provider**: SimpleMCPProvider  
+**Methods**: Tool-specific methods via Model Context Protocol
+
+### Template Protocol (`template/v1`)
+**Provider**: TemplateProvider  
+**Methods**:
+- `template/research` - Generate multi-step research workflows
+- `template/code` - Generate code development workflows
+- `template/analyze` - Generate analysis workflows
+- `template/chat` - Generate chat workflows
+
+## CLI Commands
+
+```bash
+# Run workflows
+gleitzeit run workflow.yaml
+gleitzeit run workflow.yaml --local    # Force native mode
+gleitzeit run workflow.yaml --watch    # Watch for changes
+
+# Check status
+gleitzeit status
+gleitzeit status --resources
+
+# Batch processing
+gleitzeit batch documents --pattern "*.txt" --prompt "Summarize"
+
+# Configuration
+gleitzeit config show
+gleitzeit config set default_model llama3.2
+
+# Start API server
+gleitzeit serve --port 8000
+```
+
+## Persistence
+
+Gleitzeit includes a unified persistence layer with automatic fallback:
+
+1. **Redis** (if available) - High performance
+2. **SQLite** (fallback) - Local database
+3. **Memory** (last resort) - In-process storage
+
+Configuration via environment variables:
+```bash
+export GLEITZEIT_REDIS_URL=redis://localhost:6379
+export GLEITZEIT_SQL_DB_PATH=~/.gleitzeit/workflows.db
+export GLEITZEIT_PERSISTENCE_TYPE=auto  # auto|redis|sql|memory
+```
+
+## Resource Hubs
+
+### OllamaHub
+Manages Ollama LLM server instances:
+- Auto-discovers running instances on ports 11434-11439
+- Health monitoring and metrics collection
+- Model-aware load balancing
+- Connection pooling for performance
+
+### DockerHub (Optional)
+Manages Docker containers for isolated Python execution:
+- Container lifecycle management
+- Resource limits enforcement
+- Security isolation
+
+## Deployment Modes
+
+### Development Mode
+```python
+# Direct execution engine, no server needed
+client = GleitzeitClient(mode="native")
+```
+
+### Production Mode
+```bash
+# Start API server
+gleitzeit serve --port 8000
+
+# Client connects to API
+client = GleitzeitClient(mode="api", api_host="localhost", api_port=8000)
+```
+
+### Auto Mode (Default)
+```python
+# Automatically uses API if available, otherwise native
+client = GleitzeitClient()  # mode="auto" is default
+```
+
+## Configuration
+
+### Config File (`~/.gleitzeit/config.yaml`)
+```yaml
+default_model: llama3.2
+ollama:
+  discovery_ports: [11434, 11435, 11436]
+  auto_discover: true
+persistence:
+  type: auto
+  redis:
+    url: redis://localhost:6379
+batch:
+  max_concurrent: 5
+  max_file_size: 1048576
+```
+
+### Environment Variables
+```bash
+# Ollama settings
+export GLEITZEIT_OLLAMA_URL=http://localhost:11434
+export GLEITZEIT_DEFAULT_MODEL=llama3.2
+
+# Persistence
+export GLEITZEIT_PERSISTENCE_TYPE=redis
+export GLEITZEIT_REDIS_URL=redis://localhost:6379
+
+# API server
+export GLEITZEIT_API_HOST=0.0.0.0
+export GLEITZEIT_API_PORT=8000
+```
+
+## Advanced Features
+
+### Parallel Task Execution
+Tasks without dependencies run concurrently:
 ```yaml
 tasks:
-  - id: "task1"
+  - id: "task1"  # Runs immediately
     method: "llm/chat"
-    # Runs immediately
-    
-  - id: "task2"
+  - id: "task2"  # Runs in parallel with task1
     method: "llm/chat"
-    # Runs in parallel with task1
-    
-  - id: "combine"
+  - id: "combine"  # Waits for both
     dependencies: ["task1", "task2"]
-    # Waits for both to complete
+    method: "python/execute"
 ```
 
-### Error Handling
+### Batch Processing
+Process multiple files efficiently:
+```python
+results = await client.batch_process(
+    directory="documents",
+    pattern="**/*.txt",  # Recursive
+    prompt="Extract key points",
+    model="llama3.2",
+    max_concurrent=10
+)
+```
 
+### Error Handling & Retries
 ```yaml
 tasks:
-  - id: "risky_task"
+  - id: "resilient_task"
     method: "llm/chat"
     retry:
       max_attempts: 3
       delay: 2
+      exponential_backoff: true
     parameters:
       timeout: 30
-      model: "llama3.2"
-      messages:
-        - role: "user"
-          content: "Process this"
 ```
 
-### Client Modes
+## Testing
 
-```python
-# Auto mode (default) - uses API if available
-client = GleitzeitClient()
+```bash
+# Run all tests
+pytest
 
-# Force API mode
-client = GleitzeitClient(mode="api")
+# Run specific test suites
+pytest tests/unit/
+pytest tests/integration/
+pytest tests/workflows/
 
-# Force native mode (direct execution)
-client = GleitzeitClient(mode="native")
-
-# Custom API server
-client = GleitzeitClient(
-    mode="api",
-    api_host="server.example.com",
-    api_port=8000
-)
-```
-
-### Async Operations
-
-```python
-import asyncio
-
-async def parallel_tasks():
-    async with GleitzeitClient() as client:
-        tasks = [
-            client.chat("Question 1", model="llama3.2"),
-            client.chat("Question 2", model="llama3.2"),
-            client.chat("Question 3", model="llama3.2")
-        ]
-        responses = await asyncio.gather(*tasks)
-        return responses
-```
-
-## Available Models
-
-```yaml
-parameters:
-  model: "llama3.2"      # Fast, general
-  # model: "mistral"     # Better reasoning
-  # model: "codellama"   # Code generation
-  # model: "llava"       # Image analysis
+# Test with real execution
+python tests/workflow_test_suite.py --execute
 ```
 
 ## Documentation
@@ -248,9 +323,10 @@ parameters:
 
 ## Requirements
 
-- Python 3.8 or higher
+- Python 3.8+
 - Ollama (for LLM operations)
-- Redis or SQLite (optional, for persistence)
+- Redis (optional, for persistence)
+- Docker (optional, for isolated Python execution)
 
 ## License
 
