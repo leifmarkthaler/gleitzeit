@@ -54,6 +54,7 @@ class OllamaProvider(ProtocolProvider):
         self.default_model = default_model
         self.session = None
         self.default_endpoint = "http://localhost:11434"
+        self.resource_manager = None  # Optional resource manager for allocation
     
     async def initialize(self) -> None:
         """Initialize the provider"""
@@ -134,8 +135,41 @@ class OllamaProvider(ProtocolProvider):
         if not self.session:
             await self.initialize()
         
-        # Extract endpoint (provided by ResourceManager/Hub or use default)
-        endpoint = params.get('endpoint', self.default_endpoint)
+        # Try to allocate a resource if resource manager is available
+        allocated_resource = None
+        task_id = None
+        
+        if self.resource_manager and hasattr(self.resource_manager, 'allocate_resource'):
+            try:
+                # Generate a temporary task ID for allocation
+                import uuid
+                task_id = f"ollama-{uuid.uuid4().hex[:8]}"
+                
+                # Get model from params to determine capabilities
+                model = params.get('model', self.default_model)
+                
+                # Try to allocate an Ollama resource
+                from gleitzeit.resources import ResourceType
+                allocated_resource = await self.resource_manager.allocate_resource(
+                    task_id=task_id,
+                    resource_type=ResourceType.OLLAMA,
+                    capabilities={model} if model else None,
+                    strategy='least_loaded',
+                    timeout=5.0  # Short timeout for allocation
+                )
+                
+                if allocated_resource:
+                    endpoint = allocated_resource.endpoint
+                    logger.debug(f"Using allocated Ollama resource at {endpoint}")
+                else:
+                    endpoint = self.default_endpoint
+                    logger.debug(f"No resource available, using default endpoint {endpoint}")
+            except Exception as e:
+                logger.debug(f"Resource allocation failed: {e}, using default endpoint")
+                endpoint = self.default_endpoint
+        else:
+            # No resource manager, use default or provided endpoint
+            endpoint = params.get('endpoint', self.default_endpoint)
         
         # Route to appropriate method handler
         method_map = {
@@ -154,7 +188,18 @@ class OllamaProvider(ProtocolProvider):
                 reason=f"Unsupported method: {method}"
             )
         
-        return await handler(endpoint, params)
+        try:
+            # Execute the method
+            result = await handler(endpoint, params)
+            return result
+        finally:
+            # Release the allocated resource if any
+            if allocated_resource and task_id and self.resource_manager:
+                try:
+                    await self.resource_manager.release_resource(task_id)
+                    logger.debug(f"Released Ollama resource for task {task_id}")
+                except Exception as e:
+                    logger.debug(f"Failed to release resource: {e}")
     
     async def _generate(self, endpoint: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """Generate text completion"""

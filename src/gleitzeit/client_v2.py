@@ -289,6 +289,9 @@ class GleitzeitClient:
         if self.native_config.get('enable_resource_management', False):
             self._resource_manager = ResourceManager("client-resources")
             await self._resource_manager.start()
+            
+            # Pass resource manager to execution engine
+            self._execution_engine.resource_manager = self._resource_manager
         
     async def _register_native_providers(self, registry: ProtocolProviderRegistry) -> None:
         """Register providers for native mode"""
@@ -306,6 +309,11 @@ class GleitzeitClient:
             registry.register_protocol(LLM_PROTOCOL_V1)
             ollama_provider = OllamaProvider("ollama-provider", auto_discover=False)
             await ollama_provider.initialize()
+            
+            # If resource manager is available, connect it to the provider
+            if self._resource_manager:
+                ollama_provider.resource_manager = self._resource_manager
+            
             registry.register_provider("ollama-provider", "llm/v1", ollama_provider)
         except Exception as e:
             logger.warning(f"Ollama provider registration failed: {e}")
@@ -659,7 +667,8 @@ class GleitzeitClient:
         method: str,
         params: Dict[str, Any],
         priority: Priority = Priority.NORMAL,
-        queue: str = "default"
+        queue: str = "default",
+        resource_requirements: Optional[Dict[str, Any]] = None
     ) -> Task:
         """
         Submit a task for execution (primary method)
@@ -674,6 +683,7 @@ class GleitzeitClient:
             params: Method parameters
             priority: Task priority
             queue: Queue name
+            resource_requirements: Optional resource requirements for task
             
         Returns:
             Task object with ID for tracking
@@ -685,7 +695,8 @@ class GleitzeitClient:
             method=method,
             params=params,
             priority=priority,
-            status="pending"
+            status="pending",
+            resource_requirements=resource_requirements
         )
         
         if self.get_mode() == "api":
