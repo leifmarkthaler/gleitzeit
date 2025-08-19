@@ -91,9 +91,9 @@ async with GleitzeitClient() as client:
 
 ### Persistence
 Gleitzeit includes a unified persistence layer with automatic fallback:
-1. **Redis** (if available) - High performance
-2. **SQLite** (fallback) - Local database
-3. **Memory** (last resort) - In-process storage
+-  **Redis** (if available) - High performance
+-  **SQLite** (fallback) - Local database
+-  **Memory** (last resort) - In-process storage
 
 ## Python Client
 
@@ -293,21 +293,6 @@ gleitzeit config set default_model llama3.2
 gleitzeit serve --port 8000
 ```
 
-## Persistence
-
-Gleitzeit includes a unified persistence layer with automatic fallback:
-
-1. **Redis** (if available) - High performance
-2. **SQLite** (fallback) - Local database
-3. **Memory** (last resort) - In-process storage
-
-Configuration via environment variables:
-```bash
-export GLEITZEIT_REDIS_URL=redis://localhost:6379
-export GLEITZEIT_SQL_DB_PATH=~/.gleitzeit/workflows.db
-export GLEITZEIT_PERSISTENCE_TYPE=auto  # auto|redis|sql|memory
-```
-
 ## Resource Hubs
 
 ### OllamaHub
@@ -370,8 +355,10 @@ export GLEITZEIT_OLLAMA_URL=http://localhost:11434
 export GLEITZEIT_DEFAULT_MODEL=llama3.2
 
 # Persistence
-export GLEITZEIT_PERSISTENCE_TYPE=redis
+export GLEITZEIT_PERSISTENCE_TYPE=auto  # auto|redis|sql|memory
 export GLEITZEIT_REDIS_URL=redis://localhost:6379
+export GLEITZEIT_SQL_DB_PATH=~/.gleitzeit/workflows.db
+
 
 # API server
 export GLEITZEIT_API_HOST=0.0.0.0
