@@ -388,10 +388,6 @@ retry_config = RetryConfig(
 - Environment variable filtering
 - Command validation before execution
 
-### API Security
-- Authentication tokens for API mode
-- CORS configuration for web access
-- Rate limiting on endpoints
 
 ## Performance Optimizations
 
@@ -491,6 +487,7 @@ ResourceMetrics:
 3. **Event Streaming**: Real-time progress updates
 4. **Plugin System**: Dynamic provider loading
 5. **Workflow Templates**: Reusable workflow patterns
+6. **API Security**: Authentication tokens, CORS configuration, rate limiting
 
 ### Extensibility Points
 - Protocol versioning support
