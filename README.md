@@ -98,7 +98,7 @@ Gleitzeit includes a unified persistence layer with automatic fallback:
 
 ## Python Client
 
-### Using GleitzeitClient (Recommended)
+### Using GleitzeitClient
 
 ```python
 from gleitzeit import GleitzeitClient
@@ -141,37 +141,6 @@ async with GleitzeitClient(mode="native") as client:
     result = await client.run_workflow("workflow.yaml")
     # The engine is already running, workflow executes automatically!
 ```
-
-### Advanced: Using ExecutionEngine Directly
-
-For very advanced use cases where you need full control, you can use the ExecutionEngine directly. However, **this is rarely needed** as GleitzeitClient handles everything:
-
-```python
-import asyncio
-from gleitzeit.core.execution_engine import ExecutionEngine, ExecutionMode
-from gleitzeit.core.workflow_loader import load_workflow_from_file
-# ... other imports ...
-
-async def manual_engine_example():
-    # Setup engine manually (usually not needed!)
-    engine = create_engine_with_providers()  # Your setup code
-    
-    # Start engine in event-driven mode
-    engine_task = asyncio.create_task(engine.start(ExecutionMode.EVENT_DRIVEN))
-    
-    try:
-        # Submit workflow - execution happens automatically
-        workflow = load_workflow_from_file("workflow.yaml")
-        await engine.submit_workflow(workflow)
-        # No need to call _execute_workflow() - it runs automatically!
-        
-        # Wait for completion...
-    finally:
-        await engine.stop()
-        engine_task.cancel()
-```
-
-**Important**: Direct engine usage is only for special cases. Use `GleitzeitClient` for normal workflows!
 
 ### Available Client Methods
 
