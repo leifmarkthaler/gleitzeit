@@ -1,0 +1,56 @@
+# Example MCP Hub Configuration
+# Place this in ~/.gleitzeit/config.yaml or pass via native_config
+
+mcp:
+  # Hub settings
+  auto_discover: true
+  max_instances: 20
+  enable_metrics: true
+  
+  # MCP server definitions
+  servers:
+    # Example: Filesystem MCP server
+    - name: "filesystem"
+      connection_type: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-filesystem"]
+      working_dir: "${HOME}/documents"
+      auto_start: true
+      tool_prefix: "fs."  # Tools will be fs.read, fs.write, etc.
+      
+    # Example: GitHub MCP server
+    - name: "github"
+      connection_type: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-github"]
+      env:
+        GITHUB_TOKEN: "${GITHUB_TOKEN}"  # From environment
+      auto_start: true
+      tool_prefix: "gh."  # Tools will be gh.create_issue, gh.list_repos, etc.
+      
+    # Example: Web search server
+    - name: "search"
+      connection_type: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-web-search"]
+      auto_start: true
+      tool_prefix: "web."
+      
+    # Example: Custom Python MCP server
+    - name: "custom"
+      connection_type: "stdio"
+      command: ["python", "./my_mcp_server.py"]
+      working_dir: "${HOME}/mcp-servers"
+      auto_start: true
+      
+    # Example: Remote MCP server (WebSocket)
+    - name: "remote"
+      connection_type: "websocket"
+      url: "ws://remote-server:8765/mcp"
+      auto_start: false  # Don't start, just connect
+      auth_token: "${REMOTE_MCP_TOKEN}"
+      
+    # Example: HTTP-based MCP server
+    - name: "api"
+      connection_type: "http"
+      url: "https://api.example.com/mcp"
+      headers:
+        X-API-Key: "${API_KEY}"
+      auto_start: false

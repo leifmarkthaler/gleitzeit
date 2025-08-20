@@ -25,6 +25,8 @@ from gleitzeit.persistence.factory import PersistenceFactory
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+from gleitzeit.hub.mcp_hub import MCPHub
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 from gleitzeit.core.batch_processor import BatchProcessor
 from gleitzeit.common.shutdown import unified_shutdown
@@ -363,16 +365,37 @@ class GleitzeitClient:
         except Exception as e:
             logger.warning(f"Ollama provider registration failed: {e}")
             
-        # MCP provider
+        # MCP provider setup - try hub-based first, fallback to simple
         try:
             registry.register_protocol(MCP_PROTOCOL_V1)
-            mcp_provider = SimpleMCPProvider(
-                "mcp-provider",
-                resource_manager=self._resource_manager,
-                hub=None  # MCP doesn't use a specific hub
-            )
+            
+            # Check if MCP configuration exists
+            mcp_config = self.native_config.get('mcp', {})
+            
+            if mcp_config and mcp_config.get('servers'):
+                # Use MCPHub for external servers
+                logger.info("Setting up MCP Hub with external servers")
+                mcp_hub = MCPHub(
+                    auto_discover=mcp_config.get('auto_discover', True),
+                    config_data=mcp_config
+                )
+                mcp_provider = MCPHubProvider(
+                    provider_id="mcp-provider",
+                    hub=mcp_hub,
+                    config_data=mcp_config
+                )
+            else:
+                # Use simple built-in provider
+                logger.info("Using simple MCP provider with built-in tools")
+                mcp_provider = SimpleMCPProvider(
+                    "mcp-provider",
+                    resource_manager=self._resource_manager,
+                    hub=None
+                )
+            
             await mcp_provider.initialize()
             registry.register_provider("mcp-provider", "mcp/v1", mcp_provider)
+            
         except Exception as e:
             logger.warning(f"MCP provider registration failed: {e}")
             
