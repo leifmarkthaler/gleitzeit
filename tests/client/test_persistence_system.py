@@ -8,7 +8,7 @@ import tempfile
 from pathlib import Path
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 
-from gleitzeit.client import GleitzeitClient, create_client
+from gleitzeit.client import GleitzeitClient
 from gleitzeit.persistence.factory import PersistenceType
 
 

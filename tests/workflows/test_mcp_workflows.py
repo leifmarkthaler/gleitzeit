@@ -8,7 +8,8 @@ import yaml
 import json
 
 from gleitzeit.core.execution_engine import ExecutionEngine
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+from gleitzeit.hub.mcp_hub import MCPHub
 
 
 class TestMCPWorkflows:
@@ -131,7 +132,7 @@ class TestMCPWorkflows:
     @pytest.fixture
     async def mock_mcp_provider(self):
         """Create mock MCP provider"""
-        provider = Mock(spec=SimpleMCPProvider)
+        provider = Mock(spec=MCPHubProvider)
         provider.provider_id = "mcp"
         provider.protocol_id = "mcp/v1"
         

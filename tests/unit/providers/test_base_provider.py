@@ -12,7 +12,7 @@ Related components:
 - ProtocolProvider
 - OllamaProvider
 - PythonProvider
-- SimpleMCPProvider
+- MCPHubProvider
 """
 
 import pytest
@@ -180,9 +180,9 @@ class TestProviderValidation:
         
         from gleitzeit.providers.ollama_provider import OllamaProvider
         from gleitzeit.providers.python_provider import PythonProvider
-        from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+        from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
         
-        providers = [OllamaProvider, PythonProvider, SimpleMCPProvider]
+        providers = [OllamaProvider, PythonProvider, MCPHubProvider]
         
         for provider_class in providers:
             for method in forbidden_methods:
@@ -201,9 +201,9 @@ class TestProviderValidation:
         
         from gleitzeit.providers.ollama_provider import OllamaProvider
         from gleitzeit.providers.python_provider import PythonProvider
-        from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+        from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
         
-        providers = [OllamaProvider, PythonProvider, SimpleMCPProvider]
+        providers = [OllamaProvider, PythonProvider, MCPHubProvider]
         
         for provider_class in providers:
             for method in required_methods:
@@ -357,21 +357,21 @@ class TestPythonProvider:
 
 
 @pytest.mark.unit
-class TestSimpleMCPProvider:
-    """Test SimpleMCPProvider specific functionality"""
+class TestMCPHubProvider:
+    """Test MCPHubProvider specific functionality"""
     
     @pytest.fixture
     def mcp_provider(self):
-        """Create SimpleMCPProvider instance"""
-        from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+        """Create MCPHubProvider instance"""
+        from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
         
-        return SimpleMCPProvider(
+        return MCPHubProvider(
             provider_id="test_mcp"
         )
     
     @pytest.mark.asyncio
     async def test_mcp_provider_initialization(self, mcp_provider):
-        """Test SimpleMCPProvider initialization"""
+        """Test MCPHubProvider initialization"""
         with patch('asyncio.create_subprocess_exec') as mock_subprocess:
             mock_process = AsyncMock()
             mock_subprocess.return_value = mock_process
@@ -383,14 +383,14 @@ class TestSimpleMCPProvider:
     
     @pytest.mark.asyncio
     async def test_mcp_provider_health_check(self, mcp_provider):
-        """Test SimpleMCPProvider health check"""
+        """Test MCPHubProvider health check"""
         health = await mcp_provider.health_check()
         assert isinstance(health, bool)
     
     @pytest.mark.asyncio
     async def test_mcp_provider_cleanup(self, mcp_provider):
-        """Test SimpleMCPProvider cleanup"""
-        # SimpleMCPProvider doesn't manage processes - it's a simple in-memory provider
+        """Test MCPHubProvider cleanup"""
+        # MCPHubProvider doesn't manage processes - it's a simple in-memory provider
         # Just test that shutdown can be called without errors
         await mcp_provider.initialize()
         await mcp_provider.shutdown()
@@ -408,12 +408,12 @@ class TestProviderTypeHints:
         """Test that all providers' health_check returns bool"""
         from gleitzeit.providers.ollama_provider import OllamaProvider
         from gleitzeit.providers.python_provider import PythonProvider
-        from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+        from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
         
         # Create providers with minimal setup
         providers = [
             PythonProvider("test_python"),
-            SimpleMCPProvider("test_mcp")  # SimpleMCPProvider only takes provider_id
+            MCPHubProvider("test_mcp")  # MCPHubProvider only takes provider_id
         ]
         
         # OllamaProvider doesn't need a hub in clean architecture
@@ -439,9 +439,9 @@ class TestProviderTypeHints:
         """Test that all providers implement consistent interface"""
         from gleitzeit.providers.ollama_provider import OllamaProvider
         from gleitzeit.providers.python_provider import PythonProvider
-        from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+        from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
         
-        providers = [OllamaProvider, PythonProvider, SimpleMCPProvider]
+        providers = [OllamaProvider, PythonProvider, MCPHubProvider]
         
         for provider_class in providers:
             # Check all required methods exist

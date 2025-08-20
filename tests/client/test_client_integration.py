@@ -9,7 +9,7 @@ import asyncio
 import tempfile
 from pathlib import Path
 
-from gleitzeit.client import GleitzeitClient, create_client
+from gleitzeit.client import GleitzeitClient
 
 
 class TestClientUsagePatterns:

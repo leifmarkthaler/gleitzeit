@@ -11,7 +11,7 @@ Related components:
 - ProtocolProvider
 - OllamaProvider
 - PythonProvider
-- SimpleMCPProvider
+- MCPHubProvider
 """
 
 import pytest

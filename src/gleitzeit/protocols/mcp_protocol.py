@@ -165,7 +165,7 @@ def create_mcp_protocol() -> ProtocolSpec:
             )
         ),
         
-        # Generic tool execution (for SimpleMCPProvider)
+        # Generic tool execution (handled by MCPHubProvider)
         "mcp/tool.echo": MethodSpec(
             name="mcp/tool.echo",
             description="Echo tool",

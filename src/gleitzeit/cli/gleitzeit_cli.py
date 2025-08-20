@@ -31,7 +31,8 @@ from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+from gleitzeit.hub.mcp_hub import MCPHub
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 from gleitzeit.persistence.factory import PersistenceFactory, PersistenceType
 from gleitzeit.core.batch_processor import BatchProcessor, BatchResult
@@ -231,10 +232,14 @@ class GleitzeitCLI:
             if mcp_config.get('enabled', True):
                 try:
                     registry.register_protocol(MCP_PROTOCOL_V1)
-                    mcp_provider = SimpleMCPProvider(
-                        "cli-mcp-provider",
-                        resource_manager=self.resource_manager,
-                        hub=None  # MCP doesn't use a specific hub
+                    mcp_hub = MCPHub(
+                        auto_discover=mcp_config.get('auto_discover', False),
+                        config_data=mcp_config
+                    )
+                    mcp_provider = MCPHubProvider(
+                        provider_id="cli-mcp-provider",
+                        hub=mcp_hub,
+                        config_data=mcp_config
                     )
                     await mcp_provider.initialize()
                     registry.register_provider("cli-mcp-provider", "mcp/v1", mcp_provider)

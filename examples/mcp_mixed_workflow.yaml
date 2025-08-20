@@ -1,16 +1,17 @@
 # Mixed Provider Workflow with MCP
 # Shows how MCP tools integrate with other Gleitzeit providers
+# NOTE: Requires MCP servers to be configured in ~/.gleitzeit/config.yaml
 
 name: "Mixed Provider Integration"
 description: "Combines MCP, LLM, and Python providers in one workflow"
 
 tasks:
-  # Start with MCP echo
-  - id: "start_message"
-    name: "Initial Message"
-    method: "mcp/tool.echo"
+  # Start with reading a file (requires filesystem MCP server)
+  - id: "read_input"
+    name: "Read Input File"
+    method: "mcp/tool.fs.read"
     parameters:
-      message: "Starting data processing pipeline"
+      path: "./data/input.json"
   
   # Generate data with Python
   - id: "generate_data"
@@ -29,20 +30,27 @@ tasks:
         
         print(json.dumps(data))
   
-  # Calculate sum using MCP
-  - id: "sum_first_two"
-    name: "Sum First Two Values"
-    method: "mcp/tool.add"
+  # Process data with Python (removed MCP sum since no built-in tools)
+  - id: "process_data"
+    name: "Process Data"
+    method: "python/execute"
     dependencies: ["generate_data"]
     parameters:
-      a: "${generate_data.values[0]}"
-      b: "${generate_data.values[1]}"
+      code: |
+        import json
+        data = json.loads('${generate_data}')
+        result = {
+            "sum": sum(data["values"][:2]),
+            "avg": sum(data["values"]) / len(data["values"]),
+            "max": max(data["values"])
+        }
+        print(json.dumps(result))
   
   # Analyze with LLM
   - id: "analyze_data"
     name: "Analyze Data Pattern"
     method: "llm/chat"
-    dependencies: ["generate_data", "sum_first_two"]
+    dependencies: ["generate_data", "process_data"]
     parameters:
       model: "llama3.2"
       messages:
@@ -51,7 +59,7 @@ tasks:
             Analyze this data and identify patterns:
             Data: ${generate_data}
             
-            The sum of first two values is: ${sum_first_two.result}
+            Statistics: ${process_data}
             
             Provide insights in 2-3 sentences.
   
@@ -73,22 +81,20 @@ tasks:
         
         print(__import__('json').dumps(report, indent=2))
   
-  # Combine everything with MCP concat
-  - id: "final_summary"
-    name: "Create Summary"
-    method: "mcp/tool.concat"
-    dependencies: ["start_message", "format_report"]
+  # Save the report using MCP (requires filesystem server)
+  - id: "save_report"
+    name: "Save Report"
+    method: "mcp/tool.fs.write"
+    dependencies: ["format_report"]
     parameters:
-      strings:
-        - "${start_message.response}"
-        - " | Analysis complete: "
-        - "${format_report.word_count} words"
-      separator: ""
+      path: "./output/analysis_report.json"
+      content: "${format_report}"
   
-  # Final echo
+  # Final status
   - id: "completion"
-    name: "Completion Message"
-    method: "mcp/tool.echo"
-    dependencies: ["final_summary"]
+    name: "Completion Status"
+    method: "python/execute"
+    dependencies: ["save_report"]
     parameters:
-      message: "${final_summary.response}"
+      code: |
+        print("Analysis complete - report saved to output/analysis_report.json")

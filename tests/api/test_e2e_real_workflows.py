@@ -33,7 +33,8 @@ from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter, UnifiedInMemoryAdapter
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+from gleitzeit.hub.mcp_hub import MCPHub
 from gleitzeit.core.batch_processor import BatchProcessor
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 

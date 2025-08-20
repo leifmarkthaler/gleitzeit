@@ -8,7 +8,8 @@ All providers inherit from ProtocolProvider for clean separation of concerns.
 from gleitzeit.providers.base import ProtocolProvider, HTTPServiceProvider, WebSocketProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+# SimpleMCPProvider has been moved to examples/simple_mcp_provider.py as a reference implementation
 
 __all__ = [
     # Base classes
@@ -18,5 +19,5 @@ __all__ = [
     # Concrete providers
     "OllamaProvider",
     "PythonProvider", 
-    "SimpleMCPProvider"
+    "MCPHubProvider"
 ]

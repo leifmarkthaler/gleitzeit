@@ -24,7 +24,6 @@ from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.persistence.factory import PersistenceFactory
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
 from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
 from gleitzeit.hub.mcp_hub import MCPHub
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
@@ -369,29 +368,20 @@ class GleitzeitClient:
         try:
             registry.register_protocol(MCP_PROTOCOL_V1)
             
-            # Check if MCP configuration exists
+            # Configure MCP provider - always use MCPHub
             mcp_config = self.native_config.get('mcp', {})
             
-            if mcp_config and mcp_config.get('servers'):
-                # Use MCPHub for external servers
-                logger.info("Setting up MCP Hub with external servers")
-                mcp_hub = MCPHub(
-                    auto_discover=mcp_config.get('auto_discover', True),
-                    config_data=mcp_config
-                )
-                mcp_provider = MCPHubProvider(
-                    provider_id="mcp-provider",
-                    hub=mcp_hub,
-                    config_data=mcp_config
-                )
-            else:
-                # Use simple built-in provider
-                logger.info("Using simple MCP provider with built-in tools")
-                mcp_provider = SimpleMCPProvider(
-                    "mcp-provider",
-                    resource_manager=self._resource_manager,
-                    hub=None
-                )
+            # Always use MCPHub (even with no servers configured)
+            logger.info("Setting up MCP Hub")
+            mcp_hub = MCPHub(
+                auto_discover=mcp_config.get('auto_discover', False),
+                config_data=mcp_config
+            )
+            mcp_provider = MCPHubProvider(
+                provider_id="mcp-provider",
+                hub=mcp_hub,
+                config_data=mcp_config
+            )
             
             await mcp_provider.initialize()
             registry.register_provider("mcp-provider", "mcp/v1", mcp_provider)

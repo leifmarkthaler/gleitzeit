@@ -399,15 +399,15 @@ tasks:
 **Security**: Scripts run in subprocess isolation or Docker containers
 
 ### MCP Protocol (`mcp/v1`)
-**Providers**: MCPHubProvider (external servers) / SimpleMCPProvider (built-in)  
+**Provider**: MCPHubProvider  
 **Methods**:
-- `mcp/tool.*` - Execute MCP tools (built-in or external)
+- `mcp/tool.*` - Execute MCP tools from registered servers
 - `mcp/tools/list` - List available tools
-- `mcp/servers` - List MCP servers
+- `mcp/servers` - List MCP servers  
 - `mcp/ping` - Health check
 
-**Built-in Tools**: echo, add, multiply, concat  
-**External Servers**: Any MCP-compliant server (stdio/websocket/HTTP)
+**External Servers**: Any MCP-compliant server (stdio/websocket/HTTP)  
+**Note**: Configure servers in `~/.gleitzeit/config.yaml` or via environment
 
 ## CLI Commands
 

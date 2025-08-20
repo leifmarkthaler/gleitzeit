@@ -27,7 +27,8 @@ from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+from gleitzeit.hub.mcp_hub import MCPHub
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 from gleitzeit.persistence.factory import PersistenceFactory
 from gleitzeit.core.batch_processor import BatchProcessor
@@ -283,13 +284,18 @@ async def register_providers():
     except Exception as e:
         logger.warning(f"Ollama provider registration failed: {e}")
     
-    # MCP provider
+    # MCP provider - always use MCPHub
     try:
         registry.register_protocol(MCP_PROTOCOL_V1)
-        mcp_provider = SimpleMCPProvider(
-            "api-mcp-provider",
-            resource_manager=app_state.resource_manager,
-            hub=None  # MCP doesn't use a specific hub
+        mcp_config = {}  # Could load from config file if needed
+        mcp_hub = MCPHub(
+            auto_discover=False,
+            config_data=mcp_config
+        )
+        mcp_provider = MCPHubProvider(
+            provider_id="api-mcp-provider",
+            hub=mcp_hub,
+            config_data=mcp_config
         )
         await mcp_provider.initialize()
         registry.register_provider("api-mcp-provider", "mcp/v1", mcp_provider)

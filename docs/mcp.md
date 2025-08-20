@@ -36,36 +36,40 @@ Gleitzeit provides comprehensive support for the Model Context Protocol (MCP), e
    - Routes MCP method calls to appropriate servers
    - Handles tool discovery and registration
 
-3. **SimpleMCPProvider** (`providers/simple_mcp_provider.py`)
-   - Built-in MCP provider with basic tools
-   - No external dependencies required
-   - Provides: echo, add, multiply, concat tools
+3. **Example Implementation** (`examples/simple_mcp_provider.py`)
+   - Reference implementation showing how to build MCP providers
+   - Demonstrates direct tool implementation without external servers
+   - Useful for learning and testing
 
 ## Quick Start
 
-### Using Built-in MCP Tools
+### Configuring MCP Servers
 
-The simplest way to use MCP is with the built-in tools that require no configuration:
+MCP requires external servers to be configured. Without any servers, MCPHub will initialize but won't have any tools available:
+
+```yaml
+# ~/.gleitzeit/config.yaml
+mcp:
+  servers:
+    - name: "filesystem"
+      connection_type: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-filesystem"]
+      tool_prefix: "fs."
+```
+
+Then use the configured tools:
 
 ```python
 from gleitzeit import GleitzeitClient
 
 async with GleitzeitClient(mode="native") as client:
-    # Use built-in echo tool
+    # Use filesystem tool
     result = await client.execute_task(
         protocol="mcp/v1",
-        method="tool.echo",
-        params={"message": "Hello, MCP!"}
+        method="tool.fs.read",
+        params={"path": "README.md"}
     )
-    print(result)  # Echoes back the message
-    
-    # Use built-in math tools
-    result = await client.execute_task(
-        protocol="mcp/v1",
-        method="tool.add",
-        params={"a": 10, "b": 20}
-    )
-    print(result)  # Returns 30
+    print(result)
 ```
 
 ### Using in Workflows
@@ -73,22 +77,19 @@ async with GleitzeitClient(mode="native") as client:
 ```yaml
 name: "MCP Example Workflow"
 tasks:
-  - id: "greeting"
-    method: "mcp/tool.echo"
+  - id: "read_config"
+    method: "mcp/tool.fs.read"
     parameters:
-      message: "Starting workflow"
+      path: "config.json"
       
-  - id: "calculation"
-    method: "mcp/tool.multiply"
+  - id: "process"
+    method: "llm/chat"
+    dependencies: ["read_config"]
     parameters:
-      a: 7
-      b: 8
-      
-  - id: "combine"
-    method: "mcp/tool.concat"
-    dependencies: ["greeting", "calculation"]
-    parameters:
-      strings: ["Result: ", "${calculation.result}"]
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Summarize this config: ${read_config.content}"
 ```
 
 ## External MCP Servers
@@ -199,77 +200,6 @@ async with GleitzeitClient(mode="native", native_config=config) as client:
         params={"path": "README.md"}
     )
     print(result)
-```
-
-## Built-in Tools Reference
-
-### SimpleMCPProvider Tools
-
-#### `mcp/tool.echo`
-Echoes back the input message.
-
-**Parameters:**
-- `message` (string): Message to echo
-
-**Returns:**
-```json
-{
-  "response": "echoed message",
-  "echoed": true,
-  "length": 14
-}
-```
-
-#### `mcp/tool.add`
-Adds two numbers.
-
-**Parameters:**
-- `a` (number): First number
-- `b` (number): Second number
-
-**Returns:**
-```json
-{
-  "response": "30",
-  "result": 30,
-  "calculation": "10 + 20 = 30"
-}
-```
-
-#### `mcp/tool.multiply`
-Multiplies two numbers.
-
-**Parameters:**
-- `a` (number): First number
-- `b` (number): Second number
-
-**Returns:**
-```json
-{
-  "response": "42",
-  "result": 42,
-  "calculation": "6 * 7 = 42"
-}
-```
-
-#### `mcp/tool.concat`
-Concatenates strings.
-
-**Parameters (Option 1):**
-- `strings` (array): List of strings to join
-- `separator` (string, optional): Separator (default: " ")
-
-**Parameters (Option 2):**
-- `a` (string): First string
-- `b` (string): Second string
-
-**Returns:**
-```json
-{
-  "response": "concatenated string",
-  "joined": true,
-  "count": 3
-}
 ```
 
 ## Advanced Features

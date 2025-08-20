@@ -1,39 +1,46 @@
 """
-Simple MCP Provider for testing
-Implements MCP tools directly without subprocess
+Example: Simple MCP Provider Implementation
+This is a reference implementation showing how to create a basic MCP provider
+that implements tools directly without requiring external servers.
+
+This can be useful for:
+- Testing MCP workflows without external dependencies
+- Learning how MCP providers work
+- Creating custom in-process MCP tools
 """
 
 from typing import Dict, List, Any, Optional, Type
 import logging
-from gleitzeit.providers.base import ProtocolProvider
-from gleitzeit.core.errors import MethodNotSupportedError, InvalidParameterError, TaskExecutionError
+
+# Note: In a real implementation, you'd import from gleitzeit
+# from gleitzeit.providers.base import ProtocolProvider
+# from gleitzeit.core.errors import MethodNotSupportedError, InvalidParameterError, TaskExecutionError
 
 logger = logging.getLogger(__name__)
 
 
-class SimpleMCPProvider(ProtocolProvider):
+class SimpleMCPProvider:
     """
     Simple MCP provider that implements tools directly
-    No subprocess needed - perfect for testing
+    No subprocess needed - perfect for testing and demos
+    
+    This example shows how to:
+    1. Implement MCP tools as Python methods
+    2. Handle MCP protocol methods (tools/list, ping, etc.)
+    3. Provide a zero-configuration MCP experience
     """
     
     def __init__(
         self, 
         provider_id: str = "simple-mcp",
-        resource_manager=None,
-        hub=None,
         **kwargs
     ):
-        super().__init__(
-            provider_id=provider_id,
-            protocol_id="mcp/v1",
-            name="Simple MCP Provider",
-            description="Direct MCP tool implementation for testing",
-            resource_manager=resource_manager,
-            hub=hub
-        )
+        self.provider_id = provider_id
+        self.protocol_id = "mcp/v1"
+        self.name = "Simple MCP Provider"
+        self.description = "Direct MCP tool implementation for testing"
         
-        # Built-in tools
+        # Built-in tools - each tool is a method
         self.tools = {
             "echo": self._tool_echo,
             "add": self._tool_add,
@@ -53,12 +60,10 @@ class SimpleMCPProvider(ProtocolProvider):
     
     async def health_check(self) -> bool:
         """Check provider health"""
-        # Provider is healthy if initialized
         return True
     
     def get_supported_methods(self) -> List[str]:
-        """Return supported methods WITH protocol prefix as per documentation"""
-        # All methods must have protocol prefix "mcp/"
+        """Return supported methods WITH protocol prefix"""
         methods = ["mcp/tools/list", "mcp/server_info", "mcp/ping"]
         # Add tool methods with protocol prefix
         for tool_name in self.tools.keys():
@@ -66,10 +71,10 @@ class SimpleMCPProvider(ProtocolProvider):
         return methods
     
     async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
-        """Handle incoming requests - strip mcp/ prefix like other providers"""
+        """Handle incoming MCP requests"""
         logger.info(f"Simple MCP handling: {method}")
         
-        # Strip protocol prefix if present (following pattern from ollama_provider.py)
+        # Strip protocol prefix if present
         if method.startswith("mcp/"):
             method = method[4:]  # Remove "mcp/" prefix
         
@@ -78,9 +83,9 @@ class SimpleMCPProvider(ProtocolProvider):
             tool_name = method[5:]  # Remove "tool." prefix
             return await self._execute_tool(tool_name, params)
         
-        # Handle other methods
-        if method == "list_tools":
-            return {"tools": list(self.tools.keys())}
+        # Handle meta methods
+        if method == "tools/list":
+            return await self._handle_tools_list()
         
         elif method == "server_info":
             return {
@@ -89,16 +94,63 @@ class SimpleMCPProvider(ProtocolProvider):
                 "provider_id": self.provider_id
             }
         
+        elif method == "ping":
+            return "pong"
+        
         else:
-            raise MethodNotSupportedError(method, self.provider_id)
+            raise ValueError(f"Method not supported: {method}")
+    
+    async def _handle_tools_list(self) -> Dict[str, Any]:
+        """Return list of available tools in MCP format"""
+        tools = []
+        for name, func in self.tools.items():
+            tools.append({
+                "name": name,
+                "description": func.__doc__ or f"Tool: {name}",
+                "inputSchema": {
+                    "type": "object",
+                    "properties": self._get_tool_schema(name)
+                }
+            })
+        
+        return {
+            "tools": tools,
+            "count": len(tools)
+        }
+    
+    def _get_tool_schema(self, tool_name: str) -> Dict[str, Any]:
+        """Get input schema for a tool"""
+        schemas = {
+            "echo": {
+                "message": {"type": "string", "description": "Message to echo"}
+            },
+            "add": {
+                "a": {"type": "number", "description": "First number"},
+                "b": {"type": "number", "description": "Second number"}
+            },
+            "multiply": {
+                "a": {"type": "number", "description": "First number"},
+                "b": {"type": "number", "description": "Second number"}
+            },
+            "concat": {
+                "strings": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Strings to concatenate"
+                },
+                "separator": {
+                    "type": "string",
+                    "description": "Separator between strings",
+                    "default": " "
+                }
+            }
+        }
+        return schemas.get(tool_name, {})
     
     async def _execute_tool(self, tool_name: str, params: Dict[str, Any]) -> Any:
         """Execute a tool"""
         if tool_name not in self.tools:
-            raise InvalidParameterError(
-                "tool_name",
-                f"Unknown tool: {tool_name}"
-            )
+            raise ValueError(f"Unknown tool: {tool_name}")
         
         # Get arguments from params
         arguments = params.get("arguments", params)
@@ -112,13 +164,9 @@ class SimpleMCPProvider(ProtocolProvider):
             return result
             
         except Exception as e:
-            # Wrap any tool execution errors in TaskExecutionError for retry support
             error_msg = f"MCP tool '{tool_name}' failed: {str(e)}"
             logger.error(error_msg)
-            raise TaskExecutionError(
-                task_id=f"mcp_tool_{tool_name}",
-                message=error_msg
-            )
+            raise ValueError(error_msg)
     
     # Tool implementations
     async def _tool_echo(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -208,3 +256,51 @@ class SimpleMCPProvider(ProtocolProvider):
                          exc_tb: Optional[Any]) -> None:
         """Async context manager exit"""
         await self.shutdown()
+
+
+# Example usage
+if __name__ == "__main__":
+    import asyncio
+    
+    async def demo():
+        """Demonstrate the Simple MCP Provider"""
+        provider = SimpleMCPProvider()
+        await provider.initialize()
+        
+        # List tools
+        tools_response = await provider.handle_request("mcp/tools/list", {})
+        print("Available tools:")
+        for tool in tools_response["tools"]:
+            print(f"  - {tool['name']}: {tool['description']}")
+        
+        # Test echo tool
+        echo_result = await provider.handle_request(
+            "mcp/tool.echo",
+            {"message": "Hello, MCP!"}
+        )
+        print(f"\nEcho result: {echo_result}")
+        
+        # Test add tool
+        add_result = await provider.handle_request(
+            "mcp/tool.add",
+            {"a": 10, "b": 20}
+        )
+        print(f"Add result: {add_result}")
+        
+        # Test multiply tool
+        multiply_result = await provider.handle_request(
+            "mcp/tool.multiply",
+            {"a": 5, "b": 6}
+        )
+        print(f"Multiply result: {multiply_result}")
+        
+        # Test concat tool
+        concat_result = await provider.handle_request(
+            "mcp/tool.concat",
+            {"strings": ["Hello", " ", "World"], "separator": ""}
+        )
+        print(f"Concat result: {concat_result}")
+        
+        await provider.shutdown()
+    
+    asyncio.run(demo())

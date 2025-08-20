@@ -22,7 +22,7 @@ from gleitzeit.core.workflow_loader import load_workflow_from_dict
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
 from gleitzeit.persistence.unified_persistence import UnifiedInMemoryAdapter
 from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.protocols import (
@@ -103,7 +103,7 @@ class TestExampleWorkflowsReal:
         registry.register_provider("python", "python/v1", python_provider)
         
         # Real MCP provider
-        mcp_provider = SimpleMCPProvider(provider_id="mcp")
+        mcp_provider = MCPHubProvider(provider_id="mcp")
         await mcp_provider.initialize()
         registry.register_provider("mcp", "mcp/v1", mcp_provider)
         

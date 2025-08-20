@@ -13,7 +13,7 @@ from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter
 from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
 from gleitzeit.hub.ollama_hub import OllamaHub
 from gleitzeit.hub.docker_hub import DockerHub
 
@@ -117,7 +117,7 @@ async def mock_registry(mock_ollama_hub, mock_docker_hub):
         "provider_id": "python"
     })
     
-    mcp_provider = Mock(spec=SimpleMCPProvider)
+    mcp_provider = Mock(spec=MCPHubProvider)
     mcp_provider.provider_id = "mcp"
     mcp_provider.protocol_id = "mcp/v1"
     mcp_provider.handle_request = AsyncMock(return_value={

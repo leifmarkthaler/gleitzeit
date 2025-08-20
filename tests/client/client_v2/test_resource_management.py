@@ -6,12 +6,11 @@ import pytest
 import asyncio
 from unittest.mock import Mock, AsyncMock, patch
 
-from gleitzeit.client_v2 import GleitzeitClient
-from gleitzeit.resources import (
+from gleitzeit.client import GleitzeitClient
+from gleitzeit.hub.base import (
     ResourceInstance,
     ResourceType,
     ResourceStatus,
-    ResourceRequirements,
     ResourceMetrics
 )
 

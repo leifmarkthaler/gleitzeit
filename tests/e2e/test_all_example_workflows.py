@@ -26,7 +26,7 @@ from gleitzeit.core.workflow_loader import load_workflow_from_file, load_workflo
 from gleitzeit.core.models import Task, Workflow, TaskStatus, WorkflowStatus
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
-from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
+from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
 from gleitzeit.hub.ollama_hub import OllamaHub
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.task_queue import QueueManager, DependencyResolver
@@ -187,7 +187,7 @@ class TestAllExampleWorkflows:
     @pytest.fixture
     async def mock_mcp_provider(self):
         """Create mock MCP provider"""
-        provider = AsyncMock(spec=SimpleMCPProvider)
+        provider = AsyncMock(spec=MCPHubProvider)
         provider.provider_id = "mcp"
         provider.protocol_id = MCP_PROTOCOL_V1
         provider.name = "Mock MCP Provider"
