@@ -76,7 +76,7 @@ async with GleitzeitClient() as client:
 
 ### Protocols & Providers
 - **Protocols**: Define standardized interfaces (LLM, Python, MCP)
-- **Providers**: Implement protocol methods (OllamaProvider, PythonProvider, SimpleMCPProvider)
+- **Providers**: Implement protocol methods (OllamaProvider, PythonProvider, MCPHubProvider)
 - **Registry**: Maps methods to providers and validates calls
 
 ### Resource Management
@@ -312,33 +312,34 @@ tasks:
 
 ### MCP (Model Context Protocol) Integration
 
-Use built-in or external MCP tools:
+Use external MCP server tools (requires server configuration):
 
 ```yaml
 name: "MCP Tools Example"
 tasks:
-  # Built-in MCP tools
-  - id: "calculate"
-    method: "mcp/tool.add"
-    parameters:
-      a: 100
-      b: 200
-  
-  # External MCP server tools (requires configuration)
-  - id: "read_file"
+  # Read file using filesystem MCP server
+  - id: "read_config"
     method: "mcp/tool.fs.read"
     parameters:
-      path: "./data.json"
+      path: "./config.json"
   
-  # Combine with LLM
+  # Write file using filesystem MCP server
+  - id: "save_output"
+    method: "mcp/tool.fs.write"
+    dependencies: ["read_config"]
+    parameters:
+      path: "./output.json"
+      content: "Processed: ${read_config.content}"
+  
+  # Combine with LLM for analysis
   - id: "analyze"
     method: "llm/chat"
-    dependencies: ["read_file"]
+    dependencies: ["read_config"]
     parameters:
       model: "llama3.2"
       messages:
         - role: "user"
-          content: "Analyze this data: ${read_file.content}"
+          content: "Analyze this configuration: ${read_config.content}"
 ```
 
 ### Multi-Model Workflow

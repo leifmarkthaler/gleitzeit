@@ -145,54 +145,68 @@ parameters:
   script: "code.py"
 ```
 
-### SimpleMCPProvider
+### MCPHubProvider
 
-Implements Model Context Protocol tools.
+Manages external MCP (Model Context Protocol) servers.
 
 **Protocol:** `mcp/v1`
 
-**Built-in Methods:**
+**Description:** MCPHubProvider routes MCP tool calls to external MCP servers. It supports stdio, WebSocket, and HTTP connections to MCP-compliant servers.
 
-#### mcp/tool.echo
-
-Echo a message.
+**Configuration Required:** MCP servers must be configured in `~/.gleitzeit/config.yaml`:
 
 ```yaml
-method: "mcp/tool.echo"
-parameters:
-  message: "Hello, MCP!"
+mcp:
+  servers:
+    - name: "filesystem"
+      connection_type: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-filesystem"]
+      tool_prefix: "fs."
+    - name: "github"
+      connection_type: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-github"]
+      env:
+        GITHUB_TOKEN: "${GITHUB_TOKEN}"
 ```
 
-#### mcp/tool.add
+**Methods:**
 
-Add numbers.
+#### mcp/tool.*
+
+Execute tools from registered MCP servers. The available tools depend on your configured servers.
+
+Example with filesystem server:
 
 ```yaml
-method: "mcp/tool.add"
+method: "mcp/tool.fs.read"
 parameters:
-  a: 10
-  b: 20
+  path: "./data.json"
 ```
 
-#### mcp/tool.multiply
-
-Multiply numbers.
+Example with GitHub server:
 
 ```yaml
-method: "mcp/tool.multiply"
+method: "mcp/tool.gh.create_issue"
 parameters:
-  a: 5
-  b: 7
+  repo: "myorg/myrepo"
+  title: "New Issue"
+  body: "Issue description"
 ```
 
-#### mcp/tool.concat
+#### mcp/tools/list
 
-Concatenate strings.
+List all available tools from all registered servers.
 
 ```yaml
-method: "mcp/tool.concat"
-parameters:
-  strings: ["Hello", " ", "World"]
+method: "mcp/tools/list"
+```
+
+#### mcp/servers
+
+Get information about registered MCP servers.
+
+```yaml
+method: "mcp/servers"
 ```
 
 
@@ -733,7 +747,7 @@ Providers are selected based on the method prefix:
 
 - `llm/*` → OllamaProvider
 - `python/*` → PythonProvider
-- `mcp/*` → SimpleMCPProvider
+- `mcp/*` → MCPHubProvider
 
 ## Resource Management
 
@@ -845,13 +859,14 @@ tasks:
       messages:
         - content: "Analyze: ${generate.data}"
   
-  # Use MCP tool for calculation
+  # Process data with Python
   - id: "calculate"
-    method: "mcp/tool.add"
+    method: "python/execute"
     dependencies: ["analyze"]
     parameters:
-      a: 100
-      b: 50
+      code: |
+        result = 100 + 50
+        print({"result": result})
   
   # Generate final report
   - id: "report"
