@@ -1,0 +1,48 @@
+# Basic MCP Workflow Example
+# Demonstrates using built-in MCP tools
+
+name: "MCP Basic Tools Demo"
+description: "Shows how to use built-in MCP tools in a workflow"
+
+tasks:
+  # Echo tool - returns the input message
+  - id: "greeting"
+    name: "Echo Greeting"
+    method: "mcp/tool.echo"
+    parameters:
+      message: "Welcome to MCP integration!"
+  
+  # Math operations
+  - id: "calculate_sum"
+    name: "Add Numbers"
+    method: "mcp/tool.add"
+    parameters:
+      a: 100
+      b: 200
+  
+  - id: "calculate_product"
+    name: "Multiply Numbers"
+    method: "mcp/tool.multiply"
+    parameters:
+      a: 15
+      b: 4
+  
+  # String concatenation
+  - id: "combine_results"
+    name: "Combine All Results"
+    method: "mcp/tool.concat"
+    dependencies: ["greeting", "calculate_sum", "calculate_product"]
+    parameters:
+      strings:
+        - "Results: "
+        - "Sum=${calculate_sum.result}, "
+        - "Product=${calculate_product.result}"
+      separator: ""
+  
+  # Use the combined result
+  - id: "final_message"
+    name: "Create Final Message"
+    method: "mcp/tool.echo"
+    dependencies: ["combine_results"]
+    parameters:
+      message: "${combine_results.response}"

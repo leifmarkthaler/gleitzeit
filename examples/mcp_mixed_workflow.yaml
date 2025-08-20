@@ -1,0 +1,94 @@
+# Mixed Provider Workflow with MCP
+# Shows how MCP tools integrate with other Gleitzeit providers
+
+name: "Mixed Provider Integration"
+description: "Combines MCP, LLM, and Python providers in one workflow"
+
+tasks:
+  # Start with MCP echo
+  - id: "start_message"
+    name: "Initial Message"
+    method: "mcp/tool.echo"
+    parameters:
+      message: "Starting data processing pipeline"
+  
+  # Generate data with Python
+  - id: "generate_data"
+    name: "Generate Sample Data"
+    method: "python/execute"
+    parameters:
+      code: |
+        import json
+        import random
+        
+        # Generate sample data
+        data = {
+            "values": [random.randint(1, 100) for _ in range(10)],
+            "labels": [f"Item_{i}" for i in range(10)]
+        }
+        
+        print(json.dumps(data))
+  
+  # Calculate sum using MCP
+  - id: "sum_first_two"
+    name: "Sum First Two Values"
+    method: "mcp/tool.add"
+    dependencies: ["generate_data"]
+    parameters:
+      a: "${generate_data.values[0]}"
+      b: "${generate_data.values[1]}"
+  
+  # Analyze with LLM
+  - id: "analyze_data"
+    name: "Analyze Data Pattern"
+    method: "llm/chat"
+    dependencies: ["generate_data", "sum_first_two"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Analyze this data and identify patterns:
+            Data: ${generate_data}
+            
+            The sum of first two values is: ${sum_first_two.result}
+            
+            Provide insights in 2-3 sentences.
+  
+  # Process analysis with Python
+  - id: "format_report"
+    name: "Format Final Report"
+    method: "python/execute"
+    dependencies: ["analyze_data"]
+    parameters:
+      code: |
+        analysis = '''${analyze_data.response}'''
+        
+        report = {
+            "timestamp": __import__('datetime').datetime.now().isoformat(),
+            "analysis": analysis,
+            "word_count": len(analysis.split()),
+            "status": "completed"
+        }
+        
+        print(__import__('json').dumps(report, indent=2))
+  
+  # Combine everything with MCP concat
+  - id: "final_summary"
+    name: "Create Summary"
+    method: "mcp/tool.concat"
+    dependencies: ["start_message", "format_report"]
+    parameters:
+      strings:
+        - "${start_message.response}"
+        - " | Analysis complete: "
+        - "${format_report.word_count} words"
+      separator: ""
+  
+  # Final echo
+  - id: "completion"
+    name: "Completion Message"
+    method: "mcp/tool.echo"
+    dependencies: ["final_summary"]
+    parameters:
+      message: "${final_summary.response}"

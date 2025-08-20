@@ -310,6 +310,37 @@ tasks:
             Setting: ${setting.response}
 ```
 
+### MCP (Model Context Protocol) Integration
+
+Use built-in or external MCP tools:
+
+```yaml
+name: "MCP Tools Example"
+tasks:
+  # Built-in MCP tools
+  - id: "calculate"
+    method: "mcp/tool.add"
+    parameters:
+      a: 100
+      b: 200
+  
+  # External MCP server tools (requires configuration)
+  - id: "read_file"
+    method: "mcp/tool.fs.read"
+    parameters:
+      path: "./data.json"
+  
+  # Combine with LLM
+  - id: "analyze"
+    method: "llm/chat"
+    dependencies: ["read_file"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Analyze this data: ${read_file.content}"
+```
+
 ### Multi-Model Workflow
 
 Use different models for different tasks:
@@ -368,8 +399,15 @@ tasks:
 **Security**: Scripts run in subprocess isolation or Docker containers
 
 ### MCP Protocol (`mcp/v1`)
-**Provider**: SimpleMCPProvider  
-**Methods**: Tool-specific methods via Model Context Protocol
+**Providers**: MCPHubProvider (external servers) / SimpleMCPProvider (built-in)  
+**Methods**:
+- `mcp/tool.*` - Execute MCP tools (built-in or external)
+- `mcp/tools/list` - List available tools
+- `mcp/servers` - List MCP servers
+- `mcp/ping` - Health check
+
+**Built-in Tools**: echo, add, multiply, concat  
+**External Servers**: Any MCP-compliant server (stdio/websocket/HTTP)
 
 ## CLI Commands
 
@@ -409,6 +447,14 @@ Manages Docker containers for isolated Python execution:
 - Resource limits enforcement
 - Security isolation
 
+### MCPHub
+Manages MCP (Model Context Protocol) server instances:
+- Supports stdio, WebSocket, and HTTP connections
+- Automatic tool discovery and registration
+- Health monitoring and auto-restart
+- Tool routing and load balancing
+- Configurable via YAML or environment variables
+
 ## Deployment Modes
 
 ### Development Mode
@@ -447,6 +493,13 @@ persistence:
 batch:
   max_concurrent: 5
   max_file_size: 1048576
+mcp:
+  auto_discover: true
+  servers:
+    - name: "filesystem"
+      connection_type: "stdio"
+      command: ["npx", "-y", "@modelcontextprotocol/server-filesystem"]
+      tool_prefix: "fs."
 ```
 
 ### Environment Variables
@@ -643,6 +696,7 @@ gleitzeit status --verbose
 - [Installation](docs/installation.md) - Detailed installation guide
 - [Core Concepts](docs/concepts.md) - Understand the architecture
 - [Workflows](docs/workflows.md) - Creating complex workflows
+- [MCP Integration](docs/mcp.md) - Model Context Protocol support
 - [CLI Reference](docs/cli.md) - Command-line interface
 - [Python API](docs/api.md) - Complete API reference
 - [Providers](docs/providers.md) - Available providers and creating custom ones
