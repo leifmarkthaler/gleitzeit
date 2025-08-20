@@ -1,6 +1,7 @@
-# Gleitzeit - Protocol-Based Workflow Orchestration
+# Gleitzeit
 
-A flexible workflow orchestration system that executes LLM operations, Python scripts, and tool integrations through a unified protocol-based architecture. Supports both API and native execution modes.
+A workflow orchestration system for coordinating LLM tasks, Python code execution, and tool integrations.
+Supports parallel task execution, dependency management, and batch file processing.
 
 ## Quick Start
 
@@ -14,15 +15,10 @@ Get up and running with Gleitzeit in 5 minutes!
 - Docker (optional, for isolated Python execution)
 
 ### Installation
-
 ```bash
-# Install from PyPI
-pip install gleitzeit
-
-# Or install from source
 git clone https://github.com/leifmarkthaler/gleitzeit.git
 cd gleitzeit
-pip install -e .
+uv pip install -e .
 ```
 
 ### Step 1: Start Ollama
@@ -62,31 +58,19 @@ tasks:
 
 ### Step 3: Run the Workflow
 
+**Using CLI**
 ```bash
-# Using CLI
 gleitzeit run hello_workflow.yaml
+```
 
-# Or using Python
-python -c "
+**Or using Python**
+```python
 import asyncio
 from gleitzeit import GleitzeitClient
 
-async def main():
-    async with GleitzeitClient() as client:
-        results = await client.run_workflow('hello_workflow.yaml')
-        for task_id, result in results.items():
-            print(f'{task_id}: {result.get(\"response\", result)}')
-
-asyncio.run(main())
-"
+async with GleitzeitClient() as client:
+    result = await client.run_workflow("workflow.yaml")
 ```
-
-## Architecture Overview
-
-Gleitzeit uses a **dual-mode architecture**:
-- **API Mode**: REST API server for production deployments
-- **Native Mode**: Direct execution engine for development/testing
-- **Auto Mode**: Automatically selects the best available mode
 
 ## Core Concepts
 
@@ -105,6 +89,12 @@ Gleitzeit uses a **dual-mode architecture**:
 - **TaskQueue**: Manages task scheduling with dependency resolution
 - **Parallel Execution**: Independent tasks run concurrently
 - **Parameter Substitution**: Pass results between tasks using `${task_id.field}`
+
+### Persistence
+Gleitzeit includes a unified persistence layer with automatic fallback:
+-  **Redis** (if available) - High performance
+-  **SQLite** (fallback) - Local database
+-  **Memory** (last resort) - In-process storage
 
 ## Python Client
 
@@ -404,14 +394,6 @@ tasks:
 **Provider**: SimpleMCPProvider  
 **Methods**: Tool-specific methods via Model Context Protocol
 
-### Template Protocol (`template/v1`)
-**Provider**: TemplateProvider  
-**Methods**:
-- `template/research` - Generate multi-step research workflows
-- `template/code` - Generate code development workflows
-- `template/analyze` - Generate analysis workflows
-- `template/chat` - Generate chat workflows
-
 ## CLI Commands
 
 ```bash
@@ -435,26 +417,11 @@ gleitzeit config set default_model llama3.2
 gleitzeit serve --port 8000
 ```
 
-## Persistence
-
-Gleitzeit includes a unified persistence layer with automatic fallback:
-
-1. **Redis** (if available) - High performance
-2. **SQLite** (fallback) - Local database
-3. **Memory** (last resort) - In-process storage
-
-Configuration via environment variables:
-```bash
-export GLEITZEIT_REDIS_URL=redis://localhost:6379
-export GLEITZEIT_SQL_DB_PATH=~/.gleitzeit/workflows.db
-export GLEITZEIT_PERSISTENCE_TYPE=auto  # auto|redis|sql|memory
-```
-
 ## Resource Hubs
 
 ### OllamaHub
 Manages Ollama LLM server instances:
-- Auto-discovers running instances on ports 11434-11439
+- Auto-discovers running instances on configurable ports 
 - Health monitoring and metrics collection
 - Model-aware load balancing
 - Connection pooling for performance
@@ -512,8 +479,10 @@ export GLEITZEIT_OLLAMA_URL=http://localhost:11434
 export GLEITZEIT_DEFAULT_MODEL=llama3.2
 
 # Persistence
-export GLEITZEIT_PERSISTENCE_TYPE=redis
+export GLEITZEIT_PERSISTENCE_TYPE=auto  # auto|redis|sql|memory
 export GLEITZEIT_REDIS_URL=redis://localhost:6379
+export GLEITZEIT_SQL_DB_PATH=~/.gleitzeit/workflows.db
+
 
 # API server
 export GLEITZEIT_API_HOST=0.0.0.0
