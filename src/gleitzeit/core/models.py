@@ -9,7 +9,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Any, Union
 from uuid import uuid4
-from pydantic import BaseModel, Field, field_validator, ConfigDict
+from pydantic import BaseModel, Field, field_validator, ConfigDict, field_serializer
 import json
 import re
 from gleitzeit.core.errors import TaskValidationError
@@ -108,11 +108,12 @@ class Task(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     
     model_config = ConfigDict(
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        use_enum_values=True
     )
+    
+    @field_serializer('created_at', 'started_at', 'completed_at')
+    def serialize_datetime(self, dt: Optional[datetime]) -> Optional[str]:
+        return dt.isoformat() if dt else None
     
     @field_validator('method')
     @classmethod
@@ -265,11 +266,12 @@ class Workflow(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict)
     
     model_config = ConfigDict(
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        use_enum_values=True
     )
+    
+    @field_serializer('created_at', 'started_at', 'completed_at')
+    def serialize_datetime(self, dt: Optional[datetime]) -> Optional[str]:
+        return dt.isoformat() if dt else None
     
     def add_task(self, task: Task) -> None:
         """Add a task to the workflow"""
@@ -398,11 +400,12 @@ class TaskResult(BaseModel):
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
     
     model_config = ConfigDict(
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        use_enum_values=True
     )
+    
+    @field_serializer('started_at', 'completed_at')
+    def serialize_datetime(self, dt: Optional[datetime]) -> Optional[str]:
+        return dt.isoformat() if dt else None
     
     def __post_init__(self) -> None:
         """Calculate duration if both timestamps are available"""
@@ -433,8 +436,9 @@ class WorkflowExecution(BaseModel):
     total_tasks: int = Field(default=0, ge=0)
     
     model_config = ConfigDict(
-        use_enum_values=True,
-        json_encoders={
-            datetime: lambda v: v.isoformat() if v else None
-        }
+        use_enum_values=True
     )
+    
+    @field_serializer('started_at', 'completed_at')
+    def serialize_datetime(self, dt: Optional[datetime]) -> Optional[str]:
+        return dt.isoformat() if dt else None

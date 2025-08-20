@@ -142,7 +142,7 @@ class JSONRPCResponse(BaseModel):
         result = {"jsonrpc": self.jsonrpc, "id": self.id}
         
         if self.error is not None:
-            result["error"] = self.error.dict()
+            result["error"] = self.error.model_dump()
         else:
             result["result"] = self.result
         
@@ -202,7 +202,7 @@ class JSONRPCResponse(BaseModel):
 
 class JSONRPCBatch(BaseModel):
     """JSON-RPC 2.0 batch request/response handler"""
-    items: List[Union[JSONRPCRequest, JSONRPCResponse]] = Field(..., min_items=1)
+    items: List[Union[JSONRPCRequest, JSONRPCResponse]] = Field(..., min_length=1)
     
     def is_batch_request(self) -> bool:
         """Check if this is a batch of requests"""

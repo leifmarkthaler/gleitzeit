@@ -108,6 +108,8 @@ Gleitzeit uses a **dual-mode architecture**:
 
 ## Python Client
 
+### Using GleitzeitClient (Recommended)
+
 ```python
 from gleitzeit import GleitzeitClient
 
@@ -125,7 +127,94 @@ async with GleitzeitClient() as client:
         pass
 ```
 
-### Available Methods
+### Using ExecutionEngine Directly
+
+For advanced use cases, you can use the ExecutionEngine directly:
+
+```python
+import asyncio
+from gleitzeit.core.execution_engine import ExecutionEngine, ExecutionMode
+from gleitzeit.core.workflow_loader import load_workflow_from_file
+from gleitzeit.registry import ProtocolProviderRegistry
+from gleitzeit.providers.ollama_provider import OllamaProvider
+from gleitzeit.providers.python_provider import PythonProvider
+from gleitzeit.persistence.unified_persistence import UnifiedInMemoryAdapter
+from gleitzeit.task_queue import QueueManager, DependencyResolver
+from gleitzeit.protocols import LLM_PROTOCOL_V1, PYTHON_PROTOCOL_V1
+
+async def run_with_engine():
+    # Setup persistence and registry
+    persistence = UnifiedInMemoryAdapter()
+    await persistence.initialize()
+    
+    registry = ProtocolProviderRegistry()
+    registry.register_protocol(LLM_PROTOCOL_V1)
+    registry.register_protocol(PYTHON_PROTOCOL_V1)
+    
+    # Register providers
+    ollama_provider = OllamaProvider(provider_id="ollama")
+    await ollama_provider.initialize()
+    registry.register_provider("ollama", "llm/v1", ollama_provider)
+    
+    python_provider = PythonProvider(provider_id="python")
+    await python_provider.initialize()
+    registry.register_provider("python", "python/v1", python_provider)
+    
+    # Create execution engine
+    engine = ExecutionEngine(
+        registry=registry,
+        persistence=persistence,
+        queue_manager=QueueManager(),
+        dependency_resolver=DependencyResolver(),
+        max_concurrent_tasks=5
+    )
+    
+    # Start engine in event-driven mode (runs in background)
+    engine_task = asyncio.create_task(engine.start(ExecutionMode.EVENT_DRIVEN))
+    await asyncio.sleep(0.1)  # Let it start
+    
+    try:
+        # Load and submit workflow - execution happens automatically!
+        workflow = load_workflow_from_file("workflow.yaml")
+        await engine.submit_workflow(workflow)
+        
+        # Wait for completion
+        while True:
+            all_done = all(
+                engine.get_task_result(task.id) is not None 
+                for task in workflow.tasks
+            )
+            if all_done:
+                break
+            await asyncio.sleep(0.5)
+        
+        # Get results
+        for task in workflow.tasks:
+            result = engine.get_task_result(task.id)
+            print(f"{task.id}: {result.status}")
+            
+    finally:
+        # Cleanup
+        await engine.stop()
+        engine_task.cancel()
+        try:
+            await engine_task
+        except asyncio.CancelledError:
+            pass
+        await ollama_provider.cleanup()
+        await python_provider.cleanup()
+
+# Run the engine
+asyncio.run(run_with_engine())
+```
+
+**Important Notes:**
+- When using the ExecutionEngine directly, you must start it with `engine.start(ExecutionMode.EVENT_DRIVEN)` as a background task
+- After starting the engine, `submit_workflow()` alone triggers execution - no need to call `_execute_workflow()`
+- The engine handles task scheduling and execution automatically
+- Always cleanup properly by stopping the engine and canceling the background task
+
+### Available Client Methods
 
 ```python
 # Run workflows
@@ -148,6 +237,40 @@ results = await client.batch_process(
 
 # Direct task execution
 task_result = await client.execute_task(task)
+```
+
+### Submitting Individual Tasks with Engine
+
+```python
+from gleitzeit.core.models import Task
+
+# Create a task
+task = Task(
+    id="my-task",
+    method="llm/chat",
+    params={
+        "model": "llama3.2",
+        "messages": [{"role": "user", "content": "Hello!"}]
+    }
+)
+
+# Submit task (execution happens automatically if engine is running)
+await engine.submit_task(task)
+
+# Submit multiple tasks as a workflow
+from gleitzeit.core.models import Workflow
+
+workflow = Workflow(
+    name="My Workflow",
+    tasks=[
+        Task(id="task1", method="llm/chat", params={...}),
+        Task(id="task2", method="python/execute", params={...}, 
+             dependencies=["task1"])  # task2 waits for task1
+    ]
+)
+
+# Submit workflow - all tasks execute automatically with dependency resolution
+await engine.submit_workflow(workflow)
 ```
 
 ## Workflow Examples

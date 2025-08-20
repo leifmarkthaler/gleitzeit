@@ -17,7 +17,7 @@ from sqlalchemy import (
     Boolean, Text, Index, ForeignKey, and_, or_, select, delete,
     MetaData, Table
 )
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import relationship, Session
 from sqlalchemy.exc import IntegrityError

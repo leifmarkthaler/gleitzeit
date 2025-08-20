@@ -210,7 +210,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 'priority': task.priority,
                 'dependencies': json.dumps(task.dependencies) if task.dependencies else '[]',
                 'timeout': task.timeout or 0,
-                'retry_config': json.dumps(task.retry_config.dict()) if task.retry_config else '{}',
+                'retry_config': json.dumps(task.retry_config.model_dump()) if task.retry_config else '{}',
                 'status': task.status,
                 'attempt_count': task.attempt_count,
                 'workflow_id': task.workflow_id or '',
@@ -443,7 +443,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             # Convert tasks to JSON
             tasks_data = []
             for task in workflow.tasks:
-                task_dict = task.dict()
+                task_dict = task.model_dump()
                 # Convert datetime objects to ISO format strings
                 for field in ['created_at', 'started_at', 'completed_at']:
                     if task_dict.get(field):
@@ -629,7 +629,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                         'priority': task.priority,
                         'dependencies': json.dumps(task.dependencies) if task.dependencies else '[]',
                         'timeout': task.timeout or 0,
-                        'retry_config': json.dumps(task.retry_config.dict()) if task.retry_config else '{}',
+                        'retry_config': json.dumps(task.retry_config.model_dump()) if task.retry_config else '{}',
                         'status': task.status,
                         'attempt_count': task.attempt_count,
                         'workflow_id': task.workflow_id or '',

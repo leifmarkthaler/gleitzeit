@@ -77,9 +77,11 @@ class TestSimpleLLMWorkflow:
     @pytest.mark.asyncio
     async def test_workflow_execution(self, execution_engine, workflow_content, mock_ollama_provider):
         """Test workflow executes successfully"""
-        # Submit workflow
-        workflow_id = await execution_engine.submit_workflow(workflow_content)
-        assert workflow_id.startswith("wf-")
+        # Load and submit workflow
+        workflow = load_workflow_from_dict(workflow_content)
+        await execution_engine.submit_workflow(workflow)
+        workflow_id = workflow.id
+        assert workflow_id.startswith("workflow-")
         
         # Simulate execution
         await asyncio.sleep(0.1)  # Allow async tasks to process
@@ -111,7 +113,9 @@ class TestSimpleLLMWorkflow:
         
         execution_engine.registry.get_provider_for_method.return_value.handle_request = track_execution_time
         
-        workflow_id = await execution_engine.submit_workflow(workflow_content)
+        workflow = load_workflow_from_dict(workflow_content)
+        await execution_engine.submit_workflow(workflow)
+        workflow_id = workflow.id
         await asyncio.sleep(0.3)  # Wait for execution
         
         # If parallel, start times should be very close
@@ -130,7 +134,9 @@ class TestSimpleLLMWorkflow:
         execution_engine.registry.get_provider_for_method.return_value.handle_request = slow_response
         execution_engine.task_timeout = 1  # Override for faster test
         
-        workflow_id = await execution_engine.submit_workflow(workflow_content)
+        workflow = load_workflow_from_dict(workflow_content)
+        await execution_engine.submit_workflow(workflow)
+        workflow_id = workflow.id
         
         # Should timeout
         with pytest.raises(asyncio.TimeoutError):
@@ -157,7 +163,9 @@ class TestSimpleLLMWorkflow:
     @pytest.mark.asyncio
     async def test_result_storage(self, execution_engine, workflow_content, mock_persistence):
         """Test results are properly stored"""
-        workflow_id = await execution_engine.submit_workflow(workflow_content)
+        workflow = load_workflow_from_dict(workflow_content)
+        await execution_engine.submit_workflow(workflow)
+        workflow_id = workflow.id
         await asyncio.sleep(0.1)
         
         # Verify results were saved
