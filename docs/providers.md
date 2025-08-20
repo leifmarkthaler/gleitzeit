@@ -803,7 +803,6 @@ Providers use connection pooling for efficiency:
 Some providers implement caching:
 
 ```python
-# Template compilation caching
 # Python bytecode caching
 # Model response caching (optional)
 ```
@@ -824,7 +823,6 @@ parameters:
 | Ollama | ✓ | ✓ | ✓ | ✗ | N/A |
 | Python | ✓ | ✗ | ✗ | ✓ | ✓ |
 | MCP | ✓ | ✗ | ✗ | ✗ | N/A |
-| Template | ✓ | ✗ | ✓ | ✓ | N/A |
 
 ## Best Practices
 
@@ -879,11 +877,4 @@ tasks:
             Create a report with:
             Analysis: ${analyze.response}
             Calculation result: ${calculate.result}
-```
-
-### Using Template Provider
-
-```yaml
-name: "Template Provider Example"
-tasks:
 ```
