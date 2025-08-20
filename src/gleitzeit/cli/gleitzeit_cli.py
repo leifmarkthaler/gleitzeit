@@ -32,8 +32,7 @@ from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
-from gleitzeit.providers.template_provider import TemplateProvider
-from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1, TEMPLATE_PROTOCOL_V1
+from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 from gleitzeit.persistence.factory import PersistenceFactory, PersistenceType
 from gleitzeit.core.batch_processor import BatchProcessor, BatchResult
 from gleitzeit.common.shutdown import unified_shutdown
@@ -245,20 +244,6 @@ class GleitzeitCLI:
             
             # Template provider
             template_config = provider_config.get('template', {})
-            if template_config.get('enabled', True):
-                try:
-                    registry.register_protocol(TEMPLATE_PROTOCOL_V1)
-                    template_provider = TemplateProvider(
-                        "cli-template-provider",
-                        execution_engine=self.execution_engine,
-                        resource_manager=self.resource_manager,
-                        hub=None  # Template provider doesn't use a specific hub
-                    )
-                    await template_provider.initialize()
-                    registry.register_provider("cli-template-provider", "template/v1", template_provider)
-                    click.echo("✓ Template provider registered")
-                except Exception as e:
-                    click.echo(f"⚠️  Template provider failed to initialize: {e}")
             
             return True
             

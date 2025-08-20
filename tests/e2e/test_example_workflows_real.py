@@ -23,14 +23,12 @@ from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
-from gleitzeit.providers.template_provider import TemplateProvider
 from gleitzeit.persistence.unified_persistence import UnifiedInMemoryAdapter
 from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.protocols import (
     LLM_PROTOCOL_V1, 
     PYTHON_PROTOCOL_V1, 
-    MCP_PROTOCOL_V1, 
-    TEMPLATE_PROTOCOL_V1
+    MCP_PROTOCOL_V1
 )
 
 
@@ -88,7 +86,6 @@ class TestExampleWorkflowsReal:
         registry.register_protocol(LLM_PROTOCOL_V1)
         registry.register_protocol(PYTHON_PROTOCOL_V1)
         registry.register_protocol(MCP_PROTOCOL_V1)
-        registry.register_protocol(TEMPLATE_PROTOCOL_V1)
         
         # Check if Ollama is available
         ollama_available = await check_ollama_available()
@@ -110,10 +107,6 @@ class TestExampleWorkflowsReal:
         await mcp_provider.initialize()
         registry.register_provider("mcp", "mcp/v1", mcp_provider)
         
-        # Real template provider
-        template_provider = TemplateProvider(provider_id="template")
-        await template_provider.initialize()
-        registry.register_provider("template", "template/v1", template_provider)
         
         # Real queue manager and dependency resolver
         queue_manager = QueueManager()

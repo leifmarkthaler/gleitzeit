@@ -28,8 +28,7 @@ from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
-from gleitzeit.providers.template_provider import TemplateProvider
-from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1, TEMPLATE_PROTOCOL_V1
+from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 from gleitzeit.persistence.factory import PersistenceFactory
 from gleitzeit.core.batch_processor import BatchProcessor
 from gleitzeit.core.workflow_loader import load_workflow_from_file, validate_workflow
@@ -298,20 +297,6 @@ async def register_providers():
     except Exception as e:
         logger.warning(f"MCP provider registration failed: {e}")
     
-    # Template provider
-    try:
-        registry.register_protocol(TEMPLATE_PROTOCOL_V1)
-        template_provider = TemplateProvider(
-            "api-template-provider",
-            execution_engine=app_state.execution_engine,
-            resource_manager=app_state.resource_manager,
-            hub=None  # Template provider doesn't use a specific hub
-        )
-        await template_provider.initialize()
-        registry.register_provider("api-template-provider", "template/v1", template_provider)
-        logger.info("Template provider registered")
-    except Exception as e:
-        logger.warning(f"Template provider registration failed: {e}")
 
 
 async def cleanup_system():

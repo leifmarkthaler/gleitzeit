@@ -19,15 +19,13 @@ from gleitzeit.core.models import Task, Workflow, TaskStatus, WorkflowStatus
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
-from gleitzeit.providers.template_provider import TemplateProvider
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.persistence.unified_persistence import UnifiedInMemoryAdapter
 from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.protocols import (
     LLM_PROTOCOL_V1,
     PYTHON_PROTOCOL_V1,
-    MCP_PROTOCOL_V1,
-    TEMPLATE_PROTOCOL_V1
+    MCP_PROTOCOL_V1
 )
 
 # Configure logging
@@ -48,7 +46,6 @@ EXAMPLE_WORKFLOWS = [
     "dependent_llm_tasks.yaml",
     "dependent_python_tasks.yaml",
     "error_handling_workflow.yaml",
-    "template_workflow.yaml",
     "batch_processing_workflow.yaml",
     "code_analysis_workflow.yaml",
     "content_generation_workflow.yaml",
@@ -71,9 +68,6 @@ MCP_ONLY_WORKFLOWS = [
     "simple_mcp_workflow.yaml",
 ]
 
-TEMPLATE_WORKFLOWS = [
-    "template_workflow.yaml",
-]
 
 # Workflows that require LLM
 LLM_REQUIRED_WORKFLOWS = [
@@ -125,7 +119,6 @@ class TestAllExampleWorkflowsReal:
         registry.register_protocol(LLM_PROTOCOL_V1)
         registry.register_protocol(PYTHON_PROTOCOL_V1)
         registry.register_protocol(MCP_PROTOCOL_V1)
-        registry.register_protocol(TEMPLATE_PROTOCOL_V1)
         
         # Check Ollama availability
         ollama_available = await check_ollama_available()
@@ -152,11 +145,6 @@ class TestAllExampleWorkflowsReal:
         registry.register_provider("mcp", "mcp/v1", mcp_provider)
         logger.info("MCP provider registered")
         
-        # Real template provider
-        template_provider = TemplateProvider(provider_id="template")
-        await template_provider.initialize()
-        registry.register_provider("template", "template/v1", template_provider)
-        logger.info("Template provider registered")
         
         # Create execution engine
         queue_manager = QueueManager()

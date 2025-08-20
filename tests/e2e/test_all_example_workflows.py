@@ -27,13 +27,12 @@ from gleitzeit.core.models import Task, Workflow, TaskStatus, WorkflowStatus
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.simple_mcp_provider import SimpleMCPProvider
-from gleitzeit.providers.template_provider import TemplateProvider
 from gleitzeit.hub.ollama_hub import OllamaHub
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter, UnifiedInMemoryAdapter
 from gleitzeit.core.protocol import ProtocolSpec
-from gleitzeit.protocols import LLM_PROTOCOL_V1, PYTHON_PROTOCOL_V1, MCP_PROTOCOL_V1, TEMPLATE_PROTOCOL_V1
+from gleitzeit.protocols import LLM_PROTOCOL_V1, PYTHON_PROTOCOL_V1, MCP_PROTOCOL_V1
 
 logger = logging.getLogger(__name__)
 
@@ -75,10 +74,6 @@ EXAMPLE_WORKFLOWS = [
     "vision_workflow.yaml",
     "vision_file_workflow.yaml",
     
-    # Template workflows
-    "template_workflows.yaml",
-    "simple_template_test.yaml",
-    "template_code_test.yaml",
     
     # Agent workflows (may require special handling)
     "agent_workflow.yaml",
@@ -214,35 +209,7 @@ class TestAllExampleWorkflows:
         return provider
     
     @pytest.fixture
-    async def mock_template_provider(self):
-        """Create mock template provider"""
-        provider = AsyncMock(spec=TemplateProvider)
-        provider.provider_id = "template"
-        provider.protocol_id = TEMPLATE_PROTOCOL_V1
-        provider.name = "Mock Template Provider"
-        
-        async def mock_handle_request(method: str, params: Dict[str, Any]) -> Dict[str, Any]:
-            # Return a simple workflow for any template request
-            return {
-                "workflow": {
-                    "name": f"Generated {method} workflow",
-                    "tasks": [
-                        {
-                            "id": "task1",
-                            "method": "llm/chat",
-                            "parameters": {"model": "llama3.2", "messages": [{"role": "user", "content": "test"}]}
-                        }
-                    ]
-                },
-                "provider_id": "template"
-            }
-        
-        provider.handle_request = mock_handle_request
-        provider.supports_method = Mock(return_value=True)
-        return provider
-    
-    @pytest.fixture
-    async def mock_registry(self, mock_ollama_provider, mock_python_provider, mock_mcp_provider, mock_template_provider):
+    async def mock_registry(self, mock_ollama_provider, mock_python_provider, mock_mcp_provider):
         """Create mock registry with all providers"""
         registry = Mock(spec=ProtocolProviderRegistry)
         
@@ -253,8 +220,6 @@ class TestAllExampleWorkflows:
                 return mock_python_provider
             elif "mcp" in protocol or "mcp" in method or "tool" in method:
                 return mock_mcp_provider
-            elif "template" in protocol or "template" in method:
-                return mock_template_provider
             else:
                 # Default to Python provider
                 return mock_python_provider
@@ -263,8 +228,7 @@ class TestAllExampleWorkflows:
         registry.list_providers = Mock(return_value=[
             mock_ollama_provider,
             mock_python_provider,
-            mock_mcp_provider,
-            mock_template_provider
+            mock_mcp_provider
         ])
         
         return registry

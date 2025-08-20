@@ -75,8 +75,8 @@ async with GleitzeitClient() as client:
 ## Core Concepts
 
 ### Protocols & Providers
-- **Protocols**: Define standardized interfaces (LLM, Python, MCP, Template)
-- **Providers**: Implement protocol methods (OllamaProvider, PythonProvider, etc.)
+- **Protocols**: Define standardized interfaces (LLM, Python, MCP)
+- **Providers**: Implement protocol methods (OllamaProvider, PythonProvider, SimpleMCPProvider)
 - **Registry**: Maps methods to providers and validates calls
 
 ### Resource Management

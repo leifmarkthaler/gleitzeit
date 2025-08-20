@@ -195,78 +195,7 @@ parameters:
   strings: ["Hello", " ", "World"]
 ```
 
-### TemplateProvider
 
-Generates pre-built workflow templates for common multi-step patterns.
-
-**Protocol:** `template/v1`
-
-**Purpose:** Provides convenience templates that automatically create complex workflows with proper dependencies and parameter substitution.
-
-**Methods:**
-
-#### template/research
-
-Generate a multi-step research workflow.
-
-```yaml
-method: "template/research"
-parameters:
-  topic: "Quantum Computing"     # Required: Research topic
-  max_steps: 5                   # Optional: Number of research steps
-  depth: "medium"                 # Optional: Research depth (shallow/medium/deep)
-```
-
-Creates a workflow that:
-1. Plans research strategy
-2. Gathers background information
-3. Analyzes current trends
-4. Performs analysis and implications
-5. Generates comprehensive research report
-
-#### template/code
-
-Generate a code development workflow.
-
-```yaml
-method: "template/code"
-parameters:
-  task: "Create a REST API for user management"  # Required: Coding task
-  language: "python"                              # Optional: Programming language
-```
-
-Creates a workflow that:
-1. Analyzes requirements and plans approach
-2. Generates initial code
-3. Tests and validates code (for Python)
-4. Reviews and optimizes code
-5. Generates documentation
-
-#### template/analyze
-
-Generate a content analysis workflow.
-
-```yaml
-method: "template/analyze"
-parameters:
-  content: "Long document text..."              # Required: Content to analyze
-  question: "What are the key insights?"        # Optional: Specific question
-```
-
-Creates a single-step analysis workflow that provides structured analysis of the content.
-
-#### template/chat
-
-Generate a simple chat workflow.
-
-```yaml
-method: "template/chat"
-parameters:
-  message: "Hello, how are you?"               # Required: Chat message
-  session_id: "session_123"                    # Optional: Session identifier
-```
-
-Creates a single-step chat interaction workflow.
 
 ## Provider Configuration
 
@@ -805,7 +734,6 @@ Providers are selected based on the method prefix:
 - `llm/*` → OllamaProvider
 - `python/*` → PythonProvider
 - `mcp/*` → SimpleMCPProvider
-- `template/*` → TemplateProvider
 
 ## Resource Management
 
@@ -943,18 +871,4 @@ tasks:
 ```yaml
 name: "Template Provider Example"
 tasks:
-  # Generate a complete research workflow
-  - id: "research_workflow"
-    method: "template/research"
-    parameters:
-      topic: "Artificial Intelligence in Healthcare"
-      depth: "deep"
-      max_steps: 5
-  
-  # Or generate a code development workflow
-  - id: "code_workflow"
-    method: "template/code"
-    parameters:
-      task: "Create a Python script to parse CSV files"
-      language: "python"
 ```
