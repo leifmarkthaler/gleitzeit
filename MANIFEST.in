@@ -4,20 +4,28 @@ include requirements.txt
 include pyproject.toml
 include setup.py
 
+# Exclude experimental directories first
+recursive-exclude experimental *
+recursive-exclude src/gleitzeit/experimental *
+
+# Include test files (optional, often excluded from distributions)
+recursive-exclude tests *
+
 # Include all documentation
 recursive-include docs *.md *.txt *.yaml
 
 # Include example files
 recursive-include examples *.yaml *.py *.txt *.png *.md
 
-# Include test files (optional, often excluded from distributions)
-recursive-exclude tests *
-
-# Include package data
+# Include package data (excluding experimental)
 recursive-include src/gleitzeit *.yaml *.json *.txt
 
 # Include protocols
 recursive-include src/gleitzeit/protocols *.py *.yaml
+
+# Explicitly prune experimental directories 
+prune experimental
+prune src/gleitzeit/experimental
 
 # Exclude compiled files
 global-exclude *.pyc

@@ -103,7 +103,7 @@ include-package-data = true
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["gleitzeit*"]
-exclude = ["tests*", "docs*", "examples*"]
+exclude = ["tests*", "docs*", "examples*", "experimental*", "gleitzeit.experimental*"]
 
 [tool.setuptools.package-data]
 gleitzeit = [
