@@ -1,698 +1,621 @@
-# Python API Reference
+# Gleitzeit REST API Reference
 
-## GleitzeitClient
+## Overview
 
-The main client for interacting with Gleitzeit from Python.
+The Gleitzeit REST API provides HTTP endpoints for workflow orchestration, task execution, and system management. The API server can be started using the CLI:
 
-### Initialization
-
-```python
-from gleitzeit import GleitzeitClient
-
-# Auto mode (default)
-client = GleitzeitClient()
-
-# Specific mode
-client = GleitzeitClient(mode="api")  # or "native" or "auto"
-
-# With configuration
-client = GleitzeitClient(
-    mode="api",
-    api_host="localhost",
-    api_port=8000,
-    auto_start_server=True,
-    keep_server_running=True
-)
+```bash
+gleitzeit serve --host localhost --port 8000
 ```
 
-### Parameters
+## Base URL
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `mode` | str | "auto" | Client mode: "auto", "api", or "native" |
-| `api_host` | str | "localhost" | API server hostname |
-| `api_port` | int | 8000 | API server port |
-| `auto_start_server` | bool | True | Auto-start API server if not running |
-| `keep_server_running` | bool | True | Keep server running after client closes |
-| `native_config` | dict | None | Configuration for native mode |
-
-### Context Manager
-
-Always use as a context manager for proper resource cleanup:
-
-```python
-async with GleitzeitClient() as client:
-    # Use client
-    pass
-# Automatic cleanup
+```
+http://localhost:8000
 ```
 
-## Core Methods
+## Authentication
 
-### run_workflow
+Currently, the API does not require authentication. This may change in future versions.
 
-Execute a workflow from file or dictionary.
+## Content Types
 
-```python
-async def run_workflow(
-    workflow: Union[str, Dict[str, Any]],
-    inputs: Optional[Dict[str, Any]] = None,
-    watch: bool = False
-) -> Dict[str, Any]
-```
+- **Request**: `application/json`
+- **Response**: `application/json`
 
-**Parameters:**
-- `workflow`: Path to YAML file or workflow dictionary
-- `inputs`: Input parameters for the workflow
-- `watch`: Watch for file changes and re-run
+## Error Responses
 
-**Returns:** Dictionary with task results
+All error responses follow this format:
 
-**Example:**
-
-```python
-# From file
-result = await client.run_workflow("pipeline.yaml")
-
-# From dictionary
-workflow = {
-    "name": "Test",
-    "tasks": [
-        {
-            "id": "task1",
-            "method": "llm/chat",
-            "parameters": {
-                "model": "llama3.2",
-                "messages": [{"role": "user", "content": "Hello"}]
-            }
-        }
-    ]
+```json
+{
+  "detail": "Error message describing what went wrong"
 }
-result = await client.run_workflow(workflow)
-
-# With inputs
-result = await client.run_workflow(
-    "template.yaml",
-    inputs={"topic": "AI", "length": 500}
-)
 ```
 
-### chat
+Common HTTP status codes:
+- `200 OK` - Request succeeded
+- `400 Bad Request` - Invalid request parameters
+- `404 Not Found` - Resource not found
+- `422 Unprocessable Entity` - Validation error
+- `500 Internal Server Error` - Server error
+- `503 Service Unavailable` - System not initialized
 
-Chat with an LLM model via Ollama.
+## Endpoints
 
-```python
-async def chat(
-    prompt: str,
-    model: str = "llama3.2",
-    temperature: float = 0.7,
-    max_tokens: Optional[int] = None,
-    system: Optional[str] = None,
-    **kwargs
-) -> str
-```
+### System Status
 
-**Parameters:**
-- `prompt`: User message
-- `model`: Ollama model name
-- `temperature`: Response randomness (0-1)
-- `max_tokens`: Maximum response length
-- `system`: System prompt
-- `**kwargs`: Additional model parameters
+#### GET /
+Get API information.
 
-**Returns:** Model response as string
-
-**Example:**
-
-```python
-# Simple chat
-response = await client.chat("What is Python?")
-
-# With configuration
-response = await client.chat(
-    "Write a poem",
-    model="mistral",
-    temperature=0.9,
-    system="You are a creative poet"
-)
-```
-
-### chat_messages
-
-Chat with message history.
-
-```python
-async def chat_messages(
-    messages: List[Dict[str, str]],
-    model: str = "llama3.2",
-    **kwargs
-) -> str
-```
-
-**Parameters:**
-- `messages`: List of message dictionaries with "role" and "content"
-- `model`: Ollama model name
-- `**kwargs`: Additional parameters
-
-**Example:**
-
-```python
-messages = [
-    {"role": "system", "content": "You are helpful"},
-    {"role": "user", "content": "What is AI?"},
-    {"role": "assistant", "content": "AI is..."},
-    {"role": "user", "content": "Tell me more"}
-]
-
-response = await client.chat_messages(messages)
-```
-
-### batch_process
-
-Process multiple files in batch.
-
-```python
-async def batch_process(
-    directory: str,
-    pattern: str = "*",
-    prompt: str = None,
-    model: str = "llama3.2",
-    max_concurrent: int = 5,
-    output_dir: Optional[str] = None,
-    template: Optional[Dict] = None,
-    **kwargs
-) -> Dict[str, str]
-```
-
-**Parameters:**
-- `directory`: Directory to process
-- `pattern`: File pattern (glob syntax)
-- `prompt`: Prompt template
-- `model`: Ollama model
-- `max_concurrent`: Parallel processing limit
-- `output_dir`: Save results to directory
-- `template`: Custom task template
-
-**Returns:** Dictionary mapping filenames to results
-
-**Example:**
-
-```python
-# Process text files
-results = await client.batch_process(
-    directory="documents",
-    pattern="*.txt",
-    prompt="Summarize this document",
-    model="llama3.2"
-)
-
-# Recursive with output
-results = await client.batch_process(
-    directory="data",
-    pattern="**/*.json",
-    prompt="Extract key metrics",
-    output_dir="summaries",
-    max_concurrent=10
-)
-```
-
-### execute_task
-
-Execute a single task.
-
-```python
-async def execute_task(
-    task: Union[Task, Dict[str, Any]]
-) -> TaskResult
-```
-
-**Parameters:**
-- `task`: Task object or dictionary
-
-**Returns:** TaskResult object
-
-**Example:**
-
-```python
-task = {
-    "id": "analyze",
-    "method": "llm/chat",
-    "parameters": {
-        "model": "llama3.2",
-        "messages": [{"role": "user", "content": "Analyze this"}]
-    }
+**Response:**
+```json
+{
+  "name": "Gleitzeit API",
+  "version": "0.0.5",
+  "status": "running",
+  "documentation": "/docs"
 }
-
-result = await client.execute_task(task)
-print(result.response)
 ```
 
-### execute_python_script
+#### GET /status
+Get system status and statistics.
 
-Execute a Python script file.
-
-```python
-async def execute_python_script(
-    script: str,
-    args: Optional[Dict[str, Any]] = None,
-    timeout: int = 30
-) -> Any
-```
-
-**Parameters:**
-- `script`: Path to Python script
-- `args`: Arguments passed as JSON to script
-- `timeout`: Execution timeout in seconds
-
-**Returns:** Script output (parsed from JSON)
-
-**Example:**
-
-```python
-result = await client.execute_python_script(
-    "process_data.py",
-    args={"input": "data.csv", "output": "results.json"},
-    timeout=60
-)
-```
-
-## Utility Methods
-
-### list_models
-
-List available Ollama models.
-
-```python
-async def list_models() -> List[str]
-```
-
-**Example:**
-
-```python
-models = await client.list_models()
-print(models)  # ["llama3.2", "mistral", "codellama", ...]
-```
-
-### get_status
-
-Get system status.
-
-```python
-async def get_status() -> Dict[str, Any]
-```
-
-**Example:**
-
-```python
-status = await client.get_status()
-print(status["ollama"]["available"])  # True/False
-```
-
-## Advanced Usage
-
-### Parallel Execution
-
-```python
-import asyncio
-
-async def parallel_processing():
-    async with GleitzeitClient() as client:
-        tasks = [
-            client.chat("Question 1", model="llama3.2"),
-            client.chat("Question 2", model="llama3.2"),
-            client.chat("Question 3", model="llama3.2")
-        ]
-        results = await asyncio.gather(*tasks)
-        return results
-```
-
-### Error Handling
-
-```python
-from gleitzeit.core.errors import (
-    GleitzeitError,
-    TaskExecutionError,
-    ValidationError,
-    TimeoutError
-)
-
-async def safe_execution():
-    async with GleitzeitClient() as client:
-        try:
-            result = await client.run_workflow("workflow.yaml")
-        except ValidationError as e:
-            print(f"Invalid workflow: {e}")
-        except TaskExecutionError as e:
-            print(f"Task failed: {e}")
-        except TimeoutError as e:
-            print(f"Operation timed out: {e}")
-        except GleitzeitError as e:
-            print(f"General error: {e}")
-```
-
-### Custom Configuration
-
-```python
-# Native mode with resource management
-client = GleitzeitClient(
-    mode="native",
-    native_config={
-        "enable_resource_management": True,
-        "max_parallel_tasks": 10,
-        "default_timeout": 60
+**Response:**
+```json
+{
+  "status": "running",
+  "providers": {
+    "client": {
+      "status": "healthy",
+      "type": "GleitzeitClient"
     }
-)
-
-# API mode with custom endpoint
-client = GleitzeitClient(
-    mode="api",
-    api_host="gleitzeit.example.com",
-    api_port=443,
-    auto_start_server=False  # Don't try to start remote server
-)
+  },
+  "persistence_backend": "GleitzeitClient",
+  "task_statistics": {
+    "completed": 150,
+    "failed": 5,
+    "queued": 10
+  },
+  "uptime_seconds": 3600.5
+}
 ```
 
-## Data Management Methods
+### Workflow Management
 
-### list_workflows
+#### POST /workflows
+Submit a workflow for execution.
 
+**Request Body:**
+```json
+{
+  "name": "Data Processing Pipeline",
+  "description": "Process and analyze data",
+  "tasks": [
+    {
+      "id": "task1",
+      "name": "Load Data",
+      "protocol": "python/v1",
+      "method": "python/execute",
+      "params": {
+        "code": "import pandas as pd\ndata = pd.read_csv('data.csv')"
+      },
+      "priority": "normal"
+    },
+    {
+      "id": "task2",
+      "name": "Process Data",
+      "protocol": "python/v1",
+      "method": "python/execute",
+      "params": {
+        "code": "result = data.mean()"
+      },
+      "dependencies": ["task1"],
+      "priority": "normal"
+    }
+  ],
+  "metadata": {
+    "project": "analytics",
+    "version": "1.0"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "workflow_id": "wf_12345678",
+  "status": "submitted",
+  "tasks_total": 2,
+  "tasks_completed": 0,
+  "tasks_failed": 0,
+  "created_at": "2024-01-15T10:30:00Z",
+  "completed_at": null,
+  "results": {}
+}
+```
+
+#### GET /workflows
 List all workflows with optional filtering.
 
-```python
-async def list_workflows(
-    status: Optional[str] = None,
-    limit: int = 100,
-    offset: int = 0
-) -> Dict[str, Any]
+**Query Parameters:**
+- `status` (string, optional): Filter by status (e.g., "completed", "running", "failed")
+- `limit` (integer, default: 50, max: 100): Maximum results to return
+- `offset` (integer, default: 0): Number of results to skip
+
+**Response:**
+```json
+{
+  "workflows": [
+    {
+      "id": "wf_12345678",
+      "name": "Data Pipeline",
+      "status": "completed",
+      "created_at": "2024-01-15T10:30:00Z",
+      "completed_at": "2024-01-15T10:35:00Z",
+      "tasks_total": 5,
+      "tasks_completed": 5,
+      "tasks_failed": 0
+    }
+  ],
+  "total": 25,
+  "limit": 50,
+  "offset": 0
+}
 ```
 
-**Parameters:**
-- `status`: Filter by status (e.g., "completed", "running", "failed")
-- `limit`: Maximum number of results
-- `offset`: Pagination offset
+#### GET /workflows/{workflow_id}
+Get workflow status and results.
 
-**Returns:** Dictionary with workflow list and metadata
-
-**Example:**
-
-```python
-# List all workflows
-workflows = await client.list_workflows()
-print(f"Total workflows: {workflows['total']}")
-
-# List only completed workflows
-completed = await client.list_workflows(status="completed")
-
-# Paginated results
-page2 = await client.list_workflows(limit=20, offset=20)
+**Response:**
+```json
+{
+  "workflow_id": "wf_12345678",
+  "status": "completed",
+  "tasks_total": 2,
+  "tasks_completed": 2,
+  "tasks_failed": 0,
+  "created_at": "2024-01-15T10:30:00Z",
+  "completed_at": "2024-01-15T10:32:00Z",
+  "results": {
+    "task1": {
+      "status": "completed",
+      "result": {"output": "Data loaded successfully"},
+      "error": null
+    },
+    "task2": {
+      "status": "completed",
+      "result": {"output": "Processing complete", "mean": 42.5},
+      "error": null
+    }
+  }
+}
 ```
 
-### list_tasks
-
-List all tasks with optional filtering.
-
-```python
-async def list_tasks(
-    workflow_id: Optional[str] = None,
-    status: Optional[str] = None,
-    limit: int = 100,
-    offset: int = 0
-) -> Dict[str, Any]
-```
-
-**Parameters:**
-- `workflow_id`: Filter by workflow ID
-- `status`: Filter by status
-- `limit`: Maximum number of results
-- `offset`: Pagination offset
-
-**Returns:** Dictionary with task list and metadata
-
-**Example:**
-
-```python
-# List all tasks
-tasks = await client.list_tasks()
-
-# List tasks for specific workflow
-workflow_tasks = await client.list_tasks(workflow_id="workflow-123")
-
-# List failed tasks
-failed_tasks = await client.list_tasks(status="failed")
-```
-
-### delete_task
-
-Delete a task from persistence.
-
-```python
-async def delete_task(task_id: str) -> bool
-```
-
-**Parameters:**
-- `task_id`: ID of the task to delete
-
-**Returns:** True if deleted, False if not found
-
-**Example:**
-
-```python
-# Delete a task
-deleted = await client.delete_task("task-123")
-if deleted:
-    print("Task deleted successfully")
-else:
-    print("Task not found")
-```
-
-### delete_workflow
-
+#### DELETE /workflows/{workflow_id}
 Delete a workflow and all its associated tasks.
 
-```python
-async def delete_workflow(workflow_id: str) -> bool
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Workflow deleted successfully"
+}
 ```
 
-**Parameters:**
-- `workflow_id`: ID of the workflow to delete
+#### POST /workflows/upload
+Upload and execute a workflow YAML file.
 
-**Returns:** True if deleted, False if not found
+**Request:** Multipart form data
+- `file`: YAML workflow file
+- `execute` (query param, boolean, default: true): Whether to execute immediately
 
-**Note:** This will cascade delete:
-- All tasks belonging to the workflow
-- All task results
-- Queue state references
-- Workflow execution records
-
-**Example:**
-
-```python
-# Delete a workflow and all its tasks
-deleted = await client.delete_workflow("workflow-123")
-if deleted:
-    print("Workflow and all tasks deleted")
-else:
-    print("Workflow not found")
+**Response:**
+```json
+{
+  "workflow_id": "wf_12345678",
+  "status": "submitted",
+  "filename": "pipeline.yaml",
+  "message": "Workflow uploaded and execution started"
+}
 ```
 
-### get_task
+### Task Execution
 
-Get a task by ID.
+#### POST /tasks
+Execute a single task.
 
-```python
-async def get_task(task_id: str) -> Optional[Task]
+**Request Body:**
+```json
+{
+  "name": "Calculate Result",
+  "protocol": "python/v1",
+  "method": "python/execute",
+  "params": {
+    "code": "result = 2 + 2\nprint(result)"
+  },
+  "priority": "normal",
+  "retry": {
+    "max_attempts": 3,
+    "base_delay": 2.0,
+    "max_delay": 30.0
+  }
+}
 ```
 
-**Parameters:**
-- `task_id`: Task ID
+**Priority values:** `"low"`, `"normal"`, `"high"`, `"urgent"`
 
-**Returns:** Task object or None if not found
-
-**Example:**
-
-```python
-task = await client.get_task("task-123")
-if task:
-    print(f"Task status: {task.status}")
-    print(f"Task name: {task.name}")
+**Response:**
+```json
+{
+  "task_id": "task_12345678",
+  "status": "submitted",
+  "result": null,
+  "error": null,
+  "created_at": "2024-01-15T10:30:00Z",
+  "completed_at": null
+}
 ```
 
-### get_workflow
+#### GET /tasks
+List all tasks with optional filtering.
 
-Get a workflow by ID.
+**Query Parameters:**
+- `workflow_id` (string, optional): Filter by workflow ID
+- `status` (string, optional): Filter by status
+- `limit` (integer, default: 100, max: 500): Maximum results
+- `offset` (integer, default: 0): Number of results to skip
 
-```python
-async def get_workflow(workflow_id: str) -> Optional[Workflow]
-```
-
-**Parameters:**
-- `workflow_id`: Workflow ID
-
-**Returns:** Workflow object or None if not found
-
-**Example:**
-
-```python
-workflow = await client.get_workflow("workflow-123")
-if workflow:
-    print(f"Workflow name: {workflow.name}")
-    print(f"Total tasks: {len(workflow.tasks)}")
-```
-
-### submit_task
-
-Submit a task for execution.
-
-```python
-async def submit_task(
-    name: str,
-    protocol: str,
-    method: str,
-    params: Dict[str, Any],
-    priority: Priority = Priority.NORMAL,
-    queue: str = "default",
-    resource_requirements: Optional[Dict[str, Any]] = None
-) -> Task
-```
-
-**Parameters:**
-- `name`: Task name
-- `protocol`: Protocol identifier (e.g., "python/v1", "llm/v1")
-- `method`: Method to execute
-- `params`: Method parameters
-- `priority`: Task priority (LOW, NORMAL, HIGH, CRITICAL)
-- `queue`: Queue name
-- `resource_requirements`: Optional resource requirements
-
-**Returns:** Task object with generated ID
-
-**Example:**
-
-```python
-# Submit a Python task
-task = await client.submit_task(
-    name="data_processing",
-    protocol="python/v1",
-    method="python/execute",
-    params={
-        "code": "import pandas as pd; print('Processing data')"
-    },
-    priority=Priority.HIGH
-)
-print(f"Task submitted: {task.id}")
-
-# Submit an LLM task
-task = await client.submit_task(
-    name="text_analysis",
-    protocol="llm/v1",
-    method="llm/chat",
-    params={
-        "model": "llama3.2",
-        "messages": [{"role": "user", "content": "Analyze this text"}]
+**Response:**
+```json
+{
+  "tasks": [
+    {
+      "task_id": "task_12345678",
+      "name": "Calculate Result",
+      "workflow_id": "wf_87654321",
+      "status": "completed",
+      "protocol": "python/v1",
+      "method": "python/execute",
+      "priority": "normal",
+      "created_at": "2024-01-15T10:30:00Z",
+      "completed_at": "2024-01-15T10:30:05Z",
+      "execution_time": 5.0
     }
-)
+  ],
+  "total": 150,
+  "limit": 100,
+  "offset": 0
+}
 ```
 
-### Streaming Responses
+#### GET /tasks/{task_id}
+Get task status and result.
 
-```python
-# Note: Streaming support varies by mode
-async def stream_chat():
-    async with GleitzeitClient() as client:
-        # Check if streaming is supported
-        if hasattr(client, 'chat_stream'):
-            async for chunk in client.chat_stream("Tell a story"):
-                print(chunk, end="", flush=True)
+**Response:**
+```json
+{
+  "task_id": "task_12345678",
+  "status": "completed",
+  "result": {
+    "output": "4",
+    "return_value": 4
+  },
+  "error": null,
+  "created_at": "2024-01-15T10:30:00Z",
+  "completed_at": "2024-01-15T10:30:05Z"
+}
 ```
 
-## Type Hints
+#### DELETE /tasks/{task_id}
+Delete a task from persistence.
 
-All methods include full type hints for better IDE support:
-
-```python
-from typing import Dict, List, Optional, Any, Union
-from gleitzeit import GleitzeitClient
-from gleitzeit.core.models import Task, TaskResult, WorkflowExecution
-
-async def typed_example() -> Dict[str, TaskResult]:
-    client: GleitzeitClient
-    async with GleitzeitClient() as client:
-        result: Dict[str, Any] = await client.run_workflow("workflow.yaml")
-        response: str = await client.chat("Hello", model="llama3.2")
-        return result
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Task deleted successfully"
+}
 ```
 
-## Resource Management
+### Convenience Endpoints
 
-### With Resource Management Enabled
+#### POST /chat
+Chat with an LLM model.
 
-```python
-client = GleitzeitClient(
-    mode="native",
-    native_config={"enable_resource_management": True}
-)
-
-# Resources are automatically managed
-# Multiple Ollama instances are load-balanced
-# Docker containers are managed for Python execution
+**Request Body:**
+```json
+{
+  "message": "What is machine learning?",
+  "model": "llama3.2",
+  "temperature": 0.7,
+  "session_id": "session_123"
+}
 ```
 
-## Best Practices
-
-1. **Always use context managers** - Ensures cleanup
-2. **Handle errors appropriately** - Use try/except blocks
-3. **Set timeouts** - Prevent hanging operations
-4. **Use type hints** - Better IDE support and error catching
-5. **Batch similar operations** - Use batch_process for multiple files
-6. **Configure retries** - Handle transient failures
-7. **Log operations** - For debugging and monitoring
-
-## Complete Example
-
-```python
-import asyncio
-import logging
-from gleitzeit import GleitzeitClient
-
-logging.basicConfig(level=logging.INFO)
-
-async def document_pipeline():
-    """Process documents through analysis pipeline"""
-    
-    async with GleitzeitClient() as client:
-        # Check system status
-        status = await client.get_status()
-        if not status["ollama"]["available"]:
-            raise RuntimeError("Ollama not available")
-        
-        # Batch process documents
-        summaries = await client.batch_process(
-            directory="documents",
-            pattern="*.txt",
-            prompt="Summarize in 3 sentences",
-            model="llama3.2",
-            max_concurrent=5
-        )
-        
-        # Analyze summaries
-        analysis = await client.chat(
-            f"Identify common themes in: {list(summaries.values())}",
-            model="llama3.2"
-        )
-        
-        # Save results
-        result = await client.execute_python_script(
-            "save_results.py",
-            args={
-                "summaries": summaries,
-                "analysis": analysis,
-                "output": "report.json"
-            }
-        )
-        
-        return result
-
-if __name__ == "__main__":
-    result = asyncio.run(document_pipeline())
-    print(f"Pipeline complete: {result}")
+**Response:**
+```json
+{
+  "status": "success",
+  "response": "Machine learning is a subset of artificial intelligence...",
+  "model": "llama3.2",
+  "session_id": "session_123"
+}
 ```
+
+#### POST /batch
+Process files in batch.
+
+**Request Body:**
+```json
+{
+  "directory": "/path/to/files",
+  "pattern": "*.txt",
+  "method": "llm/chat",
+  "prompt": "Summarize this document",
+  "model": "llama3.2",
+  "max_concurrent": 5,
+  "name": "Batch Summary Job"
+}
+```
+
+**Response:**
+```json
+{
+  "batch_id": "batch_12345678",
+  "status": "processing",
+  "total_files": 10,
+  "processed": 0,
+  "failed": 0,
+  "results": {}
+}
+```
+
+## Workflow Definition Format
+
+Workflows can be defined in YAML or JSON format:
+
+### YAML Example
+```yaml
+name: Data Analysis Pipeline
+description: Analyze customer data
+tasks:
+  - id: load_data
+    name: Load Customer Data
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        import pandas as pd
+        data = pd.read_csv('customers.csv')
+        result = len(data)
+    priority: normal
+
+  - id: analyze
+    name: Analyze Data
+    protocol: llm/v1
+    method: llm/chat
+    params:
+      model: llama3.2
+      messages:
+        - role: user
+          content: "Analyze the following data: {{ load_data.result }}"
+    dependencies: [load_data]
+    priority: high
+
+metadata:
+  author: data_team
+  version: "1.0"
+```
+
+### Task Protocol Types
+
+#### python/v1
+Execute Python code.
+
+**Methods:**
+- `python/execute` - Execute Python code
+
+**Parameters:**
+```json
+{
+  "code": "Python code to execute",
+  "timeout": 30  // Optional timeout in seconds
+}
+```
+
+#### llm/v1
+Interact with language models.
+
+**Methods:**
+- `llm/chat` - Chat completion
+- `llm/vision` - Vision analysis
+
+**Parameters for chat:**
+```json
+{
+  "model": "llama3.2",
+  "messages": [
+    {"role": "system", "content": "You are helpful"},
+    {"role": "user", "content": "Hello"}
+  ],
+  "temperature": 0.7,
+  "max_tokens": 1000
+}
+```
+
+#### mcp/v1
+Model Context Protocol for tool use.
+
+**Methods:**
+- `mcp/call_tool` - Call an MCP tool
+
+**Parameters:**
+```json
+{
+  "server": "filesystem",
+  "tool": "read_file",
+  "arguments": {
+    "path": "/path/to/file.txt"
+  }
+}
+```
+
+#### template/v1
+Use predefined workflow templates.
+
+**Methods:**
+- `template/research` - Research template
+- `template/code_review` - Code review template
+
+**Parameters:**
+```json
+{
+  "template": "research",
+  "topic": "quantum computing",
+  "depth": "comprehensive"
+}
+```
+
+## Task Dependencies
+
+Tasks can depend on other tasks using the `dependencies` field:
+
+```json
+{
+  "id": "task2",
+  "dependencies": ["task1"],
+  "params": {
+    "input": "{{ task1.result }}"
+  }
+}
+```
+
+## Parameter Substitution
+
+Use template syntax to reference results from previous tasks:
+
+- `{{ task_id.result }}` - Get the result of a task
+- `{{ task_id.output }}` - Get the output field
+- `{{ task_id.result.field_name }}` - Access nested fields
+
+## Priority Levels
+
+Tasks support four priority levels:
+1. `low` - Background tasks
+2. `normal` - Default priority
+3. `high` - Important tasks
+4. `urgent` - Critical tasks
+
+## Retry Configuration
+
+Configure automatic retries for tasks:
+
+```json
+{
+  "retry": {
+    "max_attempts": 5,      // Maximum retry attempts
+    "base_delay": 2.0,      // Initial delay in seconds
+    "max_delay": 60.0,      // Maximum delay between retries
+    "exponential_base": 2   // Exponential backoff multiplier
+  }
+}
+```
+
+## Status Values
+
+### Workflow Status
+- `pending` - Workflow created but not started
+- `running` - Workflow is executing
+- `completed` - All tasks completed successfully
+- `failed` - One or more tasks failed
+- `cancelled` - Workflow was cancelled
+
+### Task Status
+- `pending` - Task waiting to execute
+- `queued` - Task in queue
+- `executing` - Task currently running
+- `completed` - Task finished successfully
+- `failed` - Task failed
+- `cancelled` - Task was cancelled
+- `skipped` - Task skipped due to dependency failure
+
+## Rate Limiting
+
+The API implements rate limiting to prevent abuse:
+- Default: 100 requests per minute per IP
+- Batch operations: 10 requests per minute
+
+## WebSocket Support (Coming Soon)
+
+Future versions will support WebSocket connections for:
+- Real-time task status updates
+- Streaming LLM responses
+- Live workflow monitoring
+
+## Examples
+
+### Execute a Simple Task
+```bash
+curl -X POST http://localhost:8000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Quick Calculation",
+    "protocol": "python/v1",
+    "method": "python/execute",
+    "params": {
+      "code": "print(sum(range(100)))"
+    }
+  }'
+```
+
+### Submit a Workflow
+```bash
+curl -X POST http://localhost:8000/workflows \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Workflow",
+    "tasks": [
+      {
+        "id": "t1",
+        "name": "First Task",
+        "protocol": "python/v1",
+        "method": "python/execute",
+        "params": {"code": "result = 42"}
+      }
+    ]
+  }'
+```
+
+### Chat with LLM
+```bash
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "message": "Explain quantum computing",
+    "model": "llama3.2",
+    "temperature": 0.7
+  }'
+```
+
+### List Completed Workflows
+```bash
+curl "http://localhost:8000/workflows?status=completed&limit=10"
+```
+
+### Delete a Task
+```bash
+curl -X DELETE http://localhost:8000/tasks/task_12345678
+```
+
+## Versioning
+
+The API uses semantic versioning. The current version is `0.0.5`.
+
+Breaking changes will increment the major version number and will be documented in the changelog.
+
+## Support
+
+For issues, feature requests, or questions:
+- GitHub Issues: https://github.com/yourusername/gleitzeit/issues
+- Documentation: https://gleitzeit.readthedocs.io

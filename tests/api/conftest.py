@@ -9,6 +9,7 @@ from typing import AsyncGenerator, Generator
 from unittest.mock import AsyncMock, MagicMock, patch
 import tempfile
 from pathlib import Path
+from datetime import datetime
 
 from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
@@ -83,6 +84,7 @@ async def mock_batch_processor():
 @pytest_asyncio.fixture
 async def mock_gleitzeit_client():
     """Mock GleitzeitClient for testing"""
+    from gleitzeit.core import Task, Priority
     client = AsyncMock()
     
     # Mock run_workflow method
@@ -130,6 +132,82 @@ async def mock_gleitzeit_client():
         MagicMock(id="task1", status="completed"),
         MagicMock(id="task2", status="completed")
     ])
+    
+    # Mock list_workflows method
+    client.list_workflows = AsyncMock(return_value={
+        "workflows": [],
+        "total": 0,
+        "limit": 50,
+        "offset": 0
+    })
+    
+    # Mock list_tasks method
+    client.list_tasks = AsyncMock(return_value={
+        "tasks": [],
+        "total": 0,
+        "limit": 100,
+        "offset": 0
+    })
+    
+    # Mock delete_task method
+    client.delete_task = AsyncMock(return_value=True)
+    
+    # Mock delete_workflow method
+    client.delete_workflow = AsyncMock(return_value=True)
+    
+    # Mock get_task method - returns a proper Task object
+    mock_get_task = MagicMock(spec=Task)
+    mock_get_task.id = "client_task_12345678"
+    mock_get_task.name = "Test Task"
+    mock_get_task.protocol = "python/v1"
+    mock_get_task.method = "python/execute"
+    mock_get_task.params = {"code": "result = 2 + 2"}
+    mock_get_task.status = "submitted"
+    mock_get_task.result = None
+    mock_get_task.error = None
+    mock_get_task.created_at = datetime.now()
+    mock_get_task.completed_at = None
+    mock_get_task.priority = Priority.NORMAL
+    client.get_task = AsyncMock(return_value=mock_get_task)
+    
+    # Mock submit_task method - this returns a Task object with an ID
+    mock_task = MagicMock(spec=Task)
+    mock_task.id = "client_task_12345678"  # Client generates the ID
+    mock_task.name = "Test Task"
+    mock_task.protocol = "python/v1"
+    mock_task.method = "python/execute"
+    mock_task.params = {"code": "result = 2 + 2"}
+    mock_task.status = "submitted"
+    mock_task.priority = Priority.NORMAL
+    client.submit_task = AsyncMock(return_value=mock_task)
+    
+    # Mock execute_task method
+    client.execute_task = AsyncMock(return_value=MagicMock(
+        status="completed",
+        result={"output": "Success", "result": 4},
+        error=None
+    ))
+    
+    # Mock wait_for_task method - called by background task
+    client.wait_for_task = AsyncMock(return_value=MagicMock(
+        status="completed",
+        result={"output": "Success", "result": 4},
+        error=None
+    ))
+    
+    # Mock get_task_statistics method
+    client.get_task_statistics = AsyncMock(return_value={
+        "completed": 100,
+        "failed": 5,
+        "queued": 2
+    })
+    
+    # Mock get_task_result method
+    client.get_task_result = AsyncMock(return_value=MagicMock(
+        status="completed",
+        result={"output": "Success"},
+        error=None
+    ))
     
     return client
 

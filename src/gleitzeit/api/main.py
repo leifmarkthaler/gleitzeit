@@ -595,10 +595,30 @@ async def list_tasks(
 @app.get("/tasks/{task_id}", response_model=TaskResponse)
 async def get_task_status(task_id: str):
     """Get task status"""
-    if task_id not in app_state.active_tasks:
-        raise HTTPException(status_code=404, detail="Task not found")
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    return app_state.active_tasks[task_id]
+    try:
+        # Get task from client
+        task = await app_state.client.get_task(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        # Convert to TaskResponse format
+        return TaskResponse(
+            task_id=task.id,
+            status=task.status,
+            result=task.result,
+            error=task.error,
+            created_at=task.created_at,
+            completed_at=task.completed_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get task status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.delete("/tasks/{task_id}")
@@ -617,7 +637,9 @@ async def delete_task(task_id: str):
         # Remove from active tasks if present
         app_state.active_tasks.pop(task_id, None)
         
-        return {"message": f"Task {task_id} deleted", "deleted": True}
+        return {"success": True, "message": "Task deleted successfully"}
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to delete task {task_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete task: {str(e)}")
@@ -716,9 +738,8 @@ async def delete_workflow(workflow_id: str):
             app_state.active_tasks.pop(task_id, None)
         
         return {
-            "message": f"Workflow {workflow_id} and all associated tasks deleted",
-            "deleted": True,
-            "tasks_deleted": len(tasks_to_remove)
+            "success": True,
+            "message": "Workflow deleted successfully"
         }
     except HTTPException:
         # Re-raise HTTP exceptions as-is
