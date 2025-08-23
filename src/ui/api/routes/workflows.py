@@ -57,7 +57,7 @@ async def list_workflows(
                     workflows = []
                     for wf in data.get("workflows", []):
                         workflows.append({
-                            "id": wf.get("workflow_id"),
+                            "id": wf.get("id") or wf.get("workflow_id"),  # Handle both field names
                             "name": wf.get("name", "Unnamed"),
                             "status": wf.get("status", "unknown"),
                             "created_at": wf.get("created_at"),
@@ -258,3 +258,156 @@ async def download_workflow_results(request: Request, workflow_id: str):
         filename=f"workflow_{workflow_id}_results.json",
         media_type="application/json"
     )
+
+@router.get("/{workflow_id}/tasks")
+async def get_workflow_tasks(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Get all tasks for a specific workflow
+    
+    Args:
+        workflow_id: Workflow identifier
+    
+    Returns:
+        List of tasks belonging to the workflow
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Get tasks filtered by workflow_id
+            params = {"workflow_id": workflow_id, "limit": 1000}
+            async with session.get(f"{GLEITZEIT_API_URL}/tasks", params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return {
+                        "workflow_id": workflow_id,
+                        "tasks": data.get("tasks", []),
+                        "total": data.get("total", 0)
+                    }
+                else:
+                    return {"workflow_id": workflow_id, "tasks": [], "total": 0}
+        except Exception as e:
+            print(f"Error getting workflow tasks: {e}")
+            return {"workflow_id": workflow_id, "tasks": [], "total": 0}
+
+@router.get("/{workflow_id}/timeline")
+async def get_workflow_timeline(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Get execution timeline for a workflow
+    
+    Args:
+        workflow_id: Workflow identifier
+    
+    Returns:
+        Timeline data showing task execution order and timing
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Get tasks for this workflow
+            params = {"workflow_id": workflow_id, "limit": 1000}
+            async with session.get(f"{GLEITZEIT_API_URL}/tasks", params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    tasks = data.get("tasks", [])
+                    
+                    # Build timeline from task data
+                    timeline = []
+                    for task in tasks:
+                        timeline.append({
+                            "task_id": task.get("task_id") or task.get("id"),
+                            "name": task.get("name"),
+                            "status": task.get("status"),
+                            "started_at": task.get("created_at"),
+                            "completed_at": task.get("completed_at"),
+                            "duration": task.get("execution_time")
+                        })
+                    
+                    # Sort by start time
+                    timeline.sort(key=lambda x: x.get("started_at") or "")
+                    
+                    return {
+                        "workflow_id": workflow_id,
+                        "timeline": timeline,
+                        "total_tasks": len(timeline)
+                    }
+                else:
+                    return {"workflow_id": workflow_id, "timeline": [], "total_tasks": 0}
+        except Exception as e:
+            print(f"Error getting workflow timeline: {e}")
+            return {"workflow_id": workflow_id, "timeline": [], "total_tasks": 0}
+
+@router.get("/{workflow_id}/results")
+async def get_workflow_results(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Get aggregated results for a workflow
+    
+    Args:
+        workflow_id: Workflow identifier
+    
+    Returns:
+        Workflow results including all task outputs
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            # First try to get workflow status from API
+            async with session.get(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}") as resp:
+                if resp.status == 200:
+                    workflow_data = await resp.json()
+                    # Return the results if available
+                    return {
+                        "workflow_id": workflow_id,
+                        "status": workflow_data.get("status"),
+                        "results": workflow_data.get("results", {}),
+                        "created_at": workflow_data.get("created_at"),
+                        "completed_at": workflow_data.get("completed_at")
+                    }
+        except:
+            pass
+        
+        # Fallback: Get tasks and build results from them
+        try:
+            params = {"workflow_id": workflow_id, "limit": 1000}
+            async with session.get(f"{GLEITZEIT_API_URL}/tasks", params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    tasks = data.get("tasks", [])
+                    
+                    # Build results from task data
+                    results = {}
+                    workflow_status = "pending"
+                    
+                    for task in tasks:
+                        task_id = task.get("task_id") or task.get("id")
+                        results[task_id] = {
+                            "status": task.get("status"),
+                            "result": task.get("result"),
+                            "error": task.get("error")
+                        }
+                        
+                        # Update workflow status based on tasks
+                        if task.get("status") == "failed":
+                            workflow_status = "failed"
+                        elif task.get("status") == "completed" and workflow_status != "failed":
+                            workflow_status = "completed"
+                        elif task.get("status") in ["running", "executing"] and workflow_status not in ["failed"]:
+                            workflow_status = "running"
+                    
+                    return {
+                        "workflow_id": workflow_id,
+                        "status": workflow_status,
+                        "results": results,
+                        "total_tasks": len(tasks)
+                    }
+                else:
+                    return {
+                        "workflow_id": workflow_id,
+                        "status": "unknown",
+                        "results": {},
+                        "total_tasks": 0
+                    }
+        except Exception as e:
+            print(f"Error getting workflow results: {e}")
+            return {
+                "workflow_id": workflow_id,
+                "status": "error",
+                "results": {},
+                "error": str(e)
+            }

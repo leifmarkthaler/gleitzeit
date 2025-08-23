@@ -922,7 +922,12 @@ class GleitzeitClient:
         else:
             if not self._persistence_adapter:
                 return {"workflows": [], "total": 0}
-            return await self._persistence_adapter.list_workflows(status, limit, offset)
+            # Use keyword arguments to match the unified persistence adapter signature
+            return await self._persistence_adapter.list_workflows(
+                status=status,
+                limit=limit,
+                offset=offset
+            )
     
     async def list_tasks(self, status: Optional[str] = None, workflow_id: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
         """List tasks with optional filtering"""

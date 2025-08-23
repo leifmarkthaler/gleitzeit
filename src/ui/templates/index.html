@@ -30,14 +30,14 @@
         
         <div class="metric-card" id="resource-utilization-card">
             <div class="metric-value" id="resource-util">
-                <span class="loading">...</span>
+                <span class="metric-number">0%</span>
             </div>
             <div class="metric-label">Resource Utilization</div>
         </div>
         
         <div class="metric-card" id="success-rate-card">
             <div class="metric-value" id="success-rate">
-                <span class="loading">...</span>
+                <span class="metric-number">100%</span>
             </div>
             <div class="metric-label">Success Rate</div>
         </div>
@@ -98,16 +98,32 @@
 
 <!-- HTMX Response Handlers -->
 <script>
-document.body.addEventListener('htmx:afterSwap', function(evt) {
-    // Update metric cards with proper formatting
-    if (evt.detail.target.id === 'active-workflows-card') {
-        const data = JSON.parse(evt.detail.xhr.response);
-        evt.detail.target.querySelector('.metric-value').innerHTML = data.total || 0;
+// Handle metric card updates
+document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    // Update Active Workflows metric
+    if (evt.detail.target.classList.contains('metric-value') && 
+        evt.detail.target.parentElement.id === 'active-workflows-card') {
+        try {
+            const data = JSON.parse(evt.detail.xhr.response);
+            evt.detail.target.innerHTML = `<span class="metric-number">${data.total || 0}</span>`;
+            evt.preventDefault();
+        } catch (e) {
+            evt.detail.target.innerHTML = '<span class="metric-number">0</span>';
+            evt.preventDefault();
+        }
     }
     
-    if (evt.detail.target.id === 'running-tasks-card') {
-        const data = JSON.parse(evt.detail.xhr.response);
-        evt.detail.target.querySelector('.metric-value').innerHTML = data.total || 0;
+    // Update Running Tasks metric
+    if (evt.detail.target.classList.contains('metric-value') && 
+        evt.detail.target.parentElement.id === 'running-tasks-card') {
+        try {
+            const data = JSON.parse(evt.detail.xhr.response);
+            evt.detail.target.innerHTML = `<span class="metric-number">${data.total || 0}</span>`;
+            evt.preventDefault();
+        } catch (e) {
+            evt.detail.target.innerHTML = '<span class="metric-number">0</span>';
+            evt.preventDefault();
+        }
     }
 });
 
@@ -166,18 +182,26 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
         if (data.workflows && data.workflows.length > 0) {
             html = '<div class="workflow-list">';
             data.workflows.forEach(workflow => {
+                const workflowId = workflow.id || workflow.workflow_id || 'unknown';
                 const statusClass = `status-${workflow.status || 'pending'}`;
+                const createdAt = workflow.created_at ? new Date(workflow.created_at).toLocaleString() : 'Just now';
+                
                 html += `
                     <div class="workflow-item">
                         <div class="workflow-header">
-                            <span class="workflow-name">${workflow.name || 'Unnamed'}</span>
+                            <span class="workflow-name">${workflow.name || 'Unnamed Workflow'}</span>
                             <span class="workflow-status ${statusClass}">${workflow.status || 'pending'}</span>
                         </div>
                         <div class="workflow-meta">
-                            <span>Tasks: ${workflow.tasks?.length || 0}</span>
-                            <span>Started: ${new Date(workflow.submitted_at || Date.now()).toLocaleTimeString()}</span>
+                            <span>ID: ${workflowId.substring(0, 12)}</span>
+                            <span>Tasks: ${workflow.tasks_total || workflow.tasks?.length || 0}</span>
+                            <span>Completed: ${workflow.tasks_completed || 0}</span>
+                            <span>Failed: ${workflow.tasks_failed || 0}</span>
                         </div>
-                        <a href="/workflows/${workflow.id}" class="workflow-link">View Details →</a>
+                        <div class="workflow-meta">
+                            <span>Created: ${createdAt}</span>
+                        </div>
+                        <a href="/workflows/${workflowId}" class="workflow-link">View Details →</a>
                     </div>
                 `;
             });

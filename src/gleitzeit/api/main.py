@@ -204,102 +204,51 @@ async def get_status():
 @app.get("/resources")
 async def get_resources_status():
     """Get resource manager and hub status"""
-    if not app_state.resource_manager:
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Try to get resource information from client if available
+        if hasattr(app_state.client, 'get_resources'):
+            resources = await app_state.client.get_resources()
+            return JSONResponse(content=resources)
+        else:
+            # Fallback to basic response if client doesn't have this method
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "message": "Resource management not enabled",
+                    "resource_manager": None,
+                    "hubs": {}
+                }
+            )
+    except Exception as e:
+        logger.error(f"Failed to get resources: {e}")
         return JSONResponse(
             status_code=200,
-            content={"message": "Resource management not enabled"}
+            content={
+                "message": "Resource information not available",
+                "resource_manager": None,
+                "hubs": {},
+                "error": str(e)
+            }
         )
-    
-    result = {
-        "resource_manager": {
-            "id": app_state.resource_manager.manager_id,
-            "running": app_state.resource_manager.running,
-            "stats": app_state.resource_manager.stats
-        },
-        "hubs": {}
-    }
-    
-    # Get hub information
-    hubs = await app_state.resource_manager.get_hubs()
-    for hub_name, hub in hubs.items():
-        instances = await hub.list_instances()
-        from gleitzeit.hub.base import ResourceStatus
-        healthy_count = sum(1 for i in instances if i.status == ResourceStatus.HEALTHY)
-        
-        result["hubs"][hub_name] = {
-            "hub_id": hub.hub_id,
-            "resource_type": hub.resource_type.value,
-            "total_instances": len(instances),
-            "healthy_instances": healthy_count,
-            "instances": [
-                {
-                    "id": inst.id,
-                    "name": inst.name,
-                    "status": inst.status.value,
-                    "endpoint": inst.endpoint
-                }
-                for inst in instances
-            ]
-        }
-        
-        # Try to get metrics if available
-        try:
-            metrics_summary = await hub.get_metrics_summary()
-            if metrics_summary:
-                result["hubs"][hub_name]["metrics"] = metrics_summary
-        except:
-            pass
-    
-    # Get global metrics
-    try:
-        global_metrics = await app_state.resource_manager.get_global_metrics()
-        result["global_metrics"] = global_metrics
-    except:
-        pass
-    
-    return JSONResponse(content=result)
 
 
 @app.post("/workflows", response_model=WorkflowResponse)
-async def submit_workflow(workflow: WorkflowRequest, background_tasks: BackgroundTasks):
+async def submit_workflow(workflow: WorkflowRequest):
     """Submit a workflow for execution"""
     if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        # Generate workflow ID
-        workflow_id = f"api_workflow_{uuid.uuid4().hex[:8]}"
-        
-        # Create response immediately with "submitted" status
-        response = WorkflowResponse(
-            workflow_id=workflow_id,
-            status="submitted",
-            tasks_total=len(workflow.tasks),
-            tasks_completed=0,
-            tasks_failed=0,
-            created_at=datetime.now(),
-            completed_at=None
-        )
-        
-        # Schedule workflow execution in background
-        background_tasks.add_task(execute_workflow_via_client, workflow, workflow_id)
-        
-        return response
-        
-    except Exception as e:
-        logger.error(f"Workflow submission failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-async def execute_workflow_via_client(workflow: WorkflowRequest, workflow_id: str):
-    """Execute workflow via GleitzeitClient in background"""
-    try:
+        # Schedule workflow execution in background and get the client-generated ID
+        # We'll store the workflow request and process it
         import tempfile
         import yaml
         
-        # Convert API request to workflow dictionary with API workflow ID
+        # Convert API request to workflow dictionary
         workflow_dict = {
-            "id": workflow_id,  # Use the API workflow ID
             "name": workflow.name,
             "description": workflow.description,
             "tasks": [
@@ -323,37 +272,35 @@ async def execute_workflow_via_client(workflow: WorkflowRequest, workflow_id: st
             yaml.dump(workflow_dict, temp_file, default_flow_style=False)
             temp_file_path = temp_file.name
         
+        # Submit to client and get the client-generated workflow ID
+        result = await app_state.client.run_workflow(temp_file_path)
+        workflow_id = result.get("workflow_id")
+        
+        # Clean up temp file
+        import os
         try:
-            # Delegate to GleitzeitClient
-            result = await app_state.client.run_workflow(temp_file_path)
-            
-            # The workflow ID should be the same in both API and client
-            client_workflow_id = result.get("workflow_id")
-            if client_workflow_id == workflow_id:
-                logger.info(f"Workflow {workflow_id} completed successfully")
-            else:
-                logger.warning(f"Workflow ID mismatch: API={workflow_id}, Client={client_workflow_id}")
-            
-        except Exception as e:
-            logger.error(f"Workflow {workflow_id} execution failed: {e}")
-            
-        finally:
-            # Clean up temporary file
-            import os
-            try:
-                os.unlink(temp_file_path)
-            except:
-                pass
-                
+            os.unlink(temp_file_path)
+        except:
+            pass
+        
+        # Create response with the client's workflow ID
+        response = WorkflowResponse(
+            workflow_id=workflow_id,
+            status="submitted",
+            tasks_total=len(workflow.tasks),
+            tasks_completed=0,
+            tasks_failed=0,
+            created_at=datetime.now(),
+            completed_at=None
+        )
+        
+        return response
+        
     except Exception as e:
-        logger.error(f"Background workflow execution failed: {e}")
-    
-    except Exception as e:
-        logger.error(f"Workflow execution failed: {e}")
-        if workflow.id in app_state.active_workflows:
-            response = app_state.active_workflows[workflow.id]
-            response.status = "failed"
-            response.completed_at = datetime.now()
+        logger.error(f"Workflow submission failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 
 
 @app.get("/workflows")
@@ -391,34 +338,57 @@ async def get_workflow_status(workflow_id: str):
         raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        # Get workflow tasks (this works even if get_workflow doesn't)
-        tasks = await app_state.client.get_workflow_tasks(workflow_id)
+        # Try to get workflow from client first
+        workflow = await app_state.client.get_workflow(workflow_id)
+        
+        if workflow:
+            # Build response from workflow object
+            response = WorkflowResponse(
+                workflow_id=workflow_id,
+                status=workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status),
+                tasks_total=workflow.tasks_total if hasattr(workflow, 'tasks_total') else 0,
+                tasks_completed=workflow.tasks_completed if hasattr(workflow, 'tasks_completed') else 0,
+                tasks_failed=workflow.tasks_failed if hasattr(workflow, 'tasks_failed') else 0,
+                created_at=workflow.created_at if hasattr(workflow, 'created_at') else datetime.now(),
+                completed_at=workflow.completed_at if hasattr(workflow, 'completed_at') else None,
+                results=workflow.results if hasattr(workflow, 'results') else {}
+            )
+            return response
+        
+        # Fallback: Try to get tasks for this workflow ID
+        result = await app_state.client.list_tasks(workflow_id=workflow_id)
+        
+        # Handle the response format from client
+        if isinstance(result, dict) and "tasks" in result:
+            tasks = result["tasks"]
+        else:
+            tasks = result if isinstance(result, list) else []
+        
         if not tasks:
             raise HTTPException(status_code=404, detail="Workflow not found")
         
         # Calculate status from tasks
-        tasks_completed = sum(1 for t in tasks if t.status == "completed")
-        tasks_failed = sum(1 for t in tasks if t.status == "failed")
+        tasks_completed = sum(1 for t in tasks if hasattr(t, 'status') and str(t.status) == "completed")
+        tasks_failed = sum(1 for t in tasks if hasattr(t, 'status') and str(t.status) == "failed")
         
         # Determine overall workflow status
         if tasks_failed > 0:
             status = "failed"
         elif tasks_completed == len(tasks) and len(tasks) > 0:
             status = "completed"
-        elif any(t.status == "executing" for t in tasks):
+        elif any(hasattr(t, 'status') and str(t.status) in ["executing", "running"] for t in tasks):
             status = "running"
         else:
             status = "pending"
         
-        # Get task results from the client's persistence
+        # Get task results from the tasks
         results = {}
         for task in tasks:
-            task_result = await app_state.client.get_task_result(task.id)
-            if task_result:
+            if hasattr(task, 'id'):
                 results[task.id] = {
-                    "status": task_result.status,
-                    "result": task_result.result if hasattr(task_result, 'result') else None,
-                    "error": task_result.error if hasattr(task_result, 'error') else None
+                    "status": str(task.status) if hasattr(task, 'status') else "unknown",
+                    "result": task.result if hasattr(task, 'result') else None,
+                    "error": task.error if hasattr(task, 'error') else None
                 }
         
         response = WorkflowResponse(
@@ -427,13 +397,15 @@ async def get_workflow_status(workflow_id: str):
             tasks_total=len(tasks),
             tasks_completed=tasks_completed,
             tasks_failed=tasks_failed,
-            created_at=datetime.now(),  # We don't have workflow creation time
+            created_at=datetime.now(),
             completed_at=datetime.now() if status == "completed" else None,
             results=results
         )
         
         return response
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to get workflow {workflow_id}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -605,14 +577,14 @@ async def get_task_status(task_id: str):
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
         
-        # Convert to TaskResponse format
+        # Convert to TaskResponse format, handling attribute access safely
         return TaskResponse(
             task_id=task.id,
-            status=task.status,
-            result=task.result,
-            error=task.error,
-            created_at=task.created_at,
-            completed_at=task.completed_at
+            status=task.status.value if hasattr(task.status, 'value') else str(task.status),
+            result=task.result if hasattr(task, 'result') else None,
+            error=task.error if hasattr(task, 'error') else None,
+            created_at=task.created_at if hasattr(task, 'created_at') else datetime.now(),
+            completed_at=task.completed_at if hasattr(task, 'completed_at') else None
         )
     except HTTPException:
         raise
@@ -709,6 +681,286 @@ async def batch_process(request: BatchRequest):
 # Template endpoint would need direct execution_engine access
 # Commenting out for now as API should be a thin layer over client
 # @app.post("/templates/{template_type}")
+
+
+@app.get("/workflows/{workflow_id}/tasks")
+async def get_workflow_tasks(workflow_id: str, limit: int = 1000, offset: int = 0):
+    """Get all tasks for a specific workflow"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Get tasks filtered by workflow_id
+        result = await app_state.client.list_tasks(
+            workflow_id=workflow_id,
+            limit=limit,
+            offset=offset
+        )
+        
+        # Handle the response format from client
+        if isinstance(result, dict) and "tasks" in result:
+            tasks = result["tasks"]
+            total = result.get("total", len(tasks))
+        else:
+            tasks = result if isinstance(result, list) else []
+            total = len(tasks)
+        
+        return {
+            "workflow_id": workflow_id,
+            "tasks": tasks,
+            "total": total
+        }
+    except Exception as e:
+        logger.error(f"Failed to get workflow tasks: {e}")
+        return {
+            "workflow_id": workflow_id,
+            "tasks": [],
+            "total": 0
+        }
+
+
+@app.get("/workflows/{workflow_id}/timeline")
+async def get_workflow_timeline(workflow_id: str):
+    """Get execution timeline for a workflow"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Get tasks for this workflow
+        result = await app_state.client.list_tasks(workflow_id=workflow_id, limit=1000)
+        
+        # Handle the response format from client
+        if isinstance(result, dict) and "tasks" in result:
+            tasks = result["tasks"]
+        else:
+            tasks = result if isinstance(result, list) else []
+        
+        # Build timeline from task data
+        timeline = []
+        for task in tasks:
+            timeline.append({
+                "task_id": task.id,
+                "name": task.name,
+                "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
+                "started_at": task.created_at.isoformat() if task.created_at else None,
+                "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+                "duration": task.execution_time
+            })
+        
+        # Sort by start time
+        timeline.sort(key=lambda x: x.get("started_at") or "")
+        
+        return {
+            "workflow_id": workflow_id,
+            "timeline": timeline,
+            "total_tasks": len(timeline)
+        }
+    except Exception as e:
+        logger.error(f"Failed to get workflow timeline: {e}")
+        return {
+            "workflow_id": workflow_id,
+            "timeline": [],
+            "total_tasks": 0
+        }
+
+
+@app.get("/workflows/{workflow_id}/results")
+async def get_workflow_results(workflow_id: str):
+    """Get aggregated results for a workflow"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Try to get workflow from client
+        workflow = await app_state.client.get_workflow(workflow_id)
+        
+        if workflow:
+            return {
+                "workflow_id": workflow_id,
+                "status": workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status),
+                "results": workflow.results if hasattr(workflow, 'results') else {},
+                "created_at": workflow.created_at.isoformat() if workflow.created_at else None,
+                "completed_at": workflow.completed_at.isoformat() if workflow.completed_at else None
+            }
+        
+        # Fallback: Get tasks and build results from them
+        result = await app_state.client.list_tasks(workflow_id=workflow_id, limit=1000)
+        
+        # Handle the response format from client
+        if isinstance(result, dict) and "tasks" in result:
+            tasks = result["tasks"]
+        else:
+            tasks = result if isinstance(result, list) else []
+        
+        # Build results from task data
+        results = {}
+        workflow_status = "pending"
+        
+        for task in tasks:
+            results[task.id] = {
+                "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
+                "result": task.result,
+                "error": task.error
+            }
+            
+            # Update workflow status based on tasks
+            task_status = task.status.value if hasattr(task.status, 'value') else str(task.status)
+            if task_status == "failed":
+                workflow_status = "failed"
+            elif task_status == "completed" and workflow_status != "failed":
+                workflow_status = "completed"
+            elif task_status in ["running", "executing"] and workflow_status not in ["failed"]:
+                workflow_status = "running"
+        
+        return {
+            "workflow_id": workflow_id,
+            "status": workflow_status,
+            "results": results,
+            "total_tasks": len(tasks)
+        }
+    except Exception as e:
+        logger.error(f"Failed to get workflow results: {e}")
+        return {
+            "workflow_id": workflow_id,
+            "status": "error",
+            "results": {},
+            "error": str(e)
+        }
+
+
+@app.get("/tasks/{task_id}/result")
+async def get_task_result(task_id: str):
+    """Get the result of a specific task"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Get task details from client
+        task = await app_state.client.get_task(task_id)
+        
+        if not task:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        return {
+            "task_id": task_id,
+            "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
+            "result": task.result if hasattr(task, 'result') else None,
+            "error": task.error if hasattr(task, 'error') else None,
+            "completed_at": task.completed_at.isoformat() if hasattr(task, 'completed_at') and task.completed_at else None
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get task result: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to get task result: {str(e)}")
+
+
+@app.get("/tasks/{task_id}/logs")
+async def get_task_logs(task_id: str, tail: int = 50):
+    """Get execution logs for a task"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Get task details from client
+        task = await app_state.client.get_task(task_id)
+        
+        if not task:
+            return {
+                "task_id": task_id,
+                "logs": [f"Task {task_id} not found"],
+                "total_lines": 1,
+                "tail": tail
+            }
+        
+        # Extract logs from task result if available
+        logs = []
+        
+        if hasattr(task, 'result') and task.result and isinstance(task.result, dict):
+            # Check for output field
+            if "output" in task.result:
+                logs.append(f"[OUTPUT] {task.result['output']}")
+            # Check for logs field
+            if "logs" in task.result:
+                if isinstance(task.result["logs"], list):
+                    logs.extend(task.result["logs"])
+                else:
+                    logs.append(str(task.result["logs"]))
+            # Check for stdout/stderr
+            if "stdout" in task.result:
+                logs.append(f"[STDOUT] {task.result['stdout']}")
+            if "stderr" in task.result:
+                logs.append(f"[STDERR] {task.result['stderr']}")
+        
+        # If no logs found, add status message
+        if not logs:
+            status = task.status.value if hasattr(task, 'status') and hasattr(task.status, 'value') else str(task.status) if hasattr(task, 'status') else 'unknown'
+            logs.append(f"Task {task_id} - Status: {status}")
+            if hasattr(task, 'error') and task.error:
+                logs.append(f"Error: {task.error}")
+        
+        # Limit to requested tail size
+        if len(logs) > tail:
+            logs = logs[-tail:]
+        
+        return {
+            "task_id": task_id,
+            "logs": logs,
+            "total_lines": len(logs),
+            "tail": tail
+        }
+    except Exception as e:
+        logger.error(f"Failed to get task logs: {e}")
+        return {
+            "task_id": task_id,
+            "logs": [f"Error fetching logs: {e}"],
+            "total_lines": 1,
+            "tail": tail
+        }
+
+
+@app.get("/providers")
+async def list_providers():
+    """List all registered providers"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Get providers from client if available
+        if hasattr(app_state.client, 'list_providers'):
+            providers = await app_state.client.list_providers()
+            return {"providers": providers}
+        else:
+            # Fallback to empty list
+            return {"providers": []}
+    except Exception as e:
+        logger.error(f"Failed to list providers: {e}")
+        return {"providers": [], "error": str(e)}
+
+
+@app.get("/protocols")
+async def list_protocols():
+    """List all registered protocols"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Get protocols from client if available
+        if hasattr(app_state.client, 'list_protocols'):
+            protocols = await app_state.client.list_protocols()
+            return {"protocols": protocols}
+        else:
+            # Fallback to basic protocols
+            return {
+                "protocols": [
+                    {"name": "llm/v1", "description": "Language Model Protocol"},
+                    {"name": "exec/v1", "description": "Command Execution Protocol"},
+                    {"name": "http/v1", "description": "HTTP Request Protocol"}
+                ]
+            }
+    except Exception as e:
+        logger.error(f"Failed to list protocols: {e}")
+        return {"protocols": [], "error": str(e)}
 
 
 @app.delete("/workflows/{workflow_id}")

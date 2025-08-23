@@ -11,31 +11,47 @@
         </button>
     </div>
     
+    <!-- Stats Overview -->
+    <div class="workflows-overview" 
+         hx-get="/api/workflows" 
+         hx-trigger="load, every 3s"
+         hx-target="this"
+         hx-swap="innerHTML">
+        <div class="loading-spinner">Loading workflow statistics...</div>
+    </div>
+    
     <!-- Filters -->
     <div class="filters">
-        <select id="status-filter" class="filter-select" 
+        <select id="status-filter" name="status" class="filter-select" 
                 hx-get="/api/workflows" 
                 hx-trigger="change"
                 hx-target="#workflows-list"
                 hx-include="[name='limit']">
             <option value="">All Status</option>
+            <option value="pending">Pending</option>
             <option value="running">Running</option>
             <option value="completed">Completed</option>
             <option value="failed">Failed</option>
-            <option value="pending">Pending</option>
+            <option value="cancelled">Cancelled</option>
         </select>
         
-        <input type="number" name="limit" value="20" min="1" max="100" 
+        <input type="number" name="limit" value="50" min="1" max="200" 
                class="filter-input" placeholder="Limit"
                hx-get="/api/workflows"
                hx-trigger="change"
                hx-target="#workflows-list"
-               hx-include="[id='status-filter']">
+               hx-include="[name='status']">
+        
+        <div class="filter-actions">
+            <button class="btn btn-secondary btn-sm" onclick="refreshWorkflows()">
+                ↻ Refresh
+            </button>
+        </div>
     </div>
     
-    <!-- Workflows List -->
+    <!-- Workflows Table -->
     <div id="workflows-list" 
-         hx-get="/api/workflows" 
+         hx-get="/api/workflows?limit=50" 
          hx-trigger="load, every 5s"
          class="workflows-container">
         <div class="loading-spinner">Loading workflows...</div>
@@ -50,15 +66,31 @@
             <button class="close-btn" onclick="closeSubmitWorkflowModal()">×</button>
         </div>
         <div class="modal-body">
-            <form id="submit-workflow-form" hx-post="/api/workflows" 
-                  hx-target="#workflow-submit-result">
+            <div class="template-selector">
+                <label>Start from template:</label>
+                <select id="template-select" class="form-control" onchange="loadTemplate(this.value)">
+                    <option value="">-- Select Template --</option>
+                    <option value="simple">Simple Python Task</option>
+                    <option value="parallel">Parallel Tasks</option>
+                    <option value="llm">LLM Chat</option>
+                </select>
+            </div>
+            
+            <form id="submit-workflow-form">
                 <div class="form-group">
-                    <label for="workflow-yaml">Workflow YAML:</label>
-                    <textarea id="workflow-yaml" name="workflow" rows="15" class="form-control" 
-                              placeholder="Paste your workflow YAML here..."></textarea>
+                    <label for="workflow-name">Workflow Name:</label>
+                    <input type="text" id="workflow-name" class="form-control" 
+                           placeholder="My Workflow" required>
                 </div>
+                
+                <div class="form-group">
+                    <label for="workflow-json">Workflow Definition (JSON):</label>
+                    <textarea id="workflow-json" rows="15" class="form-control code-editor" 
+                              placeholder='{"tasks": [...]}'></textarea>
+                </div>
+                
                 <div class="form-actions">
-                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="button" class="btn btn-primary" onclick="submitWorkflow()">Submit</button>
                     <button type="button" class="btn btn-secondary" onclick="closeSubmitWorkflowModal()">Cancel</button>
                 </div>
             </form>
@@ -68,45 +100,149 @@
 </div>
 
 <script>
-// Format workflows list
+// Format workflows overview
 document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    if (evt.detail.target.classList.contains('workflows-overview')) {
+        const data = JSON.parse(evt.detail.xhr.response);
+        const workflows = data.workflows || [];
+        
+        // Calculate stats
+        const stats = {
+            total: data.total || workflows.length,
+            pending: workflows.filter(w => w.status === 'pending').length,
+            running: workflows.filter(w => w.status === 'running').length,
+            completed: workflows.filter(w => w.status === 'completed').length,
+            failed: workflows.filter(w => w.status === 'failed').length,
+            cancelled: workflows.filter(w => w.status === 'cancelled').length
+        };
+        
+        let html = `
+            <div class="stats-header">
+                <h2>Workflow Statistics</h2>
+                <span class="stats-timestamp">Updated: ${new Date().toLocaleTimeString()}</span>
+            </div>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-value">${stats.total}</span>
+                    <span class="stat-label">Total Workflows</span>
+                </div>
+                <div class="stat-card status-pending">
+                    <span class="stat-value">${stats.pending}</span>
+                    <span class="stat-label">Pending</span>
+                </div>
+                <div class="stat-card status-running">
+                    <span class="stat-value">${stats.running}</span>
+                    <span class="stat-label">Running</span>
+                </div>
+                <div class="stat-card status-completed">
+                    <span class="stat-value">${stats.completed}</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat-card status-failed">
+                    <span class="stat-value">${stats.failed}</span>
+                    <span class="stat-label">Failed</span>
+                </div>
+                <div class="stat-card status-cancelled">
+                    <span class="stat-value">${stats.cancelled}</span>
+                    <span class="stat-label">Cancelled</span>
+                </div>
+            </div>
+        `;
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+    
+    // Format workflows table
     if (evt.detail.target.id === 'workflows-list') {
         const data = JSON.parse(evt.detail.xhr.response);
         let html = '';
         
         if (data.workflows && data.workflows.length > 0) {
-            html = '<div class="workflows-grid">';
+            html = '<div class="workflows-table">';
+            html += `
+                <div class="table-header">
+                    <div class="table-row">
+                        <div class="table-cell">Status</div>
+                        <div class="table-cell">Workflow ID</div>
+                        <div class="table-cell">Name</div>
+                        <div class="table-cell">Tasks</div>
+                        <div class="table-cell">Progress</div>
+                        <div class="table-cell">Created</div>
+                        <div class="table-cell">Actions</div>
+                    </div>
+                </div>
+                <div class="table-body">
+            `;
+            
             data.workflows.forEach(workflow => {
+                const workflowId = workflow.id || workflow.workflow_id || 'unknown';
                 const statusClass = `status-${workflow.status || 'pending'}`;
+                const statusIcon = getStatusIcon(workflow.status);
                 const progress = calculateProgress(workflow);
+                const createdAt = workflow.created_at || workflow.submitted_at;
                 
                 html += `
-                    <div class="workflow-card">
-                        <div class="workflow-card-header">
-                            <h3 class="workflow-name">${workflow.name || 'Unnamed Workflow'}</h3>
-                            <span class="workflow-status ${statusClass}">${workflow.status || 'pending'}</span>
+                    <div class="table-row">
+                        <div class="table-cell">
+                            <span class="workflow-status ${statusClass}">
+                                ${statusIcon} ${workflow.status || 'pending'}
+                            </span>
                         </div>
-                        <div class="workflow-card-body">
-                            <div class="workflow-info">
-                                <span class="info-item">ID: ${workflow.id}</span>
-                                <span class="info-item">Tasks: ${workflow.tasks?.length || 0}</span>
-                                <span class="info-item">Started: ${formatTime(workflow.submitted_at)}</span>
+                        <div class="table-cell">
+                            <a href="/workflows/${workflowId}" class="workflow-link">
+                                ${workflowId.substring(0, 12)}...
+                            </a>
+                        </div>
+                        <div class="table-cell">
+                            <span class="workflow-name-cell">${workflow.name || 'Unnamed'}</span>
+                        </div>
+                        <div class="table-cell">
+                            <div class="task-counts">
+                                <span class="count-total">${workflow.tasks_total || 0}</span>
+                                ${workflow.tasks_completed ? 
+                                    `<span class="count-completed">✓ ${workflow.tasks_completed}</span>` : ''}
+                                ${workflow.tasks_failed ? 
+                                    `<span class="count-failed">✗ ${workflow.tasks_failed}</span>` : ''}
                             </div>
-                            <div class="progress-bar">
+                        </div>
+                        <div class="table-cell">
+                            <div class="progress-bar inline">
                                 <div class="progress-fill" style="width: ${progress}%"></div>
                             </div>
-                            <div class="workflow-actions">
-                                <a href="/workflows/${workflow.id}" class="btn btn-sm btn-primary">View Details</a>
+                            <span class="progress-text">${progress}%</span>
+                        </div>
+                        <div class="table-cell">
+                            ${formatTime(createdAt)}
+                        </div>
+                        <div class="table-cell">
+                            <div class="action-buttons">
+                                <a href="/workflows/${workflowId}" class="btn btn-sm btn-primary">View</a>
                                 ${workflow.status === 'running' ? 
-                                    `<button class="btn btn-sm btn-danger" 
-                                             hx-delete="/api/workflows/${workflow.id}"
+                                    `<button class="btn btn-sm btn-warning" 
+                                             hx-post="/api/workflows/${workflowId}/cancel"
                                              hx-confirm="Cancel this workflow?">Cancel</button>` : ''}
+                                ${workflow.status === 'failed' ? 
+                                    `<button class="btn btn-sm btn-secondary" 
+                                             hx-post="/api/workflows/${workflowId}/retry"
+                                             hx-confirm="Retry this workflow?">Retry</button>` : ''}
+                                <button class="btn btn-sm btn-danger" 
+                                        hx-delete="/api/workflows/${workflowId}"
+                                        hx-confirm="Delete this workflow and all its tasks?">Delete</button>
                             </div>
                         </div>
                     </div>
                 `;
             });
-            html += '</div>';
+            
+            html += '</div></div>';
+            
+            // Pagination info
+            html += `
+                <div class="pagination-info">
+                    Showing ${data.workflows.length} of ${data.total || data.workflows.length} workflows
+                </div>
+            `;
         } else {
             html = `
                 <div class="empty-state">
@@ -124,15 +260,49 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
     }
 });
 
+function getStatusIcon(status) {
+    switch(status) {
+        case 'completed': return '✓';
+        case 'running': return '▶';
+        case 'failed': return '✗';
+        case 'pending': return '○';
+        case 'cancelled': return '⊘';
+        default: return '•';
+    }
+}
+
 function calculateProgress(workflow) {
-    if (!workflow.tasks || workflow.tasks.length === 0) return 0;
-    const completed = workflow.tasks.filter(t => t.status === 'completed').length;
-    return Math.round((completed / workflow.tasks.length) * 100);
+    const total = workflow.tasks_total || 0;
+    const completed = workflow.tasks_completed || 0;
+    if (total === 0) return 0;
+    return Math.round((completed / total) * 100);
 }
 
 function formatTime(timestamp) {
     if (!timestamp) return 'N/A';
-    return new Date(timestamp).toLocaleString();
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    // If less than 1 minute ago
+    if (diff < 60000) {
+        return 'Just now';
+    }
+    // If less than 1 hour ago
+    if (diff < 3600000) {
+        const mins = Math.floor(diff / 60000);
+        return `${mins} min${mins > 1 ? 's' : ''} ago`;
+    }
+    // If today
+    if (date.toDateString() === now.toDateString()) {
+        return date.toLocaleTimeString();
+    }
+    // Otherwise show full date
+    return date.toLocaleString();
+}
+
+function refreshWorkflows() {
+    htmx.trigger('#workflows-list', 'load');
 }
 
 function showSubmitWorkflowModal() {
@@ -141,23 +311,115 @@ function showSubmitWorkflowModal() {
 
 function closeSubmitWorkflowModal() {
     document.getElementById('submit-workflow-modal').style.display = 'none';
-    document.getElementById('workflow-yaml').value = '';
+    document.getElementById('workflow-name').value = '';
+    document.getElementById('workflow-json').value = '';
     document.getElementById('workflow-submit-result').innerHTML = '';
 }
 
-// Handle workflow submission response
-document.body.addEventListener('htmx:afterRequest', function(evt) {
-    if (evt.detail.target.id === 'workflow-submit-result') {
-        if (evt.detail.successful) {
-            evt.detail.target.innerHTML = '<div class="alert alert-success">Workflow submitted successfully!</div>';
+function loadTemplate(templateType) {
+    const templates = {
+        simple: {
+            name: "Simple Python Task",
+            tasks: [{
+                id: "python_task",
+                name: "Execute Python",
+                protocol: "python/v1",
+                method: "python/execute",
+                params: {
+                    code: "print('Hello from Python!')\nresult = 42"
+                }
+            }]
+        },
+        parallel: {
+            name: "Parallel Tasks Example",
+            tasks: [
+                {
+                    id: "task1",
+                    name: "Task 1",
+                    protocol: "python/v1",
+                    method: "python/execute",
+                    params: { code: "print('Task 1 running')" }
+                },
+                {
+                    id: "task2",
+                    name: "Task 2",
+                    protocol: "python/v1",
+                    method: "python/execute",
+                    params: { code: "print('Task 2 running')" }
+                },
+                {
+                    id: "combine",
+                    name: "Combine Results",
+                    protocol: "python/v1",
+                    method: "python/execute",
+                    params: { code: "print('Combining results')" },
+                    dependencies: ["task1", "task2"]
+                }
+            ]
+        },
+        llm: {
+            name: "LLM Chat Example",
+            tasks: [{
+                id: "chat",
+                name: "Chat with LLM",
+                protocol: "llm/v1",
+                method: "llm/chat",
+                params: {
+                    model: "llama3.2",
+                    messages: [
+                        { role: "user", content: "Hello! Tell me a joke." }
+                    ]
+                }
+            }]
+        }
+    };
+    
+    if (templates[templateType]) {
+        document.getElementById('workflow-name').value = templates[templateType].name;
+        document.getElementById('workflow-json').value = JSON.stringify(templates[templateType], null, 2);
+    }
+}
+
+async function submitWorkflow() {
+    const name = document.getElementById('workflow-name').value;
+    const jsonStr = document.getElementById('workflow-json').value;
+    
+    try {
+        const workflow = JSON.parse(jsonStr);
+        workflow.name = name;
+        
+        const response = await fetch('/api/workflows', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(workflow)
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            document.getElementById('workflow-submit-result').innerHTML = 
+                '<div class="alert alert-success">Workflow submitted successfully! ID: ' + result.workflow_id + '</div>';
             setTimeout(() => {
                 closeSubmitWorkflowModal();
-                // Refresh the workflows list
-                htmx.trigger('#workflows-list', 'load');
+                refreshWorkflows();
             }, 2000);
         } else {
-            evt.detail.target.innerHTML = '<div class="alert alert-error">Failed to submit workflow</div>';
+            document.getElementById('workflow-submit-result').innerHTML = 
+                '<div class="alert alert-error">Error: ' + (result.detail || 'Failed to submit workflow') + '</div>';
         }
+    } catch (e) {
+        document.getElementById('workflow-submit-result').innerHTML = 
+            '<div class="alert alert-error">Invalid JSON: ' + e.message + '</div>';
+    }
+}
+
+// Handle delete/cancel responses
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.successful && (evt.detail.verb === 'DELETE' || evt.detail.verb === 'POST')) {
+        // Refresh list after action
+        refreshWorkflows();
     }
 });
 </script>

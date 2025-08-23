@@ -454,9 +454,13 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 'id': workflow.id,
                 'name': workflow.name,
                 'description': workflow.description or '',
+                'status': workflow.status if hasattr(workflow, 'status') else 'pending',
                 'tasks': json.dumps(tasks_data),
                 'metadata': json.dumps(workflow.metadata) if workflow.metadata else '{}',
-                'created_at': workflow.created_at.isoformat() if workflow.created_at else datetime.utcnow().isoformat()
+                'created_at': workflow.created_at.isoformat() if workflow.created_at else datetime.utcnow().isoformat(),
+                'tasks_total': len(workflow.tasks),
+                'tasks_completed': 0,  # Will be updated by execution engine
+                'tasks_failed': 0  # Will be updated by execution engine
             }
             
             await self.redis.hset(
@@ -830,12 +834,15 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                             "name": workflow_data.get("name", ""),
                             "description": workflow_data.get("description", ""),
                             "created_at": workflow_data.get("created_at", ""),
-                            "status": "unknown"  # We'll determine this from tasks
+                            "status": workflow_data.get("status", "unknown"),
+                            "tasks_total": int(workflow_data.get("tasks_total", 0)),
+                            "tasks_completed": int(workflow_data.get("tasks_completed", 0)),
+                            "tasks_failed": int(workflow_data.get("tasks_failed", 0))
                         }
                         
-                        # If status filter is specified, check if this workflow matches
-                        # For now, include all workflows since we don't store workflow status directly
-                        workflows.append(workflow)
+                        # Apply status filter if specified
+                        if status is None or workflow["status"] == status:
+                            workflows.append(workflow)
                         
                 except Exception as e:
                     logger.warning(f"Failed to parse workflow from key {key}: {e}")

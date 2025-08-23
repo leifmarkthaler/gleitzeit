@@ -209,18 +209,154 @@ async def get_queue_status(request: Request) -> Dict[str, Any]:
     Returns:
         Queue statistics and pending tasks
     """
-    # The API doesn't have a queue status endpoint yet
-    # Return basic stats based on tracked tasks
-    pending_count = sum(1 for t in _ui_tasks.values() if t.get("status") == "pending")
-    running_count = sum(1 for t in _ui_tasks.values() if t.get("status") == "running")
-    completed_count = sum(1 for t in _ui_tasks.values() if t.get("status") == "completed")
-    failed_count = sum(1 for t in _ui_tasks.values() if t.get("status") == "failed")
+    # Get real statistics from the API's status endpoint
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/status") as resp:
+                if resp.status == 200:
+                    status_data = await resp.json()
+                    task_stats = status_data.get("task_statistics", {})
+                    
+                    # Calculate queue depth from pending/queued tasks
+                    pending = task_stats.get("pending", 0) + task_stats.get("queued", 0)
+                    running = task_stats.get("running", 0) + task_stats.get("executing", 0)
+                    
+                    return {
+                        "pending": pending,
+                        "running": running,
+                        "completed": task_stats.get("completed", 0),
+                        "failed": task_stats.get("failed", 0),
+                        "total": sum(task_stats.values()),
+                        "queue_depth": pending + running
+                    }
+        except:
+            pass
     
+    # Fallback to zeros if API is not available
     return {
-        "pending": pending_count,
-        "running": running_count,
-        "completed": completed_count,
-        "failed": failed_count,
-        "total": len(_ui_tasks),
-        "queue_depth": pending_count + running_count
+        "pending": 0,
+        "running": 0,
+        "completed": 0,
+        "failed": 0,
+        "total": 0,
+        "queue_depth": 0
     }
+
+@router.get("/{task_id}/result")
+async def get_task_result(request: Request, task_id: str) -> Dict[str, Any]:
+    """
+    Get the result of a specific task
+    
+    Args:
+        task_id: Task identifier
+    
+    Returns:
+        Task execution result
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Get task details from API
+            async with session.get(f"{GLEITZEIT_API_URL}/tasks/{task_id}") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return {
+                        "task_id": task_id,
+                        "status": data.get("status"),
+                        "result": data.get("result"),
+                        "error": data.get("error"),
+                        "completed_at": data.get("completed_at")
+                    }
+                elif resp.status == 404:
+                    # Task might not be in API yet, check local tracking
+                    if task_id in _ui_tasks:
+                        task = _ui_tasks[task_id]
+                        return {
+                            "task_id": task_id,
+                            "status": task.get("status", "pending"),
+                            "result": task.get("result"),
+                            "error": task.get("error")
+                        }
+                    raise HTTPException(status_code=404, detail="Task not found")
+                else:
+                    raise HTTPException(status_code=resp.status, detail="API error")
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+@router.get("/{task_id}/logs")
+async def get_task_logs(request: Request, task_id: str, tail: int = 50) -> Dict[str, Any]:
+    """
+    Get execution logs for a task
+    
+    Args:
+        task_id: Task identifier
+        tail: Number of recent log lines to return
+    
+    Returns:
+        Task execution logs
+    """
+    # The API doesn't currently have a logs endpoint
+    # For now, return a placeholder or fetch from result if available
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Try to get task details which might contain logs
+            async with session.get(f"{GLEITZEIT_API_URL}/tasks/{task_id}") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Extract any output or logs from the result
+                    result = data.get("result", {})
+                    logs = []
+                    
+                    if isinstance(result, dict):
+                        # Check for output field
+                        if "output" in result:
+                            logs.append(f"[OUTPUT] {result['output']}")
+                        # Check for logs field
+                        if "logs" in result:
+                            if isinstance(result["logs"], list):
+                                logs.extend(result["logs"])
+                            else:
+                                logs.append(str(result["logs"]))
+                        # Check for stdout/stderr
+                        if "stdout" in result:
+                            logs.append(f"[STDOUT] {result['stdout']}")
+                        if "stderr" in result:
+                            logs.append(f"[STDERR] {result['stderr']}")
+                    
+                    # If no logs found, add status message
+                    if not logs:
+                        logs.append(f"Task {task_id} - Status: {data.get('status', 'unknown')}")
+                        if data.get("error"):
+                            logs.append(f"Error: {data['error']}")
+                    
+                    # Limit to requested tail size
+                    if len(logs) > tail:
+                        logs = logs[-tail:]
+                    
+                    return {
+                        "task_id": task_id,
+                        "logs": logs,
+                        "total_lines": len(logs),
+                        "tail": tail
+                    }
+                elif resp.status == 404:
+                    return {
+                        "task_id": task_id,
+                        "logs": [f"Task {task_id} not found"],
+                        "total_lines": 1,
+                        "tail": tail
+                    }
+                else:
+                    return {
+                        "task_id": task_id,
+                        "logs": [f"Error fetching logs: HTTP {resp.status}"],
+                        "total_lines": 1,
+                        "tail": tail
+                    }
+        except Exception as e:
+            return {
+                "task_id": task_id,
+                "logs": [f"Error fetching logs: {e}"],
+                "total_lines": 1,
+                "tail": tail
+            }

@@ -165,3 +165,74 @@ async def task_detail_page(request: Request, task_id: str):
 async def health_check():
     """Simple health check endpoint"""
     return {"status": "healthy", "service": "gleitzeit-ui"}
+
+# Add a generic proxy for all /api/* routes not handled by specific routers
+# This allows the UI to proxy any API endpoint transparently
+@app.api_route("/api/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def proxy_api(request: Request, path: str):
+    """
+    Generic proxy for all /api/* requests to the Gleitzeit API
+    This catches any /api/* routes not handled by specific routers above
+    """
+    import aiohttp
+    import json
+    
+    api_url = request.app.state.api_url
+    
+    # Build the target URL
+    target_url = f"{api_url}/{path}"
+    
+    # Get query parameters
+    query_params = dict(request.query_params)
+    
+    # Prepare headers (remove host header)
+    headers = dict(request.headers)
+    headers.pop('host', None)
+    
+    # Get request body if present
+    body = None
+    if request.method in ["POST", "PUT", "PATCH"]:
+        try:
+            body = await request.body()
+        except:
+            body = None
+    
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Make the request to the API
+            async with session.request(
+                method=request.method,
+                url=target_url,
+                params=query_params,
+                headers=headers,
+                data=body
+            ) as resp:
+                # Get response content
+                content = await resp.read()
+                
+                # Try to parse as JSON
+                try:
+                    response_data = json.loads(content) if content else {}
+                except:
+                    # If not JSON, return as text
+                    from fastapi.responses import Response
+                    return Response(
+                        content=content,
+                        status_code=resp.status,
+                        headers=dict(resp.headers)
+                    )
+                
+                # Return JSON response
+                from fastapi.responses import JSONResponse
+                return JSONResponse(
+                    content=response_data,
+                    status_code=resp.status
+                )
+                
+        except aiohttp.ClientError as e:
+            # API not reachable
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                content={"error": f"Cannot connect to Gleitzeit API: {str(e)}"},
+                status_code=503
+            )

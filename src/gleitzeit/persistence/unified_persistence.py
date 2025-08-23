@@ -458,8 +458,23 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         total = len(workflows)
         workflows = workflows[offset:offset + limit]
         
+        # Convert to dictionaries for consistent output
+        workflow_dicts = []
+        for w in workflows:
+            workflow_dict = {
+                "id": w.id,
+                "name": w.name,
+                "description": getattr(w, 'description', ''),
+                "status": getattr(w, 'status', 'unknown'),
+                "created_at": w.created_at.isoformat() if hasattr(w, 'created_at') and w.created_at else '',
+                "tasks_total": len(w.tasks) if hasattr(w, 'tasks') else 0,
+                "tasks_completed": getattr(w, 'tasks_completed', 0),
+                "tasks_failed": getattr(w, 'tasks_failed', 0)
+            }
+            workflow_dicts.append(workflow_dict)
+        
         return {
-            "workflows": workflows,
+            "workflows": workflow_dicts,
             "total": total,
             "limit": limit,
             "offset": offset
@@ -675,6 +690,12 @@ class PersistenceBackendWrapper(UnifiedPersistenceAdapter):
     
     async def cleanup_old_data(self, cutoff_date: datetime) -> int:
         return await self._adapter.cleanup_old_data(cutoff_date)
+    
+    async def list_workflows(self, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        return await self._adapter.list_workflows(status=status, limit=limit, offset=offset)
+    
+    async def list_tasks(self, workflow_id: Optional[str] = None, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        return await self._adapter.list_tasks(workflow_id=workflow_id, status=status, limit=limit, offset=offset)
 
 
 class HubPersistenceAdapterWrapper(UnifiedPersistenceAdapter):

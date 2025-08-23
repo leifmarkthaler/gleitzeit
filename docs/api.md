@@ -52,7 +52,7 @@ Get API information.
 ```json
 {
   "name": "Gleitzeit API",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "status": "running",
   "documentation": "/docs"
 }
@@ -192,6 +192,86 @@ Get workflow status and results.
 }
 ```
 
+#### GET /workflows/{workflow_id}/tasks
+Get all tasks for a specific workflow.
+
+**Query Parameters:**
+- `limit` (integer, default: 1000): Maximum results to return
+- `offset` (integer, default: 0): Number of results to skip
+
+**Response:**
+```json
+{
+  "workflow_id": "wf_12345678",
+  "tasks": [
+    {
+      "task_id": "task_abc123",
+      "name": "Load Data",
+      "status": "completed",
+      "protocol": "python/v1",
+      "method": "python/execute",
+      "created_at": "2024-01-15T10:30:00Z",
+      "completed_at": "2024-01-15T10:30:05Z"
+    }
+  ],
+  "total": 2
+}
+```
+
+#### GET /workflows/{workflow_id}/timeline
+Get execution timeline for a workflow.
+
+**Response:**
+```json
+{
+  "workflow_id": "wf_12345678",
+  "timeline": [
+    {
+      "task_id": "task_abc123",
+      "name": "Load Data",
+      "status": "completed",
+      "started_at": "2024-01-15T10:30:00Z",
+      "completed_at": "2024-01-15T10:30:05Z",
+      "duration": 5.0
+    },
+    {
+      "task_id": "task_def456",
+      "name": "Process Data",
+      "status": "completed",
+      "started_at": "2024-01-15T10:30:05Z",
+      "completed_at": "2024-01-15T10:30:15Z",
+      "duration": 10.0
+    }
+  ],
+  "total_tasks": 2
+}
+```
+
+#### GET /workflows/{workflow_id}/results
+Get aggregated results for a workflow.
+
+**Response:**
+```json
+{
+  "workflow_id": "wf_12345678",
+  "status": "completed",
+  "results": {
+    "task_abc123": {
+      "status": "completed",
+      "result": {"output": "Data loaded"},
+      "error": null
+    },
+    "task_def456": {
+      "status": "completed",
+      "result": {"output": "Processing complete", "mean": 42.5},
+      "error": null
+    }
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "completed_at": "2024-01-15T10:31:00Z"
+}
+```
+
 #### DELETE /workflows/{workflow_id}
 Delete a workflow and all its associated tasks.
 
@@ -307,6 +387,43 @@ Get task status and result.
 }
 ```
 
+#### GET /tasks/{task_id}/result
+Get the result of a specific task.
+
+**Response:**
+```json
+{
+  "task_id": "task_12345678",
+  "status": "completed",
+  "result": {
+    "output": "4",
+    "return_value": 4
+  },
+  "error": null,
+  "completed_at": "2024-01-15T10:30:05Z"
+}
+```
+
+#### GET /tasks/{task_id}/logs
+Get execution logs for a task.
+
+**Query Parameters:**
+- `tail` (integer, default: 50): Number of recent log lines to return
+
+**Response:**
+```json
+{
+  "task_id": "task_12345678",
+  "logs": [
+    "[OUTPUT] Processing started",
+    "[STDOUT] Data loaded successfully",
+    "Task task_12345678 - Status: completed"
+  ],
+  "total_lines": 3,
+  "tail": 50
+}
+```
+
 #### DELETE /tasks/{task_id}
 Delete a task from persistence.
 
@@ -315,6 +432,98 @@ Delete a task from persistence.
 {
   "success": true,
   "message": "Task deleted successfully"
+}
+```
+
+### System Information
+
+#### GET /resources
+Get resource manager and hub status.
+
+**Response:**
+```json
+{
+  "resource_manager": {
+    "id": "client-resources",
+    "running": true,
+    "stats": {
+      "total_resources": 3,
+      "active_resources": 2
+    }
+  },
+  "hubs": {
+    "ollama": {
+      "hub_id": "ollama-hub",
+      "resource_type": "ollama",
+      "total_instances": 3,
+      "healthy_instances": 3,
+      "instances": [
+        {
+          "id": "ollama-127.0.0.1-11434",
+          "name": "Ollama@11434",
+          "status": "healthy",
+          "endpoint": "http://127.0.0.1:11434"
+        }
+      ]
+    }
+  }
+}
+```
+
+#### GET /providers
+List all registered providers.
+
+**Response:**
+```json
+{
+  "providers": [
+    {
+      "name": "ollama-provider",
+      "protocol": "llm/v1",
+      "status": "healthy",
+      "capabilities": ["chat", "vision"]
+    },
+    {
+      "name": "python-provider",
+      "protocol": "python/v1",
+      "status": "healthy",
+      "capabilities": ["execute"]
+    }
+  ]
+}
+```
+
+#### GET /protocols
+List all registered protocols.
+
+**Response:**
+```json
+{
+  "protocols": [
+    {
+      "name": "llm/v1",
+      "description": "Language Model Protocol"
+    },
+    {
+      "name": "python/v1",
+      "description": "Python Execution Protocol"
+    },
+    {
+      "name": "mcp/v1",
+      "description": "Model Context Protocol"
+    }
+  ]
+}
+```
+
+#### GET /health
+Health check endpoint.
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z"
 }
 ```
 
@@ -610,7 +819,7 @@ curl -X DELETE http://localhost:8000/tasks/task_12345678
 
 ## Versioning
 
-The API uses semantic versioning. The current version is `0.0.5`.
+The API uses semantic versioning. The current version is `0.0.6`.
 
 Breaking changes will increment the major version number and will be documented in the changelog.
 

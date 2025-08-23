@@ -589,17 +589,25 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                     # Update existing workflow
                     existing.name = workflow.name
                     existing.description = workflow.description
+                    existing.status = workflow.status if hasattr(workflow, 'status') else 'pending'
                     existing.tasks = json.dumps(tasks_data)
                     existing.workflow_metadata = json.dumps(workflow.metadata) if workflow.metadata else None
+                    existing.tasks_total = len(workflow.tasks)
+                    existing.tasks_completed = 0  # Will be updated by execution engine
+                    existing.tasks_failed = 0  # Will be updated by execution engine
                 else:
                     # Create new workflow
                     db_workflow = DBWorkflow(
                         id=workflow.id,
                         name=workflow.name,
                         description=workflow.description,
+                        status=workflow.status if hasattr(workflow, 'status') else 'pending',
                         tasks=json.dumps(tasks_data),
                         workflow_metadata=json.dumps(workflow.metadata) if workflow.metadata else None,
-                        created_at=workflow.created_at or datetime.utcnow()
+                        created_at=workflow.created_at or datetime.utcnow(),
+                        tasks_total=len(workflow.tasks),
+                        tasks_completed=0,  # Will be updated by execution engine
+                        tasks_failed=0  # Will be updated by execution engine
                     )
                     session.add(db_workflow)
                 

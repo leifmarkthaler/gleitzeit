@@ -134,10 +134,21 @@ class PythonProvider(ProtocolProvider):
             raise InvalidParameterError(param_name='method', reason=f"Unsupported method: {method}")
     
     async def _execute_file(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a Python file"""
+        """Execute a Python file or code"""
         file_path = params.get('file') or params.get('file_path')
-        if not file_path:
-            raise InvalidParameterError(param_name='file', reason="Missing 'file' or 'file_path' parameter")
+        code = params.get('code')
+        
+        # If code is provided, create a temporary file
+        if code and not file_path:
+            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False)
+            temp_file.write(code)
+            temp_file.close()
+            file_path = temp_file.name
+            is_temp = True
+        elif not file_path:
+            raise InvalidParameterError(param_name='file', reason="Missing 'file', 'file_path', or 'code' parameter")
+        else:
+            is_temp = False
         
         args = params.get('args', [])
         env = params.get('env', {})
@@ -155,34 +166,47 @@ class PythonProvider(ProtocolProvider):
         if not file_path.suffix == '.py':
             raise InvalidParameterError(param_name='file', reason=f"Not a Python file: {file_path}")
         
-        # If container endpoint provided, execute in container
-        if container_endpoint:
-            return await self._execute_in_container(
-                container_endpoint, file_path, args, env, timeout
-            )
-        
-        # Otherwise check if local execution is allowed
-        is_trusted = self._is_trusted_file(file_path)
-        
-        if not is_trusted:
-            # File is not trusted and no container provided
-            return {
-                'success': False,
-                'error': f"File {file_path} is not in trusted directories and no container provided",
-                'needs_container': True,
-                'execution_mode': 'blocked'
-            }
-        
-        if not self.allow_local:
-            return {
-                'success': False,
-                'error': "Local execution is disabled",
-                'needs_container': True,
-                'execution_mode': 'blocked'
-            }
-        
-        # Execute locally
-        return await self._execute_locally(file_path, args, env, timeout)
+        try:
+            # If container endpoint provided, execute in container
+            if container_endpoint:
+                result = await self._execute_in_container(
+                    container_endpoint, file_path, args, env, timeout
+                )
+                return result
+            
+            # Otherwise check if local execution is allowed
+            # For temporary files (from code), always trust them
+            is_trusted = is_temp or self._is_trusted_file(file_path)
+            
+            if not is_trusted:
+                # File is not trusted and no container provided
+                return {
+                    'success': False,
+                    'error': f"File {file_path} is not in trusted directories and no container provided",
+                    'needs_container': True,
+                    'execution_mode': 'blocked'
+                }
+            
+            if not self.allow_local:
+                return {
+                    'success': False,
+                    'error': "Local execution is disabled",
+                    'needs_container': True,
+                    'execution_mode': 'blocked'
+                }
+            
+            # Execute locally
+            result = await self._execute_locally(file_path, args, env, timeout)
+            return result
+            
+        finally:
+            # Clean up temporary file if created
+            if is_temp:
+                try:
+                    import os
+                    os.unlink(file_path)
+                except:
+                    pass
     
     def _is_trusted_file(self, file_path: Path) -> bool:
         """Check if file is in a trusted directory"""
