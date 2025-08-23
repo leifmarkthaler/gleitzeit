@@ -644,6 +644,95 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
             logger.error(f"Failed to get workflow {workflow_id}: {e}")
             return None
     
+    async def delete_workflow(self, workflow_id: str) -> bool:
+        """Delete a workflow and all its associated tasks"""
+        if not self._initialized:
+            return False
+        
+        try:
+            async with self.async_session() as session:
+                # Get task IDs for this workflow (they might exist even without a workflow record)
+                task_result = await session.execute(
+                    select(DBTask.id).where(DBTask.workflow_id == workflow_id)
+                )
+                task_ids = [row[0] for row in task_result]
+                
+                # Check if workflow exists
+                workflow_result = await session.execute(
+                    select(DBWorkflow).where(DBWorkflow.id == workflow_id)
+                )
+                db_workflow = workflow_result.scalar_one_or_none()
+                
+                # If neither workflow nor tasks exist, return False
+                if not db_workflow and not task_ids:
+                    return False
+                
+                # Delete all tasks for this workflow (results will cascade delete)
+                await session.execute(
+                    delete(DBTask).where(DBTask.workflow_id == workflow_id)
+                )
+                
+                # Delete workflow executions for this workflow
+                await session.execute(
+                    delete(DBWorkflowExecution).where(DBWorkflowExecution.workflow_id == workflow_id)
+                )
+                
+                # Delete the workflow itself
+                await session.execute(
+                    delete(DBWorkflow).where(DBWorkflow.id == workflow_id)
+                )
+                
+                await session.commit()
+                
+                # Clean queue state references
+                await self.clean_queue_state_for_tasks(task_ids)
+                
+                return True
+                
+        except Exception as e:
+            logger.error(f"Failed to delete workflow {workflow_id}: {e}")
+            return False
+    
+    async def clean_queue_state_for_tasks(self, task_ids: List[str]) -> None:
+        """Clean queue state by removing references to deleted tasks"""
+        if not self._initialized or not task_ids:
+            return
+        
+        try:
+            task_id_set = set(task_ids)
+            
+            async with self.async_session() as session:
+                # Get all queue states
+                result = await session.execute(select(DBQueueState))
+                queue_states = result.scalars().all()
+                
+                for db_queue_state in queue_states:
+                    if db_queue_state.state:
+                        queue_state = json.loads(db_queue_state.state)
+                        
+                        # Clean completed_tasks
+                        if 'completed_tasks' in queue_state:
+                            queue_state['completed_tasks'] = [
+                                task_id for task_id in queue_state['completed_tasks']
+                                if task_id not in task_id_set
+                            ]
+                        
+                        # Clean failed_tasks
+                        if 'failed_tasks' in queue_state:
+                            queue_state['failed_tasks'] = [
+                                task_id for task_id in queue_state['failed_tasks']
+                                if task_id not in task_id_set
+                            ]
+                        
+                        # Update the queue state
+                        db_queue_state.state = json.dumps(queue_state)
+                        db_queue_state.updated_at = datetime.utcnow()
+                
+                await session.commit()
+                
+        except Exception as e:
+            logger.warning(f"Failed to clean queue state for deleted tasks: {e}")
+    
     async def save_workflow_execution(self, execution: WorkflowExecution) -> None:
         """Save workflow execution state"""
         if not self._initialized:
@@ -870,6 +959,125 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
         except Exception as e:
             logger.error(f"Failed to get task count by status: {e}")
             return {}
+    
+    async def list_workflows(self, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List all workflows with optional filtering and pagination"""
+        async with self.async_session() as session:
+            try:
+                # Get distinct workflow IDs from tasks table
+                query = select(DBTask.workflow_id).distinct().where(DBTask.workflow_id.isnot(None))
+                
+                # Count total workflows
+                count_query = select(func.count(func.distinct(DBTask.workflow_id))).where(DBTask.workflow_id.isnot(None))
+                total_result = await session.execute(count_query)
+                total = total_result.scalar() or 0
+                
+                # Apply pagination
+                query = query.limit(limit).offset(offset).order_by(DBTask.workflow_id.desc())
+                
+                result = await session.execute(query)
+                workflow_ids = [row[0] for row in result]
+                
+                workflows = []
+                for workflow_id in workflow_ids:
+                    # Get the first task of the workflow to extract workflow info
+                    task_query = select(DBTask).where(DBTask.workflow_id == workflow_id).limit(1)
+                    task_result = await session.execute(task_query)
+                    task = task_result.scalar_one_or_none()
+                    
+                    if task:
+                        # Determine workflow status from tasks
+                        status_query = select(DBTask.status).where(DBTask.workflow_id == workflow_id)
+                        status_result = await session.execute(status_query)
+                        task_statuses = [row[0] for row in status_result]
+                        
+                        workflow_status = "unknown"
+                        if all(s == "completed" for s in task_statuses):
+                            workflow_status = "completed"
+                        elif any(s == "failed" for s in task_statuses):
+                            workflow_status = "failed"
+                        elif any(s in ["executing", "running"] for s in task_statuses):
+                            workflow_status = "running"
+                        elif all(s == "pending" for s in task_statuses):
+                            workflow_status = "pending"
+                        
+                        # Apply status filter if specified
+                        if status and workflow_status != status:
+                            continue
+                        
+                        workflows.append({
+                            "id": workflow_id,
+                            "name": f"Workflow {workflow_id}",
+                            "status": workflow_status,
+                            "created_at": task.created_at.isoformat() if task.created_at else None,
+                            "task_count": len(task_statuses)
+                        })
+                
+                return {
+                    "workflows": workflows,
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset
+                }
+                
+            except Exception as e:
+                logger.error(f"Failed to list workflows: {e}")
+                return {
+                    "workflows": [],
+                    "total": 0,
+                    "limit": limit,
+                    "offset": offset
+                }
+    
+    async def list_tasks(self, workflow_id: Optional[str] = None, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List all tasks with optional filtering and pagination"""
+        async with self.async_session() as session:
+            try:
+                # Build query with filters
+                query = select(DBTask)
+                count_query = select(func.count(DBTask.id))
+                
+                # Apply filters
+                if workflow_id:
+                    query = query.where(DBTask.workflow_id == workflow_id)
+                    count_query = count_query.where(DBTask.workflow_id == workflow_id)
+                
+                if status:
+                    query = query.where(DBTask.status == status)
+                    count_query = count_query.where(DBTask.status == status)
+                
+                # Get total count
+                total_result = await session.execute(count_query)
+                total = total_result.scalar() or 0
+                
+                # Apply pagination and ordering
+                query = query.order_by(DBTask.created_at.desc()).limit(limit).offset(offset)
+                
+                # Execute query
+                result = await session.execute(query)
+                db_tasks = result.scalars().all()
+                
+                # Convert to Task objects
+                tasks = []
+                for db_task in db_tasks:
+                    task = self._db_to_task(db_task)
+                    tasks.append(task)
+                
+                return {
+                    "tasks": tasks,
+                    "total": total,
+                    "limit": limit,
+                    "offset": offset
+                }
+                
+            except Exception as e:
+                logger.error(f"Failed to list tasks: {e}")
+                return {
+                    "tasks": [],
+                    "total": 0,
+                    "limit": limit,
+                    "offset": offset
+                }
     
     async def cleanup_old_data(self, cutoff_date: datetime) -> int:
         """Remove old completed tasks and results before cutoff date"""

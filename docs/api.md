@@ -372,6 +372,227 @@ client = GleitzeitClient(
 )
 ```
 
+## Data Management Methods
+
+### list_workflows
+
+List all workflows with optional filtering.
+
+```python
+async def list_workflows(
+    status: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0
+) -> Dict[str, Any]
+```
+
+**Parameters:**
+- `status`: Filter by status (e.g., "completed", "running", "failed")
+- `limit`: Maximum number of results
+- `offset`: Pagination offset
+
+**Returns:** Dictionary with workflow list and metadata
+
+**Example:**
+
+```python
+# List all workflows
+workflows = await client.list_workflows()
+print(f"Total workflows: {workflows['total']}")
+
+# List only completed workflows
+completed = await client.list_workflows(status="completed")
+
+# Paginated results
+page2 = await client.list_workflows(limit=20, offset=20)
+```
+
+### list_tasks
+
+List all tasks with optional filtering.
+
+```python
+async def list_tasks(
+    workflow_id: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0
+) -> Dict[str, Any]
+```
+
+**Parameters:**
+- `workflow_id`: Filter by workflow ID
+- `status`: Filter by status
+- `limit`: Maximum number of results
+- `offset`: Pagination offset
+
+**Returns:** Dictionary with task list and metadata
+
+**Example:**
+
+```python
+# List all tasks
+tasks = await client.list_tasks()
+
+# List tasks for specific workflow
+workflow_tasks = await client.list_tasks(workflow_id="workflow-123")
+
+# List failed tasks
+failed_tasks = await client.list_tasks(status="failed")
+```
+
+### delete_task
+
+Delete a task from persistence.
+
+```python
+async def delete_task(task_id: str) -> bool
+```
+
+**Parameters:**
+- `task_id`: ID of the task to delete
+
+**Returns:** True if deleted, False if not found
+
+**Example:**
+
+```python
+# Delete a task
+deleted = await client.delete_task("task-123")
+if deleted:
+    print("Task deleted successfully")
+else:
+    print("Task not found")
+```
+
+### delete_workflow
+
+Delete a workflow and all its associated tasks.
+
+```python
+async def delete_workflow(workflow_id: str) -> bool
+```
+
+**Parameters:**
+- `workflow_id`: ID of the workflow to delete
+
+**Returns:** True if deleted, False if not found
+
+**Note:** This will cascade delete:
+- All tasks belonging to the workflow
+- All task results
+- Queue state references
+- Workflow execution records
+
+**Example:**
+
+```python
+# Delete a workflow and all its tasks
+deleted = await client.delete_workflow("workflow-123")
+if deleted:
+    print("Workflow and all tasks deleted")
+else:
+    print("Workflow not found")
+```
+
+### get_task
+
+Get a task by ID.
+
+```python
+async def get_task(task_id: str) -> Optional[Task]
+```
+
+**Parameters:**
+- `task_id`: Task ID
+
+**Returns:** Task object or None if not found
+
+**Example:**
+
+```python
+task = await client.get_task("task-123")
+if task:
+    print(f"Task status: {task.status}")
+    print(f"Task name: {task.name}")
+```
+
+### get_workflow
+
+Get a workflow by ID.
+
+```python
+async def get_workflow(workflow_id: str) -> Optional[Workflow]
+```
+
+**Parameters:**
+- `workflow_id`: Workflow ID
+
+**Returns:** Workflow object or None if not found
+
+**Example:**
+
+```python
+workflow = await client.get_workflow("workflow-123")
+if workflow:
+    print(f"Workflow name: {workflow.name}")
+    print(f"Total tasks: {len(workflow.tasks)}")
+```
+
+### submit_task
+
+Submit a task for execution.
+
+```python
+async def submit_task(
+    name: str,
+    protocol: str,
+    method: str,
+    params: Dict[str, Any],
+    priority: Priority = Priority.NORMAL,
+    queue: str = "default",
+    resource_requirements: Optional[Dict[str, Any]] = None
+) -> Task
+```
+
+**Parameters:**
+- `name`: Task name
+- `protocol`: Protocol identifier (e.g., "python/v1", "llm/v1")
+- `method`: Method to execute
+- `params`: Method parameters
+- `priority`: Task priority (LOW, NORMAL, HIGH, CRITICAL)
+- `queue`: Queue name
+- `resource_requirements`: Optional resource requirements
+
+**Returns:** Task object with generated ID
+
+**Example:**
+
+```python
+# Submit a Python task
+task = await client.submit_task(
+    name="data_processing",
+    protocol="python/v1",
+    method="python/execute",
+    params={
+        "code": "import pandas as pd; print('Processing data')"
+    },
+    priority=Priority.HIGH
+)
+print(f"Task submitted: {task.id}")
+
+# Submit an LLM task
+task = await client.submit_task(
+    name="text_analysis",
+    protocol="llm/v1",
+    method="llm/chat",
+    params={
+        "model": "llama3.2",
+        "messages": [{"role": "user", "content": "Analyze this text"}]
+    }
+)
+```
+
 ### Streaming Responses
 
 ```python

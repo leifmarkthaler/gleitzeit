@@ -20,25 +20,12 @@ import json
 import logging
 
 # Gleitzeit imports
-from gleitzeit.core import Task, Workflow, Priority, ExecutionEngine, ExecutionMode
+from gleitzeit.core import Task, Workflow, Priority
 from gleitzeit.core.models import RetryConfig
 from gleitzeit.core.retry_manager import BackoffStrategy
-from gleitzeit.task_queue import QueueManager, DependencyResolver
-from gleitzeit.registry import ProtocolProviderRegistry
-from gleitzeit.providers.python_provider import PythonProvider
-from gleitzeit.providers.ollama_provider import OllamaProvider
-from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
-from gleitzeit.hub.mcp_hub import MCPHub
-from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
-from gleitzeit.persistence.factory import PersistenceFactory
-from gleitzeit.core.batch_processor import BatchProcessor
 from gleitzeit.core.workflow_loader import load_workflow_from_file, validate_workflow
+# Import GleitzeitClient at runtime to avoid circular imports
 from gleitzeit.common.shutdown import unified_shutdown
-
-# Hub architecture imports
-from gleitzeit.hub.resource_manager import ResourceManager
-from gleitzeit.hub.ollama_hub import OllamaHub
-from gleitzeit.hub.docker_hub import DockerHub
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -120,18 +107,12 @@ class SystemStatus(BaseModel):
 
 # Global application state
 class AppState:
-    """Application state container"""
+    """Application state container - holds GleitzeitClient and temporary tracking"""
     def __init__(self):
-        self.execution_engine: Optional[ExecutionEngine] = None
-        self.persistence_backend = None
-        self.registry: Optional[ProtocolProviderRegistry] = None
-        self.batch_processor: Optional[BatchProcessor] = None
-        self.resource_manager: Optional[ResourceManager] = None
-        self.ollama_hub: Optional[OllamaHub] = None
-        self.docker_hub: Optional[DockerHub] = None
-        self.active_workflows: Dict[str, WorkflowResponse] = {}
-        self.active_tasks: Dict[str, TaskResponse] = {}
+        self.client = None  # Will be GleitzeitClient instance
         self.start_time = datetime.now()
+        self.active_tasks = {}  # Track active tasks by ID
+        self.active_workflows = {}  # Track active workflows by ID
 
 
 app_state = AppState()
@@ -159,162 +140,29 @@ app = FastAPI(
 
 
 async def setup_system():
-    """Initialize the Gleitzeit system with hub architecture"""
+    """Initialize the Gleitzeit system using GleitzeitClient"""
     try:
-        # Initialize persistence with configuration from environment
-        import os
-        factory_kwargs = {}
+        # Import GleitzeitClient here to avoid circular imports
+        from gleitzeit.client import GleitzeitClient
         
-        # Redis configuration from environment
-        redis_url = os.getenv('GLEITZEIT_REDIS_URL')
-        if redis_url:
-            factory_kwargs['redis_url'] = redis_url
-        
-        # SQL configuration from environment
-        sql_db_path = os.getenv('GLEITZEIT_SQL_DB_PATH')
-        if sql_db_path:
-            factory_kwargs['sql_db_path'] = sql_db_path
-        
-        sql_connection = os.getenv('GLEITZEIT_SQL_CONNECTION')
-        if sql_connection:
-            factory_kwargs['sql_connection_string'] = sql_connection
-        
-        # Persistence type preference
-        persistence_type = os.getenv('GLEITZEIT_PERSISTENCE_TYPE', 'auto')
-        if persistence_type != 'auto':
-            from gleitzeit.persistence.factory import PersistenceType
-            factory_kwargs['persistence_type'] = PersistenceType(persistence_type)
-        
-        app_state.persistence_backend = await PersistenceFactory.create(**factory_kwargs)
-        logger.info(f"Persistence initialized: {type(app_state.persistence_backend).__name__}")
-        
-        # Setup execution components
-        queue_manager = QueueManager()
-        dependency_resolver = DependencyResolver()
-        app_state.registry = ProtocolProviderRegistry()
-        
-        # Get max concurrent tasks from environment
-        max_concurrent = int(os.getenv('GLEITZEIT_MAX_CONCURRENT_TASKS', '5'))
-        
-        app_state.execution_engine = ExecutionEngine(
-            registry=app_state.registry,
-            queue_manager=queue_manager,
-            dependency_resolver=dependency_resolver,
-            persistence=app_state.persistence_backend,
-            max_concurrent_tasks=max_concurrent
-        )
-        
-        # Initialize Resource Management (Hub Architecture)
-        try:
-            app_state.resource_manager = ResourceManager("api-resources")
-            
-            # Create and add OllamaHub with auto-discovery
-            app_state.ollama_hub = OllamaHub(
-                hub_id="ollama-hub",
-                auto_discover=True,  # Auto-discover running Ollama instances
-                persistence=app_state.persistence_backend
-            )
-            await app_state.ollama_hub.initialize()
-            await app_state.resource_manager.add_hub("ollama", app_state.ollama_hub)
-            logger.info("OllamaHub initialized with auto-discovery")
-            
-            # Optionally create DockerHub if Docker is available
-            # app_state.docker_hub = DockerHub(
-            #     hub_id="docker-hub",
-            #     max_instances=5,
-            #     persistence=app_state.persistence_backend
-            # )
-            # await app_state.docker_hub.initialize()
-            # await app_state.resource_manager.add_hub("docker", app_state.docker_hub)
-            
-            await app_state.resource_manager.start()
-            logger.info("Resource management enabled")
-        except Exception as e:
-            logger.warning(f"Resource management initialization failed: {e}")
-            app_state.resource_manager = None
-            app_state.ollama_hub = None
-        
-        # Register protocols and providers with hub support
-        await register_providers()
-        
-        # Initialize batch processor
-        app_state.batch_processor = BatchProcessor()
-        
-        # Don't start the engine here - it will block!
-        # Tasks will be executed directly using _execute_task()
-        
-        logger.info("System setup complete")
+        # Initialize GleitzeitClient in native mode to handle all the complexity
+        app_state.client = GleitzeitClient(mode="native")
+        await app_state.client.__aenter__()
+        logger.info("GleitzeitClient initialized successfully")
         
     except Exception as e:
         logger.error(f"System setup failed: {e}")
         raise
 
 
-async def register_providers():
-    """Register all protocol providers with hub support"""
-    registry = app_state.registry
-    
-    # Python provider
-    try:
-        registry.register_protocol(PYTHON_PROTOCOL_V1)
-        python_provider = PythonProvider(
-            "api-python-provider",
-            allow_local=True,
-            resource_manager=app_state.resource_manager,
-            hub=app_state.docker_hub  # Python can use Docker hub if available
-        )
-        await python_provider.initialize()
-        registry.register_provider("api-python-provider", "python/v1", python_provider)
-        logger.info("Python provider registered")
-    except Exception as e:
-        logger.warning(f"Python provider registration failed: {e}")
-    
-    # Ollama provider with hub
-    try:
-        registry.register_protocol(LLM_PROTOCOL_V1)
-        ollama_provider = OllamaProvider(
-            "api-ollama-provider",
-            auto_discover=False,  # Hub handles discovery
-            resource_manager=app_state.resource_manager,
-            hub=app_state.ollama_hub
-        )
-        await ollama_provider.initialize()
-        registry.register_provider("api-ollama-provider", "llm/v1", ollama_provider)
-        logger.info("Ollama provider registered with hub")
-    except Exception as e:
-        logger.warning(f"Ollama provider registration failed: {e}")
-    
-    # MCP provider - always use MCPHub
-    try:
-        registry.register_protocol(MCP_PROTOCOL_V1)
-        mcp_config = {}  # Could load from config file if needed
-        mcp_hub = MCPHub(
-            auto_discover=False,
-            config_data=mcp_config
-        )
-        mcp_provider = MCPHubProvider(
-            provider_id="api-mcp-provider",
-            hub=mcp_hub,
-            config_data=mcp_config
-        )
-        await mcp_provider.initialize()
-        registry.register_provider("api-mcp-provider", "mcp/v1", mcp_provider)
-        logger.info("MCP provider registered")
-    except Exception as e:
-        logger.warning(f"MCP provider registration failed: {e}")
+# Provider registration is now handled by GleitzeitClient
     
 
 
 async def cleanup_system():
-    """Clean up system resources including hubs and resource manager"""
-    # Use unified shutdown
-    await unified_shutdown(
-        execution_engine=app_state.execution_engine,
-        resource_manager=app_state.resource_manager,
-        persistence_backend=app_state.persistence_backend,
-        registry=app_state.registry,
-        verbose=True  # Log info messages
-    )
+    """Clean up system resources"""
+    if app_state.client:
+        await app_state.client.__aexit__(None, None, None)
 
 
 # API Endpoints
@@ -333,33 +181,24 @@ async def root():
 @app.get("/status", response_model=SystemStatus)
 async def get_status():
     """Get system status"""
-    if not app_state.execution_engine:
+    if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Get provider status
-    providers = {}
-    for provider_id, provider_instance in app_state.registry.provider_instances.items():
-        providers[provider_id] = {
-            "protocol": provider_instance.protocol_id,
-            "status": "healthy" if provider_instance.is_running() else "unhealthy",
-            "methods": provider_instance.get_supported_methods()
-        }
-    
-    # Get task statistics
     try:
-        task_stats = await app_state.persistence_backend.get_task_count_by_status()
-    except:
-        task_stats = {}
-    
-    uptime = (datetime.now() - app_state.start_time).total_seconds()
-    
-    return SystemStatus(
-        status="running",
-        providers=providers,
-        persistence_backend=type(app_state.persistence_backend).__name__,
-        task_statistics=task_stats,
-        uptime_seconds=uptime
-    )
+        # Get available statistics from client
+        task_stats = await app_state.client.get_task_statistics()
+        uptime = (datetime.now() - app_state.start_time).total_seconds()
+        
+        return SystemStatus(
+            status="running",
+            providers={"client": {"status": "healthy", "type": "GleitzeitClient"}},
+            persistence_backend="GleitzeitClient", 
+            task_statistics=task_stats,
+            uptime_seconds=uptime
+        )
+    except Exception as e:
+        logger.error(f"Failed to get status: {e}")
+        raise HTTPException(status_code=503, detail="Failed to get status")
 
 
 @app.get("/resources")
@@ -424,85 +263,90 @@ async def get_resources_status():
 @app.post("/workflows", response_model=WorkflowResponse)
 async def submit_workflow(workflow: WorkflowRequest, background_tasks: BackgroundTasks):
     """Submit a workflow for execution"""
-    if not app_state.execution_engine:
+    if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Create workflow object
-    workflow_id = f"api_workflow_{uuid.uuid4().hex[:8]}"
-    
-    tasks = []
-    for task_req in workflow.tasks:
-        task = Task(
-            id=task_req.id or f"task_{uuid.uuid4().hex[:8]}",
-            name=task_req.name,
-            protocol=task_req.protocol,
-            method=task_req.method,
-            params=task_req.params,
-            dependencies=task_req.dependencies,
-            priority=Priority[task_req.priority.upper()]
+    try:
+        # Generate workflow ID
+        workflow_id = f"api_workflow_{uuid.uuid4().hex[:8]}"
+        
+        # Create response immediately with "submitted" status
+        response = WorkflowResponse(
+            workflow_id=workflow_id,
+            status="submitted",
+            tasks_total=len(workflow.tasks),
+            tasks_completed=0,
+            tasks_failed=0,
+            created_at=datetime.now(),
+            completed_at=None
         )
         
-        if task_req.retry:
-            task.retry_config = RetryConfig(**task_req.retry)
+        # Schedule workflow execution in background
+        background_tasks.add_task(execute_workflow_via_client, workflow, workflow_id)
         
-        tasks.append(task)
-    
-    workflow_obj = Workflow(
-        id=workflow_id,
-        name=workflow.name,
-        description=workflow.description,
-        tasks=tasks,
-        metadata=workflow.metadata
-    )
-    
-    # Validate workflow
-    validation_errors = validate_workflow(workflow_obj)
-    if validation_errors:
-        raise HTTPException(status_code=400, detail={"errors": validation_errors})
-    
-    # Create response object
-    response = WorkflowResponse(
-        workflow_id=workflow_id,
-        status="submitted",
-        tasks_total=len(tasks),
-        tasks_completed=0,
-        tasks_failed=0,
-        created_at=datetime.now()
-    )
-    
-    app_state.active_workflows[workflow_id] = response
-    
-    # Submit workflow in background
-    background_tasks.add_task(execute_workflow_background, workflow_obj)
-    
-    return response
+        return response
+        
+    except Exception as e:
+        logger.error(f"Workflow submission failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
-async def execute_workflow_background(workflow: Workflow):
-    """Execute workflow in background"""
+async def execute_workflow_via_client(workflow: WorkflowRequest, workflow_id: str):
+    """Execute workflow via GleitzeitClient in background"""
     try:
-        await app_state.execution_engine.submit_workflow(workflow)
-        await app_state.execution_engine._execute_workflow(workflow)
+        import tempfile
+        import yaml
         
-        # Update workflow status
-        if workflow.id in app_state.active_workflows:
-            response = app_state.active_workflows[workflow.id]
-            response.status = "completed"
-            response.completed_at = datetime.now()
+        # Convert API request to workflow dictionary with API workflow ID
+        workflow_dict = {
+            "id": workflow_id,  # Use the API workflow ID
+            "name": workflow.name,
+            "description": workflow.description,
+            "tasks": [
+                {
+                    "id": task.id or f"task_{uuid.uuid4().hex[:8]}",
+                    "name": task.name,
+                    "protocol": task.protocol,
+                    "method": task.method,
+                    "parameters": task.params,
+                    "dependencies": task.dependencies,
+                    "priority": task.priority,
+                    **({"retry": task.retry} if task.retry else {})
+                }
+                for task in workflow.tasks
+            ],
+            "metadata": workflow.metadata
+        }
+        
+        # Create temporary YAML file
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as temp_file:
+            yaml.dump(workflow_dict, temp_file, default_flow_style=False)
+            temp_file_path = temp_file.name
+        
+        try:
+            # Delegate to GleitzeitClient
+            result = await app_state.client.run_workflow(temp_file_path)
             
-            # Collect results
-            for task in workflow.tasks:
-                result = app_state.execution_engine.task_results.get(task.id)
-                if result:
-                    response.results[task.id] = {
-                        "status": result.status,
-                        "result": result.result,
-                        "error": result.error
-                    }
-                    if result.status == "completed":
-                        response.tasks_completed += 1
-                    elif result.status == "failed":
-                        response.tasks_failed += 1
+            # The workflow ID should be the same in both API and client
+            client_workflow_id = result.get("workflow_id")
+            if client_workflow_id == workflow_id:
+                logger.info(f"Workflow {workflow_id} completed successfully")
+            else:
+                logger.warning(f"Workflow ID mismatch: API={workflow_id}, Client={client_workflow_id}")
+            
+        except Exception as e:
+            logger.error(f"Workflow {workflow_id} execution failed: {e}")
+            
+        finally:
+            # Clean up temporary file
+            import os
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+                
+    except Exception as e:
+        logger.error(f"Background workflow execution failed: {e}")
     
     except Exception as e:
         logger.error(f"Workflow execution failed: {e}")
@@ -512,19 +356,93 @@ async def execute_workflow_background(workflow: Workflow):
             response.completed_at = datetime.now()
 
 
+@app.get("/workflows")
+async def list_workflows(
+    status: Optional[str] = Query(None, description="Filter by status"),
+    limit: int = Query(50, le=100, description="Maximum results to return"),
+    offset: int = Query(0, ge=0, description="Number of results to skip")
+):
+    """List all workflows with optional filtering"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Use GleitzeitClient list_workflows method
+        result = await app_state.client.list_workflows(
+            status=status,
+            limit=limit,
+            offset=offset
+        )
+        return {
+            "workflows": result.get("workflows", []),
+            "total": result.get("total", 0),
+            "limit": limit,
+            "offset": offset
+        }
+    except Exception as e:
+        logger.error(f"Failed to list workflows: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/workflows/{workflow_id}", response_model=WorkflowResponse)
 async def get_workflow_status(workflow_id: str):
     """Get workflow status"""
-    if workflow_id not in app_state.active_workflows:
-        raise HTTPException(status_code=404, detail="Workflow not found")
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    return app_state.active_workflows[workflow_id]
+    try:
+        # Get workflow tasks (this works even if get_workflow doesn't)
+        tasks = await app_state.client.get_workflow_tasks(workflow_id)
+        if not tasks:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+        
+        # Calculate status from tasks
+        tasks_completed = sum(1 for t in tasks if t.status == "completed")
+        tasks_failed = sum(1 for t in tasks if t.status == "failed")
+        
+        # Determine overall workflow status
+        if tasks_failed > 0:
+            status = "failed"
+        elif tasks_completed == len(tasks) and len(tasks) > 0:
+            status = "completed"
+        elif any(t.status == "executing" for t in tasks):
+            status = "running"
+        else:
+            status = "pending"
+        
+        # Get task results from the client's persistence
+        results = {}
+        for task in tasks:
+            task_result = await app_state.client.get_task_result(task.id)
+            if task_result:
+                results[task.id] = {
+                    "status": task_result.status,
+                    "result": task_result.result if hasattr(task_result, 'result') else None,
+                    "error": task_result.error if hasattr(task_result, 'error') else None
+                }
+        
+        response = WorkflowResponse(
+            workflow_id=workflow_id,
+            status=status,
+            tasks_total=len(tasks),
+            tasks_completed=tasks_completed,
+            tasks_failed=tasks_failed,
+            created_at=datetime.now(),  # We don't have workflow creation time
+            completed_at=datetime.now() if status == "completed" else None,
+            results=results
+        )
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"Failed to get workflow {workflow_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/workflows/upload")
 async def upload_workflow(file: UploadFile = File(...), execute: bool = Query(True)):
     """Upload and execute a workflow file"""
-    if not app_state.execution_engine:
+    if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
     # Save uploaded file temporarily
@@ -533,28 +451,22 @@ async def upload_workflow(file: UploadFile = File(...), execute: bool = Query(Tr
     temp_path.write_bytes(content)
     
     try:
-        # Load workflow
-        workflow = load_workflow_from_file(str(temp_path))
-        
-        # Validate
-        validation_errors = validate_workflow(workflow)
-        if validation_errors:
-            raise HTTPException(status_code=400, detail={"errors": validation_errors})
-        
         if execute:
-            # Submit for execution
-            await app_state.execution_engine.submit_workflow(workflow)
-            
-            # Execute in background
-            asyncio.create_task(app_state.execution_engine._execute_workflow(workflow))
+            # Use client to run the workflow
+            result = await app_state.client.run_workflow(str(temp_path))
             
             return {
-                "workflow_id": workflow.id,
-                "status": "submitted",
-                "name": workflow.name,
-                "tasks": len(workflow.tasks)
+                "workflow_id": result.get("workflow_id"),
+                "status": result.get("status", "submitted"),
+                "message": "Workflow uploaded and executed"
             }
         else:
+            # Load and validate workflow
+            workflow = load_workflow_from_file(str(temp_path))
+            validation_errors = validate_workflow(workflow)
+            if validation_errors:
+                raise HTTPException(status_code=400, detail={"errors": validation_errors})
+            
             # Just validate and return
             return {
                 "workflow_id": workflow.id,
@@ -572,57 +484,51 @@ async def upload_workflow(file: UploadFile = File(...), execute: bool = Query(Tr
 @app.post("/tasks", response_model=TaskResponse)
 async def execute_task(task: TaskRequest, background_tasks: BackgroundTasks):
     """Execute a single task"""
-    if not app_state.execution_engine:
+    if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
-    task_id = task.id or f"api_task_{uuid.uuid4().hex[:8]}"
-    
-    # Create task object
-    task_obj = Task(
-        id=task_id,
-        name=task.name,
-        protocol=task.protocol,
-        method=task.method,
-        params=task.params,
-        dependencies=task.dependencies,
-        priority=Priority[task.priority.upper()]
-    )
-    
-    if task.retry:
-        task_obj.retry_config = RetryConfig(**task.retry)
-    
-    # Create response
-    response = TaskResponse(
-        task_id=task_id,
-        status="submitted",
-        created_at=datetime.now()
-    )
-    
-    app_state.active_tasks[task_id] = response
-    
-    # Execute in background
-    background_tasks.add_task(execute_task_background, task_obj)
-    
-    return response
-
-
-async def execute_task_background(task: Task):
-    """Execute task in background"""
+    # Submit task to client immediately - let it generate the ID
     try:
-        # Submit task to engine
-        await app_state.execution_engine.submit_task(task)
+        submitted_task = await app_state.client.submit_task(
+            name=task.name,
+            protocol=task.protocol,
+            method=task.method,
+            params=task.params,
+            priority=Priority[task.priority.upper()]
+        )
         
-        # Execute the task directly (without start/stop cycle)
-        result = await app_state.execution_engine._execute_task(task)
+        # Create response with the actual task ID from client
+        response = TaskResponse(
+            task_id=submitted_task.id,
+            status="submitted",
+            created_at=datetime.now()
+        )
         
-        # Update task status
-        if task.id in app_state.active_tasks:
-            response = app_state.active_tasks[task.id]
+        app_state.active_tasks[submitted_task.id] = response
+        
+        # Execute in background
+        background_tasks.add_task(execute_task_background, submitted_task.id)
+        
+        return response
+    except Exception as e:
+        logger.error(f"Failed to submit task: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to submit task: {str(e)}")
+
+
+async def execute_task_background(task_id: str):
+    """Monitor task execution in background"""
+    try:
+        # Wait for task completion
+        task_result = await app_state.client.wait_for_task(task_id, timeout=300)
+        
+        # Update the response
+        if task_id in app_state.active_tasks:
+            response = app_state.active_tasks[task_id]
             
-            if result:
-                response.status = result.status
-                response.result = result.result
-                response.error = result.error
+            if task_result:
+                response.status = task_result.status
+                response.result = task_result.result
+                response.error = task_result.error
                 response.completed_at = datetime.now()
             else:
                 response.status = "failed"
@@ -638,6 +544,54 @@ async def execute_task_background(task: Task):
             response.completed_at = datetime.now()
 
 
+@app.get("/tasks")
+async def list_tasks(
+    workflow_id: Optional[str] = Query(None, description="Filter by workflow ID"),
+    status: Optional[str] = Query(None, description="Filter by status"),
+    limit: int = Query(100, le=500, description="Maximum results to return"),
+    offset: int = Query(0, ge=0, description="Number of results to skip")
+):
+    """List all tasks with optional filtering"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Use GleitzeitClient list_tasks method
+        result = await app_state.client.list_tasks(
+            status=status,
+            workflow_id=workflow_id,
+            limit=limit,
+            offset=offset
+        )
+        
+        # Transform task objects to JSON-serializable format if needed
+        tasks = []
+        for task in result.get("tasks", []):
+            if hasattr(task, 'id'):  # Task object
+                tasks.append({
+                    "task_id": task.id,
+                    "name": task.name,
+                    "status": task.status,
+                    "workflow_id": getattr(task, 'workflow_id', None),
+                    "created_at": task.created_at.isoformat() if hasattr(task, 'created_at') and task.created_at else None,
+                    "completed_at": task.completed_at.isoformat() if hasattr(task, 'completed_at') and task.completed_at else None,
+                    "execution_time": (task.completed_at - task.created_at).total_seconds() if hasattr(task, 'created_at') and task.created_at and hasattr(task, 'completed_at') and task.completed_at else None,
+                    "error": getattr(task, 'error', None)
+                })
+            else:  # Already a dict
+                tasks.append(task)
+        
+        return {
+            "tasks": tasks,
+            "total": result.get("total", 0),
+            "limit": limit,
+            "offset": offset
+        }
+    except Exception as e:
+        logger.error(f"Failed to list tasks: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.get("/tasks/{task_id}", response_model=TaskResponse)
 async def get_task_status(task_id: str):
     """Get task status"""
@@ -648,204 +602,130 @@ async def get_task_status(task_id: str):
 
 
 @app.delete("/tasks/{task_id}")
-async def cancel_task(task_id: str):
-    """Cancel a running task"""
-    if not app_state.execution_engine:
+async def delete_task(task_id: str):
+    """Delete a task from persistence"""
+    if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
-    if task_id not in app_state.active_tasks:
-        raise HTTPException(status_code=404, detail="Task not found")
-    
-    # Try to cancel the task
     try:
-        # Mark task as cancelled in active tasks
-        task_response = app_state.active_tasks.get(task_id)
-        if task_response and task_response.status in ["pending", "running"]:
-            task_response.status = "cancelled"
-            task_response.completed_at = datetime.now()
-            
-            # Try to cancel in execution engine if it has the method
-            if hasattr(app_state.execution_engine, 'cancel_task'):
-                await app_state.execution_engine.cancel_task(task_id)
-            
-            return {"message": f"Task {task_id} cancelled", "status": "cancelled"}
-        else:
-            return {"message": f"Task {task_id} already completed", "status": task_response.status}
+        # Use the client to delete the task
+        deleted = await app_state.client.delete_task(task_id)
+        
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Task not found")
+        
+        # Remove from active tasks if present
+        app_state.active_tasks.pop(task_id, None)
+        
+        return {"message": f"Task {task_id} deleted", "deleted": True}
     except Exception as e:
-        logger.error(f"Failed to cancel task {task_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to cancel task: {str(e)}")
+        logger.error(f"Failed to delete task {task_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete task: {str(e)}")
 
 
 
 @app.post("/chat")
 async def chat(request: ChatRequest):
     """Chat with LLM"""
-    if not app_state.execution_engine:
+    if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
-    task = Task(
-        id=f"chat_{uuid.uuid4().hex[:8]}",
-        name="API Chat",
-        protocol="llm/v1",
-        method="llm/chat",
-        params={
-            "model": request.model,
-            "messages": [{"role": "user", "content": request.message}],
-            "temperature": request.temperature
-        },
-        priority=Priority.HIGH
-    )
-    
-    await app_state.execution_engine.submit_task(task)
-    await app_state.execution_engine.start(ExecutionMode.SINGLE_SHOT)
-    
-    result = app_state.execution_engine.task_results.get(task.id)
-    
-    if result and result.status == "completed":
+    try:
+        # Use client's chat method
+        response = await app_state.client.chat(
+            message=request.message,
+            model=request.model,
+            temperature=request.temperature,
+            session_id=request.session_id
+        )
+        
         return {
             "status": "success",
-            "response": result.result.get("response", ""),
+            "response": response,
             "model": request.model,
             "session_id": request.session_id
         }
-    else:
+    except Exception as e:
+        logger.error(f"Chat failed: {e}")
         raise HTTPException(
             status_code=500,
-            detail=result.error if result else "Chat failed"
+            detail=f"Chat failed: {str(e)}"
         )
 
 
 @app.post("/batch")
 async def batch_process(request: BatchRequest):
     """Process files in batch"""
-    if not app_state.execution_engine or not app_state.batch_processor:
+    if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        # First find matching files
-        files = app_state.batch_processor.scan_directory(request.directory, request.pattern)
-        
-        # If no files found, return empty result
-        if not files:
-            return {
-                "batch_id": f"batch-{uuid.uuid4().hex[:8]}",
-                "total_files": 0,
-                "successful": 0,
-                "failed": 0,
-                "processing_time": 0.0,
-                "results": {}
-            }
-        
-        # Process the batch
-        result = await app_state.batch_processor.process_batch(
-            execution_engine=app_state.execution_engine,
+        # Use client's batch_process method
+        result = await app_state.client.batch_process(
             directory=request.directory,
             pattern=request.pattern,
             method=request.method,
             prompt=request.prompt,
-            model=request.model
+            model=request.model,
+            max_concurrent=request.max_concurrent,
+            name=request.name
         )
         
-        return {
-            "batch_id": result.batch_id,
-            "total_files": result.total_files,
-            "successful": result.successful,
-            "failed": result.failed,
-            "processing_time": result.processing_time,
-            "results": result.results
-        }
+        return result
     
     except Exception as e:
+        logger.error(f"Batch processing failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/providers")
-async def list_providers():
-    """List all registered providers"""
-    if not app_state.registry:
-        raise HTTPException(status_code=503, detail="System not initialized")
-    
-    providers = []
-    for provider_id, provider in app_state.registry.provider_instances.items():
-        providers.append({
-            "id": provider_id,
-            "protocol": provider.protocol_id,
-            "name": provider.name,
-            "description": provider.description,
-            "methods": provider.get_supported_methods(),
-            "status": "healthy" if provider.is_running() else "unhealthy"
-        })
-    
-    return {"providers": providers}
+# These endpoints would need direct access to registry, which client doesn't expose
+# Commenting out for now as API should be a thin layer over client
+# @app.get("/providers")
+# @app.get("/protocols")
 
 
-@app.get("/protocols")
-async def list_protocols():
-    """List all registered protocols"""
-    if not app_state.registry:
-        raise HTTPException(status_code=503, detail="System not initialized")
-    
-    return {
-        "protocols": app_state.registry.protocol_registry.list_protocols()
-    }
-
-
-@app.post("/templates/{template_type}")
-async def execute_template(
-    template_type: str,
-    params: Dict[str, Any] = Body(...)
-):
-    """Execute a workflow template"""
-    if not app_state.execution_engine:
-        raise HTTPException(status_code=503, detail="System not initialized")
-    
-    # Map template type to method
-    method_map = {
-        "research": "template/research",
-        "code": "template/code",
-        "analyze": "template/analyze",
-        "chat": "template/chat"
-    }
-    
-    if template_type not in method_map:
-        raise HTTPException(status_code=400, detail=f"Unknown template type: {template_type}")
-    
-    task = Task(
-        id=f"template_{uuid.uuid4().hex[:8]}",
-        name=f"Template {template_type}",
-        protocol="template/v1",
-        method=method_map[template_type],
-        params=params,
-        priority=Priority.NORMAL
-    )
-    
-    await app_state.execution_engine.submit_task(task)
-    await app_state.execution_engine.start(ExecutionMode.SINGLE_SHOT)
-    
-    result = app_state.execution_engine.task_results.get(task.id)
-    
-    if result and result.status == "completed":
-        return result.result
-    else:
-        raise HTTPException(
-            status_code=500,
-            detail=result.error if result else "Template execution failed"
-        )
+# Template endpoint would need direct execution_engine access
+# Commenting out for now as API should be a thin layer over client
+# @app.post("/templates/{template_type}")
 
 
 @app.delete("/workflows/{workflow_id}")
-async def cancel_workflow(workflow_id: str):
-    """Cancel a running workflow"""
-    if workflow_id not in app_state.active_workflows:
-        raise HTTPException(status_code=404, detail="Workflow not found")
+async def delete_workflow(workflow_id: str):
+    """Delete a workflow and all its associated tasks from persistence"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    # TODO: Implement workflow cancellation in execution engine
-    
-    workflow = app_state.active_workflows[workflow_id]
-    workflow.status = "cancelled"
-    workflow.completed_at = datetime.now()
-    
-    return {"status": "cancelled", "workflow_id": workflow_id}
+    try:
+        # Use the client to delete the workflow (will also delete all associated tasks)
+        deleted = await app_state.client.delete_workflow(workflow_id)
+        
+        if not deleted:
+            # Return 404 if workflow wasn't found
+            raise HTTPException(status_code=404, detail="Workflow not found")
+        
+        # Remove from active workflows if present
+        app_state.active_workflows.pop(workflow_id, None)
+        
+        # Remove all tasks associated with this workflow from active tasks
+        tasks_to_remove = []
+        for task_id, task in app_state.active_tasks.items():
+            if hasattr(task, 'workflow_id') and task.workflow_id == workflow_id:
+                tasks_to_remove.append(task_id)
+        
+        for task_id in tasks_to_remove:
+            app_state.active_tasks.pop(task_id, None)
+        
+        return {
+            "message": f"Workflow {workflow_id} and all associated tasks deleted",
+            "deleted": True,
+            "tasks_deleted": len(tasks_to_remove)
+        }
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete workflow {workflow_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete workflow: {str(e)}")
 
 
 @app.get("/health")

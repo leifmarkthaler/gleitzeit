@@ -81,23 +81,68 @@ async def mock_batch_processor():
 
 
 @pytest_asyncio.fixture
-async def test_app(mock_execution_engine, mock_persistence, mock_batch_processor):
-    """Create test app with mocked dependencies"""
-    # Set up mocked state
-    app_state.execution_engine = mock_execution_engine
-    app_state.persistence_backend = mock_persistence
-    app_state.registry = mock_execution_engine.registry
-    app_state.batch_processor = mock_batch_processor
-    app_state.active_workflows = {}
-    app_state.active_tasks = {}
+async def mock_gleitzeit_client():
+    """Mock GleitzeitClient for testing"""
+    client = AsyncMock()
+    
+    # Mock run_workflow method
+    client.run_workflow = AsyncMock(return_value={
+        "workflow_id": "api_workflow_12345678",
+        "status": "success",
+        "results": {
+            "task1": {"status": "completed", "result": {"output": "Task 1 completed"}},
+            "task2": {"status": "completed", "result": {"output": "Task 2 completed"}}
+        }
+    })
+    
+    # Mock get_status method
+    client.get_status = AsyncMock(return_value={
+        "providers": {
+            "test-python-provider": {
+                "protocol": "python/v1",
+                "status": "healthy",
+                "methods": ["python/execute"]
+            },
+            "test-ollama-provider": {
+                "protocol": "llm/v1", 
+                "status": "healthy",
+                "methods": ["llm/chat"]
+            }
+        },
+        "persistence": "MockPersistence",
+        "task_statistics": {
+            "completed": 100,
+            "failed": 5,
+            "queued": 2
+        }
+    })
+    
+    # Mock get_workflow method
+    client.get_workflow = AsyncMock(return_value=MagicMock(
+        id="api_workflow_12345678",
+        name="Test Workflow",
+        created_at=None,
+        completed_at=None
+    ))
+    
+    # Mock get_workflow_tasks method
+    client.get_workflow_tasks = AsyncMock(return_value=[
+        MagicMock(id="task1", status="completed"),
+        MagicMock(id="task2", status="completed")
+    ])
+    
+    return client
+
+@pytest_asyncio.fixture
+async def test_app(mock_gleitzeit_client):
+    """Create test app with mocked GleitzeitClient"""
+    # Set up mocked client
+    app_state.client = mock_gleitzeit_client
     
     yield app
     
     # Clean up
-    app_state.execution_engine = None
-    app_state.persistence_backend = None
-    app_state.registry = None
-    app_state.batch_processor = None
+    app_state.client = None
 
 
 @pytest_asyncio.fixture

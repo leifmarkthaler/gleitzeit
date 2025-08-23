@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gleitzeit UI{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h1 class="page-title">Dashboard</h1>
+    
+    <!-- Metrics Cards -->
+    <div class="metrics-grid">
+        <div class="metric-card" id="active-workflows-card">
+            <div class="metric-value" hx-get="/api/workflows?status=running" 
+                 hx-trigger="load, every 2s" 
+                 hx-target="this"
+                 hx-swap="innerHTML">
+                <span class="loading">...</span>
+            </div>
+            <div class="metric-label">Active Workflows</div>
+        </div>
+        
+        <div class="metric-card" id="running-tasks-card">
+            <div class="metric-value" hx-get="/api/tasks?status=running" 
+                 hx-trigger="load, every 2s"
+                 hx-target="this"
+                 hx-swap="innerHTML">
+                <span class="loading">...</span>
+            </div>
+            <div class="metric-label">Running Tasks</div>
+        </div>
+        
+        <div class="metric-card" id="resource-utilization-card">
+            <div class="metric-value" id="resource-util">
+                <span class="loading">...</span>
+            </div>
+            <div class="metric-label">Resource Utilization</div>
+        </div>
+        
+        <div class="metric-card" id="success-rate-card">
+            <div class="metric-value" id="success-rate">
+                <span class="loading">...</span>
+            </div>
+            <div class="metric-label">Success Rate</div>
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="section">
+        <h2 class="section-title">System Status</h2>
+        <div class="status-grid" hx-get="/api/system/status" 
+             hx-trigger="load, every 5s"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div class="status-item">
+                <span class="status-indicator status-loading"></span>
+                <span>Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Workflows -->
+    <div class="section">
+        <h2 class="section-title">Recent Workflows</h2>
+        <div id="recent-workflows" 
+             hx-get="/api/workflows?limit=5" 
+             hx-trigger="load, every 3s"
+             hx-target="this"
+             hx-swap="innerHTML">
+            <div class="loading-spinner">Loading workflows...</div>
+        </div>
+    </div>
+
+    <!-- Task Queue -->
+    <div class="section">
+        <h2 class="section-title">Task Queue</h2>
+        <div id="task-queue">
+            <div class="queue-status" 
+                 hx-get="/api/tasks/queue/status" 
+                 hx-trigger="load, every 2s"
+                 hx-target="this"
+                 hx-swap="innerHTML">
+                <div class="loading-spinner">Loading queue status...</div>
+            </div>
+            
+            <div class="queue-visualization">
+                <canvas id="queue-chart" width="400" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Chart -->
+    <div class="section">
+        <h2 class="section-title">Performance Metrics</h2>
+        <div class="chart-container">
+            <canvas id="performance-chart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- HTMX Response Handlers -->
+<script>
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+    // Update metric cards with proper formatting
+    if (evt.detail.target.id === 'active-workflows-card') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        evt.detail.target.querySelector('.metric-value').innerHTML = data.total || 0;
+    }
+    
+    if (evt.detail.target.id === 'running-tasks-card') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        evt.detail.target.querySelector('.metric-value').innerHTML = data.total || 0;
+    }
+});
+
+// Format system status response
+document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    if (evt.detail.target.classList.contains('status-grid')) {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        // Ollama status
+        const ollamaStatus = data.ollama?.available ? 'active' : 'inactive';
+        html += `
+            <div class="status-item">
+                <span class="status-indicator status-${ollamaStatus}"></span>
+                <span>Ollama: ${ollamaStatus === 'active' ? 'Available' : 'Unavailable'}</span>
+            </div>
+        `;
+        
+        // Engine status
+        const engineStatus = data.engine?.running ? 'active' : 'inactive';
+        html += `
+            <div class="status-item">
+                <span class="status-indicator status-${engineStatus}"></span>
+                <span>Engine: ${engineStatus === 'active' ? 'Running' : 'Stopped'}</span>
+            </div>
+        `;
+        
+        // Resource status
+        const cpuPercent = data.resources?.cpu_percent || 0;
+        const cpuStatus = cpuPercent < 70 ? 'active' : (cpuPercent < 90 ? 'warning' : 'error');
+        html += `
+            <div class="status-item">
+                <span class="status-indicator status-${cpuStatus}"></span>
+                <span>CPU: ${cpuPercent.toFixed(1)}%</span>
+            </div>
+        `;
+        
+        const memPercent = data.resources?.memory?.percent || 0;
+        const memStatus = memPercent < 70 ? 'active' : (memPercent < 90 ? 'warning' : 'error');
+        html += `
+            <div class="status-item">
+                <span class="status-indicator status-${memStatus}"></span>
+                <span>Memory: ${memPercent.toFixed(1)}%</span>
+            </div>
+        `;
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+    
+    // Format workflows list
+    if (evt.detail.target.id === 'recent-workflows') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        if (data.workflows && data.workflows.length > 0) {
+            html = '<div class="workflow-list">';
+            data.workflows.forEach(workflow => {
+                const statusClass = `status-${workflow.status || 'pending'}`;
+                html += `
+                    <div class="workflow-item">
+                        <div class="workflow-header">
+                            <span class="workflow-name">${workflow.name || 'Unnamed'}</span>
+                            <span class="workflow-status ${statusClass}">${workflow.status || 'pending'}</span>
+                        </div>
+                        <div class="workflow-meta">
+                            <span>Tasks: ${workflow.tasks?.length || 0}</span>
+                            <span>Started: ${new Date(workflow.submitted_at || Date.now()).toLocaleTimeString()}</span>
+                        </div>
+                        <a href="/workflows/${workflow.id}" class="workflow-link">View Details →</a>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html = '<div class="empty-state">No workflows yet. Submit a workflow to get started!</div>';
+        }
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+    
+    // Format queue status
+    if (evt.detail.target.classList.contains('queue-status')) {
+        const data = JSON.parse(evt.detail.xhr.response);
+        const stats = data.statistics || {};
+        
+        let html = `
+            <div class="queue-stats">
+                <div class="stat-item">
+                    <span class="stat-value">${stats.pending || 0}</span>
+                    <span class="stat-label">Pending</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">${stats.running || 0}</span>
+                    <span class="stat-label">Running</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">${stats.completed || 0}</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">${stats.failed || 0}</span>
+                    <span class="stat-label">Failed</span>
+                </div>
+            </div>
+        `;
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+        
+        // Update queue chart
+        updateQueueChart(stats);
+    }
+});
+
+// Initialize performance chart
+let performanceChart;
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('performance-chart');
+    if (ctx) {
+        performanceChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Running Tasks',
+                    data: [],
+                    borderColor: 'rgb(75, 192, 192)',
+                    tension: 0.1
+                }, {
+                    label: 'Completed Tasks',
+                    data: [],
+                    borderColor: 'rgb(54, 162, 235)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+});
+
+// Update queue visualization
+function updateQueueChart(stats) {
+    const ctx = document.getElementById('queue-chart');
+    if (!ctx) return;
+    
+    // Simple bar visualization using canvas
+    const context = ctx.getContext('2d');
+    const width = ctx.width;
+    const height = ctx.height;
+    const total = stats.total || 1;
+    
+    context.clearRect(0, 0, width, height);
+    
+    // Draw segments
+    let x = 0;
+    
+    // Pending (gray)
+    const pendingWidth = (stats.pending / total) * width;
+    context.fillStyle = '#9CA3AF';
+    context.fillRect(x, 0, pendingWidth, height);
+    x += pendingWidth;
+    
+    // Running (blue)
+    const runningWidth = (stats.running / total) * width;
+    context.fillStyle = '#3B82F6';
+    context.fillRect(x, 0, runningWidth, height);
+    x += runningWidth;
+    
+    // Completed (green)
+    const completedWidth = (stats.completed / total) * width;
+    context.fillStyle = '#10B981';
+    context.fillRect(x, 0, completedWidth, height);
+    x += completedWidth;
+    
+    // Failed (red)
+    const failedWidth = (stats.failed / total) * width;
+    context.fillStyle = '#EF4444';
+    context.fillRect(x, 0, failedWidth, height);
+}
+
+// Update metrics from WebSocket
+window.addEventListener('ws-metrics-update', function(evt) {
+    const data = evt.detail;
+    
+    // Update metric cards
+    document.querySelector('#active-workflows-card .metric-value').textContent = data.active_workflows || 0;
+    document.querySelector('#running-tasks-card .metric-value').textContent = data.running_tasks || 0;
+    
+    // Update performance chart
+    if (performanceChart) {
+        const now = new Date().toLocaleTimeString();
+        performanceChart.data.labels.push(now);
+        performanceChart.data.datasets[0].data.push(data.running_tasks || 0);
+        
+        // Keep only last 20 data points
+        if (performanceChart.data.labels.length > 20) {
+            performanceChart.data.labels.shift();
+            performanceChart.data.datasets.forEach(dataset => dataset.data.shift());
+        }
+        
+        performanceChart.update();
+    }
+});
+</script>
+{% endblock %}

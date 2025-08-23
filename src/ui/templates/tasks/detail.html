@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+
+{% block title %}Task Details - Gleitzeit UI{% endblock %}
+
+{% block content %}
+<div class="task-detail-page">
+    <div class="page-header">
+        <a href="/tasks" class="back-link">← Back to Tasks</a>
+        <h1 class="page-title">Task Details</h1>
+    </div>
+    
+    <!-- Task Info -->
+    <div id="task-info" 
+         hx-get="/api/tasks/{{ task_id }}" 
+         hx-trigger="load, every 2s"
+         class="task-info-container">
+        <div class="loading-spinner">Loading task details...</div>
+    </div>
+    
+    <!-- Task Result -->
+    <div class="section">
+        <h2 class="section-title">Result</h2>
+        <div id="task-result" 
+             hx-get="/api/tasks/{{ task_id }}/result" 
+             hx-trigger="load, every 5s"
+             class="result-container">
+            <div class="loading-spinner">Loading result...</div>
+        </div>
+    </div>
+    
+    <!-- Task Logs -->
+    <div class="section">
+        <h2 class="section-title">Logs</h2>
+        <div class="log-controls">
+            <button class="btn btn-sm btn-secondary" 
+                    hx-get="/api/tasks/{{ task_id }}/logs?tail=50"
+                    hx-target="#task-logs"
+                    hx-swap="innerHTML">Last 50 lines</button>
+            <button class="btn btn-sm btn-secondary" 
+                    hx-get="/api/tasks/{{ task_id }}/logs"
+                    hx-target="#task-logs"
+                    hx-swap="innerHTML">All logs</button>
+            <label class="auto-refresh-label">
+                <input type="checkbox" id="auto-refresh-logs" checked>
+                Auto-refresh logs
+            </label>
+        </div>
+        <div id="task-logs" 
+             hx-get="/api/tasks/{{ task_id }}/logs?tail=20" 
+             hx-trigger="load, every 2s"
+             class="logs-container">
+            <div class="loading-spinner">Loading logs...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Format task info
+document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    if (evt.detail.target.id === 'task-info') {
+        const task = JSON.parse(evt.detail.xhr.response);
+        const statusClass = `status-${task.status || 'pending'}`;
+        const statusIcon = getStatusIcon(task.status);
+        
+        let html = `
+            <div class="task-detail-card">
+                <div class="detail-header">
+                    <h2>${task.id}</h2>
+                    <span class="task-status ${statusClass}">
+                        ${statusIcon} ${task.status || 'pending'}
+                    </span>
+                </div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Method:</span>
+                        <span class="detail-value"><code>${task.method || 'N/A'}</code></span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Workflow ID:</span>
+                        <span class="detail-value">
+                            ${task.workflow_id ? 
+                                `<a href="/workflows/${task.workflow_id}">${task.workflow_id}</a>` : 
+                                'N/A'}
+                        </span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Created:</span>
+                        <span class="detail-value">${formatTime(task.created_at)}</span>
+                    </div>
+                    ${task.started_at ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Started:</span>
+                            <span class="detail-value">${formatTime(task.started_at)}</span>
+                        </div>
+                    ` : ''}
+                    ${task.completed_at ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Completed:</span>
+                            <span class="detail-value">${formatTime(task.completed_at)}</span>
+                        </div>
+                    ` : ''}
+                    ${task.execution_time ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Execution Time:</span>
+                            <span class="detail-value">${task.execution_time}s</span>
+                        </div>
+                    ` : ''}
+                    ${task.retry_count ? `
+                        <div class="detail-item">
+                            <span class="detail-label">Retry Count:</span>
+                            <span class="detail-value">${task.retry_count}</span>
+                        </div>
+                    ` : ''}
+                </div>
+                
+                ${task.dependencies && task.dependencies.length > 0 ? `
+                    <div class="dependencies-section">
+                        <h3>Dependencies</h3>
+                        <div class="dependencies-list">
+                            ${task.dependencies.map(dep => 
+                                `<span class="dependency-item">${dep}</span>`
+                            ).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                ${task.parameters ? `
+                    <div class="parameters-section">
+                        <h3>Parameters</h3>
+                        <div class="code-block">
+                            <pre>${JSON.stringify(task.parameters, null, 2)}</pre>
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <div class="task-actions">
+                    ${task.status === 'failed' ? 
+                        `<button class="btn btn-warning" 
+                                 hx-post="/api/tasks/${task.id}/retry"
+                                 hx-confirm="Retry this task?">Retry Task</button>` : ''}
+                    ${task.status === 'running' || task.status === 'pending' ? 
+                        `<button class="btn btn-danger" 
+                                 hx-delete="/api/tasks/${task.id}"
+                                 hx-confirm="Cancel this task?">Cancel Task</button>` : ''}
+                </div>
+            </div>
+        `;
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+    
+    // Format task result
+    if (evt.detail.target.id === 'task-result') {
+        if (evt.detail.xhr.status === 200) {
+            const data = JSON.parse(evt.detail.xhr.response);
+            let html = `
+                <div class="result-viewer">
+                    <div class="result-toolbar">
+                        <div class="format-buttons">
+                            <button class="btn btn-sm" onclick="formatResult('json')">JSON</button>
+                            <button class="btn btn-sm" onclick="formatResult('text')">Text</button>
+                        </div>
+                        <div class="result-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="copyResult()">Copy</button>
+                            <button class="btn btn-sm btn-secondary" onclick="downloadResult()">Download</button>
+                        </div>
+                    </div>
+                    <div id="result-content" class="result-content">
+                        <pre>${JSON.stringify(data.result, null, 2)}</pre>
+                    </div>
+                    ${data.output ? `
+                        <div class="result-output">
+                            <h4>Output</h4>
+                            <pre>${data.output}</pre>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+            evt.detail.target.innerHTML = html;
+        } else if (evt.detail.xhr.status === 400) {
+            evt.detail.target.innerHTML = `
+                <div class="alert alert-info">
+                    Task is not completed yet. Results will appear when the task finishes.
+                </div>
+            `;
+        } else {
+            evt.detail.target.innerHTML = `
+                <div class="alert alert-error">
+                    Failed to load result.
+                </div>
+            `;
+        }
+        evt.preventDefault();
+    }
+    
+    // Format logs
+    if (evt.detail.target.id === 'task-logs') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        if (data.logs && data.logs.length > 0) {
+            html = `
+                <div class="logs-header">
+                    <span>Total lines: ${data.total_lines}</span>
+                    <span>Status: ${data.status}</span>
+                </div>
+                <div class="logs-content">
+                    <pre>${data.logs.join('\n')}</pre>
+                </div>
+            `;
+        } else {
+            html = '<div class="empty-state">No logs available</div>';
+        }
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+});
+
+function getStatusIcon(status) {
+    switch(status) {
+        case 'completed': return '✓';
+        case 'running': return '▶';
+        case 'failed': return '✗';
+        case 'pending': return '○';
+        case 'cancelled': return '⊘';
+        default: return '•';
+    }
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    return new Date(timestamp).toLocaleString();
+}
+
+function formatResult(format) {
+    const content = document.getElementById('result-content');
+    if (!content) return;
+    
+    // This would implement different formatting options
+    console.log('Format result as:', format);
+}
+
+function copyResult() {
+    const content = document.querySelector('#result-content pre');
+    if (content) {
+        navigator.clipboard.writeText(content.textContent);
+        alert('Result copied to clipboard!');
+    }
+}
+
+function downloadResult() {
+    const content = document.querySelector('#result-content pre');
+    if (content) {
+        const blob = new Blob([content.textContent], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `task_{{ task_id }}_result.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+}
+
+// Auto-refresh control
+document.getElementById('auto-refresh-logs')?.addEventListener('change', function(e) {
+    const logsContainer = document.getElementById('task-logs');
+    if (e.target.checked) {
+        logsContainer.setAttribute('hx-trigger', 'load, every 2s');
+        htmx.process(logsContainer);
+    } else {
+        logsContainer.removeAttribute('hx-trigger');
+    }
+});
+
+// Handle task actions
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.successful && (evt.detail.verb === 'DELETE' || evt.detail.verb === 'POST')) {
+        // Refresh task info after action
+        htmx.trigger('#task-info', 'load');
+    }
+});
+</script>
+{% endblock %}

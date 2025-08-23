@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+
+{% block title %}Workflow Details - Gleitzeit UI{% endblock %}
+
+{% block content %}
+<div class="workflow-detail-page">
+    <div class="page-header">
+        <a href="/workflows" class="back-link">← Back to Workflows</a>
+        <h1 class="page-title">Workflow Details</h1>
+    </div>
+    
+    <!-- Workflow Info -->
+    <div id="workflow-info" 
+         hx-get="/api/workflows/{{ workflow_id }}" 
+         hx-trigger="load, every 2s"
+         class="workflow-info-container">
+        <div class="loading-spinner">Loading workflow details...</div>
+    </div>
+    
+    <!-- Task Graph Visualization -->
+    <div class="section">
+        <h2 class="section-title">Task Dependencies</h2>
+        <div id="task-graph" class="task-graph-container">
+            <canvas id="dependency-graph"></canvas>
+        </div>
+    </div>
+    
+    <!-- Tasks List -->
+    <div class="section">
+        <h2 class="section-title">Tasks</h2>
+        <div id="workflow-tasks" 
+             hx-get="/api/workflows/{{ workflow_id }}/tasks" 
+             hx-trigger="load, every 2s"
+             class="tasks-container">
+            <div class="loading-spinner">Loading tasks...</div>
+        </div>
+    </div>
+    
+    <!-- Execution Timeline -->
+    <div class="section">
+        <h2 class="section-title">Execution Timeline</h2>
+        <div id="execution-timeline" 
+             hx-get="/api/workflows/{{ workflow_id }}/timeline" 
+             hx-trigger="load, every 5s"
+             class="timeline-container">
+            <div class="loading-spinner">Loading timeline...</div>
+        </div>
+    </div>
+    
+    <!-- Results -->
+    <div class="section">
+        <h2 class="section-title">Results</h2>
+        <div id="workflow-results" 
+             hx-get="/api/workflows/{{ workflow_id }}/results" 
+             hx-trigger="load, every 5s"
+             class="results-container">
+            <div class="loading-spinner">Loading results...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Format workflow info
+document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    if (evt.detail.target.id === 'workflow-info') {
+        const workflow = JSON.parse(evt.detail.xhr.response);
+        const statusClass = `status-${workflow.status || 'pending'}`;
+        
+        let html = `
+            <div class="workflow-detail-card">
+                <div class="detail-header">
+                    <h2>${workflow.name || 'Unnamed Workflow'}</h2>
+                    <span class="workflow-status ${statusClass}">${workflow.status || 'pending'}</span>
+                </div>
+                <div class="detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">ID:</span>
+                        <span class="detail-value">${workflow.id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Submitted:</span>
+                        <span class="detail-value">${formatTime(workflow.submitted_at)}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Total Tasks:</span>
+                        <span class="detail-value">${workflow.tasks?.length || 0}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Progress:</span>
+                        <div class="progress-bar inline">
+                            <div class="progress-fill" style="width: ${calculateProgress(workflow)}%"></div>
+                        </div>
+                    </div>
+                </div>
+                ${workflow.status === 'running' ? 
+                    `<div class="workflow-actions">
+                        <button class="btn btn-danger" 
+                                hx-delete="/api/workflows/${workflow.id}"
+                                hx-confirm="Cancel this workflow?">Cancel Workflow</button>
+                    </div>` : ''}
+            </div>
+        `;
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+        
+        // Draw dependency graph
+        drawDependencyGraph(workflow.tasks);
+    }
+    
+    // Format tasks list
+    if (evt.detail.target.id === 'workflow-tasks') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        if (data.tasks && data.tasks.length > 0) {
+            html = '<div class="tasks-grid">';
+            data.tasks.forEach(task => {
+                const statusClass = `status-${task.status || 'pending'}`;
+                const statusIcon = getStatusIcon(task.status);
+                
+                html += `
+                    <div class="task-card">
+                        <div class="task-header">
+                            <span class="task-icon">${statusIcon}</span>
+                            <span class="task-name">${task.id}</span>
+                            <span class="task-status ${statusClass}">${task.status || 'pending'}</span>
+                        </div>
+                        <div class="task-body">
+                            <div class="task-info">
+                                <span class="info-item">Method: ${task.method || 'N/A'}</span>
+                                ${task.duration ? `<span class="info-item">Duration: ${task.duration}s</span>` : ''}
+                                ${task.retry_count ? `<span class="info-item">Retries: ${task.retry_count}</span>` : ''}
+                            </div>
+                            ${task.dependencies && task.dependencies.length > 0 ? 
+                                `<div class="task-dependencies">
+                                    <span class="dep-label">Dependencies:</span>
+                                    ${task.dependencies.map(dep => `<span class="dep-item">${dep}</span>`).join('')}
+                                </div>` : ''}
+                            <div class="task-actions">
+                                <a href="/tasks/${task.id}" class="btn btn-sm btn-primary">View Details</a>
+                                ${task.status === 'failed' ? 
+                                    `<button class="btn btn-sm btn-warning" 
+                                             hx-post="/api/tasks/${task.id}/retry">Retry</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html = '<div class="empty-state">No tasks found for this workflow</div>';
+        }
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+    
+    // Format timeline
+    if (evt.detail.target.id === 'execution-timeline') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        if (data.timeline && data.timeline.length > 0) {
+            html = '<div class="timeline">';
+            data.timeline.forEach(item => {
+                const statusClass = `status-${item.status}`;
+                html += `
+                    <div class="timeline-item ${statusClass}">
+                        <div class="timeline-marker"></div>
+                        <div class="timeline-content">
+                            <div class="timeline-task">${item.task_name}</div>
+                            <div class="timeline-meta">
+                                ${item.started_at ? `Started: ${formatTime(item.started_at)}` : 'Not started'}
+                                ${item.duration ? ` • Duration: ${item.duration}s` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html = '<div class="empty-state">No timeline data available</div>';
+        }
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+    
+    // Format results
+    if (evt.detail.target.id === 'workflow-results') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        if (data.results && Object.keys(data.results).length > 0) {
+            html = '<div class="results-list">';
+            for (const [taskId, result] of Object.entries(data.results)) {
+                html += `
+                    <div class="result-item">
+                        <div class="result-header">
+                            <span class="result-task">Task: ${taskId}</span>
+                            <button class="btn btn-sm btn-secondary" 
+                                    onclick="toggleResult('${taskId}')">Toggle</button>
+                        </div>
+                        <div id="result-${taskId}" class="result-content" style="display: none;">
+                            <pre>${JSON.stringify(result, null, 2)}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+            html += '</div>';
+        } else {
+            html = '<div class="empty-state">No results available yet</div>';
+        }
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+});
+
+function getStatusIcon(status) {
+    switch(status) {
+        case 'completed': return '✓';
+        case 'running': return '▶';
+        case 'failed': return '✗';
+        case 'pending': return '○';
+        default: return '•';
+    }
+}
+
+function calculateProgress(workflow) {
+    if (!workflow.tasks || workflow.tasks.length === 0) return 0;
+    const completed = workflow.tasks.filter(t => 
+        t.status === 'completed' || t.status === 'failed'
+    ).length;
+    return Math.round((completed / workflow.tasks.length) * 100);
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    return new Date(timestamp).toLocaleString();
+}
+
+function toggleResult(taskId) {
+    const element = document.getElementById(`result-${taskId}`);
+    if (element) {
+        element.style.display = element.style.display === 'none' ? 'block' : 'none';
+    }
+}
+
+function drawDependencyGraph(tasks) {
+    // Simple dependency visualization
+    // This would be enhanced with a proper graph library like D3.js or vis.js
+    const canvas = document.getElementById('dependency-graph');
+    if (!canvas || !tasks) return;
+    
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.parentElement.offsetWidth;
+    canvas.height = 200;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Simple visualization - tasks as boxes
+    const taskWidth = 100;
+    const taskHeight = 40;
+    const spacing = 20;
+    let x = spacing;
+    const y = canvas.height / 2 - taskHeight / 2;
+    
+    tasks.forEach((task, index) => {
+        // Draw task box
+        ctx.fillStyle = getStatusColor(task.status);
+        ctx.fillRect(x, y, taskWidth, taskHeight);
+        
+        // Draw task name
+        ctx.fillStyle = '#000';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(task.id, x + taskWidth/2, y + taskHeight/2 + 4);
+        
+        // Draw arrow to next task
+        if (index < tasks.length - 1) {
+            ctx.strokeStyle = '#666';
+            ctx.beginPath();
+            ctx.moveTo(x + taskWidth, y + taskHeight/2);
+            ctx.lineTo(x + taskWidth + spacing, y + taskHeight/2);
+            ctx.stroke();
+        }
+        
+        x += taskWidth + spacing;
+    });
+}
+
+function getStatusColor(status) {
+    switch(status) {
+        case 'completed': return '#10B981';
+        case 'running': return '#3B82F6';
+        case 'failed': return '#EF4444';
+        case 'pending': return '#9CA3AF';
+        default: return '#E5E7EB';
+    }
+}
+</script>
+{% endblock %}

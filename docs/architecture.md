@@ -237,6 +237,8 @@ class UnifiedPersistenceAdapter:
 - Fast but non-persistent
 - Automatic cleanup
 
+For complete persistence backend documentation including delete operations, list/pagination support, and queue state management, see [Persistence Backend Documentation](./persistence-backend.md).
+
 ### 7. Data Models
 
 #### Core Models (`core/models.py`)

@@ -278,7 +278,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
     
     def _dict_to_task(self, data: Dict[str, Any]) -> Task:
         """Convert Redis hash to Task object"""
-        from gleitzeit.core.models import RetryConfig
+        from gleitzeit.core.models import RetryConfig, TaskStatus
         
         return Task(
             id=data['id'],
@@ -287,10 +287,10 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             method=data['method'],
             params=json.loads(data['params']),
             priority=data['priority'],
+            status=TaskStatus(data.get('status', 'pending')),  # Include status field with proper enum
             dependencies=json.loads(data['dependencies']) if data.get('dependencies') else [],
             timeout=int(data['timeout']) if data.get('timeout') and int(data['timeout']) > 0 else None,
             retry_config=RetryConfig(**json.loads(data['retry_config'])) if data.get('retry_config') and data['retry_config'] != '{}' else None,
-            status=data['status'],
             attempt_count=int(data.get('attempt_count', 0)),
             workflow_id=data.get('workflow_id') or None,
             created_at=datetime.fromisoformat(data['created_at']) if data.get('created_at') else None,
@@ -499,6 +499,98 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
         except Exception as e:
             logger.error(f"Failed to get workflow {workflow_id}: {e}")
             return None
+    
+    async def delete_workflow(self, workflow_id: str) -> bool:
+        """Delete a workflow and all its associated tasks"""
+        if not self._initialized:
+            return False
+        
+        try:
+            # Get all tasks for this workflow first (they might exist even without a workflow record)
+            task_ids = await self.redis.smembers(self._workflow_index_key(workflow_id))
+            
+            # Check if we have either a workflow record OR tasks to delete
+            workflow_exists = await self.redis.exists(self._workflow_key(workflow_id))
+            if not workflow_exists and not task_ids:
+                return False
+            
+            async with self.redis.pipeline() as pipe:
+                # Delete all tasks and their results
+                for task_id in task_ids:
+                    # Get task to remove from status index
+                    task = await self.get_task(task_id)
+                    if task:
+                        # Remove from status index
+                        pipe.srem(self._status_index_key(task.status), task_id)
+                        # Remove from provider index if assigned
+                        if hasattr(task, 'assigned_provider') and task.assigned_provider:
+                            pipe.srem(self._provider_index_key(task.assigned_provider), task_id)
+                    
+                    # Delete task and task result
+                    pipe.delete(self._task_key(task_id))
+                    pipe.delete(self._task_result_key(task_id))
+                
+                # Delete workflow index
+                pipe.delete(self._workflow_index_key(workflow_id))
+                
+                # Delete workflow
+                pipe.delete(self._workflow_key(workflow_id))
+                
+                # Delete workflow execution if exists
+                # Note: We might have multiple executions, so we'd need to track them
+                # For now, we'll just delete by pattern (if needed)
+                
+                await pipe.execute()
+            
+            # Clean queue state references
+            await self.clean_queue_state_for_tasks(list(task_ids))
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to delete workflow {workflow_id}: {e}")
+            return False
+    
+    async def clean_queue_state_for_tasks(self, task_ids: List[str]) -> None:
+        """Clean queue state by removing references to deleted tasks"""
+        if not self._initialized or not task_ids:
+            return
+        
+        try:
+            task_id_set = set(task_ids)
+            
+            # Get all queue state keys
+            pattern = f"{self.key_prefix}:queue_state:*"
+            queue_keys = await self.redis.keys(pattern)
+            
+            for queue_key in queue_keys:
+                queue_state_str = await self.redis.hget(queue_key, 'state')
+                if queue_state_str:
+                    queue_state = json.loads(queue_state_str)
+                    
+                    # Clean completed_tasks
+                    if 'completed_tasks' in queue_state:
+                        queue_state['completed_tasks'] = [
+                            task_id for task_id in queue_state['completed_tasks']
+                            if task_id not in task_id_set
+                        ]
+                    
+                    # Clean failed_tasks
+                    if 'failed_tasks' in queue_state:
+                        queue_state['failed_tasks'] = [
+                            task_id for task_id in queue_state['failed_tasks']
+                            if task_id not in task_id_set
+                        ]
+                    
+                    # Save updated state
+                    await self.redis.hset(
+                        queue_key,
+                        'state',
+                        json.dumps(queue_state)
+                    )
+                    
+        except Exception as e:
+            logger.warning(f"Failed to clean queue state for deleted tasks: {e}")
     
     async def save_workflow_execution(self, execution: WorkflowExecution) -> None:
         """Save workflow execution state"""
@@ -715,6 +807,131 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
         except Exception as e:
             logger.error(f"Failed to get task count by status: {e}")
             return {}
+    
+    async def list_workflows(self, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List all workflows with optional filtering and pagination"""
+        if not self._initialized:
+            return {"workflows": [], "total": 0, "limit": limit, "offset": offset}
+        
+        try:
+            # Get all workflow keys
+            pattern = f"{self.key_prefix}:workflow:*"
+            workflow_keys = await self.redis.keys(pattern)
+            
+            workflows = []
+            for key in workflow_keys:
+                try:
+                    # Get workflow data
+                    workflow_data = await self.redis.hgetall(key)
+                    if workflow_data:
+                        # Convert Redis data to workflow object
+                        workflow = {
+                            "id": workflow_data.get("id", ""),
+                            "name": workflow_data.get("name", ""),
+                            "description": workflow_data.get("description", ""),
+                            "created_at": workflow_data.get("created_at", ""),
+                            "status": "unknown"  # We'll determine this from tasks
+                        }
+                        
+                        # If status filter is specified, check if this workflow matches
+                        # For now, include all workflows since we don't store workflow status directly
+                        workflows.append(workflow)
+                        
+                except Exception as e:
+                    logger.warning(f"Failed to parse workflow from key {key}: {e}")
+                    continue
+            
+            # Sort by created_at descending (newest first)
+            workflows.sort(key=lambda w: w.get("created_at", ""), reverse=True)
+            
+            # Apply pagination
+            total = len(workflows)
+            start_idx = offset
+            end_idx = offset + limit
+            paginated_workflows = workflows[start_idx:end_idx]
+            
+            return {
+                "workflows": paginated_workflows,
+                "total": total,
+                "limit": limit,
+                "offset": offset
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to list workflows: {e}")
+            return {"workflows": [], "total": 0, "limit": limit, "offset": offset}
+    
+    async def list_tasks(self, workflow_id: Optional[str] = None, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List all tasks with optional filtering and pagination"""
+        if not self._initialized:
+            return {"tasks": [], "total": 0, "limit": limit, "offset": offset}
+        
+        try:
+            tasks = []
+            
+            if workflow_id:
+                # Get tasks for specific workflow
+                workflow_index_key = self._workflow_index_key(workflow_id)
+                task_ids = await self.redis.smembers(workflow_index_key)
+                
+                for task_id in task_ids:
+                    try:
+                        task = await self.get_task(task_id)
+                        if task and (not status or task.status == status):
+                            tasks.append(task)
+                    except Exception as e:
+                        logger.warning(f"Failed to get task {task_id}: {e}")
+                        continue
+            else:
+                # Get all tasks
+                if status:
+                    # Use status index if filtering by status
+                    status_index_key = self._status_index_key(status)
+                    task_ids = await self.redis.smembers(status_index_key)
+                    
+                    for task_id in task_ids:
+                        try:
+                            task = await self.get_task(task_id)
+                            if task:
+                                tasks.append(task)
+                        except Exception as e:
+                            logger.warning(f"Failed to get task {task_id}: {e}")
+                            continue
+                else:
+                    # Get all task keys
+                    pattern = f"{self.key_prefix}:task:*"
+                    task_keys = await self.redis.keys(pattern)
+                    
+                    for key in task_keys:
+                        try:
+                            # Extract task_id from key
+                            task_id = key.split(":")[-1]
+                            task = await self.get_task(task_id)
+                            if task:
+                                tasks.append(task)
+                        except Exception as e:
+                            logger.warning(f"Failed to get task from key {key}: {e}")
+                            continue
+            
+            # Sort by created_at descending (newest first)
+            tasks.sort(key=lambda t: getattr(t, 'created_at', None) or '', reverse=True)
+            
+            # Apply pagination
+            total = len(tasks)
+            start_idx = offset
+            end_idx = offset + limit
+            paginated_tasks = tasks[start_idx:end_idx]
+            
+            return {
+                "tasks": paginated_tasks,
+                "total": total,
+                "limit": limit,
+                "offset": offset
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to list tasks: {e}")
+            return {"tasks": [], "total": 0, "limit": limit, "offset": offset}
     
     async def cleanup_old_data(self, cutoff_date: datetime) -> int:
         """Remove old completed tasks and results before cutoff date"""

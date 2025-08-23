@@ -15,7 +15,7 @@ from typing import Optional
 
 from gleitzeit.cli.config import CLIConfig, load_config
 from gleitzeit.cli.client import GleitzeitClient
-from gleitzeit.cli.commands import submit, status, dev
+from gleitzeit.cli.commands import submit, status, dev, ui
 
 # Set up logging
 logging.basicConfig(
@@ -207,6 +207,17 @@ def show_protocol(ctx, protocol_id: str):
 def list_methods(ctx, protocol_id: str, filter: Optional[str]):
     """List protocol methods"""
     return asyncio.run(protocols.methods(ctx, protocol_id, filter))
+
+
+# UI management
+@cli.command('ui')
+@click.option('--port', default=8004, help='UI server port')
+@click.option('--host', default='127.0.0.1', help='UI server host')
+@click.option('--reload', is_flag=True, help='Enable auto-reload for development')
+@click.pass_context
+def ui_cmd(ctx, port: int, host: str, reload: bool):
+    """Start the Web UI for monitoring workflows and tasks"""
+    return asyncio.run(ui.start_ui(ctx, port, host, reload))
 
 
 # Cluster management  

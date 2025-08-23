@@ -1,0 +1,260 @@
+"""
+Workflow monitoring and management endpoints - proxies to Gleitzeit API
+"""
+
+from fastapi import APIRouter, Request, HTTPException, Response
+from fastapi.responses import FileResponse, JSONResponse
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+import json
+import yaml
+import tempfile
+import os
+import uuid
+import aiohttp
+
+router = APIRouter()
+
+# Get Gleitzeit API URL from environment or use default
+GLEITZEIT_API_URL = os.getenv('GLEITZEIT_API_URL', 'http://localhost:8000')
+
+# Track workflows submitted through this UI session
+_ui_workflows = {}
+
+@router.get("")
+async def list_workflows(
+    request: Request,
+    status: Optional[str] = None,
+    limit: int = 50,
+    offset: int = 0
+) -> Dict[str, Any]:
+    """
+    List all workflows - now uses the API's list endpoint
+    
+    Args:
+        status: Filter by status (running, completed, failed, pending)
+        limit: Maximum number of workflows to return
+        offset: Pagination offset
+    
+    Returns:
+        List of workflows with metadata
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Build query parameters
+            params = {
+                "limit": limit,
+                "offset": offset
+            }
+            if status:
+                params["status"] = status
+            
+            # Get workflows from API list endpoint
+            async with session.get(f"{GLEITZEIT_API_URL}/workflows", params=params) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    # Transform API response to UI format
+                    workflows = []
+                    for wf in data.get("workflows", []):
+                        workflows.append({
+                            "id": wf.get("workflow_id"),
+                            "name": wf.get("name", "Unnamed"),
+                            "status": wf.get("status", "unknown"),
+                            "created_at": wf.get("created_at"),
+                            "completed_at": wf.get("completed_at"),
+                            "tasks_total": wf.get("tasks_total", 0),
+                            "tasks_completed": wf.get("tasks_completed", 0),
+                            "tasks_failed": wf.get("tasks_failed", 0)
+                        })
+                    return {
+                        "workflows": workflows,
+                        "total": data.get("total", 0),
+                        "limit": limit,
+                        "offset": offset
+                    }
+                else:
+                    # API list endpoint not available, fallback to empty
+                    return {
+                        "workflows": [],
+                        "total": 0,
+                        "limit": limit,
+                        "offset": offset
+                    }
+        except Exception as e:
+            print(f"Error listing workflows: {e}")
+            return {
+                "workflows": [],
+                "total": 0,
+                "limit": limit,
+                "offset": offset
+            }
+
+@router.get("/{workflow_id}")
+async def get_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Get detailed workflow information from API
+    
+    Args:
+        workflow_id: Unique workflow identifier
+    
+    Returns:
+        Workflow details including tasks and status
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    return data
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    raise HTTPException(status_code=resp.status, detail="API error")
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+@router.post("/submit")
+async def submit_workflow(request: Request, workflow_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Submit a workflow to Gleitzeit API for execution
+    
+    Args:
+        workflow_data: Workflow definition (YAML or JSON)
+    
+    Returns:
+        Submission response with workflow ID
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            # Convert workflow data to API format
+            api_workflow = {
+                "name": workflow_data.get("name", "UI Workflow"),
+                "description": workflow_data.get("description"),
+                "tasks": [],
+                "metadata": workflow_data.get("metadata", {})
+            }
+            
+            # Convert tasks to API format
+            for task in workflow_data.get("tasks", []):
+                # Parse method to get protocol and method
+                method_parts = task.get("method", "").split("/")
+                if len(method_parts) >= 2:
+                    protocol = f"{method_parts[0]}/v1"
+                    method = "/".join(method_parts)
+                else:
+                    protocol = "llm/v1"
+                    method = task.get("method", "llm/chat")
+                
+                api_task = {
+                    "id": task.get("id"),
+                    "name": task.get("name", task.get("id", "task")),
+                    "protocol": protocol,
+                    "method": method,
+                    "params": task.get("parameters", {}),
+                    "dependencies": task.get("dependencies", []),
+                    "priority": task.get("priority", "normal")
+                }
+                
+                if "retry" in task:
+                    api_task["retry"] = task["retry"]
+                
+                api_workflow["tasks"].append(api_task)
+            
+            # Submit to API
+            async with session.post(
+                f"{GLEITZEIT_API_URL}/workflows",
+                json=api_workflow
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Track this workflow in UI
+                    _ui_workflows[data["workflow_id"]] = {
+                        "id": data["workflow_id"],
+                        "name": api_workflow["name"],
+                        "status": data["status"],
+                        "created_at": data.get("created_at"),
+                        "tasks_total": data.get("tasks_total", 0)
+                    }
+                    
+                    return data
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=f"API error: {error_text}")
+                    
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+@router.post("/submit-file")
+async def submit_workflow_file(request: Request) -> Dict[str, Any]:
+    """
+    Submit a workflow file to API
+    
+    Returns:
+        Submission response with workflow ID
+    """
+    # Get file content from request
+    body = await request.body()
+    
+    # Parse as YAML
+    try:
+        workflow_data = yaml.safe_load(body)
+    except yaml.YAMLError as e:
+        raise HTTPException(status_code=400, detail=f"Invalid YAML: {e}")
+    
+    # Submit using the regular submit endpoint
+    return await submit_workflow(request, workflow_data)
+
+@router.delete("/{workflow_id}")
+async def cancel_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Cancel a running workflow via API
+    
+    Args:
+        workflow_id: Workflow to cancel
+    
+    Returns:
+        Cancellation result
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.delete(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Update UI tracking
+                    if workflow_id in _ui_workflows:
+                        _ui_workflows[workflow_id]["status"] = "cancelled"
+                    
+                    return data
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    raise HTTPException(status_code=resp.status, detail="API error")
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+@router.get("/{workflow_id}/download")
+async def download_workflow_results(request: Request, workflow_id: str):
+    """
+    Download workflow results as JSON
+    
+    Args:
+        workflow_id: Workflow ID
+    
+    Returns:
+        JSON file with results
+    """
+    # Get workflow details from API
+    workflow = await get_workflow(request, workflow_id)
+    
+    # Create temp file with results
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+        json.dump(workflow, f, indent=2, default=str)
+        temp_path = f.name
+    
+    return FileResponse(
+        path=temp_path,
+        filename=f"workflow_{workflow_id}_results.json",
+        media_type="application/json"
+    )

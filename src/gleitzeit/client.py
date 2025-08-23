@@ -906,6 +906,50 @@ class GleitzeitClient:
             # get_workflow_tasks is get_tasks_by_workflow in the adapter
             return await self._persistence_adapter.get_tasks_by_workflow(workflow_id)
     
+    async def list_workflows(self, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List workflows with optional filtering"""
+        if self.get_mode() == "api":
+            try:
+                params = {"limit": limit, "offset": offset}
+                if status:
+                    params["status"] = status
+                response = await self._api_client.get("/workflows", params=params)
+                if response.status_code == 200:
+                    return response.json()
+                return {"workflows": [], "total": 0}
+            except Exception:
+                return {"workflows": [], "total": 0}
+        else:
+            if not self._persistence_adapter:
+                return {"workflows": [], "total": 0}
+            return await self._persistence_adapter.list_workflows(status, limit, offset)
+    
+    async def list_tasks(self, status: Optional[str] = None, workflow_id: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List tasks with optional filtering"""
+        if self.get_mode() == "api":
+            try:
+                params = {"limit": limit, "offset": offset}
+                if status:
+                    params["status"] = status
+                if workflow_id:
+                    params["workflow_id"] = workflow_id
+                response = await self._api_client.get("/tasks", params=params)
+                if response.status_code == 200:
+                    return response.json()
+                return {"tasks": [], "total": 0}
+            except Exception:
+                return {"tasks": [], "total": 0}
+        else:
+            if not self._persistence_adapter:
+                return {"tasks": [], "total": 0}
+            # Use keyword arguments to match the unified persistence adapter signature
+            return await self._persistence_adapter.list_tasks(
+                workflow_id=workflow_id,
+                status=status,
+                limit=limit,
+                offset=offset
+            )
+    
     # =========================================================================
     # Statistics and Monitoring Methods (from old client)
     # =========================================================================
@@ -1007,6 +1051,54 @@ class GleitzeitClient:
             from datetime import datetime, timedelta
             cutoff = datetime.utcnow() - timedelta(days=days)
             return await self._persistence_adapter.cleanup_old_data(cutoff)
+    
+    async def delete_task(self, task_id: str) -> bool:
+        """
+        Delete a task and its associated data
+        
+        Args:
+            task_id: ID of the task to delete
+            
+        Returns:
+            True if task was deleted, False otherwise
+        """
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.delete(f"/tasks/{task_id}")
+                return response.status_code == 200
+            except Exception:
+                return False
+        else:
+            if not self._persistence_adapter:
+                return False
+            return await self._persistence_adapter.delete_task(task_id)
+    
+    async def delete_workflow(self, workflow_id: str) -> bool:
+        """
+        Delete a workflow and all its associated tasks
+        
+        This will:
+        - Delete all tasks belonging to the workflow
+        - Delete all task results for those tasks
+        - Delete workflow execution records
+        - Clean up queue state references to deleted tasks
+        
+        Args:
+            workflow_id: ID of the workflow to delete
+            
+        Returns:
+            True if workflow was deleted, False otherwise
+        """
+        if self.get_mode() == "api":
+            try:
+                response = await self._api_client.delete(f"/workflows/{workflow_id}")
+                return response.status_code == 200
+            except Exception:
+                return False
+        else:
+            if not self._persistence_adapter:
+                return False
+            return await self._persistence_adapter.delete_workflow(workflow_id)
     
     # ============== Resource Management Methods ==============
     

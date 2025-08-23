@@ -95,6 +95,11 @@ class UnifiedPersistenceAdapter(ABC):
         pass
     
     @abstractmethod
+    async def delete_workflow(self, workflow_id: str) -> bool:
+        """Delete a workflow and all its associated tasks"""
+        pass
+    
+    @abstractmethod
     async def save_workflow_execution(self, execution: WorkflowExecution) -> None:
         """Save workflow execution state"""
         pass
@@ -137,6 +142,25 @@ class UnifiedPersistenceAdapter(ABC):
     @abstractmethod
     async def cleanup_old_data(self, cutoff_date: datetime) -> int:
         """Remove old completed tasks and results before cutoff date"""
+        pass
+    
+    async def clean_queue_state_for_tasks(self, task_ids: List[str]) -> None:
+        """
+        Clean queue state by removing references to deleted tasks.
+        This is a helper method used by delete_workflow.
+        """
+        # Default implementation - can be overridden by adapters
+        pass
+    
+    # List operations for UI/API
+    @abstractmethod
+    async def list_workflows(self, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List all workflows with optional filtering and pagination"""
+        pass
+    
+    @abstractmethod
+    async def list_tasks(self, workflow_id: Optional[str] = None, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List all tasks with optional filtering and pagination"""
         pass
     
     # =========================================================================
@@ -316,6 +340,61 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
     async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
         return self.workflows.get(workflow_id)
     
+    async def delete_workflow(self, workflow_id: str) -> bool:
+        """Delete a workflow and all its associated tasks"""
+        # Check for tasks associated with this workflow (they might exist even without a workflow record)
+        tasks_to_delete = [
+            task_id for task_id, task in self.tasks.items() 
+            if task.workflow_id == workflow_id
+        ]
+        
+        # If neither workflow nor tasks exist, return False
+        if workflow_id not in self.workflows and not tasks_to_delete:
+            return False
+        
+        # Delete all tasks and their results
+        for task_id in tasks_to_delete:
+            del self.tasks[task_id]
+            # Also delete task results if they exist
+            self.task_results.pop(task_id, None)
+        
+        # Delete the workflow itself if it exists
+        if workflow_id in self.workflows:
+            del self.workflows[workflow_id]
+        
+        # Delete workflow execution if exists
+        self.workflow_executions = {
+            exec_id: exec_data 
+            for exec_id, exec_data in self.workflow_executions.items()
+            if exec_data.workflow_id != workflow_id
+        }
+        
+        # Clean queue state references
+        await self.clean_queue_state_for_tasks(tasks_to_delete)
+        
+        return True
+    
+    async def clean_queue_state_for_tasks(self, task_ids: List[str]) -> None:
+        """Clean queue state by removing references to deleted tasks"""
+        if not task_ids:
+            return
+        
+        task_id_set = set(task_ids)
+        
+        # Clean all queue states
+        for queue_name, queue_state in self.queue_states.items():
+            if 'completed_tasks' in queue_state:
+                queue_state['completed_tasks'] = [
+                    task_id for task_id in queue_state['completed_tasks']
+                    if task_id not in task_id_set
+                ]
+            
+            if 'failed_tasks' in queue_state:
+                queue_state['failed_tasks'] = [
+                    task_id for task_id in queue_state['failed_tasks']
+                    if task_id not in task_id_set
+                ]
+    
     async def save_workflow_execution(self, execution: WorkflowExecution) -> None:
         self.workflow_executions[execution.execution_id] = execution
     
@@ -362,6 +441,55 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
             self.task_results.pop(task_id, None)
         
         return len(old_tasks)
+    
+    # List operations for UI/API
+    async def list_workflows(self, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List all workflows with optional filtering and pagination"""
+        workflows = list(self.workflows.values())
+        
+        # Filter by status if provided
+        if status:
+            workflows = [w for w in workflows if hasattr(w, 'status') and w.status == status]
+        
+        # Sort by created_at (newest first)
+        workflows.sort(key=lambda w: getattr(w, 'created_at', datetime.min), reverse=True)
+        
+        # Apply pagination
+        total = len(workflows)
+        workflows = workflows[offset:offset + limit]
+        
+        return {
+            "workflows": workflows,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+    
+    async def list_tasks(self, workflow_id: Optional[str] = None, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
+        """List all tasks with optional filtering and pagination"""
+        tasks = list(self.tasks.values())
+        
+        # Filter by workflow_id if provided
+        if workflow_id:
+            tasks = [t for t in tasks if t.workflow_id == workflow_id]
+        
+        # Filter by status if provided
+        if status:
+            tasks = [t for t in tasks if t.status == status]
+        
+        # Sort by created_at (newest first)
+        tasks.sort(key=lambda t: getattr(t, 'created_at', datetime.min), reverse=True)
+        
+        # Apply pagination
+        total = len(tasks)
+        tasks = tasks[offset:offset + limit]
+        
+        return {
+            "tasks": tasks,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
     
     # Hub Resource operations
     async def save_instance(self, hub_id: str, instance: ResourceInstance) -> None:
@@ -517,6 +645,9 @@ class PersistenceBackendWrapper(UnifiedPersistenceAdapter):
     
     async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
         return await self._adapter.get_workflow(workflow_id)
+    
+    async def delete_workflow(self, workflow_id: str) -> bool:
+        return await self._adapter.delete_workflow(workflow_id)
     
     async def save_workflow_execution(self, execution: WorkflowExecution) -> None:
         return await self._adapter.save_workflow_execution(execution)

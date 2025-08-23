@@ -1019,6 +1019,63 @@ async def _batch_process(directory: str, pattern: str, prompt: str, model: str, 
         await cli_instance._shutdown_system()
 
 
+@cli.command()
+@click.option('--port', default=8004, help='UI server port')
+@click.option('--host', default='127.0.0.1', help='UI server host')
+@click.option('--browser', is_flag=True, help='Open browser automatically')
+def ui(port: int, host: str, browser: bool):
+    """Start the Web UI for monitoring workflows and tasks"""
+    asyncio.run(_run_ui(port, host, browser))
+
+
+async def _run_ui(port: int, host: str, browser: bool):
+    """Run the UI server with the current Gleitzeit system"""
+    import uvicorn
+    from pathlib import Path
+    import webbrowser
+    
+    click.echo(f"🚀 Starting Gleitzeit Web UI on http://{host}:{port}")
+    
+    # Get the UI app path
+    ui_path = Path(__file__).parent.parent.parent / "ui"
+    if not ui_path.exists():
+        click.echo(f"❌ UI directory not found at {ui_path}")
+        sys.exit(1)
+    
+    # Add UI path to Python path
+    sys.path.insert(0, str(ui_path))
+    
+    try:
+        # Import the app
+        from api.app import app
+        
+        # Open browser if requested
+        if browser:
+            webbrowser.open(f"http://{host}:{port}")
+        
+        # Run the UI server
+        config = uvicorn.Config(
+            app=app,
+            host=host,
+            port=port,
+            log_level="info"
+        )
+        server = uvicorn.Server(config)
+        
+        click.echo(f"✅ Gleitzeit UI running at http://{host}:{port}")
+        click.echo("Press Ctrl+C to stop the server")
+        
+        await server.serve()
+        
+    except ImportError as e:
+        click.echo(f"❌ Error importing UI app: {e}")
+        click.echo("Make sure all UI dependencies are installed")
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"❌ Error starting UI server: {e}")
+        sys.exit(1)
+
+
 def main():
     """Main CLI entry point"""
     try:

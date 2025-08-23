@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Workflows - Gleitzeit UI{% endblock %}
+
+{% block content %}
+<div class="workflows-page">
+    <div class="page-header">
+        <h1 class="page-title">Workflows</h1>
+        <button class="btn btn-primary" onclick="showSubmitWorkflowModal()">
+            + New Workflow
+        </button>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters">
+        <select id="status-filter" class="filter-select" 
+                hx-get="/api/workflows" 
+                hx-trigger="change"
+                hx-target="#workflows-list"
+                hx-include="[name='limit']">
+            <option value="">All Status</option>
+            <option value="running">Running</option>
+            <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
+            <option value="pending">Pending</option>
+        </select>
+        
+        <input type="number" name="limit" value="20" min="1" max="100" 
+               class="filter-input" placeholder="Limit"
+               hx-get="/api/workflows"
+               hx-trigger="change"
+               hx-target="#workflows-list"
+               hx-include="[id='status-filter']">
+    </div>
+    
+    <!-- Workflows List -->
+    <div id="workflows-list" 
+         hx-get="/api/workflows" 
+         hx-trigger="load, every 5s"
+         class="workflows-container">
+        <div class="loading-spinner">Loading workflows...</div>
+    </div>
+</div>
+
+<!-- Submit Workflow Modal -->
+<div id="submit-workflow-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Submit New Workflow</h2>
+            <button class="close-btn" onclick="closeSubmitWorkflowModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="submit-workflow-form" hx-post="/api/workflows" 
+                  hx-target="#workflow-submit-result">
+                <div class="form-group">
+                    <label for="workflow-yaml">Workflow YAML:</label>
+                    <textarea id="workflow-yaml" name="workflow" rows="15" class="form-control" 
+                              placeholder="Paste your workflow YAML here..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeSubmitWorkflowModal()">Cancel</button>
+                </div>
+            </form>
+            <div id="workflow-submit-result"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Format workflows list
+document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    if (evt.detail.target.id === 'workflows-list') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        if (data.workflows && data.workflows.length > 0) {
+            html = '<div class="workflows-grid">';
+            data.workflows.forEach(workflow => {
+                const statusClass = `status-${workflow.status || 'pending'}`;
+                const progress = calculateProgress(workflow);
+                
+                html += `
+                    <div class="workflow-card">
+                        <div class="workflow-card-header">
+                            <h3 class="workflow-name">${workflow.name || 'Unnamed Workflow'}</h3>
+                            <span class="workflow-status ${statusClass}">${workflow.status || 'pending'}</span>
+                        </div>
+                        <div class="workflow-card-body">
+                            <div class="workflow-info">
+                                <span class="info-item">ID: ${workflow.id}</span>
+                                <span class="info-item">Tasks: ${workflow.tasks?.length || 0}</span>
+                                <span class="info-item">Started: ${formatTime(workflow.submitted_at)}</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${progress}%"></div>
+                            </div>
+                            <div class="workflow-actions">
+                                <a href="/workflows/${workflow.id}" class="btn btn-sm btn-primary">View Details</a>
+                                ${workflow.status === 'running' ? 
+                                    `<button class="btn btn-sm btn-danger" 
+                                             hx-delete="/api/workflows/${workflow.id}"
+                                             hx-confirm="Cancel this workflow?">Cancel</button>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        } else {
+            html = `
+                <div class="empty-state">
+                    <h3>No Workflows Found</h3>
+                    <p>Submit a workflow to get started!</p>
+                    <button class="btn btn-primary" onclick="showSubmitWorkflowModal()">
+                        Submit Workflow
+                    </button>
+                </div>
+            `;
+        }
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+});
+
+function calculateProgress(workflow) {
+    if (!workflow.tasks || workflow.tasks.length === 0) return 0;
+    const completed = workflow.tasks.filter(t => t.status === 'completed').length;
+    return Math.round((completed / workflow.tasks.length) * 100);
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    return new Date(timestamp).toLocaleString();
+}
+
+function showSubmitWorkflowModal() {
+    document.getElementById('submit-workflow-modal').style.display = 'flex';
+}
+
+function closeSubmitWorkflowModal() {
+    document.getElementById('submit-workflow-modal').style.display = 'none';
+    document.getElementById('workflow-yaml').value = '';
+    document.getElementById('workflow-submit-result').innerHTML = '';
+}
+
+// Handle workflow submission response
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.target.id === 'workflow-submit-result') {
+        if (evt.detail.successful) {
+            evt.detail.target.innerHTML = '<div class="alert alert-success">Workflow submitted successfully!</div>';
+            setTimeout(() => {
+                closeSubmitWorkflowModal();
+                // Refresh the workflows list
+                htmx.trigger('#workflows-list', 'load');
+            }, 2000);
+        } else {
+            evt.detail.target.innerHTML = '<div class="alert alert-error">Failed to submit workflow</div>';
+        }
+    }
+});
+</script>
+{% endblock %}

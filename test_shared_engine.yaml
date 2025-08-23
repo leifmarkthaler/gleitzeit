@@ -1,0 +1,9 @@
+name: "Test Shared Engine"
+tasks:
+  - id: "test_task"
+    method: "llm/chat"
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say 'Hello from shared engine test!'"
