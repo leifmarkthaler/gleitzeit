@@ -555,16 +555,8 @@ class ExecutionEngine:
                         / self.stats.tasks_processed
                     )
                 
-                # Emit structured task completed event
-                task_completed_event = create_task_completed_event(
-                    task_id=task.id,
-                    workflow_id=task.workflow_id,
-                    duration=duration,
-                    result_size=len(str(task_result.result)) if task_result.result else 0,
-                    source="execution_engine"
-                )
-                
-                await self.emit_structured_event(task_completed_event)
+                # Note: Task completed event already emitted above via event_bus
+                # No need to emit again via emit_structured_event to avoid duplicates
                 
                 # Check if workflow is complete and process dependencies
                 if task.workflow_id:
@@ -843,7 +835,26 @@ class ExecutionEngine:
                 if self.persistence:
                     await self.persistence.save_task_result(task_result)
                 
-                # No need to store in memory, already in persistence
+                # Update task status locally
+                task.status = TaskStatus.COMPLETED
+                task.completed_at = task_result.completed_at or datetime.utcnow()
+                
+                # Emit task completion event to update task status in database
+                if hasattr(self, 'event_bus') and self.event_bus:
+                    from ..core.events import create_task_completed_event
+                    completion_event = create_task_completed_event(
+                        task_id=task.id,
+                        workflow_id=task.workflow_id,
+                        duration=(task.completed_at - task_result.started_at).total_seconds() if task_result.started_at else 0,
+                        result_size=len(str(task_result.result)) if task_result.result else 0,
+                        source="execution_engine_pooling"
+                    )
+                    await self.event_bus.emit(completion_event)
+                    logger.info(f"Task {task.id} completion event emitted (pooling adapter)")
+                else:
+                    # Fallback to direct save if no event bus
+                    if self.persistence:
+                        await self.persistence.save_task(task)
                 
                 # Now check if workflow is complete and process dependencies
                 if task.workflow_id:

@@ -292,9 +292,7 @@ class GleitzeitClient:
             from gleitzeit.persistence.factory import PersistenceType
             factory_kwargs['persistence_type'] = PersistenceType(persistence_type)
         
-        self._persistence_adapter = await PersistenceFactory.create(**factory_kwargs)
-        
-        # Setup event-driven architecture first
+        # Setup event-driven architecture first (BEFORE creating persistence adapter)
         from gleitzeit.events.base import EventBus
         from gleitzeit.events.task_handlers import TaskCompletedHandler
         from gleitzeit.events.persistence_handlers import PersistenceTaskHandler
@@ -302,6 +300,10 @@ class GleitzeitClient:
         from gleitzeit.core.events import EventType
         
         event_bus = EventBus()
+        
+        # Create persistence adapter WITH event_bus for event-driven support
+        factory_kwargs['event_bus'] = event_bus
+        self._persistence_adapter = await PersistenceFactory.create(**factory_kwargs)
         
         # Setup execution components with persistence and event bus
         # IMPORTANT: All components share the SAME persistence adapter instance

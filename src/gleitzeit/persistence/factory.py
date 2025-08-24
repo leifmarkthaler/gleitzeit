@@ -196,22 +196,47 @@ class PersistenceFactory:
     ) -> Optional[UnifiedSQLAlchemyAdapter]:
         """Try to create SQL adapter, return None if fails"""
         try:
-            if sql_connection:
-                logger.info(f"Attempting to connect to SQL database: {sql_connection}")
-                adapter = UnifiedSQLAlchemyAdapter(
-                    connection_string=sql_connection,
-                    echo=config.get("sql_echo", False),
-                    pool_size=config.get("sql_pool_size", 20),
-                    max_overflow=config.get("sql_max_overflow", 40),
-                    pool_timeout=config.get("sql_pool_timeout", 30),
-                    pool_recycle=config.get("sql_pool_recycle", 3600)
-                )
+            # Use event-driven adapter if event_bus is provided
+            if event_bus:
+                logger.info("Creating event-driven SQL adapter")
+                from .unified_sqlalchemy_events import UnifiedSQLAlchemyEventsAdapter
+                
+                if sql_connection:
+                    logger.info(f"Attempting to connect to SQL database: {sql_connection}")
+                    adapter = UnifiedSQLAlchemyEventsAdapter(
+                        connection_string=sql_connection,
+                        echo=config.get("sql_echo", False),
+                        pool_size=config.get("sql_pool_size", 20),
+                        max_overflow=config.get("sql_max_overflow", 40),
+                        pool_timeout=config.get("sql_pool_timeout", 30),
+                        pool_recycle=config.get("sql_pool_recycle", 3600),
+                        event_bus=event_bus
+                    )
+                else:
+                    logger.info(f"Attempting to use SQLite database: {sql_db_path}")
+                    adapter = UnifiedSQLAlchemyEventsAdapter(
+                        db_path=sql_db_path,
+                        echo=config.get("sql_echo", False),
+                        event_bus=event_bus
+                    )
             else:
-                logger.info(f"Attempting to use SQLite database: {sql_db_path}")
-                adapter = UnifiedSQLAlchemyAdapter(
-                    db_path=sql_db_path,
-                    echo=config.get("sql_echo", False)
-                )
+                # Use regular adapter without events
+                if sql_connection:
+                    logger.info(f"Attempting to connect to SQL database: {sql_connection}")
+                    adapter = UnifiedSQLAlchemyAdapter(
+                        connection_string=sql_connection,
+                        echo=config.get("sql_echo", False),
+                        pool_size=config.get("sql_pool_size", 20),
+                        max_overflow=config.get("sql_max_overflow", 40),
+                        pool_timeout=config.get("sql_pool_timeout", 30),
+                        pool_recycle=config.get("sql_pool_recycle", 3600)
+                    )
+                else:
+                    logger.info(f"Attempting to use SQLite database: {sql_db_path}")
+                    adapter = UnifiedSQLAlchemyAdapter(
+                        db_path=sql_db_path,
+                        echo=config.get("sql_echo", False)
+                    )
             
             # Test connection
             await adapter.initialize()
