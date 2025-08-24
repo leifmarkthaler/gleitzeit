@@ -94,9 +94,15 @@ class DBWorkflow(Base):
     id = Column(String(255), primary_key=True)
     name = Column(String(255), nullable=False)
     description = Column(Text)
+    status = Column(String(50), nullable=False, default='pending')
     tasks = Column(Text, nullable=False)  # JSON array of task objects
     workflow_metadata = Column('metadata', Text)  # JSON
     created_at = Column(DateTime, nullable=False)
+    started_at = Column(DateTime)
+    completed_at = Column(DateTime)
+    tasks_total = Column(Integer, default=0)
+    tasks_completed = Column(Integer, default=0)
+    tasks_failed = Column(Integer, default=0)
     
     # Relationship
     executions = relationship("DBWorkflowExecution", back_populates="workflow", cascade="all, delete-orphan")
@@ -264,9 +270,15 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                         **sqlite_kwargs
                     )
                 else:
+                    # Use NullPool to create new connections each time
+                    # This ensures we always read fresh data from disk
                     self.engine = create_async_engine(
                         self.connection_string,
-                        poolclass=NullPool,  # Regular SQLite file database
+                        poolclass=NullPool,  # Don't pool connections
+                        connect_args={
+                            "check_same_thread": False,
+                            "timeout": 20.0  # Wait up to 20 seconds for locks
+                        },
                         **sqlite_kwargs
                     )
             else:
@@ -285,12 +297,26 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                 def set_sqlite_pragma(dbapi_conn, connection_record):
                     cursor = dbapi_conn.cursor()
                     cursor.execute("PRAGMA foreign_keys=ON")
+                    # Set SQLite to READ UNCOMMITTED to see latest changes immediately
+                    cursor.execute("PRAGMA read_uncommitted=1")
+                    # Disable query cache to force fresh reads
+                    cursor.execute("PRAGMA cache_size=0")
+                    # Force immediate synchronous writes
+                    cursor.execute("PRAGMA synchronous=FULL")
+                    # Use MEMORY mode for testing - simplest consistency
+                    cursor.execute("PRAGMA journal_mode=MEMORY")
+                    # Disable isolation for immediate visibility
+                    cursor.execute("PRAGMA read_uncommitted=1")
+                    # Force immediate writes
+                    cursor.execute("PRAGMA cache_size=0")
                     cursor.close()
             
             self.async_session = async_sessionmaker(
                 self.engine,
                 class_=AsyncSession,
-                expire_on_commit=False
+                expire_on_commit=False,
+                autoflush=True,
+                autocommit=False
             )
             
             # Create all tables
@@ -321,9 +347,64 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
         self._initialized = False
         logger.info("Unified SQLAlchemy adapter shut down")
     
+    async def refresh_session(self) -> None:
+        """Refresh session to ensure we read the latest data from database"""
+        # Force a database sync by executing a dummy query that forces a fresh connection
+        async with self.async_session() as session:
+            await session.execute(text("SELECT 1"))
+            await session.commit()
+    
     # ========================================================================
     # Task/Workflow Operations
     # ========================================================================
+    
+    async def _save_task_internal(self, session, task: Task) -> None:
+        """Internal method to save a task within an existing session"""
+        # Check if task exists
+        result = await session.execute(
+            select(DBTask).where(DBTask.id == task.id)
+        )
+        existing = result.scalar_one_or_none()
+        
+        if not existing:
+            # Create new task
+            db_task = DBTask(
+                id=task.id,
+                name=task.name,
+                protocol=task.protocol,
+                method=task.method,
+                params=json.dumps(task.params),
+                priority=task.priority,
+                dependencies=json.dumps(task.dependencies) if task.dependencies else None,
+                timeout=task.timeout,
+                retry_config=json.dumps(task.retry_config.dict()) if task.retry_config else None,
+                status=task.status,
+                attempt_count=task.attempt_count,
+                workflow_id=task.workflow_id,
+                created_at=task.created_at or datetime.utcnow(),
+                started_at=task.started_at,
+                completed_at=task.completed_at,
+                assigned_provider=task.assigned_provider,
+                error_message=task.error_message if hasattr(task, 'error_message') else None
+            )
+            session.add(db_task)
+        else:
+            # Update existing task
+            existing.name = task.name
+            existing.protocol = task.protocol
+            existing.method = task.method
+            existing.params = json.dumps(task.params)
+            existing.priority = task.priority
+            existing.dependencies = json.dumps(task.dependencies) if task.dependencies else None
+            existing.timeout = task.timeout
+            existing.retry_config = json.dumps(task.retry_config.dict()) if task.retry_config else None
+            existing.status = task.status
+            existing.attempt_count = task.attempt_count
+            existing.workflow_id = task.workflow_id
+            existing.started_at = task.started_at
+            existing.completed_at = task.completed_at
+            existing.assigned_provider = task.assigned_provider
+            existing.error_message = task.error_message if hasattr(task, 'error_message') else None
     
     async def save_task(self, task: Task) -> None:
         """Save or update a task"""
@@ -343,25 +424,28 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                 existing = result.scalar_one_or_none()
                 
                 if existing:
-                    # Update existing task
-                    existing.name = task.name
-                    existing.protocol = task.protocol
-                    existing.method = task.method
-                    existing.params = json.dumps(task.params)
-                    existing.priority = task.priority
-                    existing.dependencies = json.dumps(task.dependencies) if task.dependencies else None
-                    existing.timeout = task.timeout
-                    existing.retry_config = json.dumps(task.retry_config.dict()) if task.retry_config else None
-                    existing.status = task.status
-                    existing.attempt_count = task.attempt_count
-                    existing.workflow_id = task.workflow_id
-                    existing.started_at = task.started_at
-                    existing.completed_at = task.completed_at
-                    existing.assigned_provider = task.assigned_provider
-                    existing.execution_node = task.execution_node
-                    existing.error_message = task.error_message
-                    existing.tags = json.dumps(task.tags) if task.tags else None
-                    existing.task_metadata = json.dumps(task.metadata) if task.metadata else None
+                    # Update existing task using raw SQL to ensure it works
+                    logger.info(f"SAVE_TASK DEBUG: Found existing task {task.id} with status {existing.status}, updating to {task.status}")
+                    
+                    new_status = task.status.value if hasattr(task.status, 'value') else str(task.status)
+                    
+                    # Use raw SQL UPDATE to ensure the change is persisted
+                    result = await session.execute(
+                        text("""
+                            UPDATE tasks 
+                            SET status = :status,
+                                completed_at = :completed_at,
+                                started_at = :started_at
+                            WHERE id = :task_id
+                        """),
+                        {
+                            "status": new_status,
+                            "completed_at": task.completed_at,
+                            "started_at": task.started_at,
+                            "task_id": task.id
+                        }
+                    )
+                    logger.info(f"SAVE_TASK DEBUG: UPDATE affected {result.rowcount} rows")
                 else:
                     # Create new task
                     db_task = DBTask(
@@ -370,11 +454,11 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                         protocol=task.protocol,
                         method=task.method,
                         params=json.dumps(task.params),
-                        priority=task.priority,
+                        priority=task.priority.value if hasattr(task.priority, 'value') else str(task.priority),
                         dependencies=json.dumps(task.dependencies) if task.dependencies else None,
                         timeout=task.timeout,
                         retry_config=json.dumps(task.retry_config.dict()) if task.retry_config else None,
-                        status=task.status,
+                        status=task.status.value if hasattr(task.status, 'value') else str(task.status),
                         attempt_count=task.attempt_count,
                         workflow_id=task.workflow_id,
                         created_at=task.created_at or datetime.utcnow(),
@@ -388,7 +472,23 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                     )
                     session.add(db_task)
                 
+                # Commit the transaction (for both UPDATE and INSERT)
                 await session.commit()
+                
+                # Log the actual value being saved
+                actual_status = new_status if existing else db_task.status if 'db_task' in locals() else 'unknown'
+                logger.info(f"SAVE_TASK DEBUG: Task {task.id} committed to database with actual status value: {actual_status}")
+            
+            # Verify outside the session to see committed data
+            async with self.async_session() as verify_session:
+                verify_result = await verify_session.execute(
+                    select(DBTask).where(DBTask.id == task.id)
+                )
+                verify_task = verify_result.scalar_one_or_none()
+                if verify_task:
+                    logger.info(f"SAVE_TASK VERIFY: Task {task.id} actual database status after commit: {verify_task.status}")
+                else:
+                    logger.error(f"SAVE_TASK VERIFY: Task {task.id} not found after commit!")
                 
         except Exception as e:
             logger.error(f"Failed to save task {task.id}: {e}")
@@ -405,15 +505,24 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
             return None
         
         try:
+            # Create a fresh session to avoid stale data
             async with self.async_session() as session:
-                result = await session.execute(
-                    select(DBTask).where(DBTask.id == task_id)
-                )
-                db_task = result.scalar_one_or_none()
-                
-                if db_task:
-                    return self._db_to_task(db_task)
-                return None
+                # Begin explicit transaction
+                async with session.begin():
+                    # Force SQLite to read latest data
+                    if 'sqlite' in self.connection_string:
+                        await session.execute(text("PRAGMA read_uncommitted=1"))
+                        # Force cache refresh
+                        await session.execute(text("PRAGMA cache_size=0"))
+                    
+                    result = await session.execute(
+                        select(DBTask).where(DBTask.id == task_id)
+                    )
+                    db_task = result.scalar_one_or_none()
+                    
+                    if db_task:
+                        return self._db_to_task(db_task)
+                    return None
                 
         except Exception as e:
             logger.error(f"Failed to get task {task_id}: {e}")
@@ -506,6 +615,14 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
         
         try:
             async with self.async_session() as session:
+                # First, ensure the task exists in the database
+                task_exists = await session.execute(
+                    select(DBTask).where(DBTask.id == task_result.task_id)
+                )
+                if not task_exists.scalar_one_or_none():
+                    logger.warning(f"Task {task_result.task_id} not found, cannot save result")
+                    return
+                
                 # Check if result exists
                 result = await session.execute(
                     select(DBTaskResult).where(DBTaskResult.task_id == task_result.task_id)
@@ -542,6 +659,10 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
         
         try:
             async with self.async_session() as session:
+                # Force SQLite to use READ UNCOMMITTED for this query
+                if 'sqlite' in self.connection_string:
+                    await session.execute(text("PRAGMA read_uncommitted=1"))
+                
                 result = await session.execute(
                     select(DBTaskResult).where(DBTaskResult.task_id == task_id)
                 )
@@ -575,7 +696,10 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                 # Convert datetime objects to ISO format strings
                 for field in ['created_at', 'started_at', 'completed_at']:
                     if task_dict.get(field):
-                        task_dict[field] = task_dict[field].isoformat()
+                        # Check if it's already a string (ISO format) or a datetime object
+                        if hasattr(task_dict[field], 'isoformat'):
+                            task_dict[field] = task_dict[field].isoformat()
+                        # If it's already a string, leave it as is
                 tasks_data.append(task_dict)
             
             async with self.async_session() as session:
@@ -589,27 +713,50 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                     # Update existing workflow
                     existing.name = workflow.name
                     existing.description = workflow.description
-                    existing.status = workflow.status if hasattr(workflow, 'status') else 'pending'
+                    # Handle status properly - convert enum to string if needed
+                    if hasattr(workflow, 'status'):
+                        existing.status = workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status)
+                    else:
+                        existing.status = 'pending'
                     existing.tasks = json.dumps(tasks_data)
                     existing.workflow_metadata = json.dumps(workflow.metadata) if workflow.metadata else None
                     existing.tasks_total = len(workflow.tasks)
-                    existing.tasks_completed = 0  # Will be updated by execution engine
-                    existing.tasks_failed = 0  # Will be updated by execution engine
+                    # Update completed/failed counts if available
+                    if hasattr(workflow, 'tasks_completed'):
+                        existing.tasks_completed = workflow.tasks_completed
+                    if hasattr(workflow, 'tasks_failed'):
+                        existing.tasks_failed = workflow.tasks_failed
+                    # Update timestamps if available
+                    if hasattr(workflow, 'started_at') and workflow.started_at:
+                        existing.started_at = workflow.started_at
+                    if hasattr(workflow, 'completed_at') and workflow.completed_at:
+                        existing.completed_at = workflow.completed_at
                 else:
                     # Create new workflow
+                    # Handle status properly - convert enum to string if needed
+                    status = 'pending'
+                    if hasattr(workflow, 'status'):
+                        status = workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status)
+                    
                     db_workflow = DBWorkflow(
                         id=workflow.id,
                         name=workflow.name,
                         description=workflow.description,
-                        status=workflow.status if hasattr(workflow, 'status') else 'pending',
+                        status=status,
                         tasks=json.dumps(tasks_data),
                         workflow_metadata=json.dumps(workflow.metadata) if workflow.metadata else None,
                         created_at=workflow.created_at or datetime.utcnow(),
+                        started_at=workflow.started_at if hasattr(workflow, 'started_at') else None,
+                        completed_at=workflow.completed_at if hasattr(workflow, 'completed_at') else None,
                         tasks_total=len(workflow.tasks),
-                        tasks_completed=0,  # Will be updated by execution engine
-                        tasks_failed=0  # Will be updated by execution engine
+                        tasks_completed=getattr(workflow, 'tasks_completed', 0),
+                        tasks_failed=getattr(workflow, 'tasks_failed', 0)
                     )
                     session.add(db_workflow)
+                
+                # Also save individual tasks to the tasks table
+                for task in workflow.tasks:
+                    await self._save_task_internal(session, task)
                 
                 await session.commit()
                 
@@ -638,14 +785,28 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                                 task_data[field] = datetime.fromisoformat(task_data[field])
                         tasks.append(Task(**task_data))
                     
-                    return Workflow(
+                    workflow = Workflow(
                         id=db_workflow.id,
                         name=db_workflow.name,
                         description=db_workflow.description,
                         tasks=tasks,
                         metadata=json.loads(db_workflow.workflow_metadata) if db_workflow.workflow_metadata else {},
-                        created_at=db_workflow.created_at
+                        created_at=db_workflow.created_at,
+                        status=db_workflow.status if hasattr(db_workflow, 'status') else 'pending',
+                        started_at=db_workflow.started_at if hasattr(db_workflow, 'started_at') else None,
+                        completed_at=db_workflow.completed_at if hasattr(db_workflow, 'completed_at') else None
                     )
+                    
+                    # Reconstruct completed_tasks and failed_tasks lists from database counts
+                    # Note: We're storing counts in DB but Workflow model uses lists
+                    if hasattr(db_workflow, 'tasks_completed') and db_workflow.tasks_completed > 0:
+                        # Get completed task IDs from tasks
+                        workflow.completed_tasks = [t.id for t in tasks if t.status == 'completed']
+                    if hasattr(db_workflow, 'tasks_failed') and db_workflow.tasks_failed > 0:
+                        # Get failed task IDs from tasks
+                        workflow.failed_tasks = [t.id for t in tasks if t.status == 'failed']
+                    
+                    return workflow
                 return None
                 
         except Exception as e:
@@ -1013,12 +1174,19 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                         if status and workflow_status != status:
                             continue
                         
+                        # Count completed and failed tasks
+                        tasks_completed = sum(1 for s in task_statuses if s == "completed")
+                        tasks_failed = sum(1 for s in task_statuses if s == "failed")
+                        
                         workflows.append({
                             "id": workflow_id,
                             "name": f"Workflow {workflow_id}",
+                            "description": "",  # We don't have this in the task table
                             "status": workflow_status,
                             "created_at": task.created_at.isoformat() if task.created_at else None,
-                            "task_count": len(task_statuses)
+                            "tasks_total": len(task_statuses),
+                            "tasks_completed": tasks_completed,
+                            "tasks_failed": tasks_failed
                         })
                 
                 return {

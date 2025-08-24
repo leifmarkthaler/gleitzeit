@@ -13,26 +13,23 @@ description: "Workflow using external MCP servers for real-world tasks"
 
 tasks:
   # Web search using search server
-  - id: "search_info"
-    name: "Search for Information"
+  - name: "Search for Information"
     method: "mcp/tool.search"
-    parameters:
+    params:
       query: "latest AI developments 2024"
       max_results: 5
   
   # Read a local file using filesystem server
-  - id: "read_template"
-    name: "Read Template File"
+  - name: "Read Template File"
     method: "mcp/tool.fs.read"
-    parameters:
+    params:
       path: "./templates/report.md"
   
   # Process search results with LLM
-  - id: "analyze_results"
-    name: "Analyze Search Results"
+  - name: "Analyze Search Results"
     method: "llm/chat"
-    dependencies: ["search_info", "read_template"]
-    parameters:
+    dependencies: ["Search for Information", "Read Template File"]
+    params:
       model: "llama3.2"
       messages:
         - role: "system"
@@ -46,20 +43,18 @@ tasks:
             ${search_info.results}
   
   # Save the report to file
-  - id: "save_report"
-    name: "Save Report to File"
+  - name: "Save Report to File"
     method: "mcp/tool.fs.write"
-    dependencies: ["analyze_results"]
-    parameters:
+    dependencies: ["Analyze Search Results"]
+    params:
       path: "./output/ai_report.md"
       content: "${analyze_results.response}"
   
   # Create GitHub issue with report summary
-  - id: "create_issue"
-    name: "Create GitHub Issue"
+  - name: "Create GitHub Issue"
     method: "mcp/tool.gh.create_issue"
-    dependencies: ["analyze_results"]
-    parameters:
+    dependencies: ["Analyze Search Results"]
+    params:
       repo: "myorg/research"
       title: "AI Developments Report - ${date}"
       body: |

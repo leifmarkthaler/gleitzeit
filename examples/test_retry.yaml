@@ -1,0 +1,16 @@
+name: "Test Retry Workflow"
+description: "Test workflow to verify retry functionality"
+timeout: 60
+wait_for_completion: true
+
+tasks:
+  - name: "failing_task"
+    method: "python/execute"
+    priority: 1
+    params:
+      file: "examples/scripts/retry_test.py"
+    retry_config:
+      max_attempts: 3
+      backoff_strategy: "exponential"
+      base_delay: 2
+      max_delay: 10

@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 from dataclasses import dataclass, field
 
-from gleitzeit.core.models import Task, Workflow, TaskStatus, Priority
+from gleitzeit.core.models import Task, Workflow, TaskStatus, Priority, WorkflowStatus
 from gleitzeit.persistence.base import PersistenceBackend, InMemoryBackend
 
 logger = logging.getLogger(__name__)
@@ -45,203 +45,169 @@ class QueuedTask:
 
 class TaskQueue:
     """
-    Priority-based task queue with dependency management and persistence
+    Priority-based task queue using persistence backend
     
     Features:
     - Priority-based ordering (urgent > high > normal > low)
     - FIFO within same priority level
     - Dependency checking before task dequeue
     - Workflow-aware task management
-    - Persistent storage with recovery on restart
+    - All operations use persistence backend directly
     """
     
-    def __init__(self, name: str = "default", persistence: Optional[PersistenceBackend] = None):
+    def __init__(self, name: str = "default", persistence: Optional[PersistenceBackend] = None, event_bus: Optional[Any] = None):
         self.name = name
         self.persistence = persistence or InMemoryBackend()
+        self.event_bus = event_bus
         
-        self._heap: List[QueuedTask] = []
-        self._task_lookup: Dict[str, QueuedTask] = {}  # task_id -> QueuedTask
-        self._workflow_tasks: Dict[str, Set[str]] = {}  # workflow_id -> set of task_ids
-        self._completed_tasks: Set[str] = set()
-        self._failed_tasks: Set[str] = set()
+        # No more in-memory structures - everything goes through persistence
         self._lock = asyncio.Lock()
         
-        # Statistics
+        # Statistics (these could also be persisted)
         self.total_enqueued = 0
         self.total_dequeued = 0
         self.created_at = datetime.utcnow()
         self._initialized = False
         
-        logger.info(f"Initialized TaskQueue: {name}")
+        # Monitoring task
+        self._monitor_task: Optional[asyncio.Task] = None
+        self._running = False
+        
+        logger.info(f"Initialized TaskQueue: {name} (persistence-backed)")
     
     async def initialize(self) -> None:
-        """Initialize persistence and recover queue state"""
+        """Initialize persistence backend"""
         if self._initialized:
             return
         
         await self.persistence.initialize()
-        await self._recover_from_persistence()
         self._initialized = True
         
-        logger.info(f"TaskQueue {self.name} initialized with persistence")
+        logger.info(f"TaskQueue {self.name} initialized with persistence backend")
     
-    async def _recover_from_persistence(self) -> None:
-        """Recover queue state from persistence"""
-        try:
-            # Recover tasks that should be queued
-            queued_tasks = await self.persistence.get_all_queued_tasks()
-            
-            for task in queued_tasks:
-                # Reset executing tasks to queued (they were interrupted)
-                if task.status == TaskStatus.EXECUTING:
-                    task.status = TaskStatus.QUEUED
-                    await self.persistence.save_task(task)
-                
-                # Re-enqueue without persistence (already persisted)
-                await self._enqueue_in_memory(task)
-            
-            # Recover queue statistics from persistence
-            queue_state = await self.persistence.get_queue_state(self.name)
-            if queue_state:
-                self.total_enqueued = queue_state.get('total_enqueued', 0)
-                self.total_dequeued = queue_state.get('total_dequeued', 0)
-                self._completed_tasks = set(queue_state.get('completed_tasks', []))
-                self._failed_tasks = set(queue_state.get('failed_tasks', []))
-            
-            logger.info(f"Recovered {len(queued_tasks)} tasks for queue {self.name}")
-            
-        except Exception as e:
-            logger.error(f"Failed to recover queue {self.name} from persistence: {e}")
-            # Continue with empty queue rather than failing
-    
-    async def _save_queue_state(self) -> None:
-        """Save current queue state to persistence"""
-        try:
-            state = {
-                'total_enqueued': self.total_enqueued,
-                'total_dequeued': self.total_dequeued,
-                'completed_tasks': list(self._completed_tasks),
-                'failed_tasks': list(self._failed_tasks),
-                'updated_at': datetime.utcnow().isoformat()
-            }
-            await self.persistence.save_queue_state(self.name, state)
-        except Exception as e:
-            logger.error(f"Failed to save queue state for {self.name}: {e}")
     
     async def enqueue(self, task: Task) -> None:
         """
-        Add a task to the queue with persistence
+        Add a task to the queue - just saves to persistence with QUEUED status
         
         Args:
             task: Task to enqueue
         """
         async with self._lock:
-            if task.id in self._task_lookup:
-                logger.warning(f"Task {task.id} already in queue, skipping")
+            # Check if task already exists and is queued
+            existing_task = await self.persistence.get_task(task.id)
+            if existing_task and existing_task.status == TaskStatus.QUEUED:
+                logger.warning(f"Task {task.id} already queued, skipping")
                 return
             
-            # Save to persistence first
+            # Check if dependencies are satisfied before enqueueing
+            if task.dependencies:
+                if not await self._are_dependencies_satisfied(task):
+                    # Dependencies not satisfied, save as PENDING
+                    task.status = TaskStatus.PENDING
+                    await self.persistence.save_task(task)
+                    logger.info(f"Task {task.id} has unsatisfied dependencies {task.dependencies}, saved as pending")
+                    return
+            
+            # Save to persistence with QUEUED status
             task.status = TaskStatus.QUEUED
             await self.persistence.save_task(task)
             
-            # Then add to in-memory queue
-            await self._enqueue_in_memory(task)
-            
-            # Save queue state periodically
-            if self.total_enqueued % 10 == 0:  # Every 10 tasks
-                await self._save_queue_state()
-            
-            logger.debug(f"Enqueued task {task.id} with priority {task.priority}")
+            self.total_enqueued += 1
+            logger.debug(f"Enqueued task {task.id} with priority {task.priority} to persistence")
     
-    async def _enqueue_in_memory(self, task: Task) -> None:
-        """Add task to in-memory queue structures (without persistence)"""
-        # Convert priority to numeric value
-        priority_map = {
-            Priority.URGENT: QueuePriority.URGENT,
-            Priority.HIGH: QueuePriority.HIGH,
-            Priority.NORMAL: QueuePriority.NORMAL,
-            Priority.LOW: QueuePriority.LOW
-        }
-        
-        queued_task = QueuedTask(
-            priority=priority_map[task.priority],
-            queued_at=datetime.utcnow(),
-            task=task
-        )
-        
-        # Add to heap and lookup
-        heapq.heappush(self._heap, queued_task)
-        self._task_lookup[task.id] = queued_task
-        
-        # Track workflow tasks
-        if task.workflow_id:
-            if task.workflow_id not in self._workflow_tasks:
-                self._workflow_tasks[task.workflow_id] = set()
-            self._workflow_tasks[task.workflow_id].add(task.id)
-        
-        self.total_enqueued += 1
     
     async def dequeue(self, check_dependencies: bool = True) -> Optional[Task]:
         """
-        Get the next available task from the queue
+        Get the next available task from persistence
         
         Args:
             check_dependencies: Whether to check task dependencies
             
         Returns:
-            Next available task or None if queue is empty or no tasks ready
+            Next available task or None if no tasks ready
         """
         async with self._lock:
-            if not self._heap:
+            # Get all queued tasks from persistence
+            result = await self.persistence.list_tasks(status=TaskStatus.QUEUED)
+            if isinstance(result, dict):
+                queued_tasks = result.get('tasks', [])
+            else:
+                queued_tasks = result if isinstance(result, list) else []
+            
+            if not queued_tasks:
                 return None
             
+            # Sort by priority and creation time
+            priority_order = {
+                Priority.URGENT: 0,
+                Priority.HIGH: 1, 
+                Priority.NORMAL: 2,
+                Priority.LOW: 3
+            }
+            
+            queued_tasks.sort(key=lambda t: (
+                priority_order.get(t.priority, 2),
+                t.created_at or datetime.utcnow()
+            ))
+            
             # Find first task with satisfied dependencies
-            available_tasks = []
-            
-            while self._heap:
-                queued_task = heapq.heappop(self._heap)
-                
-                # Check if task still exists in lookup (might have been removed)
-                if queued_task.task.id not in self._task_lookup:
+            for task in queued_tasks:
+                # Double-check the task is actually QUEUED (avoid race conditions)
+                fresh_task = await self.persistence.get_task(task.id)
+                if not fresh_task or fresh_task.status != TaskStatus.QUEUED:
+                    logger.debug(f"Task {task.id} no longer QUEUED (status: {fresh_task.status if fresh_task else 'not found'}), skipping")
                     continue
                 
-                # Check dependencies
-                if check_dependencies and not self._are_dependencies_satisfied(queued_task.task):
-                    available_tasks.append(queued_task)
-                    continue
+                if check_dependencies and fresh_task.dependencies:
+                    if not await self._are_dependencies_satisfied(fresh_task):
+                        continue
                 
-                # Found available task
-                task = queued_task.task
+                # Check if task already has a result (avoid re-executing completed tasks)
+                existing_result = await self.persistence.get_task_result(fresh_task.id)
+                if existing_result:
+                    # Allow retry if the result status is RETRY_PENDING
+                    if existing_result.status == TaskStatus.RETRY_PENDING:
+                        logger.debug(f"Task {fresh_task.id} has retry_pending result, allowing re-execution")
+                    else:
+                        logger.warning(f"Task {fresh_task.id} already has result (status: {existing_result.status}) but was QUEUED, skipping")
+                        # Fix the inconsistent state
+                        fresh_task.status = TaskStatus.COMPLETED
+                        await self.persistence.save_task(fresh_task)
+                        continue
                 
-                # Remove from lookup
-                del self._task_lookup[task.id]
+                # Found available task - update its status to EXECUTING
+                fresh_task.status = TaskStatus.EXECUTING
+                fresh_task.started_at = datetime.utcnow()
+                await self.persistence.save_task(fresh_task)
                 
-                # Re-queue tasks that weren't selected
-                for queued in available_tasks:
-                    heapq.heappush(self._heap, queued)
-                
-                # Update statistics
                 self.total_dequeued += 1
-                
-                logger.debug(f"Dequeued task {task.id}")
-                return task
-            
-            # No available tasks, re-queue all
-            for queued in available_tasks:
-                heapq.heappush(self._heap, queued)
+                logger.debug(f"Dequeued task {fresh_task.id} from persistence")
+                return fresh_task
             
             return None
     
-    def _are_dependencies_satisfied(self, task: Task) -> bool:
+    async def _are_dependencies_satisfied(self, task: Task) -> bool:
         """Check if all task dependencies are completed"""
         if not task.dependencies:
             return True
         
-        return all(dep_id in self._completed_tasks for dep_id in task.dependencies)
+        # Check each dependency in persistence
+        for dep_id in task.dependencies:
+            dep_task = await self.persistence.get_task(dep_id)
+            if not dep_task or dep_task.status != TaskStatus.COMPLETED:
+                # If dependency belongs to same workflow, check if it's completed
+                if task.workflow_id and dep_task and dep_task.workflow_id == task.workflow_id:
+                    if dep_task.status != TaskStatus.COMPLETED:
+                        return False
+                else:
+                    return False
+        
+        return True
     
     async def remove_task(self, task_id: str) -> bool:
         """
-        Remove a task from the queue
+        Remove a task from the queue by marking it as cancelled
         
         Args:
             task_id: ID of task to remove
@@ -250,48 +216,169 @@ class TaskQueue:
             True if task was removed, False if not found
         """
         async with self._lock:
-            if task_id not in self._task_lookup:
+            task = await self.persistence.get_task(task_id)
+            if not task or task.status not in [TaskStatus.QUEUED, TaskStatus.PENDING]:
                 return False
             
-            # Remove from lookup (heap entry will be ignored during dequeue)
-            del self._task_lookup[task_id]
+            # Mark as cancelled in persistence
+            task.status = TaskStatus.CANCELLED
+            await self.persistence.save_task(task)
             
-            # Remove from workflow tracking
-            for workflow_id, task_ids in self._workflow_tasks.items():
-                task_ids.discard(task_id)
-            
-            logger.debug(f"Removed task {task_id} from queue")
+            logger.debug(f"Removed task {task_id} from queue (marked as cancelled)")
             return True
     
     async def mark_task_completed(self, task_id: str) -> None:
-        """Mark a task as completed (satisfies dependencies)"""
+        """Handle workflow completion and dependency resolution when a task completes.
+        Note: Task status should already be set to COMPLETED by ExecutionEngine."""
         async with self._lock:
-            self._completed_tasks.add(task_id)
-            self._failed_tasks.discard(task_id)  # Remove from failed if it was there
-            
-            # Update task status in persistence
+            # Get task for workflow processing (don't modify task status here)
             task = await self.persistence.get_task(task_id)
             if task:
-                task.status = TaskStatus.COMPLETED
-                task.completed_at = datetime.utcnow()
-                await self.persistence.save_task(task)
-            
-            logger.debug(f"Marked task {task_id} as completed")
+                # Check if task is actually completed (should be set by ExecutionEngine)
+                if task.status == TaskStatus.COMPLETED:
+                    logger.debug(f"Task {task_id} confirmed as completed, processing workflow dependencies")
+                else:
+                    logger.warning(f"Task {task_id} not marked as completed by ExecutionEngine (status: {task.status})")
+                
+                # Check if any tasks from the same workflow can now be enqueued
+                if task.workflow_id:
+                    await self._check_workflow_completion(task.workflow_id)
+                    await self._enqueue_ready_workflow_tasks(task.workflow_id)
+            else:
+                logger.warning(f"Could not find task {task_id} in persistence for workflow processing")
     
     async def mark_task_failed(self, task_id: str) -> None:
         """Mark a task as failed"""
         async with self._lock:
-            self._failed_tasks.add(task_id)
-            self._completed_tasks.discard(task_id)  # Remove from completed if it was there
-            
             # Update task status in persistence
             task = await self.persistence.get_task(task_id)
             if task:
                 task.status = TaskStatus.FAILED
                 task.completed_at = datetime.utcnow()
                 await self.persistence.save_task(task)
+                
+                # Check if workflow is complete (or failed)
+                if task.workflow_id:
+                    await self._check_workflow_completion(task.workflow_id)
             
             logger.debug(f"Marked task {task_id} as failed")
+    
+    async def _enqueue_ready_workflow_tasks(self, workflow_id: str) -> None:
+        """Check if any workflow tasks can now be enqueued after a task completion"""
+        workflow = await self.persistence.get_workflow(workflow_id)
+        if not workflow:
+            return
+        
+        # Check each task in the workflow
+        for task in workflow.tasks:
+            # Get fresh task status from persistence
+            fresh_task = await self.persistence.get_task(task.id)
+            if not fresh_task:
+                continue
+                
+            # Skip if not pending
+            if fresh_task.status != TaskStatus.PENDING:
+                continue
+            
+            # Check if task already has a result (avoid re-enqueueing completed tasks)
+            existing_result = await self.persistence.get_task_result(fresh_task.id)
+            if existing_result:
+                logger.debug(f"Task {fresh_task.id} already has result, not re-enqueueing")
+                continue
+            
+            # Check if all dependencies are satisfied
+            if await self._are_dependencies_satisfied(fresh_task):
+                # Dependencies are satisfied, update to queued
+                logger.info(f"Task {fresh_task.id} dependencies satisfied, enqueueing")
+                fresh_task.status = TaskStatus.QUEUED
+                await self.persistence.save_task(fresh_task)
+    
+    async def _check_workflow_completion(self, workflow_id: str) -> None:
+        """Check if a workflow is complete and update its status"""
+        logger.debug(f"Checking workflow completion for {workflow_id}")
+        workflow = await self.persistence.get_workflow(workflow_id)
+        if not workflow:
+            logger.warning(f"Workflow {workflow_id} not found in persistence")
+            return
+        
+        # Check status of all tasks in the workflow
+        all_completed = True
+        has_failed = False
+        completed_tasks = []
+        failed_tasks = []
+        task_results = {}
+        
+        for task in workflow.tasks:
+            # Force a fresh read from the database to get latest status
+            fresh_task = await self.persistence.get_task(task.id)
+            if not fresh_task:
+                continue
+                
+            if fresh_task.status == TaskStatus.COMPLETED:
+                completed_tasks.append(task.id)
+                # Get task result for the workflow completion event
+                task_result = await self.persistence.get_task_result(task.id)
+                if task_result:
+                    task_results[task.id] = {
+                        "status": "completed",
+                        "result": task_result.result,
+                        "error": task_result.error
+                    }
+            elif fresh_task.status == TaskStatus.FAILED:
+                failed_tasks.append(task.id)
+                has_failed = True
+                all_completed = False
+                # Get task result for failed task
+                task_result = await self.persistence.get_task_result(task.id)
+                if task_result:
+                    task_results[task.id] = {
+                        "status": "failed",
+                        "result": task_result.result,
+                        "error": task_result.error
+                    }
+            elif fresh_task.status not in [TaskStatus.CANCELLED]:
+                # Task is still pending/queued/executing
+                all_completed = False
+        
+        # Update workflow task lists
+        workflow.completed_tasks = completed_tasks
+        workflow.failed_tasks = failed_tasks
+        
+        # Check if all tasks are done
+        logger.debug(f"Workflow {workflow_id}: {len(completed_tasks)} completed, {len(failed_tasks)} failed, {len(workflow.tasks)} total")
+        if all_completed or (has_failed and len(completed_tasks) + len(failed_tasks) == len(workflow.tasks)):
+            # Workflow is complete
+            if has_failed:
+                workflow.status = WorkflowStatus.FAILED
+            else:
+                workflow.status = WorkflowStatus.COMPLETED
+            workflow.completed_at = datetime.utcnow()
+            
+            logger.info(f"Workflow {workflow_id} completed with status: {workflow.status}")
+            
+            # Persist the updated workflow
+            await self.persistence.save_workflow(workflow)
+            
+            # Emit workflow completion event with results
+            if self.event_bus:
+                from ..core.events import EventType, EventSeverity, GleitzeitEvent
+                workflow_completed_event = GleitzeitEvent(
+                    event_type=EventType.WORKFLOW_COMPLETED,
+                    severity=EventSeverity.INFO,
+                    data={
+                        "workflow_id": workflow_id,
+                        "workflow_name": workflow.name,
+                        "status": workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status),
+                        "completed_tasks": completed_tasks,
+                        "failed_tasks": failed_tasks,
+                        "task_results": task_results,
+                        "duration": (workflow.completed_at - workflow.started_at).total_seconds() if workflow.started_at else 0
+                    },
+                    source="queue_manager",
+                    tags={"component": "queue"}
+                )
+                await self.event_bus.emit(workflow_completed_event)
+                logger.info(f"Emitted WORKFLOW_COMPLETED event for workflow {workflow_id}")
     
     async def get_ready_tasks(self, limit: Optional[int] = None) -> List[Task]:
         """
@@ -304,73 +391,167 @@ class TaskQueue:
             List of ready tasks
         """
         async with self._lock:
-            ready_tasks = []
+            # Get all queued tasks from persistence
+            result = await self.persistence.list_tasks(status=TaskStatus.QUEUED)
+            if isinstance(result, dict):
+                queued_tasks = result.get('tasks', [])
+            else:
+                queued_tasks = result if isinstance(result, list) else []
             
-            for queued_task in sorted(self._heap):
+            ready_tasks = []
+            for task in queued_tasks:
                 if limit and len(ready_tasks) >= limit:
                     break
-                
-                if queued_task.task.id in self._task_lookup:  # Still in queue
-                    if self._are_dependencies_satisfied(queued_task.task):
-                        ready_tasks.append(queued_task.task)
+                    
+                if await self._are_dependencies_satisfied(task):
+                    ready_tasks.append(task)
             
             return ready_tasks
     
-    def size(self) -> int:
+    async def size(self) -> int:
         """Get current queue size"""
-        return len(self._task_lookup)
+        result = await self.persistence.list_tasks(status=TaskStatus.QUEUED)
+        if isinstance(result, dict):
+            return result.get('total', 0)
+        return len(result) if isinstance(result, list) else 0
     
-    def is_empty(self) -> bool:
+    async def is_empty(self) -> bool:
         """Check if queue is empty"""
-        return len(self._task_lookup) == 0
+        return await self.size() == 0
     
     async def get_stats(self) -> Dict[str, Any]:
         """Get queue statistics"""
         async with self._lock:
-            priority_counts = {priority.name.lower(): 0 for priority in Priority}
+            # Get counts by status from persistence
+            queued_count = await self.size()
             
-            for queued_task in self._task_lookup.values():
-                task_priority = queued_task.task.priority
-                # Priority is already a string due to use_enum_values=True
-                priority_counts[task_priority] += 1
+            completed_result = await self.persistence.list_tasks(status=TaskStatus.COMPLETED)
+            completed_count = completed_result.get('total', 0) if isinstance(completed_result, dict) else len(completed_result)
+            
+            failed_result = await self.persistence.list_tasks(status=TaskStatus.FAILED)
+            failed_count = failed_result.get('total', 0) if isinstance(failed_result, dict) else len(failed_result)
             
             return {
                 "name": self.name,
-                "current_size": self.size(),
+                "current_size": queued_count,
                 "total_enqueued": self.total_enqueued,
                 "total_dequeued": self.total_dequeued,
-                "completed_tasks": len(self._completed_tasks),
-                "failed_tasks": len(self._failed_tasks),
-                "active_workflows": len(self._workflow_tasks),
-                "priority_breakdown": priority_counts,
+                "completed_tasks": completed_count,
+                "failed_tasks": failed_count,
                 "created_at": self.created_at.isoformat()
             }
     
     async def get_workflow_tasks(self, workflow_id: str) -> List[Task]:
         """Get all tasks for a specific workflow"""
         async with self._lock:
-            task_ids = self._workflow_tasks.get(workflow_id, set())
-            tasks = []
-            
-            for task_id in task_ids:
-                if task_id in self._task_lookup:
-                    tasks.append(self._task_lookup[task_id].task)
-            
-            return tasks
+            workflow = await self.persistence.get_workflow(workflow_id)
+            if not workflow:
+                return []
+            return workflow.tasks
     
     async def clear(self) -> int:
-        """Clear all tasks from the queue and return count of removed tasks"""
+        """Clear all queued tasks by marking them as cancelled"""
         async with self._lock:
-            cleared_count = len(self._task_lookup)
+            # Get all queued tasks
+            result = await self.persistence.list_tasks(status=TaskStatus.QUEUED)
+            if isinstance(result, dict):
+                queued_tasks = result.get('tasks', [])
+            else:
+                queued_tasks = result if isinstance(result, list) else []
             
-            self._heap.clear()
-            self._task_lookup.clear()
-            self._workflow_tasks.clear()
-            self._completed_tasks.clear()
-            self._failed_tasks.clear()
+            # Mark each as cancelled
+            for task in queued_tasks:
+                task.status = TaskStatus.CANCELLED
+                await self.persistence.save_task(task)
             
+            cleared_count = len(queued_tasks)
             logger.info(f"Cleared {cleared_count} tasks from queue {self.name}")
             return cleared_count
+
+    async def start_monitoring(self, interval: int = 5) -> None:
+        """Start monitoring for pending tasks that can be enqueued
+        
+        Args:
+            interval: Check interval in seconds
+        """
+        if self._running:
+            logger.warning("Monitoring already running")
+            return
+        
+        self._running = True
+        self._monitor_task = asyncio.create_task(self._monitor_loop(interval))
+        logger.info(f"Started queue monitoring with {interval}s interval")
+    
+    async def stop_monitoring(self) -> None:
+        """Stop the monitoring task"""
+        self._running = False
+        if self._monitor_task:
+            self._monitor_task.cancel()
+            try:
+                await self._monitor_task
+            except asyncio.CancelledError:
+                pass
+            self._monitor_task = None
+        logger.info("Stopped queue monitoring")
+    
+    async def _monitor_loop(self, interval: int) -> None:
+        """Monitoring loop that checks for pending tasks with satisfied dependencies"""
+        while self._running:
+            try:
+                await self._check_and_enqueue_ready_tasks()
+                await asyncio.sleep(interval)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in monitoring loop: {e}")
+                await asyncio.sleep(interval)
+    
+    async def _check_and_enqueue_ready_tasks(self) -> None:
+        """Check for pending tasks that have satisfied dependencies and enqueue them"""
+        async with self._lock:
+            # Get all pending tasks from persistence
+            result = await self.persistence.list_tasks(status=TaskStatus.PENDING)
+            if isinstance(result, dict):
+                pending_tasks = result.get('tasks', [])
+            else:
+                pending_tasks = result if isinstance(result, list) else []
+            
+            if not pending_tasks:
+                return
+            
+            # Check each pending task
+            for task in pending_tasks:
+                # Get fresh task status to avoid race conditions
+                fresh_task = await self.persistence.get_task(task.id)
+                if not fresh_task:
+                    continue
+                
+                # Skip if task is not actually pending anymore
+                if fresh_task.status != TaskStatus.PENDING:
+                    logger.debug(f"Task {task.id} no longer pending (status: {fresh_task.status}), skipping")
+                    continue
+                
+                # Check if task has already been processed (has a result)
+                existing_result = await self.persistence.get_task_result(task.id)
+                if existing_result:
+                    logger.debug(f"Task {task.id} already has result (status: {existing_result.status}), skipping")
+                    continue
+                
+                # Skip tasks without dependencies (they should already be queued)
+                if not fresh_task.dependencies:
+                    # Only enqueue if truly pending
+                    if fresh_task.status == TaskStatus.PENDING:
+                        fresh_task.status = TaskStatus.QUEUED
+                        await self.persistence.save_task(fresh_task)
+                        logger.info(f"Enqueued pending task {fresh_task.id} with no dependencies")
+                    continue
+                
+                # Check if dependencies are satisfied
+                if await self._are_dependencies_satisfied(fresh_task):
+                    # Dependencies satisfied - change status to QUEUED
+                    fresh_task.status = TaskStatus.QUEUED
+                    await self.persistence.save_task(fresh_task)
+                    logger.info(f"Enqueued task {fresh_task.id} - dependencies satisfied")
 
 
 class QueueManager:
@@ -378,22 +559,32 @@ class QueueManager:
     Manager for multiple task queues with routing and load balancing
     """
     
-    def __init__(self):
+    def __init__(self, persistence: Optional[PersistenceBackend] = None, event_bus: Optional[Any] = None):
+        self.persistence = persistence
+        self.event_bus = event_bus
         self.queues: Dict[str, TaskQueue] = {}
         self.default_queue_name = "default"
         self._stats_lock = asyncio.Lock()
         
-        # Create default queue
-        self.queues[self.default_queue_name] = TaskQueue(self.default_queue_name)
+        # Create default queue with persistence and event bus
+        self.queues[self.default_queue_name] = TaskQueue(self.default_queue_name, persistence=self.persistence, event_bus=self.event_bus)
         
-        logger.info("Initialized QueueManager")
+        logger.info("Initialized QueueManager with persistence backend")
+    
+    async def initialize(self) -> None:
+        """Initialize all queues and start monitoring"""
+        for queue in self.queues.values():
+            await queue.initialize()
+            # Start monitoring for each queue
+            await queue.start_monitoring(interval=2)  # Check every 2 seconds
+        logger.info(f"QueueManager initialized with {len(self.queues)} queue(s) and monitoring started")
     
     def create_queue(self, name: str) -> TaskQueue:
         """Create a new task queue"""
         if name in self.queues:
             raise ValueError(f"Queue {name} already exists")
         
-        queue = TaskQueue(name)
+        queue = TaskQueue(name, persistence=self.persistence)
         self.queues[name] = queue
         
         logger.info(f"Created queue: {name}")
@@ -510,11 +701,20 @@ class QueueManager:
                 "queue_details": queue_stats
             }
     
+    async def get_queue_length(self) -> int:
+        """Get total number of queued tasks across all queues"""
+        total = 0
+        for queue in self.queues.values():
+            total += await queue.size()
+        return total
+    
     async def shutdown(self) -> None:
-        """Shutdown all queues"""
+        """Shutdown all queues and stop monitoring"""
         total_cleared = 0
         
         for queue in self.queues.values():
+            # Stop monitoring first
+            await queue.stop_monitoring()
             cleared = await queue.clear()
             total_cleared += cleared
         

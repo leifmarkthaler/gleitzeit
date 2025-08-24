@@ -11,19 +11,19 @@ wait_for_completion: true
 
 # Task definitions
 tasks:
-  - id: "greeting_task"
+  - name: "greeting_task"
     method: "llm/chat"
     priority: 2
-    parameters:
+    params:
       model: "llama3.2"
       messages:
         - role: "user"
           content: "Generate a friendly greeting message for a new user joining our workflow system. Be enthusiastic but professional."
 
-  - id: "explanation_task"
+  - name: "explanation_task"
     method: "llm/chat" 
     priority: 1
-    parameters:
+    params:
       model: "llama3.2"
       messages:
         - role: "user"

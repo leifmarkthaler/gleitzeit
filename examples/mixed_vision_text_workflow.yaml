@@ -4,20 +4,20 @@ timeout: 45
 wait_for_completion: true
 
 tasks:
-  - id: analyze-scene
+  - name: analyze-scene
     method: llm/vision
     priority: 2
-    parameters:
+    params:
       model: llava:latest
       prompt: "Look at this image and describe the scene. What objects, colors, or activities do you see? Be descriptive but concise."
       images:
         - "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAA8klEQVR4nO3bsQ3AMAwEMTn775yskKtsA+QEj4NarXdOtObEXc/uATcRKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEOv6l9E5cpTLKsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEmv8+3kIExEwzUIUAAAAASUVORK5CYII="  # 4-color test image
 
-  - id: write-story
+  - name: write-story
     method: llm/chat
     priority: 1
     dependencies: ["analyze-scene"]
-    parameters:
+    params:
       model: llama3.2
       messages:
         - role: system

@@ -1,0 +1,16 @@
+name: "Simple LLM Test"
+description: "Test single LLM task"
+version: "1.0"
+
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - id: "test_llm"
+    method: "llm/chat"
+    priority: 2
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say hello in 3 words"

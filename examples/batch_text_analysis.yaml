@@ -1,8 +1,7 @@
 name: "Batch Text Analysis"
 description: "Analyze multiple text documents in batch"
 tasks:
-  - id: "analyze_meeting_notes"
-    name: "Analyze meeting notes"
+  - name: "Analyze meeting notes"
     protocol: "llm/v1"
     method: "llm/chat"
     params:
@@ -14,8 +13,7 @@ tasks:
         - role: "user"
           content: "Provide a 2-3 sentence summary of this document, highlighting the main points."
   
-  - id: "analyze_story"
-    name: "Analyze story"
+  - name: "Analyze story"
     protocol: "llm/v1"
     method: "llm/chat"
     params:
@@ -27,8 +25,7 @@ tasks:
         - role: "user"
           content: "Provide a 2-3 sentence summary of this document, highlighting the main points."
   
-  - id: "analyze_spec"
-    name: "Analyze technical spec"
+  - name: "Analyze technical spec"
     protocol: "llm/v1"
     method: "llm/chat"
     params:

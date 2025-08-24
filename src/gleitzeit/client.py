@@ -294,17 +294,52 @@ class GleitzeitClient:
         
         self._persistence_adapter = await PersistenceFactory.create(**factory_kwargs)
         
-        # Setup execution components
-        queue_manager = QueueManager()
+        # Setup event-driven architecture first
+        from gleitzeit.events.base import EventBus
+        from gleitzeit.events.task_handlers import TaskCompletedHandler
+        from gleitzeit.events.persistence_handlers import PersistenceTaskHandler
+        from gleitzeit.events.workflow_handlers import WorkflowCompletedHandler
+        from gleitzeit.core.events import EventType
+        
+        event_bus = EventBus()
+        
+        # Setup execution components with persistence and event bus
+        # IMPORTANT: All components share the SAME persistence adapter instance
+        queue_manager = QueueManager(persistence=self._persistence_adapter, event_bus=event_bus)
+        await queue_manager.initialize()  # Initialize to recover queued tasks from persistence
         dependency_resolver = DependencyResolver()
         registry = ProtocolProviderRegistry()
         
+        # Register persistence handler (handles all task status updates)
+        # IMPORTANT: Use the SAME persistence adapter instance for all components
+        persistence_handler = PersistenceTaskHandler(persistence=self._persistence_adapter)
+        event_bus.register(EventType.TASK_COMPLETED, persistence_handler)
+        event_bus.register(EventType.TASK_FAILED, persistence_handler)
+        event_bus.register(EventType.TASK_STARTED, persistence_handler)
+        
+        # Store event bus for client use
+        self._event_bus = event_bus
+        
+        # Register task completion handler (handles dependency resolution)
+        # IMPORTANT: Use the SAME persistence adapter instance
+        task_completed_handler = TaskCompletedHandler(
+            persistence=self._persistence_adapter,
+            queue_manager=queue_manager
+        )
+        event_bus.register(EventType.TASK_COMPLETED, task_completed_handler)
+        
+        # Register workflow completion handler (collects workflow results)
+        self._workflow_completed_handler = WorkflowCompletedHandler()
+        event_bus.register(EventType.WORKFLOW_COMPLETED, self._workflow_completed_handler)
+        
+        # IMPORTANT: ExecutionEngine also uses the SAME persistence adapter instance
         self._execution_engine = ExecutionEngine(
             registry=registry,
             queue_manager=queue_manager,
             dependency_resolver=dependency_resolver,
-            persistence=self._persistence_adapter,
-            max_concurrent_tasks=self.native_config.get('max_concurrent_tasks', 5)
+            persistence=self._persistence_adapter,  # Same instance as all other components
+            max_concurrent_tasks=self.native_config.get('max_concurrent_tasks', 5),
+            event_bus=event_bus
         )
         
         # Initialize batch processor
@@ -568,27 +603,57 @@ class GleitzeitClient:
         await self._execution_engine.submit_workflow(workflow)
         await self._execution_engine._execute_workflow(workflow)
         
-        # Collect results
-        results = {}
-        for task in workflow.tasks:
-            task_result = self._execution_engine.task_results.get(task.id)
-            if task_result:
-                results[task.id] = {
-                    "status": task_result.status,
-                    "result": task_result.result,
-                    "error": task_result.error
-                }
-                
-        return {
-            "workflow_id": workflow.id,
-            "status": "completed",
-            "results": results
-        }
+        # Wait for workflow completion event with results
+        try:
+            # Get timeout from workflow or use default
+            timeout = workflow.timeout if workflow.timeout else 30.0
+            workflow_result = await self._workflow_completed_handler.wait_for_workflow(
+                workflow.id, 
+                timeout=timeout
+            )
+            
+            # Return the results from the event
+            return {
+                "workflow_id": workflow.id,
+                "workflow_name": workflow_result.get("workflow_name", workflow.name),
+                "status": workflow_result.get("status", "unknown"),
+                "task_results": workflow_result.get("task_results", {}),
+                "completed_tasks": workflow_result.get("completed_tasks", []),
+                "failed_tasks": workflow_result.get("failed_tasks", []),
+                "duration": workflow_result.get("duration", 0)
+            }
+        except TimeoutError as e:
+            logger.error(f"Workflow {workflow.id} timed out: {e}")
+            # Fallback to reading from persistence if timeout
+            results = {}
+            for task in workflow.tasks:
+                task_result = await self.get_task_result(task.id)
+                if task_result:
+                    results[task.id] = {
+                        "status": task_result.status,
+                        "result": task_result.result,
+                        "error": task_result.error
+                    }
+            
+            return {
+                "workflow_id": workflow.id,
+                "status": "timeout",
+                "results": results
+            }
         
     
     # =========================================================================
     # Task Management Methods (from old client)
     # =========================================================================
+    
+    async def _refresh_persistence_session(self):
+        """Refresh persistence session to ensure fresh data reads"""
+        if hasattr(self._persistence_adapter, 'refresh_session'):
+            await self._persistence_adapter.refresh_session()
+        elif hasattr(self._persistence_adapter, '_session'):
+            # For SQLAlchemy adapters, expire all objects and refresh
+            if hasattr(self._persistence_adapter._session, 'expire_all'):
+                self._persistence_adapter._session.expire_all()
     
     async def get_task(self, task_id: str) -> Optional[Task]:
         """Get a task by ID"""
@@ -604,9 +669,11 @@ class GleitzeitClient:
                 logger.error(f"Failed to get task {task_id}: {e}")
                 return None
         else:
-            # In native mode, get from persistence
+            # In native mode, get directly from persistence (no events needed for reads)
             if not self._persistence_adapter:
                 return None
+            # Ensure we get fresh data from the database
+            await self._refresh_persistence_session()
             return await self._persistence_adapter.get_task(task_id)
     
     async def get_task_status(self, task_id: str) -> Optional[str]:
@@ -638,6 +705,8 @@ class GleitzeitClient:
         else:
             if not self._persistence_adapter:
                 return None
+            # Ensure we get fresh data from the database
+            await self._refresh_persistence_session()
             return await self._persistence_adapter.get_task_result(task_id)
     
     async def wait_for_task(
@@ -873,6 +942,8 @@ class GleitzeitClient:
         else:
             if not self._persistence_adapter:
                 return None
+            # Ensure we get fresh data from the database
+            await self._refresh_persistence_session()
             return await self._persistence_adapter.get_workflow(workflow_id)
     
     async def get_workflow_execution(self, execution_id: str) -> Optional[WorkflowExecution]:
@@ -888,6 +959,8 @@ class GleitzeitClient:
         else:
             if not self._persistence_adapter:
                 return None
+            # Ensure we get fresh data from the database
+            await self._refresh_persistence_session()
             return await self._persistence_adapter.get_workflow_execution(execution_id)
     
     async def get_workflow_tasks(self, workflow_id: str) -> List[Task]:
@@ -903,6 +976,8 @@ class GleitzeitClient:
         else:
             if not self._persistence_adapter:
                 return []
+            # Ensure we get fresh data from the database
+            await self._refresh_persistence_session()
             # get_workflow_tasks is get_tasks_by_workflow in the adapter
             return await self._persistence_adapter.get_tasks_by_workflow(workflow_id)
     

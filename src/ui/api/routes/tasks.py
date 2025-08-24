@@ -60,6 +60,8 @@ async def list_tasks(
                             "name": task.get("name", "Unnamed"),
                             "status": task.get("status", "unknown"),
                             "workflow_id": task.get("workflow_id"),
+                            "protocol": task.get("protocol"),
+                            "method": task.get("method"),
                             "created_at": task.get("created_at"),
                             "completed_at": task.get("completed_at"),
                             "execution_time": task.get("execution_time"),
@@ -209,37 +211,32 @@ async def get_queue_status(request: Request) -> Dict[str, Any]:
     Returns:
         Queue statistics and pending tasks
     """
-    # Get real statistics from the API's status endpoint
+    # Get real statistics from the API's queue status endpoint
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.get(f"{GLEITZEIT_API_URL}/status") as resp:
+            async with session.get(f"{GLEITZEIT_API_URL}/tasks/queue/status") as resp:
                 if resp.status == 200:
-                    status_data = await resp.json()
-                    task_stats = status_data.get("task_statistics", {})
-                    
-                    # Calculate queue depth from pending/queued tasks
-                    pending = task_stats.get("pending", 0) + task_stats.get("queued", 0)
-                    running = task_stats.get("running", 0) + task_stats.get("executing", 0)
-                    
-                    return {
-                        "pending": pending,
-                        "running": running,
-                        "completed": task_stats.get("completed", 0),
-                        "failed": task_stats.get("failed", 0),
-                        "total": sum(task_stats.values()),
-                        "queue_depth": pending + running
-                    }
-        except:
-            pass
+                    data = await resp.json()
+                    # Return the data directly from the API endpoint
+                    return data
+        except Exception as e:
+            # Log the error for debugging
+            print(f"Error fetching queue status: {e}")
     
-    # Fallback to zeros if API is not available
+    # Fallback to empty data if API is not available
     return {
-        "pending": 0,
-        "running": 0,
-        "completed": 0,
-        "failed": 0,
-        "total": 0,
-        "queue_depth": 0
+        "timestamp": None,
+        "statistics": {
+            "total": 0,
+            "pending": 0,
+            "running": 0,
+            "completed": 0,
+            "failed": 0,
+            "cancelled": 0
+        },
+        "engine_status": "unknown",
+        "active_workers": 0,
+        "queue_length": 0
     }
 
 @router.get("/{task_id}/result")

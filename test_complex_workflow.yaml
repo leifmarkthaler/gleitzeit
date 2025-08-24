@@ -1,0 +1,96 @@
+name: "Complex Multi-Stage Analysis"
+description: "A complex workflow with multiple stages and dependencies"
+version: "1.0"
+
+# Workflow configuration
+timeout: 120
+wait_for_completion: true
+
+tasks:
+  # Stage 1: Initial analysis tasks (parallel)
+  - id: "analyze_market"
+    method: "llm/chat"
+    priority: 3
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "List 3 key trends in AI development in 2024. Be concise."
+  
+  - id: "analyze_tech"
+    method: "llm/chat"
+    priority: 3
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "List 3 major technology breakthroughs in 2024. Be concise."
+  
+  - id: "analyze_risks"
+    method: "llm/chat"
+    priority: 3
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "List 3 potential risks in AI adoption. Be concise."
+  
+  # Stage 2: Synthesis (depends on Stage 1)
+  - id: "synthesize_analysis"
+    method: "llm/chat"
+    priority: 2
+    dependencies: ["analyze_market", "analyze_tech", "analyze_risks"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Based on these inputs:
+            Market trends: ${analyze_market.response}
+            Tech breakthroughs: ${analyze_tech.response}
+            Risks: ${analyze_risks.response}
+            
+            Create a brief executive summary (2-3 sentences).
+  
+  # Stage 3: Generate recommendations (parallel, depends on synthesis)
+  - id: "business_recommendations"
+    method: "llm/chat"
+    priority: 2
+    dependencies: ["synthesize_analysis"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Based on this summary: ${synthesize_analysis.response}
+            
+            Provide 2 business recommendations.
+  
+  - id: "technical_recommendations"
+    method: "llm/chat"
+    priority: 2
+    dependencies: ["synthesize_analysis"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Based on this summary: ${synthesize_analysis.response}
+            
+            Provide 2 technical recommendations.
+  
+  # Stage 4: Final report (depends on all recommendations)
+  - id: "final_report"
+    method: "llm/chat"
+    priority: 1
+    dependencies: ["business_recommendations", "technical_recommendations"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: |
+            Combine these recommendations into a final action plan:
+            Business: ${business_recommendations.response}
+            Technical: ${technical_recommendations.response}
+            
+            Format as a numbered list of action items.

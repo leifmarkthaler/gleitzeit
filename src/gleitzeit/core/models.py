@@ -278,6 +278,21 @@ class Workflow(BaseModel):
         task.workflow_id = self.id
         self.tasks.append(task)
     
+    @property
+    def tasks_total(self) -> int:
+        """Total number of tasks in the workflow"""
+        return len(self.tasks)
+    
+    @property
+    def tasks_completed(self) -> int:
+        """Number of completed tasks"""
+        return len(self.completed_tasks)
+    
+    @property
+    def tasks_failed(self) -> int:
+        """Number of failed tasks"""
+        return len(self.failed_tasks)
+    
     def get_task(self, task_id: str) -> Optional[Task]:
         """Get task by ID"""
         for task in self.tasks:

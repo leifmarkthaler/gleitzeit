@@ -1,0 +1,39 @@
+name: "Simple Dependency Test"
+description: "Test workflow with simple dependencies"
+version: "1.0"
+
+timeout: 60
+wait_for_completion: true
+
+tasks:
+  # First task - no dependencies
+  - id: "task1"
+    method: "llm/chat"
+    priority: 2
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say 'First task completed'"
+  
+  # Second task - depends on first
+  - id: "task2"
+    method: "llm/chat"
+    priority: 2
+    dependencies: ["task1"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say 'Second task completed after first'"
+  
+  # Third task - depends on second
+  - id: "task3"
+    method: "llm/chat"
+    priority: 1
+    dependencies: ["task2"]
+    parameters:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say 'Third and final task completed'"

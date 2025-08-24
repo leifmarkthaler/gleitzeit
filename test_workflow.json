@@ -1,0 +1,25 @@
+{
+  "name": "Test Workflow",
+  "description": "Simple test workflow",
+  "tasks": [
+    {
+      "name": "task1",
+      "protocol": "python/v1",
+      "method": "python/execute",
+      "params": {
+        "code": "result = 'Hello from task 1'\nprint(result)"
+      },
+      "priority": 1
+    },
+    {
+      "name": "task2",
+      "protocol": "python/v1",
+      "method": "python/execute",
+      "dependencies": ["task1"],
+      "params": {
+        "code": "result = 'Hello from task 2 - dependent on task 1'\nprint(result)"
+      },
+      "priority": 2
+    }
+  ]
+}

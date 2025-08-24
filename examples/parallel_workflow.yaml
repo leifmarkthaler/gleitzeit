@@ -11,36 +11,36 @@ wait_for_completion: true
 
 # Independent tasks that can run in parallel
 tasks:
-  - id: "analyze_sentiment"
+  - name: "analyze_sentiment"
     method: "llm/chat"
     priority: 2
-    parameters:
+    params:
       model: "llama3.2"
       messages:
         - role: "user"
           content: "Analyze the sentiment of this text: 'I love working with modern workflow systems! They make automation so much easier.' Reply with just: positive, negative, or neutral."
 
-  - id: "count_words"
+  - name: "count_words"
     method: "python/execute"
     priority: 2
-    parameters:
+    params:
       file: "examples/scripts/count_words.py"
 
-  - id: "generate_summary"
+  - name: "generate_summary"
     method: "llm/chat"
     priority: 2
-    parameters:
+    params:
       model: "llama3.2"
       messages:
         - role: "user"
           content: "Write a one-sentence summary about workflow automation benefits."
 
   # This task depends on all previous tasks
-  - id: "combine_results"
+  - name: "combine_results"
     method: "llm/chat"
     priority: 1
     dependencies: ["analyze_sentiment", "count_words", "generate_summary"]
-    parameters:
+    params:
       model: "llama3.2"
       messages:
         - role: "user"

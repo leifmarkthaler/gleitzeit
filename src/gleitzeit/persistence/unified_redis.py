@@ -19,7 +19,7 @@ except ImportError:
     aioredis = None
 
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter
-from gleitzeit.core.models import Task, Workflow, TaskResult, WorkflowExecution
+from gleitzeit.core.models import Task, Workflow, TaskResult, WorkflowExecution, TaskStatus, WorkflowStatus
 from gleitzeit.hub.base import ResourceInstance, ResourceMetrics, ResourceStatus, ResourceType
 
 logger = logging.getLogger(__name__)
@@ -392,10 +392,13 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
         try:
             result_data = {
                 'task_id': task_result.task_id,
-                'status': task_result.status,
+                'workflow_id': task_result.workflow_id or '',
+                'status': task_result.status.value if hasattr(task_result.status, 'value') else str(task_result.status),
                 'result': json.dumps(task_result.result) if task_result.result is not None else '',
                 'error': task_result.error or '',
                 'duration_seconds': task_result.duration_seconds or 0,
+                'started_at': task_result.started_at.isoformat() if task_result.started_at else '',
+                'completed_at': task_result.completed_at.isoformat() if task_result.completed_at else '',
                 'created_at': datetime.utcnow().isoformat()
             }
             
@@ -421,12 +424,33 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             if not result_data:
                 return None
             
+            # Parse status enum
+            status_str = result_data.get('status', 'pending')
+            status = TaskStatus(status_str) if status_str in [s.value for s in TaskStatus] else TaskStatus.PENDING
+            
+            # Parse timestamps
+            started_at = None
+            completed_at = None
+            if result_data.get('started_at'):
+                try:
+                    started_at = datetime.fromisoformat(result_data['started_at'])
+                except:
+                    pass
+            if result_data.get('completed_at'):
+                try:
+                    completed_at = datetime.fromisoformat(result_data['completed_at'])
+                except:
+                    pass
+            
             return TaskResult(
                 task_id=result_data['task_id'],
-                status=result_data['status'],
+                workflow_id=result_data.get('workflow_id'),
+                status=status,
                 result=json.loads(result_data['result']) if result_data.get('result') else None,
                 error=result_data.get('error') or None,
                 duration_seconds=float(result_data['duration_seconds']) if result_data.get('duration_seconds') else None,
+                started_at=started_at,
+                completed_at=completed_at,
                 metadata={}
             )
             
@@ -447,20 +471,44 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 # Convert datetime objects to ISO format strings
                 for field in ['created_at', 'started_at', 'completed_at']:
                     if task_dict.get(field):
-                        task_dict[field] = task_dict[field].isoformat()
+                        # Check if it's already a string (ISO format) or a datetime object
+                        if hasattr(task_dict[field], 'isoformat'):
+                            task_dict[field] = task_dict[field].isoformat()
+                        # If it's already a string, leave it as is
                 tasks_data.append(task_dict)
+            
+            # Get workflow status - handle enum values
+            status = 'pending'
+            if hasattr(workflow, 'status'):
+                if hasattr(workflow.status, 'value'):
+                    status = workflow.status.value
+                else:
+                    status = str(workflow.status)
+            
+            # Count completed and failed tasks
+            tasks_completed = 0
+            tasks_failed = 0
+            if hasattr(workflow, 'tasks'):
+                for task in workflow.tasks:
+                    if hasattr(task, 'status'):
+                        if str(task.status) == 'completed' or (hasattr(task.status, 'value') and task.status.value == 'completed'):
+                            tasks_completed += 1
+                        elif str(task.status) == 'failed' or (hasattr(task.status, 'value') and task.status.value == 'failed'):
+                            tasks_failed += 1
             
             workflow_data = {
                 'id': workflow.id,
                 'name': workflow.name,
                 'description': workflow.description or '',
-                'status': workflow.status if hasattr(workflow, 'status') else 'pending',
+                'status': status,
                 'tasks': json.dumps(tasks_data),
                 'metadata': json.dumps(workflow.metadata) if workflow.metadata else '{}',
                 'created_at': workflow.created_at.isoformat() if workflow.created_at else datetime.utcnow().isoformat(),
+                'started_at': workflow.started_at.isoformat() if hasattr(workflow, 'started_at') and workflow.started_at else '',
+                'completed_at': workflow.completed_at.isoformat() if hasattr(workflow, 'completed_at') and workflow.completed_at else '',
                 'tasks_total': len(workflow.tasks),
-                'tasks_completed': 0,  # Will be updated by execution engine
-                'tasks_failed': 0  # Will be updated by execution engine
+                'tasks_completed': tasks_completed,
+                'tasks_failed': tasks_failed
             }
             
             await self.redis.hset(
@@ -491,7 +539,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                         task_data[field] = datetime.fromisoformat(task_data[field])
                 tasks.append(Task(**task_data))
             
-            return Workflow(
+            workflow = Workflow(
                 id=workflow_data['id'],
                 name=workflow_data['name'],
                 description=workflow_data.get('description') or None,
@@ -499,6 +547,22 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 metadata=json.loads(workflow_data['metadata']) if workflow_data.get('metadata') else {},
                 created_at=datetime.fromisoformat(workflow_data['created_at']) if workflow_data.get('created_at') else None
             )
+            
+            # Set additional workflow status fields
+            if workflow_data.get('status'):
+                workflow.status = WorkflowStatus(workflow_data['status'])
+            if workflow_data.get('started_at'):
+                workflow.started_at = datetime.fromisoformat(workflow_data['started_at'])
+            if workflow_data.get('completed_at'):
+                workflow.completed_at = datetime.fromisoformat(workflow_data['completed_at'])
+            
+            # Set completion tracking lists if available
+            if workflow_data.get('completed_tasks'):
+                workflow.completed_tasks = json.loads(workflow_data['completed_tasks']) if isinstance(workflow_data['completed_tasks'], str) else workflow_data['completed_tasks']
+            if workflow_data.get('failed_tasks'):
+                workflow.failed_tasks = json.loads(workflow_data['failed_tasks']) if isinstance(workflow_data['failed_tasks'], str) else workflow_data['failed_tasks']
+            
+            return workflow
             
         except Exception as e:
             logger.error(f"Failed to get workflow {workflow_id}: {e}")

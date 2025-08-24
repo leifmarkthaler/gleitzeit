@@ -78,8 +78,7 @@ class ExecutionEngine:
         dependency_resolver: DependencyResolver,
         persistence: Optional[PersistenceBackend] = None,
         max_concurrent_tasks: int = 10,
-        pooling_adapter: Optional[Any] = None,
-        event_bus: Optional[Any] = None
+        pooling_adapter: Optional[Any] = None
     ):
         self.registry = registry
         self.queue_manager = queue_manager
@@ -87,7 +86,6 @@ class ExecutionEngine:
         self.persistence = persistence
         self.max_concurrent_tasks = max_concurrent_tasks
         self.pooling_adapter = pooling_adapter
-        self.event_bus = event_bus
         
         # Initialize event scheduler for delayed events (non-retry)
         self.scheduler = EventScheduler(emit_callback=self.emit_event)
@@ -100,16 +98,14 @@ class ExecutionEngine:
         self.retry_manager = RetryManager(
             queue_manager=queue_manager,
             persistence=persistence,
-            scheduler=self.scheduler,
-            event_bus=event_bus
+            scheduler=self.scheduler
         )
         
         # State management
         self.running = False
-        # Remove local memory structures - use persistence backend only
-        # Active tasks will be tracked via persistence queries with EXECUTING status
-        # Task results will be stored/retrieved from persistence
-        # Workflow states will be stored/retrieved from persistence
+        self.active_tasks: Dict[str, Task] = {}
+        self.task_results: Dict[str, TaskResult] = {}
+        self.workflow_states: Dict[str, Workflow] = {}
         
         # Execution tracking
         self.stats = ExecutionStats()
@@ -171,11 +167,7 @@ class ExecutionEngine:
             if event.event_type == EventType.TASK_RETRY_EXECUTED:
                 await self._handle_retry_event(event_data.get("data", {}))
             
-            # Emit to EventBus if available
-            if hasattr(self, 'event_bus') and self.event_bus:
-                await self.event_bus.emit(event)
-            
-            # Also emit to legacy handlers for backward compatibility
+            # Emit to both legacy and new handlers
             if event_name in self.event_handlers:
                 for handler in self.event_handlers[event_name]:
                     try:
@@ -265,9 +257,8 @@ class ExecutionEngine:
             await self.retry_manager.stop()
         
         # Wait for active tasks to complete (with timeout)
-        active_tasks = await self._get_active_task_count()
-        if active_tasks > 0:
-            logger.info(f"Waiting for {active_tasks} active tasks to complete...")
+        if self.active_tasks:
+            logger.info(f"Waiting for {len(self.active_tasks)} active tasks to complete...")
             await asyncio.sleep(1.0)  # Give tasks time to finish
         
         # Calculate final stats
@@ -278,7 +269,7 @@ class ExecutionEngine:
         
         # Emit structured engine stopped event
         engine_data = EngineEventData(
-            stats=await self._get_stats_dict()
+            stats=self._get_stats_dict()
         )
         
         engine_stopped_event = GleitzeitEvent(
@@ -311,8 +302,7 @@ class ExecutionEngine:
         if not self.running:
             return
             
-        active_count = await self._get_active_task_count()
-        while active_count < self.max_concurrent_tasks:
+        while len(self.active_tasks) < self.max_concurrent_tasks:
             # Try to dequeue the next ready task
             if queue_name:
                 task = await self.queue_manager.dequeue_next_task(queue_name)
@@ -326,8 +316,7 @@ class ExecutionEngine:
             # Execute task in background
             asyncio.create_task(self._execute_task(task))
             
-            active_count = await self._get_active_task_count()
-        logger.debug(f"Event-driven processing: {active_count}/{self.max_concurrent_tasks} active tasks")
+        logger.debug(f"Event-driven processing: {len(self.active_tasks)}/{self.max_concurrent_tasks} active tasks")
     
     async def _execute_event_driven(self) -> None:
         """Event-driven execution mode - respond to events and periodically check queue"""
@@ -341,8 +330,7 @@ class ExecutionEngine:
             # Periodically check for queued tasks that might be stuck
             current_time = asyncio.get_event_loop().time()
             if current_time - last_queue_check >= queue_check_interval:
-                active_count = await self._get_active_task_count()
-                if active_count < self.max_concurrent_tasks:
+                if len(self.active_tasks) < self.max_concurrent_tasks:
                     # Try to process any ready tasks from the queue
                     await self._process_ready_tasks()
                 last_queue_check = current_time
@@ -379,10 +367,9 @@ class ExecutionEngine:
             return await self._execute_task(task)
         except Exception as exc:
             # If _execute_task raised an exception, the TaskResult should already be stored
-            # Return it from persistence instead of propagating the exception
-            result = await self.persistence.get_task_result(task.id)
-            if result:
-                return result
+            # Return it instead of propagating the exception
+            if task.id in self.task_results:
+                return self.task_results[task.id]
             else:
                 # Fallback - create a minimal failed TaskResult using centralized error handling
                 from datetime import datetime
@@ -409,44 +396,30 @@ class ExecutionEngine:
                     metadata={"execution_engine": True, "error_type": error_type}
                 )
         finally:
-            # Cleanup active task tracking in persistence by updating status
-            pass  # Status update handled in _execute_task
+            # Cleanup active task tracking
+            self.active_tasks.pop(task.id, None)
     
     async def _execute_task(self, task: Task) -> TaskResult:
         """Execute a single task"""
         async with self.semaphore:
             task_start_time = datetime.utcnow()
-            # Mark task as executing in persistence instead of local memory
+            self.active_tasks[task.id] = task
             error_message = None
             e = None
             
             try:
-                # Update task status locally
+                # Update task status
                 task.status = TaskStatus.EXECUTING
                 task.started_at = task_start_time
                 
-                # Emit task started event - this will trigger persistence updates
-                if hasattr(self, 'event_bus') and self.event_bus:
-                    from ..core.events import create_task_started_event
-                    started_event = create_task_started_event(
-                        task_id=task.id,
-                        task_name=task.name,
-                        protocol=task.protocol,
-                        method=task.method,
-                        workflow_id=task.workflow_id,
-                        source="execution_engine"
-                    )
-                    await self.event_bus.emit(started_event)
-                    logger.debug(f"Task {task.id} started event emitted")
-                else:
-                    # Fallback to direct persistence if no event bus
-                    if self.persistence:
-                        await self.persistence.save_task(task)
+                # Persist the updated task status
+                if self.persistence:
+                    await self.persistence.save_task(task)
                 
                 # Update workflow status to RUNNING if it's the first task
-                if task.workflow_id:
-                    workflow = await self.persistence.get_workflow(task.workflow_id)
-                    if workflow and workflow.status == WorkflowStatus.PENDING:
+                if task.workflow_id and task.workflow_id in self.workflow_states:
+                    workflow = self.workflow_states[task.workflow_id]
+                    if workflow.status == WorkflowStatus.PENDING:
                         workflow.status = WorkflowStatus.RUNNING
                         workflow.started_at = task_start_time
                         # Persist the updated workflow status
@@ -498,47 +471,34 @@ class ExecutionEngine:
                         metadata={"execution_engine": True}
                     )
                 
-                # Update task status locally
+                # Update task and store result
                 task.status = TaskStatus.COMPLETED
                 task.completed_at = task_result.completed_at
                 logger.debug(f"Task {task.id} completed with result: {task_result.result}")
                 
-                # Emit task completion event - this will trigger all necessary updates
-                from ..core.events import create_task_completed_event
-                completion_event = create_task_completed_event(
-                    task_id=task.id,
-                    workflow_id=task.workflow_id,
-                    duration=(task_result.completed_at - task_start_time).total_seconds(),
-                    result_size=len(str(task_result.result)) if task_result.result else 0,
-                    source="execution_engine"
-                )
-                
-                # Save task result first (important for dependency resolution)
+                # Persist the task and result IMMEDIATELY
                 if self.persistence:
+                    await self.persistence.save_task(task)
                     await self.persistence.save_task_result(task_result)
+                    
+                    # Update workflow's completed_tasks list if task belongs to a workflow
+                    if task.workflow_id:
+                        workflow = await self.persistence.get_workflow(task.workflow_id)
+                        if workflow:
+                            if task.id not in workflow.completed_tasks:
+                                workflow.completed_tasks.append(task.id)
+                            await self.persistence.save_workflow(workflow)
                 
-                # Emit the event to trigger persistence, queue management, and workflow processing
-                if hasattr(self, 'event_bus') and self.event_bus:
-                    await self.event_bus.emit(completion_event)
-                    logger.info(f"Task {task.id} completion event emitted")
-                else:
-                    logger.warning(f"No event bus configured, falling back to direct calls for task {task.id}")
-                    # Fallback to direct calls if no event bus
-                    if self.persistence:
-                        await self.persistence.save_task(task)
-                    await self.queue_manager.mark_task_completed(task.id)
+                # Mark as completed in queue
+                await self.queue_manager.mark_task_completed(task.id)
                 
                 # In event-driven mode, check for newly available tasks after completion
-                active_count = await self._get_active_task_count()
                 if (hasattr(self, '_execution_mode') and 
                     self._execution_mode == ExecutionMode.EVENT_DRIVEN and
-                    active_count < self.max_concurrent_tasks):
-                    # Small delay to ensure persistence has committed the status change
-                    await asyncio.sleep(0.1)
+                    len(self.active_tasks) < self.max_concurrent_tasks):
                     # Try to execute any newly available dependent tasks
                     ready_task = await self.queue_manager.dequeue_next_task()
-                    # Ensure we don't re-execute the task we just completed
-                    if ready_task and ready_task.id != task.id:
+                    if ready_task:
                         asyncio.create_task(self._execute_task(ready_task))
                 
                 # Update stats
@@ -634,27 +594,14 @@ class ExecutionEngine:
                             "failure_reason": "Task failed but will be retried"
                         }
                     )
-                    
-                    # Save the retry-pending result
-                    if self.persistence:
-                        await self.persistence.save_task_result(task_result)
-                    
-                    # Return early - don't process as a final failure
-                    return task_result
                 else:
                     # Final failure - no more retries or no retry config
-                    # Initialize failure_reason early
-                    failure_reason = "Task failed permanently"
-                    
                     # The retry manager may have already updated the task, so refresh from persistence
                     if self.persistence:
                         fresh_task = await self.persistence.get_task(task.id)
                         if fresh_task and fresh_task.status == TaskStatus.FAILED:
                             # Retry manager already marked it as failed, use its state
                             task = fresh_task
-                            # Set failure reason based on retry manager's decision
-                            if "Max retry attempts" in (task.error_message or ""):
-                                failure_reason = "Task failed (max retry attempts reached)"
                         else:
                             # Set failure status ourselves
                             task.status = TaskStatus.FAILED
@@ -666,6 +613,7 @@ class ExecutionEngine:
                     # Only set error message if not already set by retry manager
                     if not task.error_message or "Max retry attempts" not in task.error_message:
                         # Determine failure reason
+                        failure_reason = "Task failed permanently"
                         if not task.retry_config:
                             failure_reason = "Task failed (no retry configured)"
                         elif "INVALID_PARAMS" in error_message:
@@ -703,11 +651,10 @@ class ExecutionEngine:
                     )
                 
                 # Update workflow's failed_tasks list if task belongs to a workflow
-                if task.workflow_id:
-                    workflow = await self.persistence.get_workflow(task.workflow_id)
-                    if workflow and task.id not in workflow.failed_tasks:
+                if task.workflow_id and task.workflow_id in self.workflow_states:
+                    workflow = self.workflow_states[task.workflow_id]
+                    if task.id not in workflow.failed_tasks:
                         workflow.failed_tasks.append(task.id)
-                        # Save will happen below
                 
                 # Persist the failed task result
                 if self.persistence:
@@ -716,8 +663,8 @@ class ExecutionEngine:
                     if task.status == TaskStatus.FAILED and not (task.metadata and task.metadata.get('max_retries_reached')):
                         await self.persistence.save_task(task)
                     # Also persist workflow if it was updated
-                    if task.workflow_id and workflow:
-                        await self.persistence.save_workflow(workflow)
+                    if task.workflow_id and task.workflow_id in self.workflow_states:
+                        await self.persistence.save_workflow(self.workflow_states[task.workflow_id])
                 
                 # Only mark as failed in queue if NOT scheduled for retry and not already done by retry manager
                 if not retry_scheduled and not (task.metadata and task.metadata.get('max_retries_reached')):
@@ -727,9 +674,7 @@ class ExecutionEngine:
                 if task.workflow_id:
                     await self._check_workflow_completion(task.workflow_id)
             
-            # Store result in persistence only, not in memory
-            if self.persistence:
-                await self.persistence.save_task_result(task_result)
+            self.task_results[task.id] = task_result
             
             # Update stats
             self.stats.tasks_processed += 1
@@ -747,8 +692,8 @@ class ExecutionEngine:
             
             logger.error(f"Task {task.id} failed: {error_message}")
             
-            # Mark dependent workflows as failed if needed (only if NOT scheduled for retry)
-            if task.workflow_id and not retry_scheduled:
+            # Mark dependent workflows as failed if needed
+            if task.workflow_id:
                 await self._handle_workflow_task_failure(task.workflow_id, task.id)
             
             # Return the TaskResult instead of raising for _execute_task_with_cleanup
@@ -759,7 +704,7 @@ class ExecutionEngine:
         import re
         import json
         
-        async def substitute_parameters(obj: Any) -> Any:
+        def substitute_parameters(obj: Any) -> Any:
             """Recursively substitute parameter references"""
             if isinstance(obj, str):
                 # Look for ${task-id.field} patterns
@@ -777,9 +722,10 @@ class ExecutionEngine:
                         actual_task_id = self.task_name_to_id_map[ref_task_id]
                         logger.debug(f"Resolved task name '{ref_task_id}' to ID '{actual_task_id}'")
                     
-                    # Get referenced result from persistence
-                    ref_result = await self.persistence.get_task_result(actual_task_id)
-                    if ref_result:
+                    # Get referenced result
+                    logger.debug(f"Looking for task {actual_task_id} in results: {list(self.task_results.keys())}")
+                    if actual_task_id in self.task_results:
+                        ref_result = self.task_results[actual_task_id]
                         
                         # Navigate through the field path
                         # Start with the result field of TaskResult if it exists
@@ -813,15 +759,15 @@ class ExecutionEngine:
                 return obj
             
             elif isinstance(obj, dict):
-                return {k: await substitute_parameters(v) for k, v in obj.items()}
+                return {k: substitute_parameters(v) for k, v in obj.items()}
             
             elif isinstance(obj, list):
-                return [await substitute_parameters(item) for item in obj]
+                return [substitute_parameters(item) for item in obj]
             
             else:
                 return obj
         
-        return await substitute_parameters(task.params.copy())
+        return substitute_parameters(task.params.copy())
     
     async def _route_task_to_provider(self, task: Task, params: Dict[str, Any]) -> Any:
         """Route task to appropriate protocol provider"""
@@ -843,7 +789,8 @@ class ExecutionEngine:
                 if self.persistence:
                     await self.persistence.save_task_result(task_result)
                 
-                # No need to store in memory, already in persistence
+                # Also store in memory for consistency
+                self.task_results[task.id] = task_result
                 
                 # Now check if workflow is complete and process dependencies
                 if task.workflow_id:
@@ -894,9 +841,7 @@ class ExecutionEngine:
         
         workflow.status = WorkflowStatus.RUNNING
         workflow.started_at = datetime.utcnow()
-        # Store workflow in persistence
-        if self.persistence:
-            await self.persistence.save_workflow(workflow)
+        self.workflow_states[workflow.id] = workflow
         
         try:
             # Add workflow to dependency resolver
@@ -917,7 +862,6 @@ class ExecutionEngine:
             await self.emit_structured_event(workflow_started_event)
             
             # Execute tasks level by level
-            all_task_results = {}  # Collect all task results
             for level_index, task_ids in enumerate(execution_levels):
                 logger.info(f"Workflow {workflow.id} executing level {level_index + 1}/{len(execution_levels)}")
                 
@@ -933,19 +877,11 @@ class ExecutionEngine:
                 # Wait for all tasks in this level to complete
                 level_results = await asyncio.gather(*task_futures, return_exceptions=True)
                 
-                # Check for failures and collect results
+                # Check for failures
                 failed_tasks = []
                 for i, result in enumerate(level_results):
-                    task_id = level_tasks[i].id
                     if isinstance(result, Exception):
-                        failed_tasks.append(task_id)
-                    elif isinstance(result, TaskResult):
-                        # Store the task result
-                        all_task_results[task_id] = {
-                            "status": "completed" if result.status == TaskStatus.COMPLETED else "failed",
-                            "result": result.result,
-                            "error": result.error
-                        }
+                        failed_tasks.append(level_tasks[i].id)
                 
                 if failed_tasks:
                     raise WorkflowError(
@@ -961,28 +897,15 @@ class ExecutionEngine:
             
             self.stats.workflows_completed += 1
             
-            # Emit workflow completed event with all task results
-            from ..core.events import EventType, EventSeverity, GleitzeitEvent
-            completed_tasks = [t_id for t_id, r in all_task_results.items() if r["status"] == "completed"]
-            failed_tasks = [t_id for t_id, r in all_task_results.items() if r["status"] == "failed"]
-            
-            workflow_completed_event = GleitzeitEvent(
-                event_type=EventType.WORKFLOW_COMPLETED,
-                severity=EventSeverity.INFO,
-                data={
-                    "workflow_id": workflow.id,
-                    "workflow_name": workflow.name,
-                    "status": "completed",
-                    "completed_tasks": completed_tasks,
-                    "failed_tasks": failed_tasks,
-                    "task_results": all_task_results,
-                    "duration": (workflow.completed_at - workflow.started_at).total_seconds()
-                },
-                source="execution_engine",
-                tags={"component": "engine"}
+            # Emit structured workflow completed event
+            workflow_completed_event = create_workflow_completed_event(
+                workflow_id=workflow.id,
+                duration=(workflow.completed_at - workflow.started_at).total_seconds(),
+                tasks_completed=len(workflow.tasks),
+                source="execution_engine"
             )
+            
             await self.emit_structured_event(workflow_completed_event)
-            logger.info(f"Emitted WORKFLOW_COMPLETED event for workflow {workflow.id} with {len(all_task_results)} task results")
             
             logger.info(f"Workflow {workflow.id} completed successfully")
             
@@ -1036,8 +959,7 @@ class ExecutionEngine:
     
     async def _check_workflow_completion(self, workflow_id: str) -> None:
         """Check if a workflow is complete and submit ready dependent tasks"""
-        workflow = await self.persistence.get_workflow(workflow_id)
-        if not workflow:
+        if workflow_id not in self.workflow_states:
             return
         
         # Check if we should resolve (prevents duplicate concurrent resolutions)
@@ -1046,9 +968,13 @@ class ExecutionEngine:
             return
         
         try:
+            workflow = self.workflow_states[workflow_id]
             
-            # Get completed task IDs for this workflow from persistence
-            completed_task_ids = set()
+            # Get completed task IDs for this workflow from both internal results and persistence
+            completed_task_ids = {
+                task_id for task_id, result in self.task_results.items()
+                if result.workflow_id == workflow_id and result.status == TaskStatus.COMPLETED
+            }
             
             # Also check persistence for completed tasks (needed when using pooling adapter)
             if self.persistence:
@@ -1072,13 +998,7 @@ class ExecutionEngine:
                     continue
                     
                 # Check if task already has a result (failed, in progress, etc.)
-                existing_result = await self.persistence.get_task_result(task.id)
-                if existing_result:
-                    continue
-                
-                # Get fresh task status from persistence to avoid re-submitting completed tasks
-                fresh_task = await self.persistence.get_task(task.id)
-                if fresh_task and fresh_task.status in [TaskStatus.COMPLETED, TaskStatus.EXECUTING, TaskStatus.FAILED]:
+                if task.id in self.task_results:
                     continue
                     
                 # Check if all dependencies are satisfied
@@ -1090,9 +1010,9 @@ class ExecutionEngine:
                     if dependencies_satisfied:
                         ready_tasks.append(task)
                 else:
-                    # Task has no dependencies - only add if it's not already completed/executing/failed
-                    if not fresh_task or fresh_task.status in [TaskStatus.PENDING, TaskStatus.QUEUED]:
-                        ready_tasks.append(task)
+                    # Task has no dependencies, but wasn't submitted yet
+                    # This shouldn't normally happen, but handle it
+                    ready_tasks.append(task)
             
             # Submit ready tasks to the queue  
             for task in ready_tasks:
@@ -1143,8 +1063,8 @@ class ExecutionEngine:
     
     async def _handle_workflow_task_failure(self, workflow_id: str, failed_task_id: str) -> None:
         """Handle task failure within a workflow"""
-        workflow = await self.persistence.get_workflow(workflow_id)
-        if workflow:
+        if workflow_id in self.workflow_states:
+            workflow = self.workflow_states[workflow_id]
             
             # Check if workflow should be marked as failed
             # This depends on workflow failure policy (fail-fast vs. continue)
@@ -1177,9 +1097,8 @@ class ExecutionEngine:
         """Get execution statistics"""
         return self.stats
     
-    async def _get_stats_dict(self) -> Dict[str, Any]:
+    def _get_stats_dict(self) -> Dict[str, Any]:
         """Get stats as dictionary"""
-        active_count = await self._get_active_task_count()
         return {
             "tasks_processed": self.stats.tasks_processed,
             "tasks_succeeded": self.stats.tasks_succeeded,
@@ -1192,24 +1111,20 @@ class ExecutionEngine:
                 self.stats.tasks_succeeded / self.stats.tasks_processed * 100
                 if self.stats.tasks_processed > 0 else 100.0
             ),
-            "active_tasks": active_count,
+            "active_tasks": len(self.active_tasks),
             "max_concurrent_tasks": self.max_concurrent_tasks
         }
     
-    async def get_task_result(self, task_id: str) -> Optional[TaskResult]:
+    def get_task_result(self, task_id: str) -> Optional[TaskResult]:
         """Get result for a specific task"""
-        return await self.persistence.get_task_result(task_id)
+        return self.task_results.get(task_id)
     
-    async def get_workflow_results(self, workflow_id: str) -> List[TaskResult]:
+    def get_workflow_results(self, workflow_id: str) -> List[TaskResult]:
         """Get all results for a workflow"""
-        # Get all tasks for the workflow and their results
-        tasks = await self.persistence.get_tasks_by_workflow(workflow_id)
-        results = []
-        for task in tasks:
-            result = await self.persistence.get_task_result(task.id)
-            if result:
-                results.append(result)
-        return results
+        return [
+            result for result in self.task_results.values()
+            if result.workflow_id == workflow_id
+        ]
     
     async def submit_task(self, task: Task, queue_name: Optional[str] = None) -> None:
         """Submit a single task for execution (idempotent)"""
@@ -1264,9 +1179,8 @@ class ExecutionEngine:
         await self.emit_structured_event(task_submitted_event)
         
         # In event-driven mode, immediately try to process ready tasks if capacity allows
-        active_count = await self._get_active_task_count()
         if (self.running and 
-            active_count < self.max_concurrent_tasks and
+            len(self.active_tasks) < self.max_concurrent_tasks and
             hasattr(self, '_execution_mode') and self._execution_mode == ExecutionMode.EVENT_DRIVEN):
             # Try to dequeue and execute any ready tasks (not just the one we submitted)
             await self._process_ready_tasks(queue_name)
@@ -1289,9 +1203,7 @@ class ExecutionEngine:
         for task in workflow.tasks:
             await self.submit_task(task, queue_name)
         
-        # Store workflow in persistence
-        if self.persistence:
-            await self.persistence.save_workflow(workflow)
+        self.workflow_states[workflow.id] = workflow
         
         # Emit structured workflow submitted event
         workflow_data = WorkflowEventData(
@@ -1317,13 +1229,6 @@ class ExecutionEngine:
         for task in workflow.tasks:
             self.task_name_to_id_map[task.name] = task.id
             logger.debug(f"Mapped task name '{task.name}' to ID '{task.id}'")
-    
-    async def _get_active_task_count(self) -> int:
-        """Get count of currently executing tasks from persistence"""
-        if not self.persistence:
-            return 0
-        executing_tasks = await self.persistence.get_tasks_by_status(TaskStatus.EXECUTING)
-        return len(executing_tasks)
     
     async def get_retry_stats(self) -> Dict[str, Any]:
         """Get retry statistics from the centralized retry manager"""

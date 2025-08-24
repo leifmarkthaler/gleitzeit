@@ -1,0 +1,44 @@
+# Test LLM Retry Workflow
+# Tests retry with LLM tasks that might fail
+
+name: "Test LLM Retry Workflow"
+description: "Tests retry mechanism with LLM tasks"
+version: "1.0"
+
+# Workflow configuration
+timeout: 120
+wait_for_completion: true
+
+# Task definitions
+tasks:
+  - name: "simple_python_task"
+    method: "python/execute"
+    priority: 3
+    params:
+      file: "examples/scripts/count_words.py"
+      timeout: 10
+
+  - name: "llm_with_retry"
+    method: "llm/chat"
+    priority: 2
+    retry_config:
+      max_attempts: 3
+      initial_delay: 2
+      backoff_multiplier: 1.5
+    params:
+      model: "llama3.2"
+      temperature: 0.7
+      max_tokens: 50
+      messages:
+        - role: "system"
+          content: "You are a helpful assistant. If you receive this message, respond with: SUCCESS - Retry mechanism is working!"
+        - role: "user"
+          content: "Test message for retry mechanism"
+
+  - name: "final_task"
+    method: "python/execute"
+    priority: 1
+    dependencies: ["llm_with_retry"]
+    params:
+      file: "examples/scripts/generate_numbers.py"
+      timeout: 10

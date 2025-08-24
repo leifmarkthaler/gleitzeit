@@ -75,7 +75,11 @@ class ChatRequest(BaseModel):
 class TaskResponse(BaseModel):
     """Response model for task operations"""
     task_id: str
+    name: Optional[str] = None
     status: str
+    workflow_id: Optional[str] = None
+    protocol: Optional[str] = None
+    method: Optional[str] = None
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     execution_time: Optional[float] = None
@@ -144,11 +148,19 @@ async def setup_system():
     try:
         # Import GleitzeitClient here to avoid circular imports
         from gleitzeit.client import GleitzeitClient
+        from gleitzeit.core.execution_engine import ExecutionMode
         
         # Initialize GleitzeitClient in native mode to handle all the complexity
         app_state.client = GleitzeitClient(mode="native")
         await app_state.client.__aenter__()
         logger.info("GleitzeitClient initialized successfully")
+        
+        # Start the execution engine in event-driven mode
+        # This allows it to process tasks as they are submitted
+        if hasattr(app_state.client, '_execution_engine') and app_state.client._execution_engine:
+            # Start the engine in a background task so it runs continuously
+            asyncio.create_task(app_state.client._execution_engine.start(ExecutionMode.EVENT_DRIVEN))
+            logger.info("Execution engine started in event-driven mode")
         
     except Exception as e:
         logger.error(f"System setup failed: {e}")
@@ -242,48 +254,124 @@ async def submit_workflow(workflow: WorkflowRequest):
         raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        # Schedule workflow execution in background and get the client-generated ID
-        # We'll store the workflow request and process it
-        import tempfile
-        import yaml
+        # Create Workflow and Task objects directly
+        workflow_id = f"workflow-{uuid.uuid4().hex[:8]}"
         
-        # Convert API request to workflow dictionary
-        workflow_dict = {
-            "name": workflow.name,
-            "description": workflow.description,
-            "tasks": [
-                {
-                    "id": task.id or f"task_{uuid.uuid4().hex[:8]}",
-                    "name": task.name,
-                    "protocol": task.protocol,
-                    "method": task.method,
-                    "parameters": task.params,
-                    "dependencies": task.dependencies,
-                    "priority": task.priority,
-                    **({"retry": task.retry} if task.retry else {})
-                }
-                for task in workflow.tasks
-            ],
-            "metadata": workflow.metadata
-        }
+        # Create Task objects from the request
+        tasks = []
+        name_to_id_map = {}  # Map task names to their generated IDs
         
-        # Create temporary YAML file
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as temp_file:
-            yaml.dump(workflow_dict, temp_file, default_flow_style=False)
-            temp_file_path = temp_file.name
+        # First pass: create tasks and build name-to-ID mapping
+        for task_req in workflow.tasks:
+            task_id = f"task_{uuid.uuid4().hex[:8]}"  # Always generate unique ID
+            task_name = task_req.name or task_req.id  # Use name if provided, fallback to id
+            
+            # Store mapping for dependency resolution
+            if task_name:
+                name_to_id_map[task_name] = task_id
+            
+            task = Task(
+                id=task_id,
+                name=task_name,
+                protocol=task_req.protocol,
+                method=task_req.method,
+                params=task_req.params,
+                dependencies=[],  # Will be resolved in second pass
+                priority=Priority[task_req.priority.upper()] if task_req.priority else Priority.NORMAL,
+                workflow_id=workflow_id,
+                created_at=datetime.now()  # Add created_at for tasks too
+            )
+            
+            # Add retry config - use provided or default from Gleitzeit config
+            if task_req.retry:
+                task.retry_config = RetryConfig(
+                    max_attempts=task_req.retry.get("max_attempts", 3),
+                    base_delay=task_req.retry.get("base_delay", 1.0),
+                    backoff_strategy=BackoffStrategy[task_req.retry.get("backoff_strategy", "exponential").upper()]
+                )
+            else:
+                # Use default retry config from Gleitzeit configuration
+                task.retry_config = RetryConfig(
+                    max_attempts=3,
+                    base_delay=2.0,
+                    max_delay=60.0,
+                    backoff_strategy="exponential",
+                    jitter=True
+                )
+            
+            tasks.append(task)
         
-        # Submit to client and get the client-generated workflow ID
-        result = await app_state.client.run_workflow(temp_file_path)
-        workflow_id = result.get("workflow_id")
+        # Second pass: resolve dependencies (map task names to IDs)
+        for i, task_req in enumerate(workflow.tasks):
+            if task_req.dependencies:
+                resolved_deps = []
+                for dep_name in task_req.dependencies:
+                    if dep_name in name_to_id_map:
+                        resolved_deps.append(name_to_id_map[dep_name])
+                    else:
+                        # Keep original dependency if not found (for error reporting)
+                        resolved_deps.append(dep_name)
+                tasks[i].dependencies = resolved_deps
         
-        # Clean up temp file
-        import os
-        try:
-            os.unlink(temp_file_path)
-        except:
-            pass
+        # Create Workflow object with proper datetime
+        workflow_obj = Workflow(
+            id=workflow_id,
+            name=workflow.name,
+            description=workflow.description,
+            tasks=tasks,
+            metadata=workflow.metadata,
+            created_at=datetime.now()
+        )
         
-        # Create response with the client's workflow ID
+        # Submit workflow to the execution engine through the client
+        # The client in native mode has the execution engine
+        if hasattr(app_state.client, '_execution_engine') and app_state.client._execution_engine:
+            # First, persist the workflow
+            if hasattr(app_state.client, '_persistence_adapter') and app_state.client._persistence_adapter:
+                await app_state.client._persistence_adapter.save_workflow(workflow_obj)
+            
+            # Then submit to execution engine for processing
+            await app_state.client._execution_engine.submit_workflow(workflow_obj)
+            
+            # Don't execute immediately - let the engine handle it asynchronously
+            # The execution engine will process tasks based on queue and dependencies
+        else:
+            # Fallback to run_workflow if execution engine not available
+            import tempfile
+            import yaml
+            
+            workflow_dict = {
+                "name": workflow.name,
+                "description": workflow.description,
+                "tasks": [
+                    {
+                        "id": task.id,
+                        "name": task.name,
+                        "protocol": task.protocol,
+                        "method": task.method,
+                        "parameters": task.params,
+                        "dependencies": task.dependencies,
+                        "priority": task.priority.value
+                    }
+                    for task in tasks
+                ],
+                "metadata": workflow.metadata
+            }
+            
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as temp_file:
+                yaml.dump(workflow_dict, temp_file, default_flow_style=False)
+                temp_file_path = temp_file.name
+            
+            result = await app_state.client.run_workflow(temp_file_path)
+            workflow_id = result.get("workflow_id", workflow_id)
+            
+            import os
+            try:
+                os.unlink(temp_file_path)
+            except:
+                pass
+        
+        # Create response
         response = WorkflowResponse(
             workflow_id=workflow_id,
             status="submitted",
@@ -338,24 +426,8 @@ async def get_workflow_status(workflow_id: str):
         raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        # Try to get workflow from client first
-        workflow = await app_state.client.get_workflow(workflow_id)
-        
-        if workflow:
-            # Build response from workflow object
-            response = WorkflowResponse(
-                workflow_id=workflow_id,
-                status=workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status),
-                tasks_total=workflow.tasks_total if hasattr(workflow, 'tasks_total') else 0,
-                tasks_completed=workflow.tasks_completed if hasattr(workflow, 'tasks_completed') else 0,
-                tasks_failed=workflow.tasks_failed if hasattr(workflow, 'tasks_failed') else 0,
-                created_at=workflow.created_at if hasattr(workflow, 'created_at') else datetime.now(),
-                completed_at=workflow.completed_at if hasattr(workflow, 'completed_at') else None,
-                results=workflow.results if hasattr(workflow, 'results') else {}
-            )
-            return response
-        
-        # Fallback: Try to get tasks for this workflow ID
+        # Always get tasks to calculate current status dynamically
+        # This ensures we have the most up-to-date task statuses
         result = await app_state.client.list_tasks(workflow_id=workflow_id)
         
         # Handle the response format from client
@@ -381,14 +453,20 @@ async def get_workflow_status(workflow_id: str):
         else:
             status = "pending"
         
-        # Get task results from the tasks
+        # Get workflow metadata from workflow object if available
+        workflow = await app_state.client.get_workflow(workflow_id)
+        
+        # Get task results from persistence
         results = {}
         for task in tasks:
             if hasattr(task, 'id'):
+                # Fetch the actual task result from persistence
+                task_result = await app_state.client.get_task_result(task.id)
+                
                 results[task.id] = {
                     "status": str(task.status) if hasattr(task, 'status') else "unknown",
-                    "result": task.result if hasattr(task, 'result') else None,
-                    "error": task.error if hasattr(task, 'error') else None
+                    "result": task_result.result if task_result else None,
+                    "error": task.error_message if hasattr(task, 'error_message') else None
                 }
         
         response = WorkflowResponse(
@@ -397,7 +475,7 @@ async def get_workflow_status(workflow_id: str):
             tasks_total=len(tasks),
             tasks_completed=tasks_completed,
             tasks_failed=tasks_failed,
-            created_at=datetime.now(),
+            created_at=workflow.created_at if workflow and hasattr(workflow, 'created_at') else datetime.now(),
             completed_at=datetime.now() if status == "completed" else None,
             results=results
         )
@@ -545,6 +623,8 @@ async def list_tasks(
                     "name": task.name,
                     "status": task.status,
                     "workflow_id": getattr(task, 'workflow_id', None),
+                    "protocol": getattr(task, 'protocol', None),
+                    "method": getattr(task, 'method', None),
                     "created_at": task.created_at.isoformat() if hasattr(task, 'created_at') and task.created_at else None,
                     "completed_at": task.completed_at.isoformat() if hasattr(task, 'completed_at') and task.completed_at else None,
                     "execution_time": (task.completed_at - task.created_at).total_seconds() if hasattr(task, 'created_at') and task.created_at and hasattr(task, 'completed_at') and task.completed_at else None,
@@ -577,12 +657,23 @@ async def get_task_status(task_id: str):
         if not task:
             raise HTTPException(status_code=404, detail="Task not found")
         
+        # Get task result from persistence if available
+        task_result = None
+        if hasattr(app_state.client, '_persistence_adapter') and app_state.client._persistence_adapter:
+            result = await app_state.client._persistence_adapter.get_task_result(task_id)
+            if result and hasattr(result, 'result'):
+                task_result = result.result
+        
         # Convert to TaskResponse format, handling attribute access safely
         return TaskResponse(
             task_id=task.id,
+            name=task.name if hasattr(task, 'name') else None,
             status=task.status.value if hasattr(task.status, 'value') else str(task.status),
-            result=task.result if hasattr(task, 'result') else None,
-            error=task.error if hasattr(task, 'error') else None,
+            workflow_id=task.workflow_id if hasattr(task, 'workflow_id') else None,
+            protocol=task.protocol if hasattr(task, 'protocol') else None,
+            method=task.method if hasattr(task, 'method') else None,
+            result=task_result,
+            error=task.error_message if hasattr(task, 'error_message') else None,
             created_at=task.created_at if hasattr(task, 'created_at') else datetime.now(),
             completed_at=task.completed_at if hasattr(task, 'completed_at') else None
         )
@@ -615,6 +706,62 @@ async def delete_task(task_id: str):
     except Exception as e:
         logger.error(f"Failed to delete task {task_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete task: {str(e)}")
+
+
+@app.get("/tasks/queue/status")
+async def get_queue_status():
+    """Get queue status and statistics"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Get queue statistics from client
+        queue_stats = await app_state.client.get_queue_statistics()
+        
+        # Get task count by status
+        task_counts = await app_state.client.get_task_statistics()
+        
+        # Build statistics
+        statistics = {
+            "total": 0,
+            "pending": 0,
+            "running": 0,
+            "completed": 0,
+            "failed": 0,
+            "cancelled": 0
+        }
+        
+        # Update from task counts
+        for status, count in task_counts.items():
+            status_str = status.lower() if isinstance(status, str) else str(status).lower()
+            if status_str in statistics:
+                statistics[status_str] = count
+                statistics["total"] += count
+            elif status_str == "executing":
+                statistics["running"] = count
+                statistics["total"] += count
+        
+        # Get execution engine status
+        engine_status = "idle"
+        active_workers = 0
+        
+        if queue_stats:
+            # Extract info from queue statistics
+            active_workers = queue_stats.get("active_tasks", 0)
+            if active_workers > 0:
+                engine_status = "running"
+        
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "statistics": statistics,
+            "engine_status": engine_status,
+            "active_workers": active_workers,
+            "queue_length": statistics["pending"]
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to get queue status: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 
@@ -800,7 +947,7 @@ async def get_workflow_results(workflow_id: str):
             results[task.id] = {
                 "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
                 "result": task.result,
-                "error": task.error
+                "error": task.error_message if hasattr(task, 'error_message') else None
             }
             
             # Update workflow status based on tasks
@@ -845,7 +992,7 @@ async def get_task_result(task_id: str):
             "task_id": task_id,
             "status": task.status.value if hasattr(task.status, 'value') else str(task.status),
             "result": task.result if hasattr(task, 'result') else None,
-            "error": task.error if hasattr(task, 'error') else None,
+            "error": task.error_message if hasattr(task, 'error_message') else None,
             "completed_at": task.completed_at.isoformat() if hasattr(task, 'completed_at') and task.completed_at else None
         }
     except HTTPException:
@@ -896,8 +1043,8 @@ async def get_task_logs(task_id: str, tail: int = 50):
         if not logs:
             status = task.status.value if hasattr(task, 'status') and hasattr(task.status, 'value') else str(task.status) if hasattr(task, 'status') else 'unknown'
             logs.append(f"Task {task_id} - Status: {status}")
-            if hasattr(task, 'error') and task.error:
-                logs.append(f"Error: {task.error}")
+            if hasattr(task, 'error_message') and task.error_message:
+                logs.append(f"Error: {task.error_message}")
         
         # Limit to requested tail size
         if len(logs) > tail:

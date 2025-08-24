@@ -17,6 +17,8 @@ from enum import Enum
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter, UnifiedInMemoryAdapter
 from gleitzeit.persistence.unified_sqlalchemy import UnifiedSQLAlchemyAdapter
 from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
+from gleitzeit.persistence.unified_redis_events import UnifiedRedisEventsAdapter
+from gleitzeit.persistence.unified_memory_events import UnifiedMemoryEventsAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +61,8 @@ class PersistenceFactory:
         redis_url: Optional[str] = None,
         sql_connection: Optional[str] = None,
         sql_db_path: Optional[str] = None,
-        config: Optional[Dict[str, Any]] = None
+        config: Optional[Dict[str, Any]] = None,
+        event_bus: Optional[Any] = None
     ) -> UnifiedPersistenceAdapter:
         """
         Create a persistence adapter with automatic fallback
@@ -70,9 +73,10 @@ class PersistenceFactory:
             sql_connection: SQL connection string (default: from env or SQLite)
             sql_db_path: SQLite database path (default: from env or gleitzeit.db)
             config: Additional configuration dictionary
+            event_bus: Optional EventBus for event-driven architecture
             
         Returns:
-            Initialized UnifiedPersistenceAdapter
+            Initialized UnifiedPersistenceAdapter (event-driven if event_bus provided)
             
         Raises:
             RuntimeError: If no persistence adapter could be created (should never happen)
@@ -101,28 +105,28 @@ class PersistenceFactory:
         
         # Handle specific persistence types
         if persistence_type == PersistenceType.REDIS:
-            return await cls._create_redis(redis_url, final_config)
+            return await cls._create_redis(redis_url, final_config, event_bus)
         
         elif persistence_type == PersistenceType.SQL:
-            return await cls._create_sql(sql_connection, sql_db_path, final_config)
+            return await cls._create_sql(sql_connection, sql_db_path, final_config, event_bus)
         
         elif persistence_type == PersistenceType.MEMORY:
-            return await cls._create_memory(final_config)
+            return await cls._create_memory(final_config, event_bus)
         
         elif persistence_type == PersistenceType.AUTO:
             # Try Redis first
-            adapter = await cls._try_redis(redis_url, final_config)
+            adapter = await cls._try_redis(redis_url, final_config, event_bus)
             if adapter:
                 return adapter
             
             # Fall back to SQL
-            adapter = await cls._try_sql(sql_connection, sql_db_path, final_config)
+            adapter = await cls._try_sql(sql_connection, sql_db_path, final_config, event_bus)
             if adapter:
                 return adapter
             
             # Final fallback to in-memory
             logger.warning("Redis and SQL both failed, using in-memory persistence")
-            return await cls._create_memory(final_config)
+            return await cls._create_memory(final_config, event_bus)
         
         # Should never reach here
         raise RuntimeError(f"Unknown persistence type: {persistence_type}")
@@ -131,21 +135,36 @@ class PersistenceFactory:
     async def _try_redis(
         cls,
         redis_url: str,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
+        event_bus: Optional[Any] = None
     ) -> Optional[UnifiedRedisAdapter]:
         """Try to create Redis adapter, return None if fails"""
         try:
             logger.info(f"Attempting to connect to Redis at {redis_url}")
             
-            adapter = UnifiedRedisAdapter(
-                redis_url=redis_url,
-                key_prefix=config.get("redis_key_prefix", "gleitzeit"),
-                max_connections=config.get("redis_max_connections", 50),
-                socket_timeout=config.get("redis_socket_timeout", 5),
-                socket_connect_timeout=config.get("redis_connect_timeout", 5),
-                retry_on_timeout=config.get("redis_retry_on_timeout", True),
-                health_check_interval=config.get("redis_health_check_interval", 30)
-            )
+            # Use event-driven adapter if event_bus is provided
+            if event_bus:
+                logger.info("Creating event-driven Redis adapter")
+                adapter = UnifiedRedisEventsAdapter(
+                    redis_url=redis_url,
+                    key_prefix=config.get("redis_key_prefix", "gleitzeit"),
+                    max_connections=config.get("redis_max_connections", 50),
+                    socket_timeout=config.get("redis_socket_timeout", 5),
+                    socket_connect_timeout=config.get("redis_connect_timeout", 5),
+                    retry_on_timeout=config.get("redis_retry_on_timeout", True),
+                    health_check_interval=config.get("redis_health_check_interval", 30),
+                    event_bus=event_bus
+                )
+            else:
+                adapter = UnifiedRedisAdapter(
+                    redis_url=redis_url,
+                    key_prefix=config.get("redis_key_prefix", "gleitzeit"),
+                    max_connections=config.get("redis_max_connections", 50),
+                    socket_timeout=config.get("redis_socket_timeout", 5),
+                    socket_connect_timeout=config.get("redis_connect_timeout", 5),
+                    retry_on_timeout=config.get("redis_retry_on_timeout", True),
+                    health_check_interval=config.get("redis_health_check_interval", 30)
+                )
             
             # Test connection
             await adapter.initialize()
@@ -172,7 +191,8 @@ class PersistenceFactory:
         cls,
         sql_connection: Optional[str],
         sql_db_path: str,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
+        event_bus: Optional[Any] = None
     ) -> Optional[UnifiedSQLAlchemyAdapter]:
         """Try to create SQL adapter, return None if fails"""
         try:
@@ -227,10 +247,11 @@ class PersistenceFactory:
     async def _create_redis(
         cls,
         redis_url: str,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
+        event_bus: Optional[Any] = None
     ) -> UnifiedRedisAdapter:
         """Create Redis adapter or raise exception"""
-        adapter = await cls._try_redis(redis_url, config)
+        adapter = await cls._try_redis(redis_url, config, event_bus)
         if adapter:
             return adapter
         raise RuntimeError("Failed to create Redis adapter")
@@ -240,10 +261,11 @@ class PersistenceFactory:
         cls,
         sql_connection: Optional[str],
         sql_db_path: str,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
+        event_bus: Optional[Any] = None
     ) -> UnifiedSQLAlchemyAdapter:
         """Create SQL adapter or raise exception"""
-        adapter = await cls._try_sql(sql_connection, sql_db_path, config)
+        adapter = await cls._try_sql(sql_connection, sql_db_path, config, event_bus)
         if adapter:
             return adapter
         raise RuntimeError("Failed to create SQL adapter")
@@ -251,11 +273,17 @@ class PersistenceFactory:
     @classmethod
     async def _create_memory(
         cls,
-        config: Dict[str, Any]
+        config: Dict[str, Any],
+        event_bus: Optional[Any] = None
     ) -> UnifiedInMemoryAdapter:
         """Create in-memory adapter (always succeeds)"""
-        logger.info("Using in-memory persistence")
-        adapter = UnifiedInMemoryAdapter()
+        # Use event-driven adapter if event_bus is provided
+        if event_bus:
+            logger.info("Using event-driven in-memory persistence")
+            adapter = UnifiedMemoryEventsAdapter(event_bus=event_bus)
+        else:
+            logger.info("Using in-memory persistence")
+            adapter = UnifiedInMemoryAdapter()
         await adapter.initialize()
         return adapter
     

@@ -152,9 +152,13 @@ class OllamaProvider(ProtocolProvider):
             endpoint = allocated_resource.endpoint
             logger.debug(f"Using allocated Ollama resource at {endpoint}")
         else:
-            # No resource allocated, use default or provided endpoint
-            endpoint = params.get('endpoint', self.default_endpoint)
-            logger.debug(f"Using endpoint {endpoint}")
+            # Resource allocation failed - raise an error
+            from gleitzeit.core.errors import ProviderError, ErrorCode
+            raise ProviderError(
+                message=f"Failed to allocate Ollama resource for model {model}",
+                code=ErrorCode.RESOURCE_EXHAUSTED,
+                provider_id="ollama"
+            )
         
         # Route to appropriate method handler
         method_map = {

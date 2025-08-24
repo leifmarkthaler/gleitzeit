@@ -4,10 +4,10 @@ timeout: 60
 wait_for_completion: true
 
 tasks:
-  - id: analyze-image
+  - name: analyze-image
     method: llm/vision
     priority: 2
-    parameters:
+    params:
       model: llava:latest
       messages:
         - role: user
@@ -15,21 +15,21 @@ tasks:
       images:
         - "iVBORw0KGgoAAAANSUhEUgAAAGQAAABkCAIAAAD/gAIDAAAA8klEQVR4nO3bsQ3AMAwEMTn775yskKtsA+QEj4NarXdOtObEXc/uATcRKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEOv6l9E5cpTLKsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArECsQKxArEmv8+3kIExEwzUIUAAAAASUVORK5CYII="  # Test image with 4 colored quadrants: red, green, blue, yellow
 
-  - id: extract-colors
+  - name: extract-colors
     method: llm/chat
     priority: 2
     dependencies: ["analyze-image"]
-    parameters:
+    params:
       model: llama3.2
       messages:
         - role: user
           content: "Based on this image analysis: '${analyze-image.response}', extract just the main colors mentioned. List them separated by commas."
 
-  - id: generate-summary
+  - name: generate-summary
     method: llm/chat
     priority: 1
     dependencies: ["analyze-image", "extract-colors"]
-    parameters:
+    params:
       model: llama3.2
       messages:
         - role: user

@@ -412,6 +412,61 @@ class OllamaHub(ResourceHub[OllamaConfig]):
             logger.error(f"Failed to pull model {model_name}: {e}")
             return False
     
+    async def get_available_instance(
+        self,
+        tags: Optional[Set[str]] = None,
+        capabilities: Optional[Set[str]] = None,
+        strategy: str = "least_loaded"
+    ) -> Optional[ResourceInstance[OllamaConfig]]:
+        """
+        Override to handle Ollama model name variations
+        
+        For Ollama models, we need to handle cases where:
+        - Request asks for 'llama3.2' but model is 'llama3.2:latest'
+        - Request asks for 'llama3.2:latest' but model is 'llama3.2'
+        """
+        available = await self.list_instances(status=ResourceStatus.HEALTHY)
+        
+        if tags:
+            available = [i for i in available if tags.issubset(i.tags)]
+        
+        if capabilities:
+            # Enhanced capability matching for Ollama models
+            def model_matches(requested_models, available_models):
+                for requested in requested_models:
+                    # Exact match first
+                    if requested in available_models:
+                        continue
+                    
+                    # Try with :latest suffix
+                    if f"{requested}:latest" in available_models:
+                        continue
+                    
+                    # Try without :latest suffix
+                    if requested.endswith(":latest"):
+                        base_name = requested[:-7]  # Remove ":latest"
+                        if base_name in available_models:
+                            continue
+                    
+                    # No match found for this requested model
+                    return False
+                return True
+            
+            available = [i for i in available if model_matches(capabilities, i.capabilities)]
+        
+        if not available:
+            return None
+        
+        if strategy == "least_loaded":
+            return min(available, key=lambda i: i.metrics.active_connections)
+        elif strategy == "round_robin":
+            return available[0]
+        elif strategy == "random":
+            import random
+            return random.choice(available)
+        else:  # first_available
+            return available[0]
+    
     async def get_instance_for_model(
         self,
         model_name: str,

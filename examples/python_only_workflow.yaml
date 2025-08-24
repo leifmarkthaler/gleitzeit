@@ -4,28 +4,28 @@ timeout: 30
 wait_for_completion: true
 
 tasks:
-  - id: "generate_data"
+  - name: "generate_data"
     method: "python/execute"
     priority: 3
-    parameters:
+    params:
       file: "examples/scripts/generate_numbers.py"
       timeout: 5
 
-  - id: "calculate_stats"
+  - name: "calculate_stats"
     method: "python/execute"
     priority: 2
     dependencies: ["generate_data"]
-    parameters:
+    params:
       file: "examples/scripts/calculate_sum.py"
       context:
         numbers: "${generate_data.result.numbers}"
       timeout: 5
 
-  - id: "create_report"
+  - name: "create_report"
     method: "python/execute"
     priority: 1
     dependencies: ["generate_data", "calculate_stats"]
-    parameters:
+    params:
       file: "examples/scripts/format_report.py"
       context:
         number_data: "${generate_data.result}"

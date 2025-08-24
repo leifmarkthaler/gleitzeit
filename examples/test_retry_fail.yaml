@@ -1,0 +1,47 @@
+# Test Retry Failure Workflow
+# Uses an invalid model to test retry exhaustion
+
+name: "Test Retry Failure Workflow"
+description: "Tests retry mechanism exhaustion with a permanently failing task"
+version: "1.0"
+
+# Workflow configuration
+timeout: 120
+wait_for_completion: true
+
+# Task definitions
+tasks:
+  - name: "working_task_1"
+    method: "python/execute"
+    priority: 3
+    params:
+      file: "examples/scripts/count_words.py"
+      timeout: 10
+
+  - name: "failing_task_with_retries"
+    method: "llm/chat"
+    priority: 2
+    retry_config:
+      max_attempts: 3
+      initial_delay: 1
+      backoff_multiplier: 2
+    params:
+      model: "gpt-999-turbo-ultra"  # This model definitely doesn't exist
+      messages:
+        - role: "user"
+          content: "This will fail because the model doesn't exist"
+
+  - name: "working_task_2"
+    method: "python/execute"
+    priority: 2
+    params:
+      file: "examples/scripts/generate_numbers.py"
+      timeout: 10
+
+  - name: "dependent_task"
+    method: "python/execute"
+    priority: 1
+    dependencies: ["working_task_1", "failing_task_with_retries", "working_task_2"]
+    params:
+      file: "examples/scripts/count_words.py"
+      timeout: 10

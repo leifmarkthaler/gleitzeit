@@ -7,17 +7,15 @@ description: "Combines MCP, LLM, and Python providers in one workflow"
 
 tasks:
   # Start with reading a file (requires filesystem MCP server)
-  - id: "read_input"
-    name: "Read Input File"
+  - name: "Read Input File"
     method: "mcp/tool.fs.read"
-    parameters:
+    params:
       path: "./data/input.json"
   
   # Generate data with Python
-  - id: "generate_data"
-    name: "Generate Sample Data"
+  - name: "Generate Sample Data"
     method: "python/execute"
-    parameters:
+    params:
       code: |
         import json
         import random
@@ -31,11 +29,10 @@ tasks:
         print(json.dumps(data))
   
   # Process data with Python (removed MCP sum since no built-in tools)
-  - id: "process_data"
-    name: "Process Data"
+  - name: "Process Data"
     method: "python/execute"
-    dependencies: ["generate_data"]
-    parameters:
+    dependencies: ["Generate Sample Data"]
+    params:
       code: |
         import json
         data = json.loads('${generate_data}')
@@ -47,11 +44,10 @@ tasks:
         print(json.dumps(result))
   
   # Analyze with LLM
-  - id: "analyze_data"
-    name: "Analyze Data Pattern"
+  - name: "Analyze Data Pattern"
     method: "llm/chat"
-    dependencies: ["generate_data", "process_data"]
-    parameters:
+    dependencies: ["Generate Sample Data", "Process Data"]
+    params:
       model: "llama3.2"
       messages:
         - role: "user"
@@ -64,11 +60,10 @@ tasks:
             Provide insights in 2-3 sentences.
   
   # Process analysis with Python
-  - id: "format_report"
-    name: "Format Final Report"
+  - name: "Format Final Report"
     method: "python/execute"
-    dependencies: ["analyze_data"]
-    parameters:
+    dependencies: ["Analyze Data Pattern"]
+    params:
       code: |
         analysis = '''${analyze_data.response}'''
         
@@ -82,19 +77,17 @@ tasks:
         print(__import__('json').dumps(report, indent=2))
   
   # Save the report using MCP (requires filesystem server)
-  - id: "save_report"
-    name: "Save Report"
+  - name: "Save Report"
     method: "mcp/tool.fs.write"
-    dependencies: ["format_report"]
-    parameters:
+    dependencies: ["Format Final Report"]
+    params:
       path: "./output/analysis_report.json"
       content: "${format_report}"
   
   # Final status
-  - id: "completion"
-    name: "Completion Status"
+  - name: "Completion Status"
     method: "python/execute"
-    dependencies: ["save_report"]
-    parameters:
+    dependencies: ["Save Report"]
+    params:
       code: |
         print("Analysis complete - report saved to output/analysis_report.json")

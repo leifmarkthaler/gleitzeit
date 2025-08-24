@@ -1,0 +1,18 @@
+name: "Test Simple LLM"
+description: "Test a simple LLM task"
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - name: "simple_llm_task"
+    method: "llm/chat"
+    priority: 1
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say hello in exactly 3 words"
+    retry_config:
+      max_attempts: 3
+      initial_delay: 2
+      backoff_multiplier: 2

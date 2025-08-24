@@ -28,7 +28,7 @@ providers:
 
 tasks:
   # Task 1: Use least loaded Ollama instance
-  - id: "analyze_text"
+  - name: "analyze_text"
     protocol: "llm/v1"
     method: "llm/chat"
     params:
@@ -39,7 +39,7 @@ tasks:
           content: "Analyze this text and provide insights"
   
   # Task 2: Use GPU instance for large model
-  - id: "deep_analysis"
+  - name: "deep_analysis"
     protocol: "llm/v1"
     method: "llm/chat"
     params:
@@ -52,7 +52,7 @@ tasks:
     dependencies: ["analyze_text"]
   
   # Task 3: Execute Python in sandbox (Docker)
-  - id: "process_data_sandboxed"
+  - name: "process_data_sandboxed"
     protocol: "python/v1"
     method: "python/execute"
     params:
@@ -79,7 +79,7 @@ tasks:
     dependencies: ["deep_analysis"]
   
   # Task 4: Execute Python in specialized data science container
-  - id: "advanced_analysis"
+  - name: "advanced_analysis"
     protocol: "python/v1"
     method: "python/execute"
     params:
@@ -105,7 +105,7 @@ tasks:
     dependencies: ["process_data_sandboxed"]
   
   # Task 5: Use model affinity routing for vision
-  - id: "vision_analysis"
+  - name: "vision_analysis"
     protocol: "llm/v1"
     method: "llm/vision"
     params:
@@ -116,7 +116,7 @@ tasks:
       images: ["examples/images/test_colors.png"]
   
   # Task 6: Final report using round-robin
-  - id: "generate_report"
+  - name: "generate_report"
     protocol: "llm/v1"
     method: "llm/chat"
     params:

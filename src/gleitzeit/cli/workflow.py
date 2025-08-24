@@ -134,8 +134,11 @@ def _yaml_to_workflow(data: Dict[str, Any]) -> Workflow:
 def _yaml_to_task(data: Dict[str, Any], workflow_id: str, resolve_dependencies: bool = True) -> Task:
     """Convert YAML task data to Task model"""
     
-    # Generate task ID if not provided
-    task_id = data.get('id', f"task-{uuid4().hex[:8]}")
+    # Generate unique task ID
+    task_id = f"task-{uuid4().hex[:8]}"
+    
+    # Get task name for display and reference
+    task_name = data.get('name', data.get('id', task_id))
     
     # Parse retry configuration
     retry_config = None
@@ -166,7 +169,7 @@ def _yaml_to_task(data: Dict[str, Any], workflow_id: str, resolve_dependencies: 
     # Create task
     task = Task(
         id=task_id,
-        name=data.get('name', task_id),
+        name=task_name,
         protocol=data.get('protocol', ''),
         method=data.get('method', ''),
         params=data.get('params', {}),

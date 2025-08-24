@@ -4,18 +4,18 @@ timeout: 30
 wait_for_completion: true
 
 tasks:
-  - id: "first_task"
+  - name: "first_task"
     method: "python/execute"
     priority: 2
-    parameters:
+    params:
       file: "examples/scripts/generate_numbers.py"
       timeout: 5
 
-  - id: "second_task"
+  - name: "second_task"
     method: "python/execute"
     priority: 1
     dependencies: ["first_task"]
-    parameters:
+    params:
       file: "examples/scripts/test_context.py"
       context:
         numbers: "${first_task.result.numbers}"

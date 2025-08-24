@@ -1,8 +1,7 @@
 name: "LLM Workflow Example"
 description: "Basic LLM workflow using Ollama"
 tasks:
-  - id: "llm_task"
-    name: "Generate Text"
+  - name: "Generate Text"
     protocol: "llm/v1"
     method: "llm/chat"
     params:

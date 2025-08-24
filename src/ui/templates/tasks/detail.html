@@ -65,7 +65,7 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
         let html = `
             <div class="task-detail-card">
                 <div class="detail-header">
-                    <h2>${task.id}</h2>
+                    <h2>${task.name || task.task_id || task.id}</h2>
                     <span class="task-status ${statusClass}">
                         ${statusIcon} ${task.status || 'pending'}
                     </span>

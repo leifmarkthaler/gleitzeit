@@ -11,30 +11,30 @@ wait_for_completion: true
 
 # Task definitions with dependencies
 tasks:
-  - id: "generate_topic"
+  - name: "generate_topic"
     method: "llm/chat"
     priority: 3
-    parameters:
+    params:
       model: "llama3.2"
       messages:
         - role: "user"
           content: "Generate a random interesting topic for a short essay. Reply with just the topic, nothing else."
 
-  - id: "write_outline"
+  - name: "write_outline"
     method: "llm/chat"
     priority: 2
     dependencies: ["generate_topic"]
-    parameters:
+    params:
       model: "llama3.2"
       messages:
         - role: "user"
           content: "Create a 3-point outline for an essay about: ${generate_topic.response}"
 
-  - id: "write_essay"
+  - name: "write_essay"
     method: "llm/chat"
     priority: 1
     dependencies: ["write_outline"]
-    parameters:
+    params:
       model: "llama3.2"
       messages:
         - role: "user"
