@@ -111,13 +111,13 @@ def create_task_from_dict(data: Dict[str, Any], workflow_id: str,
     # Generate task ID if not provided
     task_id = data.get('id', f"task-{uuid4().hex[:8]}")
     
-    # Parse retry configuration
+    # Parse retry configuration (support both 'retry' and 'retry_config' keys)
     retry_config = None
-    if 'retry' in data:
-        retry_data = data['retry']
+    retry_data = data.get('retry_config') or data.get('retry')
+    if retry_data:
         retry_config = RetryConfig(
             max_attempts=retry_data.get('max_attempts', 3),
-            backoff_strategy=retry_data.get('backoff', 'exponential'),
+            backoff_strategy=retry_data.get('backoff_strategy', retry_data.get('backoff', 'exponential')),
             base_delay=retry_data.get('base_delay', 1.0),
             max_delay=retry_data.get('max_delay', 300.0),
             jitter=retry_data.get('jitter', True)

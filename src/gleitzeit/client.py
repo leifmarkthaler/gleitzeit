@@ -128,16 +128,44 @@ class GleitzeitClient:
         """Async context manager exit"""
         await self.shutdown()
         
+    async def _scan_for_api_servers(self, port_range: List[int] = None) -> Optional[int]:
+        """Scan port range for running Gleitzeit API servers"""
+        if port_range is None:
+            # Use default range from config
+            port_range = [8000, 8010]
+        
+        for port in range(port_range[0], port_range[-1] + 1):
+            try:
+                url = f"http://localhost:{port}/health"
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url, timeout=0.5)
+                    if response.status_code == 200:
+                        data = response.json()
+                        if isinstance(data, dict) and 'status' in data and data['status'] == 'healthy':
+                            return port
+            except:
+                continue
+        return None
+    
     async def initialize(self) -> None:
         """Initialize the client based on mode"""
         # Determine which mode to use
         if self.mode == ClientMode.AUTO:
-            # Try API first, fall back to native
+            # Try configured API first
             if await self._check_api_available():
                 self._active_mode = ClientMode.API
                 logger.info(f"Using API mode (server at {self.api_url})")
             else:
-                if self.auto_start_server:
+                # Scan port range for any running servers
+                port_range = self.native_config.get('server', {}).get('api', {}).get('port_range', [8000, 8010])
+                found_port = await self._scan_for_api_servers(port_range)
+                
+                if found_port:
+                    self.api_port = found_port
+                    self.api_url = f"http://localhost:{found_port}"
+                    self._active_mode = ClientMode.API
+                    logger.info(f"Found Gleitzeit API server on port {found_port}, using API mode")
+                elif self.auto_start_server:
                     if await self._start_api_server():
                         self._active_mode = ClientMode.API
                         logger.info(f"Started API server and using API mode")
@@ -158,7 +186,10 @@ class GleitzeitClient:
             self._active_mode = ClientMode.API
             logger.info(f"Using API mode (forced)")
         else:
-            # Force native mode
+            # Force native mode - but still check if API is available and warn
+            if await self._check_api_available():
+                logger.warning(f"Gleitzeit API server is already running at {self.api_url}")
+                logger.warning("Consider using mode='api' to connect to existing server instead of starting new engine")
             self._active_mode = ClientMode.NATIVE
             logger.info("Using native mode (forced)")
             
@@ -200,7 +231,11 @@ class GleitzeitClient:
         try:
             async with httpx.AsyncClient() as client:
                 response = await client.get(f"{self.api_url}/health", timeout=2.0)
-                return response.status_code == 200
+                if response.status_code == 200:
+                    # Verify it's actually a Gleitzeit API
+                    data = response.json()
+                    return isinstance(data, dict) and 'status' in data and data['status'] == 'healthy'
+                return False
         except:
             return False
             
@@ -295,7 +330,6 @@ class GleitzeitClient:
         # Setup event-driven architecture first (BEFORE creating persistence adapter)
         from gleitzeit.events.base import EventBus
         from gleitzeit.events.task_handlers import TaskCompletedHandler
-        from gleitzeit.events.persistence_handlers import PersistenceTaskHandler
         from gleitzeit.events.workflow_handlers import WorkflowCompletedHandler
         from gleitzeit.core.events import EventType
         
@@ -307,23 +341,22 @@ class GleitzeitClient:
         
         # Setup execution components with persistence and event bus
         # IMPORTANT: All components share the SAME persistence adapter instance
+        # Use regular QueueManager with integrated event handling
+        from gleitzeit.task_queue.task_queue import QueueManager
         queue_manager = QueueManager(persistence=self._persistence_adapter, event_bus=event_bus)
         await queue_manager.initialize()  # Initialize to recover queued tasks from persistence
         dependency_resolver = DependencyResolver()
         registry = ProtocolProviderRegistry()
         
-        # Register persistence handler (handles all task status updates)
-        # IMPORTANT: Use the SAME persistence adapter instance for all components
-        persistence_handler = PersistenceTaskHandler(persistence=self._persistence_adapter)
-        event_bus.register(EventType.TASK_COMPLETED, persistence_handler)
-        event_bus.register(EventType.TASK_FAILED, persistence_handler)
-        event_bus.register(EventType.TASK_STARTED, persistence_handler)
+        # Persistence is now handled directly by ExecutionEngine before emitting events
+        # This follows the centralized event architecture where ExecutionEngine is the
+        # sole source of task events and saves data before emitting
         
         # Store event bus for client use
         self._event_bus = event_bus
         
-        # Register task completion handler (handles dependency resolution)
-        # IMPORTANT: Use the SAME persistence adapter instance
+        # Enable TaskCompletedHandler so QueueManager gets notified of task completion
+        # This is needed for workflow status management in QueueManager
         task_completed_handler = TaskCompletedHandler(
             persistence=self._persistence_adapter,
             queue_manager=queue_manager
@@ -334,6 +367,13 @@ class GleitzeitClient:
         self._workflow_completed_handler = WorkflowCompletedHandler()
         event_bus.register(EventType.WORKFLOW_COMPLETED, self._workflow_completed_handler)
         
+        # Register workflow manager (tracks workflow state)
+        from gleitzeit.core.event_driven_workflow_manager import EventDrivenWorkflowManager
+        self._workflow_manager = EventDrivenWorkflowManager(
+            persistence=self._persistence_adapter,
+            event_bus=event_bus
+        )
+        
         # IMPORTANT: ExecutionEngine also uses the SAME persistence adapter instance
         self._execution_engine = ExecutionEngine(
             registry=registry,
@@ -341,7 +381,8 @@ class GleitzeitClient:
             dependency_resolver=dependency_resolver,
             persistence=self._persistence_adapter,  # Same instance as all other components
             max_concurrent_tasks=self.native_config.get('max_concurrent_tasks', 5),
-            event_bus=event_bus
+            event_bus=event_bus,
+            task_timeout=self.native_config.get('task_timeout', 300)  # Configurable task timeout (default 5 minutes)
         )
         
         # Initialize batch processor
@@ -600,6 +641,25 @@ class GleitzeitClient:
     async def _run_workflow_native(self, workflow_file: str, watch: bool) -> Dict[str, Any]:
         """Run workflow using native execution engine"""
         workflow = load_workflow_from_file(workflow_file)
+        
+        # Apply default retry configuration from client config if tasks don't have one
+        if self.native_config and 'retry' in self.native_config:
+            default_retry = self.native_config['retry']
+            if default_retry.get('enabled', False):
+                from gleitzeit.core.models import RetryConfig
+                
+                default_retry_config = RetryConfig(
+                    max_attempts=default_retry.get('max_attempts', 3),
+                    backoff_strategy=default_retry.get('backoff_strategy', 'exponential'),
+                    base_delay=default_retry.get('base_delay', 1.0),
+                    max_delay=default_retry.get('max_delay', 300.0),
+                    jitter=default_retry.get('jitter', True)
+                )
+                
+                # Apply to tasks without retry config
+                for task in workflow.tasks:
+                    if not task.retry_config:
+                        task.retry_config = default_retry_config
         
         # Submit and execute
         await self._execution_engine.submit_workflow(workflow)
@@ -937,12 +997,14 @@ class GleitzeitClient:
             try:
                 response = await self._api_client.get(f"/workflows/{workflow_id}")
                 if response.status_code == 200:
-                    return Workflow(**response.json())
+                    # The API returns a WorkflowResponse, not a Workflow object
+                    # So we'll return the response data as-is (dict)
+                    return response.json()
                 return None
             except Exception:
                 return None
         else:
-            if not self._persistence_adapter:
+            if not hasattr(self, '_persistence_adapter') or not self._persistence_adapter:
                 return None
             # Ensure we get fresh data from the database
             await self._refresh_persistence_session()
@@ -1065,8 +1127,17 @@ class GleitzeitClient:
             # In native mode, we don't have direct queue access in v2
             # Return basic statistics from execution engine
             if self._execution_engine:
+                # Count active tasks from persistence instead of task_results
+                active_tasks = 0
+                try:
+                    if hasattr(self._execution_engine, 'persistence') and self._execution_engine.persistence:
+                        # This is a rough estimate - in event-driven architecture we don't track local task_results
+                        active_tasks = 0  # TODO: Could query persistence for executing tasks count if needed
+                except:
+                    active_tasks = 0
+                
                 return {
-                    "active_tasks": len(self._execution_engine.task_results),
+                    "active_tasks": active_tasks,
                     "max_concurrent": self._execution_engine.max_concurrent_tasks
                 }
             return {}
@@ -1399,12 +1470,23 @@ class GleitzeitClient:
         await self._execution_engine.submit_task(task)
         await self._execution_engine.start(ExecutionMode.SINGLE_SHOT)
         
-        result = self._execution_engine.task_results.get(task.id)
-        if result and result.status == "completed":
-            return result.result.get("response", "")
-        else:
-            raise RuntimeError(f"Chat failed: {result.error if result else 'Unknown error'}")
+        # Get result from persistence instead of task_results
+        if self._execution_engine.persistence:
+            result = await self._execution_engine.persistence.get_task_result(task.id)
+            if result and result.status == TaskStatus.COMPLETED:
+                return result.result.get("response", "")
+        
+        # If no result found
+        raise RuntimeError(f"Chat failed: {result.error if result else 'Unknown error'}")
     
+    async def get_workflow_from_persistence(self, workflow_id: str):
+        """Get workflow status from QueueManager via persistence (internal use)"""
+        if not hasattr(self, '_persistence_adapter') or not self._persistence_adapter:
+            raise RuntimeError("Persistence not initialized")
+        
+        # Get workflow from persistence (QueueManager is authoritative source)
+        return await self._persistence_adapter.get_workflow(workflow_id)
+
     # =========================================================================
     # Utility Methods
     # =========================================================================

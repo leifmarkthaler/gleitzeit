@@ -288,10 +288,26 @@ class TaskQueue:
             
             # Check if all dependencies are satisfied
             if await self._are_dependencies_satisfied(fresh_task):
-                # Dependencies are satisfied, update to queued
+                # Dependencies are satisfied, update to queued and emit TASK_READY event
                 logger.info(f"Task {fresh_task.id} dependencies satisfied, enqueueing")
                 fresh_task.status = TaskStatus.QUEUED
                 await self.persistence.save_task(fresh_task)
+                
+                # Emit TASK_READY event for ExecutionEngine to pick up
+                if self.event_bus:
+                    from ..core.events import EventType, create_custom_event
+                    ready_event = create_custom_event(
+                        event_type=EventType.TASK_READY,
+                        data={
+                            'task_id': fresh_task.id,
+                            'workflow_id': fresh_task.workflow_id,
+                            'protocol': fresh_task.protocol,
+                            'method': fresh_task.method
+                        },
+                        source="task_queue"
+                    )
+                    await self.event_bus.emit(ready_event)
+                    logger.info(f"Emitted TASK_READY event for {fresh_task.id}")
     
     async def _check_workflow_completion(self, workflow_id: str) -> None:
         """Check if a workflow is complete and update its status"""
@@ -552,6 +568,22 @@ class TaskQueue:
                     fresh_task.status = TaskStatus.QUEUED
                     await self.persistence.save_task(fresh_task)
                     logger.info(f"Enqueued task {fresh_task.id} - dependencies satisfied")
+                    
+                    # Emit TASK_READY event for ExecutionEngine to pick up
+                    if self.event_bus:
+                        from ..core.events import EventType, create_custom_event
+                        ready_event = create_custom_event(
+                            event_type=EventType.TASK_READY,
+                            data={
+                                'task_id': fresh_task.id,
+                                'workflow_id': fresh_task.workflow_id,
+                                'protocol': fresh_task.protocol,
+                                'method': fresh_task.method
+                            },
+                            source="task_queue"
+                        )
+                        await self.event_bus.emit(ready_event)
+                        logger.info(f"Emitted TASK_READY event for {fresh_task.id}")
 
 
 class QueueManager:
@@ -569,15 +601,137 @@ class QueueManager:
         # Create default queue with persistence and event bus
         self.queues[self.default_queue_name] = TaskQueue(self.default_queue_name, persistence=self.persistence, event_bus=self.event_bus)
         
+        # Register event handlers if event bus is available
+        if self.event_bus:
+            self._register_event_handlers()
+        
         logger.info("Initialized QueueManager with persistence backend")
+    
+    def _register_event_handlers(self):
+        """Register event handlers for task and workflow management"""
+        from ..core.events import EventType
+        
+        # Task lifecycle events
+        self.event_bus.register(EventType.TASK_SUBMITTED, self._on_task_submitted)
+        
+        # Retry events
+        self.event_bus.register(EventType.TASK_READY_FOR_RETRY, self._on_task_ready_for_retry)
+        
+        # Workflow events
+        self.event_bus.register(EventType.WORKFLOW_SUBMITTED, self._on_workflow_submitted)
+        
+        logger.debug("QueueManager registered event handlers")
+    
+    async def _on_task_submitted(self, event):
+        """Handle task submission - enqueue if dependencies satisfied"""
+        from ..core.events import EventType, create_custom_event
+        from ..core.models import TaskStatus
+        
+        task_id = event.data.get('task_id')
+        if not task_id:
+            return
+        
+        logger.debug(f"Processing TASK_SUBMITTED event for {task_id}")
+        
+        # Get task from persistence
+        task = await self.persistence.get_task(task_id)
+        if not task:
+            logger.warning(f"Task {task_id} not found in persistence")
+            return
+        
+        # Check if dependencies are satisfied
+        if await self._are_task_dependencies_satisfied(task):
+            # Enqueue immediately and emit TASK_READY event
+            await self._enqueue_task_with_ready_event(task)
+        else:
+            # Mark as pending (waiting for dependencies)
+            task.status = TaskStatus.PENDING
+            await self.persistence.save_task(task)
+            logger.info(f"Task {task_id} waiting for dependencies")
+    
+    async def _on_task_ready_for_retry(self, event):
+        """Handle task ready for retry - enqueue it"""
+        task_id = event.data.get('task_id')
+        if not task_id:
+            return
+        
+        logger.debug(f"Processing TASK_READY_FOR_RETRY event for {task_id}")
+        
+        # Get task from persistence
+        task = await self.persistence.get_task(task_id)
+        if not task:
+            logger.warning(f"Task {task_id} not found for retry")
+            return
+        
+        # Enqueue for retry execution
+        await self._enqueue_task_with_ready_event(task)
+        logger.info(f"Task {task_id} ready for retry attempt #{event.data.get('attempt_number', 1)}")
+    
+    async def _on_workflow_submitted(self, event):
+        """Handle workflow submission - enqueue initial tasks"""
+        workflow_id = event.data.get('workflow_id')
+        if not workflow_id:
+            return
+        
+        logger.debug(f"Processing WORKFLOW_SUBMITTED event for {workflow_id}")
+        
+        # Get workflow from persistence
+        workflow = await self.persistence.get_workflow(workflow_id)
+        if not workflow:
+            logger.warning(f"Workflow {workflow_id} not found in persistence")
+            return
+        
+        # Check each task for immediate enqueueing
+        for task in workflow.tasks:
+            if not task.dependencies:
+                # Tasks with no dependencies can be enqueued immediately
+                await self._enqueue_task_with_ready_event(task)
+    
+    async def _enqueue_task_with_ready_event(self, task):
+        """Enqueue task and emit TASK_READY event"""
+        from ..core.events import EventType, create_custom_event
+        from ..core.models import TaskStatus
+        
+        # Update task status to QUEUED
+        task.status = TaskStatus.QUEUED
+        await self.persistence.save_task(task)
+        logger.info(f"Enqueued task {task.id}")
+        
+        # Emit TASK_READY event for ExecutionEngine
+        ready_event = create_custom_event(
+            event_type=EventType.TASK_READY,
+            data={
+                'task_id': task.id,
+                'workflow_id': task.workflow_id,
+                'protocol': task.protocol,
+                'method': task.method
+            },
+            source="queue_manager"
+        )
+        await self.event_bus.emit(ready_event)
+        logger.info(f"Emitted TASK_READY event for {task.id}")
+    
+    async def _are_task_dependencies_satisfied(self, task):
+        """Check if all task dependencies are completed"""
+        from ..core.models import TaskStatus
+        
+        if not task.dependencies:
+            return True
+        
+        for dep_id in task.dependencies:
+            dep_result = await self.persistence.get_task_result(dep_id)
+            if not dep_result or dep_result.status != TaskStatus.COMPLETED:
+                return False
+        
+        return True
     
     async def initialize(self) -> None:
         """Initialize all queues and start monitoring"""
         for queue in self.queues.values():
             await queue.initialize()
-            # Start monitoring for each queue
-            await queue.start_monitoring(interval=2)  # Check every 2 seconds
-        logger.info(f"QueueManager initialized with {len(self.queues)} queue(s) and monitoring started")
+            # TEMPORARILY DISABLE monitoring to fix race condition
+            # await queue.start_monitoring(interval=2)  # Check every 2 seconds
+        logger.info(f"QueueManager initialized with {len(self.queues)} queue(s) - monitoring DISABLED to fix race condition")
     
     def create_queue(self, name: str) -> TaskQueue:
         """Create a new task queue"""

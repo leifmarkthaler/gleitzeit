@@ -43,18 +43,9 @@ async def start_ui(ctx: click.Context, port: int = 8004, host: str = "127.0.0.1"
         click.echo(f"⚠️  Cannot connect to Gleitzeit API at {api_url}", err=True)
         click.echo("Make sure to run 'gleitzeit serve' first to start the API", err=True)
     
-    # Get the UI app path
-    ui_path = Path(__file__).parent.parent.parent.parent / "ui"
-    if not ui_path.exists():
-        click.echo(f"Error: UI directory not found at {ui_path}", err=True)
-        sys.exit(1)
-    
-    # Add UI path to Python path so imports work
-    sys.path.insert(0, str(ui_path))
-    
     try:
-        # Import the UI app - it's now a thin client that proxies to the API
-        from api.app import app
+        # Import the UI app from the gleitzeit package
+        from gleitzeit.ui.api.app import app
         
         # Run the UI server
         config = uvicorn.Config(

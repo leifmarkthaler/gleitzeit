@@ -272,10 +272,24 @@ print(json.dumps({"result": "data"}))  # Must output JSON
 
 **Solution:**
 ```yaml
-# Increase timeout
+# Increase timeout per task
 parameters:
   script: "long_running.py"
   timeout: 300  # 5 minutes
+```
+
+Or configure globally:
+```yaml
+# In ~/.gleitzeit/config.yaml
+execution:
+  task_timeout: 600  # 10 minutes for all tasks
+```
+
+Or in Python client:
+```python
+client = GleitzeitClient(
+    native_config={"task_timeout": 600}
+)
 ```
 
 ## API Server Issues
@@ -383,20 +397,29 @@ client = GleitzeitClient()
 
 ### Task hanging
 
-**Issue:** Task never completes
+**Issue:** Task never completes or gets stuck in "executing" status
 
-**Solution:**
+**Solution (Fixed in v0.0.6):**
+
+Tasks now have automatic timeout protection. Configure timeouts:
+
 ```yaml
-# Set timeout
+# Per-task timeout
 tasks:
   - id: "task"
-    parameters:
-      timeout: 30
+    params:
+      timeout: 30  # 30 seconds
+
+# Global timeout in config
+execution:
+  task_timeout: 300  # 5 minutes default
 ```
 
-Or kill hanging task:
+If a task exceeds its timeout, it will automatically fail with a clear error message and can be retried if retry configuration is enabled.
+
+**Legacy workaround (pre-v0.0.6):**
 ```bash
-# Find and kill process
+# Find and kill hanging process
 ps aux | grep gleitzeit
 kill -9 <PID>
 ```

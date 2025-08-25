@@ -75,11 +75,20 @@ async def test_execution_engine_integration():
     provider.execute = mock_execute
     registry.register_provider(provider)
     
-    # Create execution engine
+    # Create event bus (required for modern architecture)
+    from gleitzeit.events.base import EventBus
+    event_bus = EventBus()
+    
+    # Update queue manager to use event bus
+    queue_manager = QueueManager(event_bus=event_bus)
+    await queue_manager.initialize()
+    
+    # Create execution engine with event bus
     engine = ExecutionEngine(
         registry=registry,
         queue_manager=queue_manager,
-        dependency_resolver=dependency_resolver
+        dependency_resolver=dependency_resolver,
+        event_bus=event_bus
     )
     
     # Create a task that uses our provider
@@ -182,11 +191,20 @@ async def test_workflow_with_instructor():
         ]
     )
     
-    # Create execution engine
+    # Create event bus (required for modern architecture)
+    from gleitzeit.events.base import EventBus
+    event_bus = EventBus()
+    
+    # Update queue manager to use event bus
+    queue_manager = QueueManager(event_bus=event_bus)
+    await queue_manager.initialize()
+    
+    # Create execution engine with event bus
     engine = ExecutionEngine(
         registry=registry,
         queue_manager=queue_manager,
-        dependency_resolver=dependency_resolver
+        dependency_resolver=dependency_resolver,
+        event_bus=event_bus
     )
     
     # Execute workflow

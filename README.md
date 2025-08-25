@@ -398,8 +398,11 @@ gleitzeit batch documents --pattern "*.txt" --prompt "Summarize"
 gleitzeit config show
 gleitzeit config set default_model llama3.2
 
-# Start API server
+# Start API server with Web UI (auto-starts UI on port 8004)
 gleitzeit serve --port 8000
+
+# Start API server without UI
+gleitzeit serve --port 8000 --headless
 ```
 
 ## Resource Hubs
@@ -435,8 +438,17 @@ client = GleitzeitClient(mode="native")
 
 ### Production Mode
 ```bash
-# Start API server
+# Start API server with Web UI (default)
 gleitzeit serve --port 8000
+
+# The Web UI will be available at http://localhost:8004
+# API documentation available at http://localhost:8000/docs
+
+# Start API server without UI (headless mode)
+gleitzeit serve --port 8000 --headless
+
+# Custom UI configuration
+gleitzeit serve --port 8000 --ui-port 3000 --ui-host 0.0.0.0
 
 # Client connects to API
 client = GleitzeitClient(mode="api", api_host="localhost", api_port=8000)
@@ -463,6 +475,9 @@ persistence:
 batch:
   max_concurrent: 5
   max_file_size: 1048576
+execution:
+  max_parallel_tasks: 5
+  task_timeout: 300  # Task execution timeout in seconds (default: 5 minutes)
 mcp:
   auto_discover: true
   servers:
@@ -490,6 +505,43 @@ export GLEITZEIT_API_PORT=8000
 ```
 
 ## Advanced Features
+
+### Task Timeout Configuration
+
+Configure timeout protection for task execution:
+
+#### Global Configuration
+```yaml
+# In ~/.gleitzeit/config.yaml
+execution:
+  task_timeout: 600  # 10 minutes for all tasks
+```
+
+#### Per-Task Configuration
+```yaml
+tasks:
+  - name: "quick_task"
+    method: "python/execute"
+    params:
+      file: "script.py"
+      timeout: 30  # Override to 30 seconds for this task
+      
+  - name: "long_running_task"
+    method: "llm/chat"
+    params:
+      timeout: 1800  # 30 minutes for complex LLM task
+```
+
+#### Python Client Configuration
+```python
+client = GleitzeitClient(
+    native_config={
+        "task_timeout": 300  # 5 minute default
+    }
+)
+```
+
+Tasks that exceed their timeout will fail with a clear error message, allowing retry logic to handle them appropriately.
 
 ### Parallel Task Execution
 Tasks without dependencies run concurrently:

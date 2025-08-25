@@ -60,6 +60,8 @@ class BatchRequest(BaseModel):
     method: str = Field("llm/chat", description="Method to use for processing")
     prompt: str = Field(..., description="Prompt for each file")
     model: str = Field("llama3.2:latest", description="Model to use")
+    max_concurrent: int = Field(5, description="Maximum concurrent tasks")
+    name: Optional[str] = Field(None, description="Batch job name")
 
 
 
@@ -264,11 +266,14 @@ async def submit_workflow(workflow: WorkflowRequest):
         # First pass: create tasks and build name-to-ID mapping
         for task_req in workflow.tasks:
             task_id = f"task_{uuid.uuid4().hex[:8]}"  # Always generate unique ID
-            task_name = task_req.name or task_req.id  # Use name if provided, fallback to id
+            task_name = task_req.name  # Use the provided name
             
-            # Store mapping for dependency resolution
+            # Store mapping for dependency resolution using task name
+            # Also store by ID if it was provided (for backward compatibility)
             if task_name:
                 name_to_id_map[task_name] = task_id
+            if task_req.id:
+                name_to_id_map[task_req.id] = task_id
             
             task = Task(
                 id=task_id,
@@ -326,11 +331,8 @@ async def submit_workflow(workflow: WorkflowRequest):
         # Submit workflow to the execution engine through the client
         # The client in native mode has the execution engine
         if hasattr(app_state.client, '_execution_engine') and app_state.client._execution_engine:
-            # First, persist the workflow
-            if hasattr(app_state.client, '_persistence_adapter') and app_state.client._persistence_adapter:
-                await app_state.client._persistence_adapter.save_workflow(workflow_obj)
-            
-            # Then submit to execution engine for processing
+            # Submit to execution engine which will handle persistence
+            # Note: submit_workflow saves the workflow and tasks to persistence
             await app_state.client._execution_engine.submit_workflow(workflow_obj)
             
             # Don't execute immediately - let the engine handle it asynchronously
@@ -362,7 +364,8 @@ async def submit_workflow(workflow: WorkflowRequest):
                 yaml.dump(workflow_dict, temp_file, default_flow_style=False)
                 temp_file_path = temp_file.name
             
-            result = await app_state.client.run_workflow(temp_file_path)
+            # Submit workflow without waiting for completion (watch=False)
+            result = await app_state.client.run_workflow(temp_file_path, watch=False)
             workflow_id = result.get("workflow_id", workflow_id)
             
             import os
@@ -426,8 +429,17 @@ async def get_workflow_status(workflow_id: str):
         raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        # Always get tasks to calculate current status dynamically
-        # This ensures we have the most up-to-date task statuses
+        # Get workflow status from persistence (QueueManager is authoritative source for workflow status)
+        workflow = await app_state.client.get_workflow(workflow_id)
+        
+        if not workflow:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+        
+        # Get workflow status from QueueManager via persistence
+        status = str(workflow.status.value) if hasattr(workflow.status, 'value') else str(workflow.status)
+        status = status.lower() if status else "pending"
+        
+        # Get tasks for the workflow
         result = await app_state.client.list_tasks(workflow_id=workflow_id)
         
         # Handle the response format from client
@@ -436,37 +448,31 @@ async def get_workflow_status(workflow_id: str):
         else:
             tasks = result if isinstance(result, list) else []
         
-        if not tasks:
-            raise HTTPException(status_code=404, detail="Workflow not found")
-        
-        # Calculate status from tasks
-        tasks_completed = sum(1 for t in tasks if hasattr(t, 'status') and str(t.status) == "completed")
-        tasks_failed = sum(1 for t in tasks if hasattr(t, 'status') and str(t.status) == "failed")
-        
-        # Determine overall workflow status
-        if tasks_failed > 0:
-            status = "failed"
-        elif tasks_completed == len(tasks) and len(tasks) > 0:
-            status = "completed"
-        elif any(hasattr(t, 'status') and str(t.status) in ["executing", "running"] for t in tasks):
-            status = "running"
-        else:
-            status = "pending"
-        
-        # Get workflow metadata from workflow object if available
-        workflow = await app_state.client.get_workflow(workflow_id)
+        # Calculate task counts from workflow object (more reliable)
+        tasks_completed = len(workflow.completed_tasks) if hasattr(workflow, 'completed_tasks') else 0
+        tasks_failed = len(workflow.failed_tasks) if hasattr(workflow, 'failed_tasks') else 0
         
         # Get task results from persistence
         results = {}
         for task in tasks:
             if hasattr(task, 'id'):
-                # Fetch the actual task result from persistence
+                # Get the most current task object from persistence for accurate status
+                current_task = await app_state.client.get_task(task.id)
                 task_result = await app_state.client.get_task_result(task.id)
                 
+                # Use the current task status if available, otherwise infer from result
+                if current_task and hasattr(current_task, 'status'):
+                    task_status = str(current_task.status.value) if hasattr(current_task.status, 'value') else str(current_task.status)
+                elif task_result and task_result.result:
+                    # If we have a result, the task is completed
+                    task_status = "completed"
+                else:
+                    task_status = "pending"
+                
                 results[task.id] = {
-                    "status": str(task.status) if hasattr(task, 'status') else "unknown",
+                    "status": task_status,
                     "result": task_result.result if task_result else None,
-                    "error": task.error_message if hasattr(task, 'error_message') else None
+                    "error": current_task.error_message if current_task and hasattr(current_task, 'error_message') else None
                 }
         
         response = WorkflowResponse(

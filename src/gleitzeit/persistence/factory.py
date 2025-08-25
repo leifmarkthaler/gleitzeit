@@ -17,8 +17,10 @@ from enum import Enum
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter, UnifiedInMemoryAdapter
 from gleitzeit.persistence.unified_sqlalchemy import UnifiedSQLAlchemyAdapter
 from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
-from gleitzeit.persistence.unified_redis_events import UnifiedRedisEventsAdapter
-from gleitzeit.persistence.unified_memory_events import UnifiedMemoryEventsAdapter
+from gleitzeit.persistence.hybrid_sql import HybridSQLAdapter
+from gleitzeit.core.models import TaskStatus
+# Event-driven adapters are no longer used - centralized event architecture
+# Events are emitted only by ExecutionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -142,29 +144,18 @@ class PersistenceFactory:
         try:
             logger.info(f"Attempting to connect to Redis at {redis_url}")
             
-            # Use event-driven adapter if event_bus is provided
-            if event_bus:
-                logger.info("Creating event-driven Redis adapter")
-                adapter = UnifiedRedisEventsAdapter(
-                    redis_url=redis_url,
-                    key_prefix=config.get("redis_key_prefix", "gleitzeit"),
-                    max_connections=config.get("redis_max_connections", 50),
-                    socket_timeout=config.get("redis_socket_timeout", 5),
-                    socket_connect_timeout=config.get("redis_connect_timeout", 5),
-                    retry_on_timeout=config.get("redis_retry_on_timeout", True),
-                    health_check_interval=config.get("redis_health_check_interval", 30),
-                    event_bus=event_bus
-                )
-            else:
-                adapter = UnifiedRedisAdapter(
-                    redis_url=redis_url,
-                    key_prefix=config.get("redis_key_prefix", "gleitzeit"),
-                    max_connections=config.get("redis_max_connections", 50),
-                    socket_timeout=config.get("redis_socket_timeout", 5),
-                    socket_connect_timeout=config.get("redis_connect_timeout", 5),
-                    retry_on_timeout=config.get("redis_retry_on_timeout", True),
-                    health_check_interval=config.get("redis_health_check_interval", 30)
-                )
+            # Always use base adapter (no event emission from persistence layer)
+            # Events will be emitted by ExecutionEngine only
+            logger.info("Creating Redis adapter (centralized event architecture)")
+            adapter = UnifiedRedisAdapter(
+                redis_url=redis_url,
+                key_prefix=config.get("redis_key_prefix", "gleitzeit"),
+                max_connections=config.get("redis_max_connections", 50),
+                socket_timeout=config.get("redis_socket_timeout", 5),
+                socket_connect_timeout=config.get("redis_connect_timeout", 5),
+                retry_on_timeout=config.get("redis_retry_on_timeout", True),
+                health_check_interval=config.get("redis_health_check_interval", 30)
+            )
             
             # Test connection
             await adapter.initialize()
@@ -193,50 +184,26 @@ class PersistenceFactory:
         sql_db_path: str,
         config: Dict[str, Any],
         event_bus: Optional[Any] = None
-    ) -> Optional[UnifiedSQLAlchemyAdapter]:
-        """Try to create SQL adapter, return None if fails"""
+    ) -> Optional[HybridSQLAdapter]:
+        """Try to create hybrid SQL adapter, return None if fails"""
         try:
-            # Use event-driven adapter if event_bus is provided
-            if event_bus:
-                logger.info("Creating event-driven SQL adapter")
-                from .unified_sqlalchemy_events import UnifiedSQLAlchemyEventsAdapter
-                
-                if sql_connection:
-                    logger.info(f"Attempting to connect to SQL database: {sql_connection}")
-                    adapter = UnifiedSQLAlchemyEventsAdapter(
-                        connection_string=sql_connection,
-                        echo=config.get("sql_echo", False),
-                        pool_size=config.get("sql_pool_size", 20),
-                        max_overflow=config.get("sql_max_overflow", 40),
-                        pool_timeout=config.get("sql_pool_timeout", 30),
-                        pool_recycle=config.get("sql_pool_recycle", 3600),
-                        event_bus=event_bus
-                    )
-                else:
-                    logger.info(f"Attempting to use SQLite database: {sql_db_path}")
-                    adapter = UnifiedSQLAlchemyEventsAdapter(
-                        db_path=sql_db_path,
-                        echo=config.get("sql_echo", False),
-                        event_bus=event_bus
-                    )
+            # Use hybrid adapter for SQL persistence
+            logger.info("Creating hybrid SQL adapter (memory runtime + SQL archive)")
+            
+            # Determine connection string
+            if sql_connection:
+                logger.info(f"Using SQL database: {sql_connection}")
+                connection_string = sql_connection
             else:
-                # Use regular adapter without events
-                if sql_connection:
-                    logger.info(f"Attempting to connect to SQL database: {sql_connection}")
-                    adapter = UnifiedSQLAlchemyAdapter(
-                        connection_string=sql_connection,
-                        echo=config.get("sql_echo", False),
-                        pool_size=config.get("sql_pool_size", 20),
-                        max_overflow=config.get("sql_max_overflow", 40),
-                        pool_timeout=config.get("sql_pool_timeout", 30),
-                        pool_recycle=config.get("sql_pool_recycle", 3600)
-                    )
-                else:
-                    logger.info(f"Attempting to use SQLite database: {sql_db_path}")
-                    adapter = UnifiedSQLAlchemyAdapter(
-                        db_path=sql_db_path,
-                        echo=config.get("sql_echo", False)
-                    )
+                logger.info(f"Using SQLite database: {sql_db_path}")
+                connection_string = f"sqlite+aiosqlite:///{sql_db_path}"
+            
+            # Create hybrid adapter
+            adapter = HybridSQLAdapter(
+                connection_string=connection_string,
+                max_memory_mb=config.get("max_memory_mb"),
+                event_bus=event_bus
+            )
             
             # Test connection
             await adapter.initialize()
@@ -254,18 +221,20 @@ class PersistenceFactory:
             
             await adapter.save_task(test_task)
             retrieved = await adapter.get_task("__test_task__")
-            await adapter.delete_task("__test_task__")
+            # Hybrid adapter doesn't have delete_task, just mark as completed
+            test_task.status = TaskStatus.COMPLETED
+            await adapter.save_task(test_task)
             
             if retrieved and retrieved.id == "__test_task__":
-                logger.info("Successfully connected to SQL persistence")
+                logger.info("Successfully connected to hybrid SQL persistence")
                 return adapter
             else:
-                logger.warning("SQL connection test failed")
-                await adapter.shutdown()
+                logger.warning("Hybrid SQL connection test failed")
+                await adapter.cleanup()
                 return None
                 
         except Exception as e:
-            logger.warning(f"Failed to create SQL adapter: {e}")
+            logger.warning(f"Failed to create hybrid SQL adapter: {e}")
             return None
     
     @classmethod
@@ -288,12 +257,12 @@ class PersistenceFactory:
         sql_db_path: str,
         config: Dict[str, Any],
         event_bus: Optional[Any] = None
-    ) -> UnifiedSQLAlchemyAdapter:
-        """Create SQL adapter or raise exception"""
+    ) -> HybridSQLAdapter:
+        """Create hybrid SQL adapter or raise exception"""
         adapter = await cls._try_sql(sql_connection, sql_db_path, config, event_bus)
         if adapter:
             return adapter
-        raise RuntimeError("Failed to create SQL adapter")
+        raise RuntimeError("Failed to create hybrid SQL adapter")
     
     @classmethod
     async def _create_memory(
@@ -302,13 +271,10 @@ class PersistenceFactory:
         event_bus: Optional[Any] = None
     ) -> UnifiedInMemoryAdapter:
         """Create in-memory adapter (always succeeds)"""
-        # Use event-driven adapter if event_bus is provided
-        if event_bus:
-            logger.info("Using event-driven in-memory persistence")
-            adapter = UnifiedMemoryEventsAdapter(event_bus=event_bus)
-        else:
-            logger.info("Using in-memory persistence")
-            adapter = UnifiedInMemoryAdapter()
+        # Always use base adapter (no event emission from persistence layer)
+        # Events will be emitted by ExecutionEngine only
+        logger.info("Using in-memory persistence (centralized event architecture)")
+        adapter = UnifiedInMemoryAdapter()
         await adapter.initialize()
         return adapter
     

@@ -17,7 +17,7 @@ import time
 import httpx
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 
 # Add the parent directory to Python path for imports
 current_dir = Path(__file__).parent
@@ -69,6 +69,18 @@ class GleitzeitCLI:
         else:
             # Default configuration
             return {
+                'server': {
+                    'api': {
+                        'host': '0.0.0.0',
+                        'port_range': [8000, 8010],  # Try ports 8000-8010 for API
+                        'default_port': 8000
+                    },
+                    'ui': {
+                        'host': '0.0.0.0',
+                        'port_range': [8004, 8014],  # Try ports 8004-8014 for UI
+                        'default_port': 8004
+                    }
+                },
                 'persistence': {
                     'backend': 'sqlite',
                     'sqlite': {
@@ -108,7 +120,13 @@ class GleitzeitCLI:
             }
     
     async def _setup_system(self, enable_resource_management: bool = True) -> bool:
-        """Set up the execution system with hub architecture"""
+        """
+        DEPRECATED: Legacy setup method - use GleitzeitClient instead
+        
+        This method is only used for backward compatibility with --local mode.
+        The modern system uses GleitzeitClient which properly sets up event bus.
+        """
+        logger.warning("Using legacy _setup_system - consider using GleitzeitClient instead")
         try:
             # Initialize unified persistence backend
             # This will automatically try Redis -> SQL -> Memory fallback chain
@@ -136,8 +154,12 @@ class GleitzeitCLI:
             backend_name = type(self.persistence_backend).__name__.replace('Unified', '').replace('Adapter', '')
             click.echo(f"✓ Unified persistence initialized ({backend_name})")
             
-            # Set up execution components
-            queue_manager = QueueManager()
+            # Set up execution components with event bus (required for proper operation)
+            from gleitzeit.events.base import EventBus
+            event_bus = EventBus()
+            
+            queue_manager = QueueManager(persistence=self.persistence_backend, event_bus=event_bus)
+            await queue_manager.initialize()
             dependency_resolver = DependencyResolver()
             registry = ProtocolProviderRegistry()
             
@@ -148,7 +170,8 @@ class GleitzeitCLI:
                 queue_manager=queue_manager,
                 dependency_resolver=dependency_resolver,
                 persistence=self.persistence_backend,
-                max_concurrent_tasks=max_concurrent
+                max_concurrent_tasks=max_concurrent,
+                event_bus=event_bus  # Now properly includes event bus
             )
             
             # Initialize Resource Management (Hub Architecture)
@@ -279,6 +302,7 @@ class GleitzeitCLI:
             
             click.echo(f"🚀 Executing workflow: {workflow.name}")
             click.echo(f"   Tasks: {len(workflow.tasks)}")
+            click.echo(f"\n💡 Tip: Start the Web UI to monitor workflows with: gleitzeit serve")
             
             # Submit and execute workflow using the same method as CLI
             await self.execution_engine.submit_workflow(workflow)
@@ -411,66 +435,207 @@ def run(workflow_file: str, watch: bool, host: str, port: int, local: bool, no_a
 
 async def _run_workflow_local(workflow_file: str, watch: bool, backend: Optional[str] = None, 
                              enable_resource_management: bool = True):
-    """Execute workflow locally with hub-based resource management"""
+    """Execute workflow locally - auto-start API server if needed"""
     try:
-        # Override backend if specified
-        if backend:
-            cli_instance.config['persistence']['backend'] = backend
+        # Load configuration for server settings
+        config = cli_instance.config
+        server_config = config.get('server', {})
+        api_config = server_config.get('api', {})
+        api_host = api_config.get('host', '0.0.0.0')
+        api_port_range = api_config.get('port_range', [8000, 8010])
         
-        # Setup system with resource management option
-        if not await cli_instance._setup_system(enable_resource_management=enable_resource_management):
-            return
+        # Check if any API server is running in the port range
+        import aiohttp
+        api_port = None
+        api_running = False
         
-        # Use the unified workflow loader
-        from gleitzeit.core.workflow_loader import load_workflow_from_file, validate_workflow
+        for port in range(api_port_range[0], api_port_range[-1] + 1):
+            try:
+                api_url = f"http://localhost:{port}"  # Use localhost for client connections
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(f"{api_url}/health", timeout=aiohttp.ClientTimeout(total=0.5)) as resp:
+                        if resp.status == 200:
+                            # Verify it's actually a Gleitzeit API by checking the response content
+                            data = await resp.json()
+                            if isinstance(data, dict) and 'status' in data and data['status'] == 'healthy':
+                                api_running = True
+                                api_port = port
+                                click.echo(f"ℹ️  Found running Gleitzeit API at {api_url}")
+                                ui_port_range = server_config.get('ui', {}).get('port_range', [8004, 8014])
+                                click.echo(f"💡 Tip: View the Web UI at http://localhost:{ui_port_range[0]}")
+                                break
+            except:
+                continue
         
-        workflow = load_workflow_from_file(workflow_file)
-        click.echo(f"📄 Loading workflow: {workflow.name}")
+        if not api_running:
+            # Find an available port to start the server
+            available_port = await _find_available_port(api_host, api_port_range, "API server")
+            if not available_port:
+                click.echo(f"❌ No available ports in range {api_port_range}")
+                return
+            
+            # Start the API server in the background
+            click.echo(f"🚀 No API server found, starting Gleitzeit server on port {available_port}...")
+            import subprocess
+            import sys
+            
+            # Start server with --headless flag (no UI for background operation)
+            server_cmd = [
+                sys.executable, "-m", "gleitzeit.cli.gleitzeit_cli", 
+                "serve", "--host", api_host, "--port", str(available_port), "--headless"
+            ]
+            
+            # Set persistence type environment variable if backend specified
+            env = os.environ.copy()
+            if backend:
+                backend_map = {
+                    'redis': 'redis',
+                    'sqlite': 'sql',
+                    'sql': 'sql'
+                }
+                env['GLEITZEIT_PERSISTENCE_TYPE'] = backend_map.get(backend, backend)
+            
+            # Start server in background
+            server_process = subprocess.Popen(
+                server_cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                env=env
+            )
+            
+            # Wait for server to be ready
+            click.echo("⏳ Waiting for server to start...")
+            api_url = f"http://localhost:{available_port}"
+            for i in range(30):  # Wait up to 30 seconds
+                await asyncio.sleep(1)
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(f"{api_url}/health", timeout=aiohttp.ClientTimeout(total=1)) as resp:
+                            if resp.status == 200:
+                                click.echo("✅ Server started successfully")
+                                click.echo(f"💡 Tip: View the Web UI by running: gleitzeit serve")
+                                api_running = True
+                                api_port = available_port
+                                break
+                except:
+                    pass
+            
+            if not api_running:
+                click.echo("❌ Failed to start API server")
+                if server_process:
+                    server_process.terminate()
+                return
         
-        # Validate workflow
-        validation_errors = validate_workflow(workflow)
-        if validation_errors:
-            click.echo("❌ Workflow validation failed:")
-            for error in validation_errors:
-                click.echo(f"  • {error}")
-            return
-        
-        click.echo(f"🚀 Executing workflow: {workflow.name}")
-        click.echo(f"   Tasks: {len(workflow.tasks)}")
-        
-        # Submit and execute workflow
-        await cli_instance.execution_engine.submit_workflow(workflow)
-        
-        if watch:
-            click.echo("📊 Watching execution...")
-        
-        # Execute workflow
-        await cli_instance.execution_engine._execute_workflow(workflow)
-        
-        # Show results
-        click.echo("\n✅ Workflow completed!")
-        for task in workflow.tasks:
-            result = cli_instance.execution_engine.task_results.get(task.id)
-            cli_instance._display_task_result(task.name, result)
-        
-        persistence_backend = cli_instance.config.get('persistence', {}).get('backend', 'sqlite')
-        click.echo(f"\n💾 Results persisted to {persistence_backend} backend")
+        # Now use API mode to run the workflow with the correct port
+        return await _run_workflow_api(workflow_file, watch, "localhost", api_port, start_server=False)
         
     except Exception as e:
         click.echo(f"❌ Workflow execution failed: {e}")
-        if logger.isEnabledFor(logging.DEBUG):
+        import logging
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
             import traceback
             traceback.print_exc()
-    finally:
-        await cli_instance._shutdown_system()
+
+
+async def _check_docker_availability() -> bool:
+    """Check if Docker is available and running"""
+    import subprocess
+    import platform
+    
+    try:
+        # Cross-platform Docker check
+        if platform.system() == "Windows":
+            # Windows: check if docker.exe is available
+            result = subprocess.run(
+                ["where", "docker"],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            docker_found = result.returncode == 0
+        else:
+            # Unix/Mac: check if docker command exists
+            result = subprocess.run(
+                ["which", "docker"],
+                capture_output=True,
+                text=True,
+                timeout=2
+            )
+            docker_found = result.returncode == 0
+        
+        if not docker_found:
+            click.echo("⚠️  Docker not found - Python tasks will run locally without isolation")
+            return False
+        
+        # Check if Docker daemon is running
+        result = subprocess.run(
+            ["docker", "version", "--format", "{{.Server.Version}}"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        
+        if result.returncode == 0:
+            docker_version = result.stdout.strip()
+            click.echo(f"🐳 Docker {docker_version} detected - isolated execution available")
+            
+            # Check Docker daemon socket/port
+            info_result = subprocess.run(
+                ["docker", "info", "--format", "{{.DockerRootDir}}"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            
+            if info_result.returncode == 0:
+                click.echo(f"   Docker is ready for isolated task execution")
+            
+            return True
+        else:
+            click.echo("⚠️  Docker found but daemon not running - starting without Docker support")
+            click.echo("   To enable isolated execution, start Docker Desktop/daemon")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        click.echo("⚠️  Docker check timed out - starting without Docker support")
+        return False
+    except Exception as e:
+        click.echo(f"⚠️  Could not check Docker status: {e}")
+        click.echo("   Starting without Docker support")
+        return False
+
+
+async def _find_available_port(host: str, port_range: List[int], service_name: str = "service") -> Optional[int]:
+    """Find an available port in the given range"""
+    import socket
+    
+    start_port, end_port = port_range[0], port_range[-1] if len(port_range) > 1 else port_range[0] + 10
+    
+    for port in range(start_port, end_port + 1):
+        try:
+            # Try to bind to the port
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind((host, port))
+            sock.close()
+            return port
+        except OSError:
+            continue
+    
+    click.echo(f"⚠️  No available ports found for {service_name} in range {start_port}-{end_port}")
+    return None
 
 
 async def _check_api_server(host: str, port: int) -> bool:
-    """Check if API server is running"""
+    """Check if Gleitzeit API server is running"""
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(f"http://{host}:{port}/health", timeout=2.0)
-            return response.status_code == 200
+            if response.status_code == 200:
+                # Verify it's actually a Gleitzeit API
+                data = response.json()
+                return isinstance(data, dict) and 'status' in data and data['status'] == 'healthy'
+            return False
     except:
         return False
 
@@ -907,116 +1072,289 @@ def batch(directory: str, pattern: str, prompt: str, model: str, vision: bool, o
 @click.option('--port', '-p', default=8000, type=int, help='Port to bind the API server to')
 @click.option('--reload', is_flag=True, help='Enable auto-reload for development')
 @click.option('--workers', '-w', default=1, type=int, help='Number of worker processes')
-def serve(host: str, port: int, reload: bool, workers: int):
-    """Start the Gleitzeit REST API server"""
+@click.option('--headless', is_flag=True, help='Run without the Web UI')
+@click.option('--ui-port', default=8004, type=int, help='Port for the Web UI (default: 8004)')
+@click.option('--ui-host', default='127.0.0.1', help='Host for the Web UI (default: 127.0.0.1)')
+def serve(host: str, port: int, reload: bool, workers: int, headless: bool, ui_port: int, ui_host: str):
+    """Start the Gleitzeit REST API server (with Web UI by default)"""
+    # Run the async serve function
+    asyncio.run(_async_serve(host, port, reload, workers, headless, ui_port, ui_host))
+
+
+async def _async_serve(host: str, port: int, reload: bool, workers: int, headless: bool, ui_port: int, ui_host: str):
+    """Async function to run both API and UI servers"""
     try:
         import uvicorn
     except ImportError:
         click.echo("❌ Error: uvicorn is not installed. Install it with: pip install uvicorn")
         sys.exit(1)
     
+    # Check Docker availability for isolated execution support
+    docker_available = await _check_docker_availability()
+    
+    # Set environment variable for the API to know Docker status
+    import os
+    os.environ['GLEITZEIT_DOCKER_AVAILABLE'] = 'true' if docker_available else 'false'
+    
+    # Load configuration for port ranges
+    config = cli_instance.config
+    server_config = config.get('server', {})
+    api_config = server_config.get('api', {})
+    ui_config = server_config.get('ui', {})
+    
+    # Find available API port if the default is in use
+    api_port_range = api_config.get('port_range', [port, port + 10])
+    if port not in api_port_range:
+        # User specified a specific port outside the range, use it
+        actual_api_port = port
+    else:
+        # Try to find an available port in the range
+        actual_api_port = await _find_available_port(host, api_port_range, "API server")
+        if not actual_api_port:
+            click.echo(f"❌ No available ports for API server in range {api_port_range}")
+            sys.exit(1)
+    
     click.echo(f"🚀 Starting Gleitzeit API server...")
     click.echo(f"   Host: {host}")
-    click.echo(f"   Port: {port}")
-    click.echo(f"   Workers: {workers}")
-    click.echo(f"   Reload: {'enabled' if reload else 'disabled'}")
-    click.echo(f"\n📍 API will be available at: http://{host if host != '0.0.0.0' else 'localhost'}:{port}")
+    click.echo(f"   Port: {actual_api_port}")
+    if workers > 1:
+        click.echo(f"   Workers: {workers}")
+    if reload:
+        click.echo(f"   Reload: enabled (development mode)")
+    click.echo(f"   Mode: {'headless' if headless else 'with Web UI'}")
+    click.echo(f"\n📍 API will be available at: http://{host if host != '0.0.0.0' else 'localhost'}:{actual_api_port}")
     click.echo("📚 API documentation available at: /docs")
-    click.echo("\nPress CTRL+C to stop the server\n")
+    
+    # Start UI server in background if not headless
+    ui_server = None
+    ui_task = None
+    actual_ui_port = ui_port
+    
+    if not headless:
+        try:
+            from gleitzeit.ui.api.app import app as ui_app
+            
+            # Find available UI port
+            ui_port_range = ui_config.get('port_range', [ui_port, ui_port + 10])
+            if ui_port not in ui_port_range:
+                # User specified a specific port outside the range, use it
+                actual_ui_port = ui_port
+            else:
+                # Try to find an available port in the range
+                actual_ui_port = await _find_available_port(ui_host, ui_port_range, "UI server")
+                if not actual_ui_port:
+                    click.echo(f"⚠️  No available ports for UI in range {ui_port_range}, running headless")
+                    headless = True
+            
+            if not headless:
+                # Set the API URL environment variable for the UI
+                import os
+                api_host = 'localhost' if host == '0.0.0.0' else host
+                os.environ['GLEITZEIT_API_URL'] = f"http://{api_host}:{actual_api_port}"
+                
+                click.echo(f"\n🎨 Starting Web UI...")
+                click.echo(f"   UI Host: {ui_host}")
+                click.echo(f"   UI Port: {actual_ui_port}")
+                click.echo(f"   UI URL: http://{ui_host if ui_host != '0.0.0.0' else 'localhost'}:{actual_ui_port}")
+            
+            if not headless:
+                # Create UI server config
+                ui_config_uvicorn = uvicorn.Config(
+                    app=ui_app,
+                    host=ui_host,
+                    port=actual_ui_port,
+                    log_level="warning"  # Less verbose for UI
+                )
+                ui_server = uvicorn.Server(ui_config_uvicorn)
+                
+                # Start UI server in background task
+                ui_task = asyncio.create_task(ui_server.serve())
+            
+        except ImportError as e:
+            click.echo(f"⚠️  Web UI not available: {e}")
+            click.echo("   Running in headless mode")
+            headless = True
+    
+    click.echo("\nPress CTRL+C to stop the servers\n")
     
     try:
         # Import the FastAPI app
         from gleitzeit.api.main import app
         
-        # Run the server
-        uvicorn.run(
-            "gleitzeit.api.main:app",
+        # Create API server config
+        api_config_uvicorn = uvicorn.Config(
+            app="gleitzeit.api.main:app",
             host=host,
-            port=port,
+            port=actual_api_port,
             reload=reload,
             workers=workers if not reload else 1,  # Can't use multiple workers with reload
             log_level="info"
         )
+        
+        # Run the API server (this blocks)
+        if reload:
+            # For reload mode, use uvicorn.run directly
+            uvicorn.run(
+                "gleitzeit.api.main:app",
+                host=host,
+                port=actual_api_port,
+                reload=reload,
+                log_level="info"
+            )
+        else:
+            # For production mode, use Server
+            api_server = uvicorn.Server(api_config_uvicorn)
+            await api_server.serve()
+            
     except KeyboardInterrupt:
-        click.echo("\n✅ Server stopped")
+        click.echo("\n✅ Shutting down servers...")
+        
+        # Shutdown UI server if running
+        if ui_server and ui_task:
+            ui_server.should_exit = True
+            await ui_task
+            
+        click.echo("✅ Servers stopped")
     except Exception as e:
         click.echo(f"❌ Error starting server: {e}")
+        
+        # Cleanup UI server if needed
+        if ui_server and ui_task:
+            ui_server.should_exit = True
+            try:
+                await ui_task
+            except:
+                pass
+                
         sys.exit(1)
 
 
 async def _batch_process(directory: str, pattern: str, prompt: str, model: str, vision: bool, 
                         output: Optional[str], enable_resource_management: bool = True):
-    """Process files in batch using BatchProcessor with hub architecture"""
+    """Process files in batch using API server"""
     try:
-        if not await cli_instance._setup_system(enable_resource_management=enable_resource_management):
-            return
+        # Use GleitzeitClient to connect to API server (auto-start if needed)
+        from gleitzeit import GleitzeitClient
         
         click.echo(f"📁 Scanning directory: {directory}")
         click.echo(f"   Pattern: {pattern}")
-        
-        # Create batch processor
-        batch_processor = BatchProcessor()
         
         # Determine method based on vision flag
         method = "llm/vision" if vision else "llm/chat"
         
         # Use configured default model if not specified
         if model == 'llama3.2:latest':  # Default value from click option
-            ollama_config = cli_instance.config.get('providers', {}).get('ollama', {})
+            config = cli_instance.config
+            ollama_config = config.get('providers', {}).get('ollama', {})
             default_models = ollama_config.get('default_models', {})
             if vision:
                 model = default_models.get('vision', 'llava:latest')
             else:
                 model = default_models.get('chat', 'llama3.2:latest')
         
-        # Process batch
+        # Use client to process batch
         click.echo("⏳ Processing files...")
-        result = await batch_processor.process_batch(
-            execution_engine=cli_instance.execution_engine,
-            directory=directory,
-            pattern=pattern,
-            method=method,
-            prompt=prompt,
-            model=model
-        )
+        async with GleitzeitClient(mode="auto") as client:
+            # Use client's batch_process method if available
+            if hasattr(client, 'batch_process'):
+                result = await client.batch_process(
+                    directory=directory,
+                    pattern=pattern,
+                    method=method,
+                    prompt=prompt,
+                    model=model
+                )
+            else:
+                # Fallback: create batch processor and use client's execution
+                from gleitzeit.core.batch_processor import BatchProcessor
+                batch_processor = BatchProcessor()
+                
+                # Create workflow from batch
+                workflow = await batch_processor.create_batch_workflow(
+                    directory=directory,
+                    pattern=pattern,
+                    method=method,
+                    prompt=prompt,
+                    model=model
+                )
+                
+                # Submit workflow via client
+                import tempfile
+                import yaml
+                with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+                    yaml.dump(workflow.to_dict(), f)
+                    workflow_file = f.name
+                
+                result = await client.run_workflow(workflow_file, watch=True)
+                
+                import os
+                os.unlink(workflow_file)
         
         # Display results
         click.echo(f"\n✅ Batch processing complete!")
-        click.echo(f"   Batch ID: {result.batch_id}")
-        click.echo(f"   Total files: {result.total_files}")
-        click.echo(f"   Successful: {result.successful} ({result.successful/result.total_files*100:.1f}%)")
-        click.echo(f"   Failed: {result.failed}")
-        click.echo(f"   Processing time: {result.processing_time:.2f}s")
         
-        # Show individual results
-        if result.total_files <= 10:  # Show details for small batches
-            click.echo("\n📊 Results:")
-            for file_path, file_result in result.results.items():
-                file_name = Path(file_path).name
-                if file_result['status'] == 'success':
-                    content = file_result.get('content', '')
-                    # Truncate long content
-                    if len(content) > 200:
-                        content = content[:200] + "..."
-                    click.echo(f"   ✅ {file_name}: {content}")
-                else:
-                    click.echo(f"   ❌ {file_name}: {file_result.get('error', 'Unknown error')}")
+        # Handle different result formats
+        if isinstance(result, dict):
+            # Result from client.batch_process or run_workflow
+            if 'workflow_id' in result:
+                click.echo(f"   Workflow ID: {result['workflow_id']}")
+                click.echo(f"   Status: {result.get('status', 'submitted')}")
+                
+                # If we have task results, show them
+                if 'results' in result:
+                    results = result['results']
+                    click.echo(f"   Total tasks: {len(results)}")
+                    
+                    # Show individual results for small batches
+                    if len(results) <= 10:
+                        click.echo("\n📊 Results:")
+                        for task_id, task_result in results.items():
+                            if isinstance(task_result, dict):
+                                status = task_result.get('status', 'unknown')
+                                if status == 'completed':
+                                    response = task_result.get('result', {}).get('response', 'No response')
+                                    # Truncate long content
+                                    if len(response) > 200:
+                                        response = response[:200] + "..."
+                                    click.echo(f"   ✅ {task_id}: {response}")
+                                else:
+                                    error = task_result.get('error', 'Unknown error')
+                                    click.echo(f"   ❌ {task_id}: {error}")
+            else:
+                # Other dict format
+                click.echo(f"   Result: {result}")
+        else:
+            # Legacy BatchResult object
+            if hasattr(result, 'batch_id'):
+                click.echo(f"   Batch ID: {result.batch_id}")
+                click.echo(f"   Total files: {result.total_files}")
+                click.echo(f"   Successful: {result.successful} ({result.successful/result.total_files*100:.1f}%)")
+                click.echo(f"   Failed: {result.failed}")
+                click.echo(f"   Processing time: {result.processing_time:.2f}s")
         
         # Save output if requested
         if output:
             output_path = Path(output)
+            import json
             if output_path.suffix == '.md':
-                output_path.write_text(result.to_markdown())
+                # Create markdown output
+                md_content = f"# Batch Processing Results\n\n"
+                if isinstance(result, dict):
+                    md_content += f"## Workflow ID: {result.get('workflow_id', 'N/A')}\n\n"
+                    md_content += f"Status: {result.get('status', 'N/A')}\n\n"
+                    if 'results' in result:
+                        md_content += "### Results\n\n"
+                        for task_id, task_result in result['results'].items():
+                            md_content += f"- **{task_id}**: {task_result}\n"
+                output_path.write_text(md_content)
                 click.echo(f"\n💾 Results saved to: {output_path} (Markdown)")
             else:
-                output_path.write_text(result.to_json())
+                output_path.write_text(json.dumps(result, indent=2))
                 click.echo(f"\n💾 Results saved to: {output_path} (JSON)")
         
     except Exception as e:
         click.echo(f"❌ Batch processing failed: {e}")
         logger.error(f"Batch processing error: {e}", exc_info=True)
-    finally:
-        await cli_instance._shutdown_system()
 
 
 @cli.command()
@@ -1036,18 +1374,9 @@ async def _run_ui(port: int, host: str, browser: bool):
     
     click.echo(f"🚀 Starting Gleitzeit Web UI on http://{host}:{port}")
     
-    # Get the UI app path
-    ui_path = Path(__file__).parent.parent.parent / "ui"
-    if not ui_path.exists():
-        click.echo(f"❌ UI directory not found at {ui_path}")
-        sys.exit(1)
-    
-    # Add UI path to Python path
-    sys.path.insert(0, str(ui_path))
-    
     try:
-        # Import the app
-        from api.app import app
+        # Import the app from gleitzeit package
+        from gleitzeit.ui.api.app import app
         
         # Open browser if requested
         if browser:

@@ -17,7 +17,7 @@ from uuid import uuid4
 import glob
 import json
 
-from gleitzeit.core.models import Task, Workflow, Priority
+from gleitzeit.core.models import Task, Workflow, Priority, TaskStatus
 from gleitzeit.core.workflow_loader import create_task_from_dict
 from gleitzeit.core.errors import ConfigurationError, TaskValidationError
 
@@ -329,17 +329,28 @@ class BatchProcessor:
             name=f"Batch {batch_id}"
         )
         
-        # Submit workflow
-        await execution_engine.submit_workflow(workflow)
+        # Submit workflow and wait for completion
+        workflow_result = await execution_engine.submit_workflow(workflow)
         
-        # Execute workflow
-        try:
-            await execution_engine._execute_workflow(workflow)
-        except Exception as e:
-            logger.error(f"Error executing batch workflow: {e}")
-            batch_result.failed = len(files)
-            batch_result.processing_time = asyncio.get_event_loop().time() - start_time
-            return batch_result
+        # Wait for workflow to complete if it didn't complete synchronously
+        if hasattr(execution_engine, 'persistence') and execution_engine.persistence:
+            # Poll for workflow completion
+            max_wait = 300  # 5 minutes max wait
+            poll_interval = 1.0
+            elapsed = 0
+            
+            while elapsed < max_wait:
+                workflow_obj = await execution_engine.persistence.get_workflow(workflow.id)
+                if workflow_obj and workflow_obj.status in ['completed', 'failed']:
+                    break
+                await asyncio.sleep(poll_interval)
+                elapsed += poll_interval
+            
+            if elapsed >= max_wait:
+                logger.error(f"Batch workflow {workflow.id} timed out")
+                batch_result.failed = len(files)
+                batch_result.processing_time = asyncio.get_event_loop().time() - start_time
+                return batch_result
         
         # Collect results
         for task in workflow.tasks:
@@ -354,9 +365,15 @@ class BatchProcessor:
                 file_path = task.params['file']
             
             if file_path:
-                result = execution_engine.task_results.get(task.id)
+                # Get result from persistence instead of task_results
+                result = None
+                if hasattr(execution_engine, 'persistence') and execution_engine.persistence:
+                    result = await execution_engine.persistence.get_task_result(task.id)
+                
                 if result:
-                    if result.status == 'completed':
+                    # Check task status from persistence
+                    task_obj = await execution_engine.persistence.get_task(task.id)
+                    if task_obj and task_obj.status == TaskStatus.COMPLETED:
                         # Extract the response text from the result
                         content = ''
                         if result.result:
@@ -372,9 +389,11 @@ class BatchProcessor:
                         }
                         batch_result.successful += 1
                     else:
+                        # Task failed or is not completed
+                        error_msg = task_obj.error_message if task_obj else 'Unknown error'
                         batch_result.results[file_path] = {
                             'status': 'failed',
-                            'error': result.error or 'Unknown error'
+                            'error': error_msg or 'Task not completed'
                         }
                         batch_result.failed += 1
                 else:

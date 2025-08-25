@@ -13,8 +13,8 @@ from pathlib import Path
 # Add src directory to path
 sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 
-from ui.api.app import app
-from ui.api.routes.websocket import manager, ConnectionManager
+from gleitzeit.ui.api.app import app
+from gleitzeit.ui.api.routes.websocket import manager, ConnectionManager
 
 
 @pytest.fixture

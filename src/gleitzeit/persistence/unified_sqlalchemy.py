@@ -429,19 +429,29 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                     
                     new_status = task.status.value if hasattr(task.status, 'value') else str(task.status)
                     
-                    # Use raw SQL UPDATE to ensure the change is persisted
+                    # Use raw SQL UPDATE to ensure the change is persisted - include ALL fields
                     result = await session.execute(
                         text("""
                             UPDATE tasks 
                             SET status = :status,
                                 completed_at = :completed_at,
-                                started_at = :started_at
+                                started_at = :started_at,
+                                error_message = :error_message,
+                                attempt_count = :attempt_count,
+                                assigned_provider = :assigned_provider,
+                                execution_node = :execution_node,
+                                metadata = :metadata
                             WHERE id = :task_id
                         """),
                         {
                             "status": new_status,
                             "completed_at": task.completed_at,
                             "started_at": task.started_at,
+                            "error_message": task.error_message,
+                            "attempt_count": task.attempt_count,
+                            "assigned_provider": task.assigned_provider,
+                            "execution_node": task.execution_node,
+                            "metadata": json.dumps(task.metadata) if task.metadata else None,
                             "task_id": task.id
                         }
                     )

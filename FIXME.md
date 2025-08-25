@@ -135,6 +135,58 @@ Removed the duplicate event emission in `/src/gleitzeit/core/execution_engine.py
 
 ---
 
+## 4. Task Execution Hanging Issue
+**Status:** ✅ Fixed  
+**Severity:** Critical  
+**Discovered:** 2024-08-25  
+**Fixed:** 2024-08-25  
+
+### Description
+Tasks can get stuck in "executing" status indefinitely while the execution engine shows as "idle" with 0 active workers. This is a critical reliability issue that affects production workflows.
+
+### Symptoms
+- Task status shows "executing" but never completes or fails
+- Execution engine status shows "idle" 
+- No active workers reported despite tasks showing as executing
+- No timeout or automatic cleanup mechanism
+- Tasks never complete, blocking dependent tasks
+- Workflows get stuck indefinitely
+
+### Root Causes
+1. **Task lifecycle management** - Tasks can get stuck in executing state without proper cleanup
+2. **Execution engine monitoring** - Engine doesn't detect or recover hung tasks  
+3. **Timeout handling** - No automatic cleanup of long-running tasks
+4. **Error recovery** - Silent failures leave tasks in inconsistent state
+5. **State synchronization** - Disconnect between task status and execution engine state
+
+### Example Case
+Task `task_efca202e` (combine_results) from parallel_workflow.yaml stuck executing for >5 minutes:
+- Task API shows: `"status": "executing"`  
+- Queue API shows: `"engine_status": "idle", "active_workers": 0`
+- No error logs or completion events
+
+### Impact
+- **Production Critical**: Workflows can hang indefinitely
+- **No Recovery**: Manual intervention required to unstick tasks  
+- **Resource Waste**: Tasks consume execution slots without progress
+- **Cascading Failures**: Dependent tasks never start
+
+### Fix Applied
+- ✅ Task timeouts with automatic cleanup (configurable, default 5 minutes)
+- ✅ Proper error handling and state transitions
+- ✅ Comprehensive task execution error handling with callbacks
+- ✅ TASK_READY event emission in dependency resolution
+- ✅ Asyncio task lifecycle management
+- ✅ Timeout protection at both execution engine and provider levels
+
+### Affected Files
+- `/src/gleitzeit/core/execution_engine.py` - Task execution lifecycle
+- `/src/gleitzeit/task_queue/task_queue.py` - Task status management
+- `/src/gleitzeit/persistence/` - Task state persistence
+- `/examples/parallel_workflow.yaml` - Reproduces the issue
+
+---
+
 ## Contributing
 When fixing these issues:
 1. Add tests to prevent regression

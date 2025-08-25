@@ -1,0 +1,10 @@
+name: "Quick Test Workflow"
+description: "Test workflow to check UI tip message"
+tasks:
+  - name: "simple_task"
+    method: "llm/chat"
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Say hello"

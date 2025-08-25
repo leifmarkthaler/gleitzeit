@@ -43,6 +43,9 @@ class EventType(str, Enum):
     TASK_RETRY_SCHEDULED = "task:retry_scheduled"
     TASK_RETRY_EXECUTED = "task:retry_executed"
     TASK_TIMEOUT = "task:timeout"
+    TASK_READY = "task:ready"  # Task ready for execution (dependencies satisfied)
+    TASK_READY_FOR_RETRY = "task:ready_for_retry"  # Task ready to be retried
+    RETRY_SCHEDULED = "retry:scheduled"  # Retry has been scheduled
     
     # Workflow Events
     WORKFLOW_SUBMITTED = "workflow:submitted"
@@ -53,6 +56,7 @@ class EventType(str, Enum):
     WORKFLOW_CANCELLED = "workflow:cancelled"
     WORKFLOW_PAUSED = "workflow:paused"
     WORKFLOW_RESUMED = "workflow:resumed"
+    WORKFLOW_PROGRESS = "workflow:progress"
     
     # Provider Events
     PROVIDER_REGISTERED = "provider:registered"
@@ -419,7 +423,9 @@ def create_task_failed_event(
     workflow_id: Optional[str] = None,
     source: str = "execution_engine",
     error_type: Optional[str] = None,
-    is_retryable: Optional[bool] = None
+    is_retryable: Optional[bool] = None,
+    is_permanent: Optional[bool] = None,
+    attempt_number: Optional[int] = None
 ) -> GleitzeitEvent:
     """Create a task failed event"""
     task_data = TaskEventData(
@@ -448,6 +454,16 @@ def create_task_failed_event(
     if tags:
         event.tags.update(tags)
     
+    # Add additional data fields
+    if error_type:
+        event.data["error_type"] = error_type
+    if is_retryable is not None:
+        event.data["is_retryable"] = is_retryable
+    if is_permanent is not None:
+        event.data["is_permanent"] = is_permanent
+    if attempt_number is not None:
+        event.data["attempt_number"] = attempt_number
+    
     return event
 
 
@@ -455,7 +471,7 @@ def create_workflow_started_event(
     workflow_id: str,
     workflow_name: str,
     total_tasks: int,
-    execution_levels: int,
+    execution_levels: int = 1,
     source: str = "execution_engine"
 ) -> GleitzeitEvent:
     """Create a workflow started event"""
@@ -475,20 +491,26 @@ def create_workflow_started_event(
 
 def create_workflow_completed_event(
     workflow_id: str,
-    duration: float,
-    tasks_completed: int,
+    workflow_name: str = None,
+    total_tasks: int = 0,
+    completed_tasks: int = 0,
+    failed_tasks: int = 0,
+    duration: float = 0.0,
     source: str = "execution_engine"
 ) -> GleitzeitEvent:
     """Create a workflow completed event"""
-    workflow_data = WorkflowEventData(
-        workflow_id=workflow_id,
-        status=WorkflowStatus.COMPLETED,
-        duration=duration,
-        completed_tasks=tasks_completed
-    )
-    return GleitzeitEvent.create_workflow_event(
-        EventType.WORKFLOW_COMPLETED,
-        workflow_data,
+    return GleitzeitEvent(
+        event_type=EventType.WORKFLOW_COMPLETED,
+        severity=EventSeverity.INFO,
+        data={
+            'workflow_id': workflow_id,
+            'workflow_name': workflow_name,
+            'total_tasks': total_tasks,
+            'completed_tasks': completed_tasks,
+            'failed_tasks': failed_tasks,
+            'duration': duration,
+            'status': WorkflowStatus.COMPLETED.value
+        },
         source=source
     )
 
@@ -515,3 +537,66 @@ def get_events_by_component(events: List[GleitzeitEvent], component: str) -> Lis
 def get_events_by_correlation_id(events: List[GleitzeitEvent], correlation_id: str) -> List[GleitzeitEvent]:
     """Get all events related to a workflow or operation"""
     return [e for e in events if e.correlation_id == correlation_id]
+
+
+def create_custom_event(
+    event_type: EventType,
+    data: Dict[str, Any],
+    source: str,
+    severity: EventSeverity = EventSeverity.INFO,
+    tags: Optional[Dict[str, str]] = None
+) -> GleitzeitEvent:
+    """Create a custom event with the specified type and data"""
+    return GleitzeitEvent(
+        event_type=event_type,
+        severity=severity,
+        data=data,
+        source=source,
+        tags=tags or {}
+    )
+
+
+def create_workflow_submitted_event(
+    workflow_id: str,
+    workflow_name: str,
+    total_tasks: int,
+    source: str = "unknown"
+) -> GleitzeitEvent:
+    """Create a workflow submitted event"""
+    return GleitzeitEvent(
+        event_type=EventType.WORKFLOW_SUBMITTED,
+        severity=EventSeverity.INFO,
+        data={
+            'workflow_id': workflow_id,
+            'workflow_name': workflow_name,
+            'total_tasks': total_tasks
+        },
+        source=source
+    )
+
+
+def create_workflow_failed_event(
+    workflow_id: str,
+    workflow_name: str,
+    total_tasks: int,
+    completed_tasks: int,
+    failed_tasks: int,
+    duration: float,
+    error_message: str,
+    source: str = "unknown"
+) -> GleitzeitEvent:
+    """Create a workflow failed event"""
+    return GleitzeitEvent(
+        event_type=EventType.WORKFLOW_FAILED,
+        severity=EventSeverity.ERROR,
+        data={
+            'workflow_id': workflow_id,
+            'workflow_name': workflow_name,
+            'total_tasks': total_tasks,
+            'completed_tasks': completed_tasks,
+            'failed_tasks': failed_tasks,
+            'duration': duration,
+            'error_message': error_message
+        },
+        source=source
+    )

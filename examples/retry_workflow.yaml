@@ -1,0 +1,33 @@
+# Retry Test Workflow Example
+# Demonstrates task retry functionality
+
+name: "Retry Test Workflow"
+description: "Tests retry functionality with a task that fails initially"
+version: "1.0"
+
+# Workflow configuration
+timeout: 60
+wait_for_completion: true
+
+# Task definitions
+tasks:
+  - name: "retry_task"
+    method: "python/execute"
+    priority: 2
+    params:
+      file: "examples/scripts/retry_test.py"
+    # Task-level retry configuration
+    retry_config:
+      max_attempts: 3
+      backoff_strategy: "fixed"
+      base_delay: 1
+      jitter: false
+
+  - name: "success_task"
+    method: "python/execute"
+    priority: 1
+    dependencies: ["retry_task"]
+    params:
+      code: |
+        print("Previous task succeeded after retries!")
+        print("Result: All tasks completed successfully")

@@ -5,6 +5,38 @@ All notable changes to Gleitzeit will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.0.6] - 2024-08-25
+
+### Added
+- **Configurable Task Timeouts**: Task execution timeouts are now configurable via `task_timeout` parameter (default: 300 seconds)
+- **Comprehensive Error Handling**: Improved task execution error handling with proper lifecycle management
+- **Task Execution Protection**: Automatic timeout protection at both execution engine and provider levels
+- **TASK_READY Event Emission**: Fixed missing event emission in dependency resolution for proper task pickup
+- **Automatic Web UI**: The `serve` command now automatically starts the Web UI alongside the API server
+- **Headless Mode**: New `--headless` flag for `serve` command to run API without the Web UI
+- **UI Port Configuration**: New `--ui-port` and `--ui-host` options for customizing UI server settings
+
+### Fixed
+- **Task Execution Hanging Issue**: Fixed critical issue where tasks could get stuck in "executing" status indefinitely
+- **Event Storm Prevention**: Removed duplicate TASK_COMPLETED event emissions causing database update storms
+- **Task Status Synchronization**: Fixed workflow and task status reporting through proper architectural layering
+- **Asyncio Task Management**: Implemented proper error callbacks and lifecycle management for async task execution
+- **Timeout Error Propagation**: Tasks now properly fail with timeout errors that can be handled by retry logic
+
+### Changed
+- **ExecutionEngine Constructor**: Now accepts `task_timeout` parameter for configurable timeout duration
+- **Configuration Schema**: Updated to use `task_timeout` instead of `default_timeout` for clarity
+- **Error Messages**: Timeout errors now include the configured timeout duration in error messages
+- **UI Package Structure**: Moved UI from `/src/ui` to `/src/gleitzeit/ui` for proper Python packaging
+- **Serve Command Behavior**: Now starts both API and UI by default (use `--headless` for API-only mode)
+
+### Technical Improvements
+- Re-enabled `TaskCompletedHandler` for proper event flow from ExecutionEngine to QueueManager
+- Added `get_workflow()` method to Client for proper API architectural compliance
+- Fixed individual task status retrieval to get current status from persistence
+- Implemented `_execute_task_skip_status_update_with_error_handling()` for comprehensive error handling
+- Added proper task execution result logging with `_log_task_execution_result()` callback
+
 ## [0.0.5] - 2024-08-19
 
 ### Added

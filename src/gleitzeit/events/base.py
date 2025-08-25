@@ -23,12 +23,14 @@ class EventBus:
     def __init__(self):
         self._handlers: Dict[str, List[EventHandler]] = {}
     
-    def register(self, event_type: str, handler: EventHandler) -> None:
-        """Register an event handler for a specific event type."""
+    def register(self, event_type: str, handler) -> None:
+        """Register an event handler for a specific event type.
+        Handler can be either an EventHandler object or an async callable."""
         if event_type not in self._handlers:
             self._handlers[event_type] = []
         self._handlers[event_type].append(handler)
-        logger.debug(f"Registered handler {handler.__class__.__name__} for event type {event_type}")
+        handler_name = handler.__class__.__name__ if hasattr(handler, '__class__') else handler.__name__
+        logger.debug(f"Registered handler {handler_name} for event type {event_type}")
     
     def unregister(self, event_type: str, handler: EventHandler) -> bool:
         """Unregister an event handler."""
@@ -50,19 +52,30 @@ class EventBus:
             logger.debug(f"No handlers registered for event type {event_type}")
             return
         
-        logger.info(f"EVENT_BUS DEBUG: Emitting event {event_type} to {len(handlers)} handlers")
+        logger.debug(f"Emitting event {event_type} to {len(handlers)} handlers")
         for handler in handlers:
-            logger.info(f"EVENT_BUS DEBUG: Handler {handler.__class__.__name__} will process {event_type}")
+            handler_name = handler.__class__.__name__ if hasattr(handler, '__class__') else handler.__name__
+            logger.debug(f"Handler {handler_name} will process {event_type}")
         
         # Execute all handlers concurrently
         import asyncio
         tasks = []
         for handler in handlers:
             try:
-                task = asyncio.create_task(handler.handle(event))
+                # Check if handler is an EventHandler object or a callable
+                if hasattr(handler, 'handle'):
+                    # It's an EventHandler object
+                    task = asyncio.create_task(handler.handle(event))
+                elif asyncio.iscoroutinefunction(handler):
+                    # It's an async function
+                    task = asyncio.create_task(handler(event))
+                else:
+                    logger.error(f"Handler {handler} is not an EventHandler or async function")
+                    continue
                 tasks.append(task)
             except Exception as e:
-                logger.error(f"Failed to create task for handler {handler.__class__.__name__}: {e}")
+                handler_name = handler.__class__.__name__ if hasattr(handler, '__class__') else str(handler)
+                logger.error(f"Failed to create task for handler {handler_name}: {e}")
         
         if tasks:
             # Wait for all handlers to complete

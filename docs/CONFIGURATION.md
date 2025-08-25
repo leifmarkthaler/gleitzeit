@@ -64,7 +64,7 @@ persistence:
 # Execution settings
 execution:
   max_parallel_tasks: 5
-  default_timeout: 30
+  task_timeout: 300  # Task execution timeout in seconds (default: 5 minutes)
   continue_on_error: false
   retry:
     enabled: true
@@ -248,7 +248,7 @@ client = GleitzeitClient(
     api_port=9000,
     native_config={
         "max_parallel_tasks": 10,
-        "default_timeout": 60,
+        "task_timeout": 300,  # Task execution timeout in seconds
         "enable_resource_management": True
     }
 )
@@ -262,7 +262,7 @@ config = {
     "native_config": {
         "enable_resource_management": True,
         "max_parallel_tasks": 10,
-        "default_timeout": 60,
+        "task_timeout": 300,  # Task execution timeout in seconds
         "persistence": {
             "type": "redis",
             "redis": {
