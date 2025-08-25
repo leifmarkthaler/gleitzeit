@@ -980,6 +980,9 @@ class ExecutionEngine:
         import re
         import json
         
+        logger.info(f"Resolving parameters for task {task.id} ({task.name})")
+        logger.info(f"Original params: {task.params}")
+        
         async def substitute_parameters(obj: Any) -> Any:
             """Recursively substitute parameter references"""
             if isinstance(obj, str):
@@ -1023,10 +1026,13 @@ class ExecutionEngine:
                         if ref_value is not None:
                             # If the entire string is just the reference, return the actual value
                             if obj == f"${{{match}}}":
+                                logger.info(f"Parameter substitution: ${{{match}}} -> {ref_value}")
                                 return ref_value
                             # Otherwise, do string replacement (which requires converting to string)
                             else:
                                 replacement = str(ref_value) if not isinstance(ref_value, str) else ref_value
+                                logger.info(f"Parameter substitution in string: ${{{match}}} -> {replacement}")
+                                logger.info(f"Full string after substitution: {obj.replace(f'${{{match}}}', replacement)}")
                                 obj = obj.replace(f"${{{match}}}", replacement)
                     else:
                         logger.warning(f"Referenced task {actual_task_id} not found in results")
@@ -1042,7 +1048,9 @@ class ExecutionEngine:
             else:
                 return obj
         
-        return await substitute_parameters(task.params.copy())
+        resolved = await substitute_parameters(task.params.copy())
+        logger.info(f"Resolved params for {task.name}: {resolved}")
+        return resolved
     
     async def _route_task_to_provider(self, task: Task, params: Dict[str, Any]) -> Any:
         """Route task to appropriate protocol provider"""

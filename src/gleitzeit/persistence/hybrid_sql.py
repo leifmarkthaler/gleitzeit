@@ -272,6 +272,16 @@ class HybridSQLAdapter:
     
     async def save_task(self, task: Task) -> None:
         """Save task to runtime, archive if terminal state"""
+        # Validate workflow_id requirement
+        if not task.workflow_id:
+            error_msg = (
+                f"Task {task.id} ({task.name}) cannot be saved without a workflow_id. "
+                "Every task must belong to a workflow. "
+                "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
         # Always save to runtime
         await self.runtime.save_task(task)
         

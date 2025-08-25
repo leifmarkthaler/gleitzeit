@@ -39,16 +39,52 @@ async def get_system_status(request: Request) -> Dict[str, Any]:
                     local_metrics = {}
                     if PSUTIL_AVAILABLE:
                         try:
+                            mem = psutil.virtual_memory()
                             local_metrics = {
                                 "cpu_percent": psutil.cpu_percent(interval=0.1),
-                                "memory_percent": psutil.virtual_memory().percent,
+                                "memory_percent": mem.percent,
                                 "disk_percent": psutil.disk_usage('/').percent
                             }
                         except:
                             pass
                     
+                    # Check for ollama availability by looking at providers
+                    ollama_available = False
+                    providers_status = {}
+                    
+                    for provider_name, provider_info in api_status.get('providers', {}).items():
+                        # Add each provider to the status
+                        provider_type = provider_info.get('type', 'Unknown')
+                        provider_status = provider_info.get('status', 'unknown')
+                        provider_protocol = provider_info.get('protocol', '')
+                        
+                        providers_status[provider_name] = {
+                            "type": provider_type,
+                            "status": provider_status,
+                            "protocol": provider_protocol,
+                            "available": provider_status == 'healthy'
+                        }
+                        
+                        # Check for ollama
+                        if 'ollama' in provider_name.lower() or provider_info.get('is_ollama'):
+                            ollama_available = provider_status == 'healthy'
+                    
+                    # Format response to match dashboard expectations
                     return {
                         **api_status,
+                        "ollama": {
+                            "available": ollama_available
+                        },
+                        "engine": {
+                            "running": api_status.get('status') == 'running'
+                        },
+                        "providers_status": providers_status,
+                        "resources": {
+                            "cpu_percent": local_metrics.get('cpu_percent', 0),
+                            "memory": {
+                                "percent": local_metrics.get('memory_percent', 0)
+                            }
+                        },
                         "local_metrics": local_metrics
                     }
                 else:

@@ -51,7 +51,20 @@ class UnifiedPersistenceAdapter(ABC):
     
     @abstractmethod
     async def save_task(self, task: Task) -> None:
-        """Save or update a task"""
+        """
+        Save or update a task
+        
+        REQUIREMENT: Every task MUST have a workflow_id.
+        Raises ValueError if task has no workflow_id.
+        """
+        if not task.workflow_id:
+            error_msg = (
+                f"Task {task.id} ({task.name}) cannot be saved without a workflow_id. "
+                "Every task must belong to a workflow. "
+                "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         pass
     
     @abstractmethod
@@ -311,6 +324,15 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
     
     # Task operations
     async def save_task(self, task: Task) -> None:
+        # Validate workflow_id requirement
+        if not task.workflow_id:
+            error_msg = (
+                f"Task {task.id} ({task.name}) cannot be saved without a workflow_id. "
+                "Every task must belong to a workflow. "
+                "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
         self.tasks[task.id] = task
     
     async def get_task(self, task_id: str) -> Optional[Task]:
@@ -414,6 +436,17 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         return False
     
     async def save_tasks_batch(self, tasks: List[Task]) -> None:
+        # Validate all tasks have workflow_id before proceeding
+        for task in tasks:
+            if not task.workflow_id:
+                error_msg = (
+                    f"Task {task.id} ({task.name}) cannot be saved without a workflow_id. "
+                    "Every task must belong to a workflow. "
+                    "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+        
         for task in tasks:
             self.tasks[task.id] = task
     

@@ -133,15 +133,6 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
         const data = JSON.parse(evt.detail.xhr.response);
         let html = '';
         
-        // Ollama status
-        const ollamaStatus = data.ollama?.available ? 'active' : 'inactive';
-        html += `
-            <div class="status-item">
-                <span class="status-indicator status-${ollamaStatus}"></span>
-                <span>Ollama: ${ollamaStatus === 'active' ? 'Available' : 'Unavailable'}</span>
-            </div>
-        `;
-        
         // Engine status
         const engineStatus = data.engine?.running ? 'active' : 'inactive';
         html += `
@@ -150,6 +141,30 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
                 <span>Engine: ${engineStatus === 'active' ? 'Running' : 'Stopped'}</span>
             </div>
         `;
+        
+        // All providers status
+        if (data.providers_status) {
+            for (const [providerName, providerInfo] of Object.entries(data.providers_status)) {
+                const providerStatus = providerInfo.available ? 'active' : 'inactive';
+                const providerType = providerInfo.type || 'Unknown';
+                const providerProtocol = providerInfo.protocol ? ` (${providerInfo.protocol})` : '';
+                html += `
+                    <div class="status-item">
+                        <span class="status-indicator status-${providerStatus}"></span>
+                        <span>${providerName}: ${providerStatus === 'active' ? 'Available' : 'Unavailable'}${providerProtocol}</span>
+                    </div>
+                `;
+            }
+        } else {
+            // Fallback to just Ollama if providers_status not available
+            const ollamaStatus = data.ollama?.available ? 'active' : 'inactive';
+            html += `
+                <div class="status-item">
+                    <span class="status-indicator status-${ollamaStatus}"></span>
+                    <span>Ollama: ${ollamaStatus === 'active' ? 'Available' : 'Unavailable'}</span>
+                </div>
+            `;
+        }
         
         // Resource status
         const cpuPercent = data.resources?.cpu_percent || 0;

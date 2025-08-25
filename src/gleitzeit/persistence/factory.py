@@ -18,7 +18,7 @@ from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter,
 from gleitzeit.persistence.unified_sqlalchemy import UnifiedSQLAlchemyAdapter
 from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
 from gleitzeit.persistence.hybrid_sql import HybridSQLAdapter
-from gleitzeit.core.models import TaskStatus
+from gleitzeit.core.models import TaskStatus, WorkflowStatus
 # Event-driven adapters are no longer used - centralized event architecture
 # Events are emitted only by ExecutionEngine
 
@@ -209,21 +209,39 @@ class PersistenceFactory:
             await adapter.initialize()
             
             # Verify with a simple operation
-            from gleitzeit.core.models import Task
+            from gleitzeit.core.models import Task, Workflow
+            from datetime import datetime
+            
+            # Create a test workflow for the test task
+            test_workflow_id = f"__test_workflow_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}__"
+            test_workflow = Workflow(
+                id=test_workflow_id,
+                name="Connection Test Workflow",
+                description="Auto-generated workflow for persistence connection test",
+                tasks=[]
+            )
+            
             test_task = Task(
                 id="__test_task__",
                 name="Connection Test",
+                workflow_id=test_workflow_id,  # Now has a workflow!
                 protocol="test",
                 method="test",
                 params={},
                 priority="normal"
             )
+            test_workflow.tasks.append(test_task)
             
+            # Save both workflow and task
+            await adapter.save_workflow(test_workflow)
             await adapter.save_task(test_task)
             retrieved = await adapter.get_task("__test_task__")
-            # Hybrid adapter doesn't have delete_task, just mark as completed
+            
+            # Mark as completed
             test_task.status = TaskStatus.COMPLETED
             await adapter.save_task(test_task)
+            test_workflow.status = WorkflowStatus.COMPLETED
+            await adapter.save_workflow(test_workflow)
             
             if retrieved and retrieved.id == "__test_task__":
                 logger.info("Successfully connected to hybrid SQL persistence")

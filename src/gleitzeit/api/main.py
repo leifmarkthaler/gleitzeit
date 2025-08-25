@@ -203,10 +203,45 @@ async def get_status():
         task_stats = await app_state.client.get_task_statistics()
         uptime = (datetime.now() - app_state.start_time).total_seconds()
         
+        # Get actual providers from execution engine if available
+        providers = {}
+        if hasattr(app_state.client, '_execution_engine') and app_state.client._execution_engine:
+            engine = app_state.client._execution_engine
+            if hasattr(engine, 'registry') and engine.registry:
+                # The registry has providers dict and provider_instances dict
+                if hasattr(engine.registry, 'providers'):
+                    # Iterate through all registered providers
+                    for provider_id, provider_info in engine.registry.providers.items():
+                        # Get provider instance
+                        provider_instance = engine.registry.provider_instances.get(provider_id)
+                        if provider_instance:
+                            provider_name = provider_instance.name if hasattr(provider_instance, 'name') else provider_id
+                            provider_type = provider_instance.__class__.__name__
+                            providers[provider_name] = {
+                                "status": "healthy",
+                                "type": provider_type,
+                                "protocol": provider_info.protocol_id
+                            }
+                            # Check if it's an ollama provider
+                            if 'ollama' in provider_type.lower():
+                                providers[provider_name]["is_ollama"] = True
+        
+        # Add client as a provider if no other providers found
+        if not providers:
+            providers = {"client": {"status": "healthy", "type": "GleitzeitClient"}}
+        
+        # Determine persistence backend
+        persistence_backend = "GleitzeitClient"
+        if hasattr(app_state.client, '_execution_engine') and app_state.client._execution_engine:
+            if hasattr(app_state.client._execution_engine, 'persistence'):
+                persistence = app_state.client._execution_engine.persistence
+                if persistence:
+                    persistence_backend = persistence.__class__.__name__
+        
         return SystemStatus(
             status="running",
-            providers={"client": {"status": "healthy", "type": "GleitzeitClient"}},
-            persistence_backend="GleitzeitClient", 
+            providers=providers,
+            persistence_backend=persistence_backend, 
             task_statistics=task_stats,
             uptime_seconds=uptime
         )

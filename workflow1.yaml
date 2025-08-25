@@ -1,0 +1,11 @@
+name: "Math Workflow"
+description: "Perform calculations"
+tasks:
+  - name: "calculate"
+    method: "python/execute"
+    params:
+      code: |
+        import math
+        result = math.factorial(10)
+        print(f"10! = {result}")
+        result

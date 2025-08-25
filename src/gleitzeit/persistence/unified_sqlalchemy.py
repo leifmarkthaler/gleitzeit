@@ -408,6 +408,16 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
     
     async def save_task(self, task: Task) -> None:
         """Save or update a task"""
+        # Validate workflow_id requirement
+        if not task.workflow_id:
+            error_msg = (
+                f"Task {task.id} ({task.name}) cannot be saved without a workflow_id. "
+                "Every task must belong to a workflow. "
+                "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
+            )
+            logger.error(error_msg)
+            raise ValueError(error_msg)
+        
         if not self._initialized:
             raise PersistenceError(
                 message="Adapter not initialized",
@@ -1061,6 +1071,17 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
     
     async def save_tasks_batch(self, tasks: List[Task]) -> None:
         """Save multiple tasks in a single transaction"""
+        # Validate all tasks have workflow_id before proceeding
+        for task in tasks:
+            if not task.workflow_id:
+                error_msg = (
+                    f"Task {task.id} ({task.name}) cannot be saved without a workflow_id. "
+                    "Every task must belong to a workflow. "
+                    "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
+                )
+                logger.error(error_msg)
+                raise ValueError(error_msg)
+        
         if not self._initialized:
             return
         

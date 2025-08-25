@@ -1,0 +1,10 @@
+name: "LLM Story Workflow"
+description: "Generate a short story"
+tasks:
+  - name: "story"
+    method: "llm/chat"
+    params:
+      model: "llama3.2"
+      messages:
+        - role: "user"
+          content: "Write a 2-sentence story about a robot learning to paint"
