@@ -248,13 +248,18 @@ class PythonProvider(ProtocolProvider):
             )
             
             try:
+                # Wait for completion
                 stdout, stderr = await asyncio.wait_for(
                     process.communicate(),
                     timeout=timeout
                 )
+                
+                return_code = process.returncode
+                
             except asyncio.TimeoutError:
                 process.kill()
                 await process.wait()
+                
                 return {
                     'success': False,
                     'error': f'Execution timed out after {timeout} seconds',
@@ -262,7 +267,7 @@ class PythonProvider(ProtocolProvider):
                     'execution_mode': 'local'
                 }
             
-            # Parse output
+            # Decode output
             output = stdout.decode('utf-8', errors='replace')
             error_output = stderr.decode('utf-8', errors='replace')
             
@@ -274,18 +279,18 @@ class PythonProvider(ProtocolProvider):
                 pass
             
             # If the script failed, raise an exception to trigger retry mechanism
-            if process.returncode != 0:
+            if return_code != 0:
                 raise TaskExecutionError(
-                    task_id='python_task',  # Generic task ID for Python execution
-                    message=f"Python script failed with exit code {process.returncode}: {error_output}"
+                    task_id=env.get('GLEITZEIT_TASK_ID', 'python_task'),
+                    message=f"Python script failed with exit code {return_code}: {error_output}"
                 )
             
             return {
-                'success': process.returncode == 0,
+                'success': return_code == 0,
                 'result': result_data,
                 'output': output,
-                'error': error_output if process.returncode != 0 else None,
-                'exit_code': process.returncode,
+                'error': error_output if return_code != 0 else None,
+                'exit_code': return_code,
                 'execution_mode': 'local'
             }
             
@@ -294,6 +299,7 @@ class PythonProvider(ProtocolProvider):
             raise
         except Exception as e:
             logger.error(f"Failed to execute {file_path} locally: {e}")
+            
             return {
                 'success': False,
                 'error': str(e),

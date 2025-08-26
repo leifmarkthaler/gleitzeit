@@ -97,6 +97,12 @@ class EventType(str, Enum):
     BACKPRESSURE_NORMAL = "backpressure:normal"
     BACKPRESSURE_CRITICAL = "backpressure:critical"
     
+    # Log Events
+    LOG_MESSAGE = "log:message"
+    LOG_STREAM_START = "log:stream:start"
+    LOG_STREAM_END = "log:stream:end"
+    LOG_BATCH = "log:batch"
+    
     # Pool Management Events
     POOL_SCALE_REQUESTED = "pool:scale_requested"
     

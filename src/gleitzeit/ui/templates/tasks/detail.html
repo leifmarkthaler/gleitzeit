@@ -134,14 +134,24 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
                 ` : ''}
                 
                 <div class="task-actions">
-                    ${task.status === 'failed' ? 
+                    ${task.status === 'failed' || task.status === 'cancelled' ? 
                         `<button class="btn btn-warning" 
-                                 hx-post="/api/tasks/${task.id}/retry"
-                                 hx-confirm="Retry this task?">Retry Task</button>` : ''}
+                                 hx-post="/api/tasks/${task.task_id || task.id}/retry"
+                                 hx-confirm="Retry this task?">
+                                 <span class="btn-icon">↻</span> Retry Task
+                         </button>` : ''}
                     ${task.status === 'running' || task.status === 'pending' ? 
                         `<button class="btn btn-danger" 
-                                 hx-delete="/api/tasks/${task.id}"
-                                 hx-confirm="Cancel this task?">Cancel Task</button>` : ''}
+                                 hx-post="/api/tasks/${task.task_id || task.id}/cancel"
+                                 hx-confirm="Cancel this task?">
+                                 <span class="btn-icon">⊘</span> Cancel Task
+                         </button>` : ''}
+                    ${task.status === 'completed' || task.status === 'failed' ? 
+                        `<button class="btn btn-secondary" 
+                                 hx-delete="/api/tasks/${task.task_id || task.id}"
+                                 hx-confirm="Delete this task?">
+                                 <span class="btn-icon">🗑</span> Delete Task
+                         </button>` : ''}
                 </div>
             </div>
         `;

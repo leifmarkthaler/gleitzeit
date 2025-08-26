@@ -411,3 +411,220 @@ async def get_workflow_results(request: Request, workflow_id: str) -> Dict[str, 
                 "results": {},
                 "error": str(e)
             }
+
+
+# New Workflow Control Endpoints
+
+@router.post("/{workflow_id}/pause")
+async def pause_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Pause a running workflow
+    
+    Args:
+        workflow_id: Workflow to pause
+    
+    Returns:
+        Pause result
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}/pause") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Update UI tracking
+                    if workflow_id in _ui_workflows:
+                        _ui_workflows[workflow_id]["status"] = "paused"
+                    
+                    return data
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.post("/{workflow_id}/resume")
+async def resume_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Resume a paused workflow
+    
+    Args:
+        workflow_id: Workflow to resume
+    
+    Returns:
+        Resume result
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}/resume") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Update UI tracking
+                    if workflow_id in _ui_workflows:
+                        _ui_workflows[workflow_id]["status"] = "running"
+                    
+                    return data
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.post("/{workflow_id}/retry")
+async def retry_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Retry all failed tasks in a workflow
+    
+    Args:
+        workflow_id: Workflow to retry
+    
+    Returns:
+        Retry result with retried task information
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}/retry") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Update UI tracking
+                    if workflow_id in _ui_workflows:
+                        _ui_workflows[workflow_id]["status"] = "running"
+                    
+                    return data
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.get("/{workflow_id}/export")
+async def export_workflow(request: Request, workflow_id: str, format: str = "json") -> Response:
+    """
+    Export workflow definition
+    
+    Args:
+        workflow_id: Workflow to export
+        format: Export format (json or yaml)
+    
+    Returns:
+        Workflow definition in requested format
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(
+                f"{GLEITZEIT_API_URL}/workflows/{workflow_id}/export",
+                params={"format": format}
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    if format == "yaml":
+                        content = yaml.dump(data, default_flow_style=False)
+                        return Response(content=content, media_type="text/yaml")
+                    else:
+                        return JSONResponse(content=data)
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.post("/{workflow_id}/clone")
+async def clone_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Clone an existing workflow
+    
+    Args:
+        workflow_id: Workflow to clone
+    
+    Returns:
+        Information about the cloned workflow
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}/clone") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Track the new workflow in UI
+                    new_workflow_id = data.get("new_workflow_id")
+                    if new_workflow_id:
+                        _ui_workflows[new_workflow_id] = {
+                            "id": new_workflow_id,
+                            "name": f"Clone of {workflow_id}",
+                            "status": "pending",
+                            "created_at": datetime.now().isoformat()
+                        }
+                    
+                    return data
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.get("/{workflow_id}/dependencies")
+async def get_workflow_dependencies(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Get workflow dependency graph
+    
+    Args:
+        workflow_id: Workflow identifier
+    
+    Returns:
+        Dependency graph with nodes and edges
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}/dependencies") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.get("/{workflow_id}/critical-path")
+async def get_workflow_critical_path(request: Request, workflow_id: str) -> Dict[str, Any]:
+    """
+    Get workflow critical path analysis
+    
+    Args:
+        workflow_id: Workflow identifier
+    
+    Returns:
+        Critical path information
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/workflows/{workflow_id}/critical-path") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Workflow not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")

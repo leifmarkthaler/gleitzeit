@@ -199,6 +199,56 @@ class DBResourceLock(Base):
     expires_at = Column(DateTime, nullable=False, index=True)
 
 
+class DBTaskLog(Base):
+    """Task execution logs"""
+    __tablename__ = 'task_logs'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp = Column(DateTime, nullable=False, default=datetime.utcnow, index=True)
+    level = Column(String(20), nullable=False, index=True)
+    message = Column(Text, nullable=False)
+    source = Column(String(50), nullable=False, index=True)
+    
+    # Context fields
+    task_id = Column(String(255), ForeignKey('tasks.id', ondelete='CASCADE'), index=True)
+    workflow_id = Column(String(255), index=True)
+    provider_id = Column(String(255), index=True)
+    
+    # Additional fields
+    stream_type = Column(String(20))  # stdout, stderr, http
+    line_number = Column(Integer)
+    log_metadata = Column('metadata', Text)  # JSON - renamed to avoid SQLAlchemy conflict
+    
+    # Composite indexes for efficient queries
+    __table_args__ = (
+        Index('idx_logs_task_time', 'task_id', 'timestamp'),
+        Index('idx_logs_workflow_time', 'workflow_id', 'timestamp'),
+    )
+
+
+class DBLogStats(Base):
+    """Aggregated log statistics for performance"""
+    __tablename__ = 'log_stats'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    workflow_id = Column(String(255), unique=True, index=True)
+    task_id = Column(String(255), index=True)
+    
+    # Counters
+    total_logs = Column(Integer, default=0)
+    error_count = Column(Integer, default=0)
+    warning_count = Column(Integer, default=0)
+    info_count = Column(Integer, default=0)
+    debug_count = Column(Integer, default=0)
+    
+    # Time range
+    first_log_at = Column(DateTime)
+    last_log_at = Column(DateTime)
+    
+    # Source breakdown (JSON)
+    sources = Column(Text)  # {"provider": 10, "engine": 5, ...}
+
+
 # ============================================================================
 # Unified SQLAlchemy Adapter
 # ============================================================================

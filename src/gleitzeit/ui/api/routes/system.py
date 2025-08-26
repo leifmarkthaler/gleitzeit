@@ -253,3 +253,232 @@ async def get_metrics(request: Request) -> Dict[str, Any]:
             pass
     
     return metrics
+
+
+# New System Monitoring Endpoints
+
+@router.get("/queues")
+async def list_queues(request: Request) -> Dict[str, Any]:
+    """
+    List all task queues and their statistics
+    
+    Returns:
+        Queue information and statistics
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/queues") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    return {"total_queues": 0, "queues": {}}
+        except aiohttp.ClientError as e:
+            return {"total_queues": 0, "queues": {}, "error": str(e)}
+
+
+@router.get("/queues/{queue_name}")
+async def get_queue_details(request: Request, queue_name: str) -> Dict[str, Any]:
+    """
+    Get detailed statistics for a specific queue
+    
+    Args:
+        queue_name: Name of the queue
+    
+    Returns:
+        Queue details and statistics
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/queues/{queue_name}") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail=f"Queue '{queue_name}' not found")
+                else:
+                    raise HTTPException(status_code=resp.status, detail="API error")
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.post("/queues/{queue_name}/pause")
+async def pause_queue(request: Request, queue_name: str) -> Dict[str, Any]:
+    """
+    Pause a task queue
+    
+    Args:
+        queue_name: Name of the queue to pause
+    
+    Returns:
+        Pause result
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f"{GLEITZEIT_API_URL}/queues/{queue_name}/pause") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail=f"Queue '{queue_name}' not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.post("/queues/{queue_name}/resume")
+async def resume_queue(request: Request, queue_name: str) -> Dict[str, Any]:
+    """
+    Resume a paused queue
+    
+    Args:
+        queue_name: Name of the queue to resume
+    
+    Returns:
+        Resume result
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f"{GLEITZEIT_API_URL}/queues/{queue_name}/resume") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail=f"Queue '{queue_name}' not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.post("/queues/{queue_name}/clear")
+async def clear_queue(request: Request, queue_name: str) -> Dict[str, Any]:
+    """
+    Clear all pending tasks from a queue
+    
+    Args:
+        queue_name: Name of the queue to clear
+    
+    Returns:
+        Clear result
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f"{GLEITZEIT_API_URL}/queues/{queue_name}/clear") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail=f"Queue '{queue_name}' not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+
+@router.get("/statistics/tasks")
+async def get_task_statistics(request: Request) -> Dict[str, Any]:
+    """
+    Get task execution statistics
+    
+    Returns:
+        Task statistics
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/statistics/tasks") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    return {
+                        "total": 0,
+                        "pending": 0,
+                        "running": 0,
+                        "completed": 0,
+                        "failed": 0,
+                        "cancelled": 0
+                    }
+        except aiohttp.ClientError as e:
+            return {
+                "total": 0,
+                "pending": 0,
+                "running": 0,
+                "completed": 0,
+                "failed": 0,
+                "cancelled": 0,
+                "error": str(e)
+            }
+
+
+@router.get("/statistics/system")
+async def get_system_statistics(request: Request) -> Dict[str, Any]:
+    """
+    Get overall system statistics
+    
+    Returns:
+        System statistics including uptime and queue info
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/statistics/system") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    return {"uptime_seconds": 0, "tasks": {}, "queues": {}}
+        except aiohttp.ClientError as e:
+            return {"uptime_seconds": 0, "tasks": {}, "queues": {}, "error": str(e)}
+
+
+@router.get("/resources/limits")
+async def get_resource_limits(request: Request) -> Dict[str, Any]:
+    """
+    Get current resource limits
+    
+    Returns:
+        Resource limits configuration
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/resources/limits") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    return {
+                        "max_concurrent_tasks": 5,
+                        "max_memory_mb": 512,
+                        "max_queue_size": 1000
+                    }
+        except aiohttp.ClientError as e:
+            return {
+                "max_concurrent_tasks": 5,
+                "max_memory_mb": 512,
+                "max_queue_size": 1000,
+                "error": str(e)
+            }
+
+
+@router.get("/resources/usage")
+async def get_resource_usage(request: Request) -> Dict[str, Any]:
+    """
+    Get current resource usage
+    
+    Returns:
+        Current resource utilization
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.get(f"{GLEITZEIT_API_URL}/resources/usage") as resp:
+                if resp.status == 200:
+                    return await resp.json()
+                else:
+                    return {
+                        "active_tasks": 0,
+                        "queued_tasks": 0,
+                        "memory_usage_mb": 0
+                    }
+        except aiohttp.ClientError as e:
+            return {
+                "active_tasks": 0,
+                "queued_tasks": 0,
+                "memory_usage_mb": 0,
+                "error": str(e)
+            }

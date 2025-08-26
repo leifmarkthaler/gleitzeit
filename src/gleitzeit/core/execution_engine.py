@@ -35,6 +35,8 @@ from gleitzeit.task_queue import TaskQueue, QueueManager, DependencyResolver
 from gleitzeit.persistence.base import PersistenceBackend
 
 from gleitzeit.core.error_formatter import get_clean_logger
+from gleitzeit.core.log_collector import get_log_collector
+from gleitzeit.core.logs import LogLevel, LogSource
 
 # Use clean logger that adjusts log levels for expected warnings
 logger = get_clean_logger(__name__)
@@ -697,6 +699,22 @@ class ExecutionEngine:
                 
                 logger.info(f"Executing task {task.id} ({task.protocol}/{task.method})")
                 
+                # Log task execution start
+                log_collector = get_log_collector()
+                if log_collector:
+                    await log_collector.log(
+                        LogLevel.INFO,
+                        f"Starting task execution: {task.name} ({task.protocol}/{task.method})",
+                        LogSource.ENGINE,
+                        task_id=task.id,
+                        workflow_id=task.workflow_id,
+                        metadata={
+                            "protocol": task.protocol,
+                            "method": task.method,
+                            "attempt": current_attempt
+                        }
+                    )
+                
                 # Perform parameter substitution if needed
                 resolved_params = await self._resolve_task_parameters(task)
                 
@@ -776,6 +794,21 @@ class ExecutionEngine:
                     await self._check_workflow_completion(task.workflow_id)
                 
                 logger.info(f"Task {task.id} completed successfully in {duration:.3f}s")
+                
+                # Log task completion
+                if log_collector:
+                    await log_collector.log(
+                        LogLevel.INFO,
+                        f"Task completed successfully: {task.name} ({duration:.3f}s)",
+                        LogSource.ENGINE,
+                        task_id=task.id,
+                        workflow_id=task.workflow_id,
+                        metadata={
+                            "duration_seconds": duration,
+                            "result_size": len(str(task_result.result)) if task_result.result else 0
+                        }
+                    )
+                
                 return task_result
                 
             except Exception as e:
@@ -799,6 +832,21 @@ class ExecutionEngine:
                     )
                 
                 error_message = str(structured_error)
+                
+                # Log task failure
+                log_collector = get_log_collector()
+                if log_collector:
+                    await log_collector.log(
+                        LogLevel.ERROR,
+                        f"Task failed: {task.name} - {error_message}",
+                        LogSource.ENGINE,
+                        task_id=task.id,
+                        workflow_id=task.workflow_id,
+                        metadata={
+                            "error_type": type(structured_error).__name__,
+                            "is_retryable": is_retryable_error(structured_error)
+                        }
+                    )
                 
                 # Update task status to failed FIRST
                 task.status = TaskStatus.FAILED
@@ -1461,6 +1509,22 @@ class ExecutionEngine:
     
     async def submit_task(self, task: Task, queue_name: Optional[str] = None) -> None:
         """Submit a single task for execution (idempotent)"""
+        
+        # Log task submission
+        log_collector = get_log_collector()
+        if log_collector:
+            await log_collector.log(
+                LogLevel.INFO,
+                f"Task submitted: {task.name} ({task.protocol}/{task.method})",
+                LogSource.ENGINE,
+                task_id=task.id,
+                workflow_id=task.workflow_id,
+                metadata={
+                    "queue": queue_name or "default",
+                    "protocol": task.protocol,
+                    "method": task.method
+                }
+            )
         
         # Auto-create single-task workflow if task has no workflow_id
         if not task.workflow_id:

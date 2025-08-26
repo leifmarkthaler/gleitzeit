@@ -20,8 +20,31 @@
     <!-- Task Graph Visualization -->
     <div class="section">
         <h2 class="section-title">Task Dependencies</h2>
-        <div id="task-graph" class="task-graph-container">
-            <canvas id="dependency-graph"></canvas>
+        <div class="dependency-tabs">
+            <button class="tab-btn active" onclick="showDependencyView('graph')">Graph View</button>
+            <button class="tab-btn" onclick="showDependencyView('critical')">Critical Path</button>
+            <button class="tab-btn" onclick="showDependencyView('data')">Raw Data</button>
+        </div>
+        <div id="dependency-graph-view" class="dependency-view active">
+            <div id="task-graph" class="task-graph-container">
+                <canvas id="dependency-graph"></canvas>
+            </div>
+        </div>
+        <div id="dependency-critical-view" class="dependency-view" style="display:none;">
+            <div id="critical-path" 
+                 hx-get="/api/workflows/{{ workflow_id }}/critical-path" 
+                 hx-trigger="load"
+                 class="critical-path-container">
+                <div class="loading-spinner">Loading critical path...</div>
+            </div>
+        </div>
+        <div id="dependency-data-view" class="dependency-view" style="display:none;">
+            <div id="dependency-data" 
+                 hx-get="/api/workflows/{{ workflow_id }}/dependencies" 
+                 hx-trigger="load"
+                 class="dependency-data-container">
+                <div class="loading-spinner">Loading dependency data...</div>
+            </div>
         </div>
     </div>
     
@@ -92,12 +115,48 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
                         </div>
                     </div>
                 </div>
-                ${workflow.status === 'running' ? 
-                    `<div class="workflow-actions">
-                        <button class="btn btn-danger" 
-                                hx-delete="/api/workflows/${workflow.id}"
-                                hx-confirm="Cancel this workflow?">Cancel Workflow</button>
-                    </div>` : ''}
+                <div class="workflow-actions">
+                    ${workflow.status === 'running' ? 
+                        `<button class="btn btn-warning" 
+                                 hx-post="/api/workflows/${workflow.id || workflow.workflow_id}/pause"
+                                 hx-confirm="Pause this workflow?">
+                                 <span class="btn-icon">⏸</span> Pause Workflow
+                         </button>` : ''}
+                    ${workflow.status === 'paused' ? 
+                        `<button class="btn btn-success" 
+                                 hx-post="/api/workflows/${workflow.id || workflow.workflow_id}/resume"
+                                 hx-confirm="Resume this workflow?">
+                                 <span class="btn-icon">▶</span> Resume Workflow
+                         </button>` : ''}
+                    ${workflow.status === 'failed' || workflow.status === 'completed' ? 
+                        `<button class="btn btn-warning" 
+                                 hx-post="/api/workflows/${workflow.id || workflow.workflow_id}/retry"
+                                 hx-confirm="Retry failed tasks in this workflow?">
+                                 <span class="btn-icon">↻</span> Retry Failed Tasks
+                         </button>` : ''}
+                    ${workflow.status === 'completed' || workflow.status === 'failed' ? 
+                        `<button class="btn btn-info" 
+                                 hx-get="/api/workflows/${workflow.id || workflow.workflow_id}/export?format=json"
+                                 hx-swap="none">
+                                 <span class="btn-icon">⬇</span> Export as JSON
+                         </button>
+                         <button class="btn btn-info" 
+                                 hx-get="/api/workflows/${workflow.id || workflow.workflow_id}/export?format=yaml"
+                                 hx-swap="none">
+                                 <span class="btn-icon">⬇</span> Export as YAML
+                         </button>
+                         <button class="btn btn-primary" 
+                                 hx-post="/api/workflows/${workflow.id || workflow.workflow_id}/clone"
+                                 hx-confirm="Clone this workflow?">
+                                 <span class="btn-icon">📋</span> Clone Workflow
+                         </button>` : ''}
+                    ${workflow.status === 'running' || workflow.status === 'pending' ? 
+                        `<button class="btn btn-danger" 
+                                 hx-delete="/api/workflows/${workflow.id || workflow.workflow_id}"
+                                 hx-confirm="Cancel this workflow?">
+                                 <span class="btn-icon">⊘</span> Cancel Workflow
+                         </button>` : ''}
+                </div>
             </div>
         `;
         
@@ -298,8 +357,124 @@ function getStatusColor(status) {
         case 'running': return '#3B82F6';
         case 'failed': return '#EF4444';
         case 'pending': return '#9CA3AF';
+        case 'paused': return '#F59E0B';
         default: return '#E5E7EB';
     }
 }
+
+// Show different dependency views
+function showDependencyView(view) {
+    // Update tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Show/hide views
+    document.querySelectorAll('.dependency-view').forEach(v => {
+        v.style.display = 'none';
+    });
+    document.getElementById(`dependency-${view}-view`).style.display = 'block';
+}
+
+// Format critical path display
+document.body.addEventListener('htmx:beforeSwap', function(evt) {
+    if (evt.detail.target.id === 'critical-path') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        if (data.critical_path && data.critical_path.length > 0) {
+            html = `
+                <div class="critical-path-info">
+                    <div class="path-stats">
+                        <span>Critical Path Length: ${data.critical_path.length} tasks</span>
+                        <span>Total Duration: ${data.total_duration || 'N/A'}s</span>
+                    </div>
+                    <div class="critical-tasks">
+                        ${data.critical_path.map((task, index) => `
+                            <div class="critical-task">
+                                <span class="task-number">${index + 1}</span>
+                                <span class="task-id">${task.task_id}</span>
+                                <span class="task-duration">${task.duration || 'N/A'}s</span>
+                                ${index < data.critical_path.length - 1 ? '<span class="arrow">→</span>' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            html = '<div class="empty-state">No critical path data available</div>';
+        }
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+    
+    if (evt.detail.target.id === 'dependency-data') {
+        const data = JSON.parse(evt.detail.xhr.response);
+        let html = '';
+        
+        if (data.nodes && data.edges) {
+            html = `
+                <div class="dependency-raw-data">
+                    <div class="data-section">
+                        <h4>Nodes (${data.nodes.length})</h4>
+                        <pre>${JSON.stringify(data.nodes, null, 2)}</pre>
+                    </div>
+                    <div class="data-section">
+                        <h4>Edges (${data.edges.length})</h4>
+                        <pre>${JSON.stringify(data.edges, null, 2)}</pre>
+                    </div>
+                </div>
+            `;
+        } else {
+            html = '<div class="empty-state">No dependency data available</div>';
+        }
+        
+        evt.detail.target.innerHTML = html;
+        evt.preventDefault();
+    }
+});
+
+// Handle workflow actions response
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.successful && evt.detail.verb === 'POST') {
+        const path = evt.detail.path;
+        if (path.includes('/pause') || path.includes('/resume') || 
+            path.includes('/retry') || path.includes('/clone')) {
+            // Refresh workflow info after action
+            htmx.trigger('#workflow-info', 'load');
+            
+            // Show success message if clone
+            if (path.includes('/clone')) {
+                const response = JSON.parse(evt.detail.xhr.response);
+                if (response.new_workflow_id) {
+                    alert(`Workflow cloned successfully! New workflow ID: ${response.new_workflow_id}`);
+                }
+            }
+        }
+    }
+});
+
+// Handle export downloads
+document.body.addEventListener('htmx:afterRequest', function(evt) {
+    if (evt.detail.successful && evt.detail.verb === 'GET') {
+        const path = evt.detail.path;
+        if (path.includes('/export')) {
+            const format = path.includes('yaml') ? 'yaml' : 'json';
+            const contentType = format === 'yaml' ? 'text/yaml' : 'application/json';
+            const content = evt.detail.xhr.response;
+            
+            // Create download
+            const blob = new Blob([content], { type: contentType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `workflow_{{ workflow_id }}.${format}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+});
 </script>
 {% endblock %}

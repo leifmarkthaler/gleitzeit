@@ -175,9 +175,38 @@ async def execute_task(request: Request, task_data: Dict[str, Any]) -> Dict[str,
             raise HTTPException(status_code=503, detail=f"API connection error: {e}")
 
 @router.delete("/{task_id}")
+async def delete_task(request: Request, task_id: str) -> Dict[str, Any]:
+    """
+    Delete a task (if completed or failed) via API
+    
+    Args:
+        task_id: Task to delete
+    
+    Returns:
+        Deletion result
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.delete(f"{GLEITZEIT_API_URL}/tasks/{task_id}") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Remove from UI tracking
+                    if task_id in _ui_tasks:
+                        del _ui_tasks[task_id]
+                    
+                    return data
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Task not found")
+                else:
+                    raise HTTPException(status_code=resp.status, detail="API error")
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+@router.post("/{task_id}/cancel")
 async def cancel_task(request: Request, task_id: str) -> Dict[str, Any]:
     """
-    Cancel a running task via API
+    Cancel a pending or running task via new API endpoint
     
     Args:
         task_id: Task to cancel
@@ -187,7 +216,7 @@ async def cancel_task(request: Request, task_id: str) -> Dict[str, Any]:
     """
     async with aiohttp.ClientSession() as session:
         try:
-            async with session.delete(f"{GLEITZEIT_API_URL}/tasks/{task_id}") as resp:
+            async with session.post(f"{GLEITZEIT_API_URL}/tasks/{task_id}/cancel") as resp:
                 if resp.status == 200:
                     data = await resp.json()
                     
@@ -199,7 +228,44 @@ async def cancel_task(request: Request, task_id: str) -> Dict[str, Any]:
                 elif resp.status == 404:
                     raise HTTPException(status_code=404, detail="Task not found")
                 else:
-                    raise HTTPException(status_code=resp.status, detail="API error")
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
+        except aiohttp.ClientError as e:
+            raise HTTPException(status_code=503, detail=f"API connection error: {e}")
+
+@router.post("/{task_id}/retry")
+async def retry_task(request: Request, task_id: str) -> Dict[str, Any]:
+    """
+    Retry a failed or cancelled task via new API endpoint
+    
+    Args:
+        task_id: Task to retry
+    
+    Returns:
+        Retry result with new task ID
+    """
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(f"{GLEITZEIT_API_URL}/tasks/{task_id}/retry") as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    
+                    # Track the new task in UI
+                    new_task_id = data.get("new_task_id")
+                    if new_task_id and task_id in _ui_tasks:
+                        _ui_tasks[new_task_id] = {
+                            "id": new_task_id,
+                            "name": _ui_tasks[task_id].get("name", "Retried Task"),
+                            "status": data.get("status", "submitted"),
+                            "created_at": datetime.now().isoformat()
+                        }
+                    
+                    return data
+                elif resp.status == 404:
+                    raise HTTPException(status_code=404, detail="Task not found")
+                else:
+                    error_text = await resp.text()
+                    raise HTTPException(status_code=resp.status, detail=error_text)
         except aiohttp.ClientError as e:
             raise HTTPException(status_code=503, detail=f"API connection error: {e}")
 
@@ -282,7 +348,7 @@ async def get_task_result(request: Request, task_id: str) -> Dict[str, Any]:
 @router.get("/{task_id}/logs")
 async def get_task_logs(request: Request, task_id: str, tail: int = 50) -> Dict[str, Any]:
     """
-    Get execution logs for a task
+    Get execution logs for a task - now using the real logs endpoint
     
     Args:
         task_id: Task identifier
@@ -291,51 +357,16 @@ async def get_task_logs(request: Request, task_id: str, tail: int = 50) -> Dict[
     Returns:
         Task execution logs
     """
-    # The API doesn't currently have a logs endpoint
-    # For now, return a placeholder or fetch from result if available
     async with aiohttp.ClientSession() as session:
         try:
-            # Try to get task details which might contain logs
-            async with session.get(f"{GLEITZEIT_API_URL}/tasks/{task_id}") as resp:
+            # Use the new logs endpoint
+            async with session.get(
+                f"{GLEITZEIT_API_URL}/tasks/{task_id}/logs",
+                params={"tail": tail}
+            ) as resp:
                 if resp.status == 200:
-                    data = await resp.json()
-                    
-                    # Extract any output or logs from the result
-                    result = data.get("result", {})
-                    logs = []
-                    
-                    if isinstance(result, dict):
-                        # Check for output field
-                        if "output" in result:
-                            logs.append(f"[OUTPUT] {result['output']}")
-                        # Check for logs field
-                        if "logs" in result:
-                            if isinstance(result["logs"], list):
-                                logs.extend(result["logs"])
-                            else:
-                                logs.append(str(result["logs"]))
-                        # Check for stdout/stderr
-                        if "stdout" in result:
-                            logs.append(f"[STDOUT] {result['stdout']}")
-                        if "stderr" in result:
-                            logs.append(f"[STDERR] {result['stderr']}")
-                    
-                    # If no logs found, add status message
-                    if not logs:
-                        logs.append(f"Task {task_id} - Status: {data.get('status', 'unknown')}")
-                        if data.get("error"):
-                            logs.append(f"Error: {data['error']}")
-                    
-                    # Limit to requested tail size
-                    if len(logs) > tail:
-                        logs = logs[-tail:]
-                    
-                    return {
-                        "task_id": task_id,
-                        "logs": logs,
-                        "total_lines": len(logs),
-                        "tail": tail
-                    }
+                    # Return the logs directly from the API
+                    return await resp.json()
                 elif resp.status == 404:
                     return {
                         "task_id": task_id,
