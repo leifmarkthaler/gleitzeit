@@ -170,24 +170,24 @@ async def handle_client_message(websocket: WebSocket, message: Dict[str, Any]):
 
 async def send_status_update(websocket: WebSocket):
     """Send current status to a specific client"""
-    from .tasks import _tasks_store
-    from .workflows import _workflows_store
+    from .tasks import _ui_tasks
+    from .workflows import _ui_workflows
     
     status = {
         "type": "status_update",
         "data": {
             "workflows": {
-                "total": len(_workflows_store),
-                "running": len([w for w in _workflows_store.values() if w.get("status") == "running"]),
-                "completed": len([w for w in _workflows_store.values() if w.get("status") == "completed"]),
-                "failed": len([w for w in _workflows_store.values() if w.get("status") == "failed"])
+                "total": len(_ui_workflows),
+                "running": len([w for w in _ui_workflows.values() if w.get("status") == "running"]),
+                "completed": len([w for w in _ui_workflows.values() if w.get("status") == "completed"]),
+                "failed": len([w for w in _ui_workflows.values() if w.get("status") == "failed"])
             },
             "tasks": {
-                "total": len(_tasks_store),
-                "running": len([t for t in _tasks_store.values() if t.get("status") == "running"]),
-                "pending": len([t for t in _tasks_store.values() if t.get("status") == "pending"]),
-                "completed": len([t for t in _tasks_store.values() if t.get("status") == "completed"]),
-                "failed": len([t for t in _tasks_store.values() if t.get("status") == "failed"])
+                "total": len(_ui_tasks),
+                "running": len([t for t in _ui_tasks.values() if t.get("status") == "running"]),
+                "pending": len([t for t in _ui_tasks.values() if t.get("status") == "pending"]),
+                "completed": len([t for t in _ui_tasks.values() if t.get("status") == "completed"]),
+                "failed": len([t for t in _ui_tasks.values() if t.get("status") == "failed"])
             }
         }
     }
@@ -201,16 +201,16 @@ async def periodic_updates():
         await asyncio.sleep(5)  # Send updates every 5 seconds
         
         # Get current stats
-        from .tasks import _tasks_store
-        from .workflows import _workflows_store
+        from .tasks import _ui_tasks
+        from .workflows import _ui_workflows
         
         # Send metrics update
         metrics_update = {
             "type": "metrics_update",
             "data": {
-                "active_workflows": len([w for w in _workflows_store.values() if w.get("status") == "running"]),
-                "running_tasks": len([t for t in _tasks_store.values() if t.get("status") == "running"]),
-                "queue_size": len([t for t in _tasks_store.values() if t.get("status") == "pending"])
+                "active_workflows": len([w for w in _ui_workflows.values() if w.get("status") == "running"]),
+                "running_tasks": len([t for t in _ui_tasks.values() if t.get("status") == "running"]),
+                "queue_size": len([t for t in _ui_tasks.values() if t.get("status") == "pending"])
             }
         }
         
