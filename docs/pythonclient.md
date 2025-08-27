@@ -2,14 +2,16 @@
 
 ## GleitzeitClient
 
-The main client for interacting with Gleitzeit from Python.
+The main client for interacting with Gleitzeit from Python. 
+
+**Note**: The client has been restructured into a modular architecture for better maintainability. See [Modular Client Documentation](modular-client.md) for detailed architecture information.
 
 ### Initialization
 
 ```python
 from gleitzeit import GleitzeitClient
 
-# Auto mode (default)
+# Auto mode (default) - detects best available mode
 client = GleitzeitClient()
 
 # Specific mode
@@ -24,6 +26,15 @@ client = GleitzeitClient(
     keep_server_running=True
 )
 ```
+
+### Architecture Overview
+
+The client uses a modular design with:
+- **Mixins**: Separate modules for workflows, tasks, queues, batch processing, auth, and system operations
+- **Adapters**: Mode-specific implementations (API vs Native)
+- **Backward Compatibility**: Existing code continues to work without changes
+
+For architectural details, see [Modular Client Documentation](modular-client.md).
 
 ### Parameters
 

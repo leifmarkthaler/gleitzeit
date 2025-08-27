@@ -98,6 +98,15 @@ Gleitzeit includes a unified persistence layer with automatic fallback:
 
 ## Python Client
 
+The Gleitzeit Python client provides a programmatic interface for workflow orchestration. The client has been recently restructured into a modular architecture for better maintainability while preserving full backward compatibility.
+
+### Modular Architecture
+- **Mixins**: Separate modules for different functional domains (workflows, tasks, queues, batch processing, auth, system)
+- **Adapters**: Clean separation between API and Native execution modes
+- **Backward Compatible**: Existing code continues to work without changes
+
+See [Modular Client Documentation](docs/modular-client.md) for architectural details.
+
 ### Using GleitzeitClient
 
 ```python
