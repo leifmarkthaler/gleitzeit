@@ -54,12 +54,19 @@ except ImportError as e:
         pass
 
 # Import routers
-from .routes import workflows, tasks, system, websocket
+from .routes import workflows, tasks, system, websocket, config
 try:
     from .routes import templates as templates_router
     TEMPLATES_AVAILABLE = True
 except ImportError:
     TEMPLATES_AVAILABLE = False
+
+# Import new page routes
+try:
+    from ..routes import pages
+    PAGES_AVAILABLE = True
+except ImportError:
+    PAGES_AVAILABLE = False
 
 
 @asynccontextmanager
@@ -101,9 +108,14 @@ templates = Jinja2Templates(directory=str(ui_dir / "templates"))
 app.include_router(workflows.router, prefix="/api/workflows", tags=["workflows"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(system.router, prefix="/api/system", tags=["system"])
+app.include_router(config.router, prefix="/api", tags=["config"])  # Config at /api level for auth/status
 if TEMPLATES_AVAILABLE:
     app.include_router(templates_router.router, prefix="/api/templates", tags=["templates"])
 app.include_router(websocket.router, tags=["websocket"])
+
+# Include new page routes
+if PAGES_AVAILABLE:
+    app.include_router(pages.router, tags=["pages"])
 
 # Root route - Dashboard
 @app.get("/", response_class=HTMLResponse)
@@ -177,6 +189,22 @@ async def proxy_api(request: Request, path: str):
     import aiohttp
     import json
     
+    # Special handling for auth endpoints when auth is not enabled
+    if path.startswith("auth/") and path != "auth/status":
+        # Check if auth is enabled first
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(f"{request.app.state.api_url}/auth/status") as resp:
+                    if resp.status == 404:
+                        # Auth not enabled, return 404
+                        from fastapi.responses import JSONResponse
+                        return JSONResponse(
+                            content={"detail": "Authentication not configured"},
+                            status_code=404
+                        )
+            except:
+                pass
+    
     api_url = request.app.state.api_url
     
     # Build the target URL
@@ -230,8 +258,17 @@ async def proxy_api(request: Request, path: str):
                 )
                 
         except aiohttp.ClientError as e:
-            # API not reachable
+            # API not reachable - might be normal for optional endpoints
             from fastapi.responses import JSONResponse
+            
+            # For auth endpoints, return 404 if API doesn't have them
+            if path.startswith("auth/"):
+                return JSONResponse(
+                    content={"detail": "Authentication not configured"},
+                    status_code=404
+                )
+            
+            # For other endpoints, return service unavailable
             return JSONResponse(
                 content={"error": f"Cannot connect to Gleitzeit API: {str(e)}"},
                 status_code=503

@@ -216,6 +216,105 @@ results = await client.batch_process(
 )
 ```
 
+### process_directory
+
+Process all files in a directory with specified extensions using a workflow template.
+
+```python
+async def process_directory(
+    directory: str,
+    file_extensions: List[str],
+    workflow_yaml: str,
+    max_concurrent: int = 5,
+    recursive: bool = True
+) -> Dict[str, Any]
+```
+
+**Parameters:**
+- `directory`: Directory path to process
+- `file_extensions`: List of file extensions to process (e.g., [".txt", ".md"])
+- `workflow_yaml`: Workflow template in YAML format with placeholders
+- `max_concurrent`: Maximum concurrent workflows (default: 5)
+- `recursive`: Whether to search subdirectories (default: True)
+
+**Available Placeholders:**
+- `${file_path}`: Full path to the file
+- `${file_name}`: File name with extension
+- `${file_ext}`: File extension
+- `${file_dir}`: Directory containing the file
+
+**Returns:** Dictionary with processing results
+
+**Example:**
+
+```python
+# Basic file processing
+workflow_template = """
+name: Process ${file_name}
+tasks:
+  - name: Read file
+    id: read_file
+    method: file/read
+    input:
+      path: ${file_path}
+  
+  - name: Analyze
+    id: analyze
+    method: llm/chat
+    input:
+      prompt: Summarize ${file_name}
+      model: llama3.2
+    depends_on: [read_file]
+"""
+
+results = await client.process_directory(
+    directory="/path/to/documents",
+    file_extensions=[".txt", ".md"],
+    workflow_yaml=workflow_template,
+    max_concurrent=5,
+    recursive=True
+)
+
+# Advanced workflow with multiple steps
+advanced_workflow = """
+name: Process ${file_name}
+tasks:
+  - name: Read file
+    id: read
+    method: file/read
+    input:
+      path: ${file_path}
+  
+  - name: Extract entities
+    id: extract
+    method: llm/chat
+    input:
+      prompt: |
+        Extract all named entities from this ${file_ext} file:
+        {{read.output}}
+      model: llama3.2
+    depends_on: [read]
+  
+  - name: Save results
+    id: save
+    method: file/write
+    input:
+      path: ${file_dir}/processed/${file_name}.entities.json
+      content: "{{extract.output}}"
+    depends_on: [extract]
+"""
+
+results = await client.process_directory(
+    directory="/data/reports",
+    file_extensions=[".pdf", ".docx", ".txt"],
+    workflow_yaml=advanced_workflow,
+    max_concurrent=10
+)
+
+for file_path, result in results.items():
+    print(f"Processed {file_path}: workflow_id={result['workflow_id']}")
+```
+
 ### execute_task
 
 Execute a single task.

@@ -205,6 +205,78 @@ async def submit_workflow_file(request: Request) -> Dict[str, Any]:
     # Submit using the regular submit endpoint
     return await submit_workflow(request, workflow_data)
 
+@router.post("/upload")
+async def batch_upload_workflows(request: Request) -> Dict[str, Any]:
+    """
+    Upload multiple workflows from a file (JSON or YAML)
+    
+    Returns:
+        Upload results with created workflow IDs and errors
+    """
+    from fastapi import UploadFile, File, Form
+    import io
+    
+    # Get form data
+    form_data = await request.form()
+    file = form_data.get("file")
+    
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided")
+    
+    # Read file content
+    content = await file.read()
+    
+    # Parse content based on file extension
+    try:
+        if file.filename.endswith('.json'):
+            data = json.loads(content)
+        elif file.filename.endswith(('.yaml', '.yml')):
+            data = yaml.safe_load(content)
+        else:
+            # Try JSON first, then YAML
+            try:
+                data = json.loads(content)
+            except:
+                data = yaml.safe_load(content)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid file format: {e}")
+    
+    # Check if it's a list of workflows or a single workflow
+    if isinstance(data, dict):
+        workflows = [data]
+    elif isinstance(data, list):
+        workflows = data
+    else:
+        raise HTTPException(status_code=400, detail="File must contain workflow(s)")
+    
+    # Submit each workflow
+    results = {
+        "created": 0,
+        "failed": 0,
+        "workflows": [],
+        "errors": []
+    }
+    
+    for idx, workflow in enumerate(workflows):
+        try:
+            # Submit workflow
+            result = await submit_workflow(request, workflow)
+            results["created"] += 1
+            results["workflows"].append({
+                "index": idx,
+                "workflow_id": result.get("workflow_id"),
+                "name": workflow.get("name", f"Workflow {idx}")
+            })
+        except Exception as e:
+            results["failed"] += 1
+            results["errors"].append({
+                "index": idx,
+                "name": workflow.get("name", f"Workflow {idx}"),
+                "error": str(e)
+            })
+    
+    return results
+
 @router.delete("/{workflow_id}")
 async def cancel_workflow(request: Request, workflow_id: str) -> Dict[str, Any]:
     """

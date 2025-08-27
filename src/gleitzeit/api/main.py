@@ -6,6 +6,7 @@ Provides endpoints for workflow submission, task execution, monitoring, and batc
 """
 
 import asyncio
+import os
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -73,6 +74,13 @@ class BatchRequest(BaseModel):
     name: Optional[str] = Field(None, description="Batch job name")
 
 
+class DirectoryBulkRequest(BaseModel):
+    """Request model for directory bulk operations"""
+    directory: str = Field(..., description="Directory path to process")
+    file_extensions: List[str] = Field(..., description="List of file extensions to process (e.g., ['.txt', '.md'])")
+    workflow_yaml: str = Field(..., description="Workflow YAML template with placeholders like ${file_path}")
+    max_concurrent: int = Field(5, description="Maximum concurrent workflows")
+    recursive: bool = Field(True, description="Whether to search subdirectories")
 
 
 class ChatRequest(BaseModel):
@@ -177,8 +185,11 @@ async def generic_exception_handler(request, exc):
 from gleitzeit.api.routes.event_errors import router as event_errors_router
 app.include_router(event_errors_router)
 
+# Add logs router for log management
+from gleitzeit.api.routes.logs import router as logs_router
+app.include_router(logs_router)
+
 # Add authentication middleware if enabled
-import os
 from gleitzeit.core.dependency_check import check_auth_dependencies
 
 if os.getenv("GLEITZEIT_AUTH_ENABLED", "false").lower() == "true":
@@ -207,6 +218,7 @@ else:
 
 async def setup_system():
     """Initialize the Gleitzeit system using GleitzeitClient"""
+    global os  # Ensure os is available in this async function
     try:
         # Import GleitzeitClient here to avoid circular imports
         from gleitzeit.client import GleitzeitClient
@@ -433,6 +445,7 @@ async def get_resources_status():
 @app.post("/workflows", response_model=WorkflowResponse)
 async def submit_workflow(workflow: WorkflowRequest):
     """Submit a workflow for execution"""
+    global os  # Ensure os is available in this async function
     if not app_state.client:
         raise HTTPException(status_code=503, detail="System not initialized")
     
@@ -549,7 +562,6 @@ async def submit_workflow(workflow: WorkflowRequest):
             result = await app_state.client.run_workflow(temp_file_path, watch=False)
             workflow_id = result.get("workflow_id", workflow_id)
             
-            import os
             try:
                 os.unlink(temp_file_path)
             except:
@@ -1021,6 +1033,29 @@ async def batch_process(request: BatchRequest):
     
     except Exception as e:
         logger.error(f"Batch processing failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/bulk/directory")
+async def process_directory_bulk(request: DirectoryBulkRequest):
+    """Process all files in a directory with specified extensions using a workflow"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Use client's process_directory method
+        result = await app_state.client.process_directory(
+            directory=request.directory,
+            file_extensions=request.file_extensions,
+            workflow_yaml=request.workflow_yaml,
+            max_concurrent=request.max_concurrent,
+            recursive=request.recursive
+        )
+        
+        return result
+    
+    except Exception as e:
+        logger.error(f"Directory bulk processing failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

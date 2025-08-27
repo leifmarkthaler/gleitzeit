@@ -278,6 +278,52 @@ class InMemoryAuthDatabase(AuthDatabase):
         if len(self.audit_logs) > 10000:
             self.audit_logs = self.audit_logs[-5000:]
     
+    async def get_audit_logs(
+        self,
+        user_id: Optional[UUID] = None,
+        action: Optional[str] = None,
+        resource_type: Optional[str] = None,
+        since: Optional[datetime] = None,
+        limit: int = 100,
+        offset: int = 0
+    ) -> List[AuditLog]:
+        """
+        Retrieve audit logs with filtering.
+        
+        Args:
+            user_id: Filter by user ID
+            action: Filter by action type
+            resource_type: Filter by resource type
+            since: Get logs since timestamp
+            limit: Maximum logs to return
+            offset: Pagination offset
+            
+        Returns:
+            List of matching audit logs
+        """
+        # Start with all logs (in reverse chronological order)
+        filtered_logs = list(reversed(self.audit_logs))
+        
+        # Apply filters
+        if user_id:
+            if isinstance(user_id, str):
+                user_id = UUID(user_id)
+            filtered_logs = [log for log in filtered_logs if log.user_id == user_id]
+        
+        if action:
+            filtered_logs = [log for log in filtered_logs if log.action == action]
+        
+        if resource_type:
+            filtered_logs = [log for log in filtered_logs if log.resource_type == resource_type]
+        
+        if since:
+            filtered_logs = [log for log in filtered_logs if log.created_at >= since]
+        
+        # Apply pagination
+        start = offset
+        end = offset + limit
+        return filtered_logs[start:end]
+    
     async def get_user_api_keys(self, user_id: UUID) -> List[ApiKey]:
         """Get all API keys for a user"""
         if isinstance(user_id, str):

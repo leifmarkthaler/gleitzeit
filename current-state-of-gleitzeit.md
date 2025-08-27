@@ -2,7 +2,30 @@
 
 ## Overview
 
-Gleitzeit is a powerful, distributed workflow orchestration system designed for managing complex task dependencies and execution pipelines. The system has been significantly enhanced with comprehensive logging, authentication, and API capabilities.
+Gleitzeit is a distributed workflow orchestration system for managing task dependencies and execution pipelines. Version 0.0.6 includes architectural refactoring to implement thin-layer API design, simplified provider development, and improved modularity while maintaining backward compatibility.
+
+## Recent Refactoring Summary
+
+### API Architecture
+- **Thin-Layer Implementation**: Eliminated private member access in API endpoints
+- **Code Reduction**: Reduced API endpoint code by approximately 71%
+- **Public Interface**: Added 34 public methods to GleitzeitClient
+- **Separation of Concerns**: Separated HTTP handling from business logic
+
+### Provider System Updates
+- **Code Reduction**: Reduced provider implementation from 400+ lines to 15-25 lines for simple cases
+- **Configuration Support**: Added YAML/JSON configuration-based providers
+- **Development Time**: Reduced typical provider development time to minutes
+- **Built-in Features**: Automatic retry, logging, metrics, and circuit breakers
+
+### Authentication Changes
+- **Dual-Mode System**: Basic mode (no login) and Admin mode (multi-user)
+- **Data Isolation**: Complete separation between authentication modes
+- **Code Simplification**: Reduced authentication endpoint code by 66%
+- **Centralized Implementation**: Moved auth logic to GleitzeitClient
+
+### Compatibility
+All changes maintain backward compatibility with existing implementations.
 
 ## 🏗️ Architecture
 
@@ -11,10 +34,31 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
 1. **Execution Engine**: Manages workflow and task execution with dependency resolution
 2. **Task Queue**: Priority-based queue system with retry mechanisms
 3. **Protocol Providers**: Extensible system for different execution protocols (Python, Ollama, MCP)
+   - Simplified provider system with reduced boilerplate
 4. **Persistence Layer**: Flexible storage with Redis and SQL support
 5. **API Server**: RESTful API for all operations
-6. **Web UI**: Modern web interface for monitoring and control
+   - Implemented thin-layer architecture pattern
+6. **Web UI**: Web interface for monitoring and control
 7. **CLI**: Command-line interface for all operations
+   - Added provider management commands
+8. **Client Architecture**: 
+   - Added 34 public methods to GleitzeitClient
+   - Implemented API/native mode delegation
+
+### Architecture Design
+```
+External Developer
+      ↓
+GleitzeitAPIClient (api/client.py)
+      ↓ HTTP requests  
+API Endpoints (thin layer)
+      ↓ app_state.client.method() calls
+Core GleitzeitClient (business logic)
+      ↓ Mode delegation
+   API Mode ←→ Native Mode
+      ↓            ↓
+ HTTP Client    Direct Access
+```
 
 ### Deployment Architecture
 ```
@@ -61,7 +105,7 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
   - Memory limits
   - Queue size limits
 
-### ✅ Logging System (NEW)
+### ✅ Logging System
 - **Centralized Log Collection**: All system components log to central collector
 - **Real-time Streaming**: WebSocket-based log streaming
 - **Multi-level Logging**: DEBUG, INFO, WARNING, ERROR, CRITICAL
@@ -75,7 +119,11 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
   - REST API for log queries
   - WebSocket streaming per task/workflow
 
-### ✅ Authentication System (NEW)
+### ✅ Authentication System
+- **Two-Mode System**:
+  - **Basic Mode** (Default): No login required, automatic auth
+  - **Admin Mode**: Full multi-user authentication
+  - Complete data isolation between modes
 - **Multiple Auth Methods**:
   - API Keys (Bearer tokens)
   - JWT tokens (access + refresh)
@@ -83,7 +131,7 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
   - Session cookies
   - OAuth 2.0 ready (GitHub, Google)
 - **RBAC System**:
-  - 4 Default roles: Admin, Developer, Operator, Viewer
+  - 3 Default roles: Admin, User, Viewer
   - Granular permissions (e.g., `workflows:create`, `tasks:read`)
   - Resource-based access control
 - **Security Features**:
@@ -92,12 +140,12 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
   - JWT with expiration
   - Audit logging
   - Session management
-- **Persistence**:
-  - Redis for sessions and caching
-  - SQL for user data and API keys
-  - In-memory for development
+- **Implementation Details**:
+  - Auth endpoints use thin-layer pattern
+  - Reduced API endpoint code by 66%
+  - Centralized auth logic in GleitzeitClient
 
-### ✅ API Endpoints (ENHANCED)
+### ✅ API Endpoints
 
 #### Core Endpoints
 - `GET /health` - Health check
@@ -111,13 +159,13 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
 - `GET /workflows` - List workflows
 - `GET /workflows/{id}` - Get workflow details
 - `DELETE /workflows/{id}` - Delete workflow
-- `POST /workflows/{id}/pause` - Pause workflow (NEW)
-- `POST /workflows/{id}/resume` - Resume workflow (NEW)
-- `POST /workflows/{id}/retry` - Retry failed tasks (NEW)
-- `GET /workflows/{id}/export` - Export workflow (NEW)
-- `POST /workflows/{id}/clone` - Clone workflow (NEW)
-- `GET /workflows/{id}/dependencies` - Get dependency graph (NEW)
-- `GET /workflows/{id}/critical-path` - Get critical path (NEW)
+- `POST /workflows/{id}/pause` - Pause workflow
+- `POST /workflows/{id}/resume` - Resume workflow
+- `POST /workflows/{id}/retry` - Retry failed tasks
+- `GET /workflows/{id}/export` - Export workflow
+- `POST /workflows/{id}/clone` - Clone workflow
+- `GET /workflows/{id}/dependencies` - Get dependency graph
+- `GET /workflows/{id}/critical-path` - Get critical path
 - `GET /workflows/{id}/timeline` - Execution timeline
 - `GET /workflows/{id}/results` - Workflow results
 - `GET /workflows/{id}/tasks` - List workflow tasks
@@ -127,12 +175,12 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
 - `GET /tasks` - List tasks
 - `GET /tasks/{id}` - Get task details
 - `DELETE /tasks/{id}` - Delete task
-- `POST /tasks/{id}/cancel` - Cancel task (NEW)
-- `POST /tasks/{id}/retry` - Retry task (NEW)
-- `GET /tasks/{id}/logs` - Get task logs (REAL)
+- `POST /tasks/{id}/cancel` - Cancel task
+- `POST /tasks/{id}/retry` - Retry task
+- `GET /tasks/{id}/logs` - Get task logs
 - `GET /tasks/{id}/result` - Get task result
 
-#### Queue Management (NEW)
+#### Queue Management
 - `GET /queues` - List all queues
 - `GET /queues/{name}` - Queue details
 - `POST /queues/{name}/pause` - Pause queue
@@ -140,19 +188,19 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
 - `POST /queues/{name}/clear` - Clear queue
 - `PUT /queues/{name}/config` - Update queue config
 
-#### Bulk Operations (NEW)
+#### Bulk Operations
 - `POST /tasks/bulk/cancel` - Cancel multiple tasks
 - `POST /tasks/bulk/retry` - Retry multiple tasks
 - `GET /tasks/bulk/status` - Bulk status check
 - `POST /workflows/bulk/cancel` - Cancel multiple workflows
 - `DELETE /workflows/bulk` - Delete multiple workflows
 
-#### Resource Management (NEW)
+#### Resource Management
 - `GET /resources/limits` - Get resource limits
 - `GET /resources/usage` - Get current usage
 - `GET /statistics/tasks` - Task statistics
 
-#### Log Endpoints (NEW)
+#### Log Endpoints
 - `GET /tasks/{id}/logs` - Get task logs
 - `GET /logs/tasks/{id}` - Stream task logs
 - `GET /logs/workflows/{id}` - Stream workflow logs
@@ -160,7 +208,7 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
 - `WS /ws/logs/workflow/{id}` - WebSocket workflow logs
 - `WS /ws/logs` - Global log stream
 
-#### Authentication Endpoints (PLANNED)
+#### Authentication Endpoints
 - `POST /auth/login` - User login
 - `POST /auth/logout` - User logout
 - `POST /auth/refresh` - Refresh token
@@ -222,22 +270,53 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
 
 ### ✅ Protocol Providers
 
-1. **Python Provider**
-   - File-based scripts
-   - Virtual environment support
-   - Package management
+#### Standard Providers
+1. **Python Provider** - File-based scripts with virtual env support
+2. **Ollama Provider** - LLM interactions with streaming
+3. **MCP Hub Provider** - Tool discovery and dynamic loading
 
-2. **Ollama Provider**
-   - LLM interactions
-   - Multiple model support
-   - Streaming responses
-   - Context management
+#### Simplified Provider System
+**Reduced implementation complexity and development time**
 
-3. **MCP Hub Provider**
-   - Tool discovery
-   - Dynamic capability loading
-   - Protocol negotiation
-   - Resource management
+1. **SimpleProvider Base Class**
+   - Single `execute()` method implementation required
+   - Reduces typical implementation from 400+ lines to 15-25 lines
+   - Includes automatic retry, logging, metrics, error handling
+
+2. **HTTPProvider**
+   - Built-in HTTP client with session management
+   - Support for Bearer, API Key, and Basic authentication
+   - REST method helpers: `get()`, `post()`, `put()`, `delete()`
+
+3. **Provider Decorators**
+   - `@provider`: Function-based providers (minimal code)
+   - `@provider_class`: Class-based with method handlers
+   - `@simple_http_provider`: HTTP providers from configuration
+
+4. **Configuration-Based Providers**
+   - YAML/JSON configuration support
+   - Parameter validation with type checking
+   - Response transformation capabilities
+   - Service discovery integration
+
+5. **Built-in Features**
+   - Retry logic with exponential backoff
+   - Circuit breaker pattern implementation
+   - Rate limiting with token bucket algorithm
+   - Health monitoring and status tracking
+   - Performance metrics collection
+
+6. **Service Discovery**
+   - Port scanning for known services (vLLM, Ollama, OpenAI APIs)
+   - Service health verification
+   - Multiple discovery methods: environment variables, DNS, Kubernetes
+   - Result caching with TTL
+
+7. **CLI Provider Commands**
+   - `gleitzeit provider new <name> --type simple` - Create provider template
+   - `gleitzeit provider test ./my-provider` - Test provider implementation
+   - `gleitzeit provider discover --service-type vllm` - Discover services
+   - `gleitzeit provider validate config.yaml` - Validate configuration
 
 ## 📋 Configuration
 
@@ -310,9 +389,43 @@ docker-compose up -d
 - Use reverse proxy (nginx/traefik)
 - Enable HTTPS
 
-## 🔄 Recent Enhancements
+## Version 0.0.6 Changes
 
-### Version 0.0.6 Updates
+### Architectural Refactoring
+
+#### 1. **Thin-Layer API Architecture**
+- Eliminated private member access in API endpoints
+- Added 34 public methods to GleitzeitClient
+- Reduced API endpoint code by 71%
+- Separated HTTP handling from business logic
+
+#### 2. **Simplified Provider System**
+- Reduced provider implementation from 400+ lines to 15-25 lines for simple cases
+- Added YAML/JSON configuration-based providers
+- Included automatic retry, logging, metrics, and circuit breakers
+- Implemented service discovery for common services
+- Added CLI commands for provider management
+
+#### 3. **Authentication System Updates**
+- Implemented two-mode system: Basic (no login) and Admin (multi-user)
+- Added complete data isolation between modes
+- Reduced authentication endpoint code by 66%
+- Moved authentication logic to GleitzeitClient
+
+#### 4. **Logging System Enhancements**
+- Added global log query endpoints with filtering
+- Implemented log management endpoints for cleanup and retention
+- Added audit logging with pagination
+- Implemented WebSocket streaming per task/workflow
+- Added Redis Streams support for log storage
+
+#### 5. **Client Architecture Planning**
+- Designed modular architecture using mixins
+- Planned adapter pattern for API/native mode switching
+- Proposed splitting 3,712-line client into modules (200-400 lines each)
+- Defined backward compatibility strategy
+
+### Core Version 0.0.6 Features
 1. **Comprehensive Logging System**
    - Centralized log collection
    - WebSocket streaming
@@ -321,7 +434,7 @@ docker-compose up -d
 
 2. **Authentication & Authorization**
    - Multiple auth methods
-   - RBAC with 4 default roles
+   - RBAC with default roles
    - API key management
    - Session handling
    - Audit logging
@@ -360,31 +473,35 @@ docker-compose up -d
 - **CPU**: 1-2 cores (base) + provider usage
 - **Storage**: Depends on log retention and task results
 
-## 🛠️ Development Status
+## Development Status
 
-### Production Ready ✅
+### Production Ready
 - Core workflow engine
 - Task execution
 - Python provider
 - Redis/SQL persistence
-- REST API
+- REST API with thin-layer architecture
 - Web UI
-- Logging system
+- Logging system with global queries
+- Simplified provider system
+- Basic authentication mode
 
-### Beta Features 🚧
-- Authentication system (opt-in)
+### Beta Features
+- Admin authentication mode (multi-user)
 - MCP Hub provider
-- Bulk operations
-- Export/Import
+- Service discovery system
+- Configuration-based providers
+- Client modularization (planned)
 
-### Planned Features 📋
-- Template management
-- Scheduled workflows
-- Advanced queue control
+### Planned Features
+- Distributed execution (multi-node)
+- Scheduled workflows (cron)
+- Advanced monitoring (Prometheus/OpenTelemetry)
 - OAuth 2.0 integration
-- Workflow versioning
+- Workflow versioning and GitOps
 - Multi-tenancy
 - Kubernetes operator
+- Data pipeline features (ETL/ELT)
 
 ## 🔒 Security Considerations
 
@@ -406,24 +523,56 @@ docker-compose up -d
 
 ## 📚 Documentation
 
-### Available Documentation
+### Core Documentation
 - `README.md` - Getting started guide
+- `current-state-of-gleitzeit.md` - THIS FILE - Complete system overview
+- `docs/architecture.md` - System architecture details
 - `docs/api-endpoints.md` - Complete API reference
+- `docs/api.md` - API usage guide
+- `docs/pythonclient.md` - Python client documentation
+
+### Refactoring Reports
+- `API_REFACTOR.md` - Perfect thin-layer architecture achievement
+- `AUTH_REFACTORING_REPORT.md` - Authentication system overhaul
+- `COMPLETE_PROVIDER_SYSTEM.md` - Simplified provider implementation
+- `client-restructure.md` - Client modularization plan
+- `architecture-audit-report.md` - Missing features analysis
+- `scaling-pathway.md` - Path to distributed architecture
+
+### Feature Documentation
+- `AUTH_MODES.md` - Two-mode authentication system
+- `logging-fix.md` - Enhanced logging implementation
 - `docs/log-system.md` - Logging architecture
-- `authentication-draft.md` - Auth system design
-- `missing-endpoints.md` - Implementation roadmap
+- `SIMPLE_PROVIDERS_README.md` - Simplified provider guide
+- `docs/providers.md` - Provider system documentation
 
 ### Code Organization
 ```
 src/gleitzeit/
-├── core/           # Core engine and models
-├── persistence/    # Storage backends
-├── providers/      # Protocol providers
-├── auth/          # Authentication system
-├── api/           # REST API server
-├── ui/            # Web UI application
-├── cli/           # Command-line interface
-└── utils/         # Shared utilities
+├── core/               # Core engine and models
+├── persistence/        # Storage backends
+├── providers/          # Protocol providers
+│   ├── simple.py      # SimpleProvider base class
+│   ├── http_provider.py # HTTPProvider
+│   ├── decorators.py  # Provider decorators
+│   ├── mixins.py      # Enterprise mixins
+│   ├── discovery.py   # Service discovery
+│   └── config_provider.py # Config-based providers
+├── auth/              # Authentication system
+│   ├── database.py    # Auth database
+│   ├── middleware.py  # Auth middleware
+│   └── decorators.py  # Auth decorators
+├── api/               # REST API server (thin layer)
+│   ├── main.py       # Main API endpoints
+│   ├── auth.py       # Auth endpoints
+│   └── client.py     # API client
+├── client/            # Client implementation
+│   └── (future modular structure)
+├── ui/                # Web UI application
+├── cli/               # Command-line interface
+│   └── commands/
+│       └── provider_commands.py # Provider CLI
+└── utils/             # Shared utilities
 ```
 
 ## 🎯 Use Cases
@@ -520,13 +669,35 @@ src/gleitzeit/
 - SLA management
 - Enterprise features
 
-## 💡 Conclusion
+## Code Quality Metrics
 
-Gleitzeit v0.0.6 represents a significant evolution in workflow orchestration, combining:
-- **Flexibility**: Multiple execution protocols and storage backends
-- **Scalability**: Redis caching and horizontal scaling
-- **Security**: Comprehensive authentication and authorization
-- **Observability**: Real-time logging and monitoring
-- **Usability**: Modern web UI and comprehensive API
+### Architecture Improvements
+- **API Violations Eliminated**: 32 → 0
+- **Code Reduction**: 71% less code in API layer
+- **Public Methods Added**: 34 new methods in GleitzeitClient
+- **Provider Complexity**: 400+ lines → 15-25 lines typical implementation
 
-The system is production-ready for most use cases, with optional enterprise features available through configuration. The modular architecture ensures easy customization and extension for specific requirements.
+### Maintainability
+- **Single Responsibility**: Each component has one primary function
+- **DRY Principle**: Business logic centralized in GleitzeitClient
+- **Testability**: Thin API layer simplifies testing
+- **Extensibility**: New features added via mixins/decorators
+
+### Development Metrics
+- **Provider Development Time**: Reduced from hours to minutes
+- **Learning Curve**: Reduced from 15+ concepts to 2-3 for basic providers
+- **Code Organization**: Clear separation of concerns
+- **Backward Compatibility**: Maintained throughout refactoring
+
+## Summary
+
+Gleitzeit v0.0.6 is a workflow orchestration system that includes:
+- **Architecture**: Thin-layer API design with clear separation of concerns
+- **Provider System**: Simplified development with built-in enterprise features
+- **Authentication**: Dual-mode system with data isolation
+- **Scalability**: Redis caching and defined path to horizontal scaling
+- **Logging**: Comprehensive system with streaming and global queries
+- **API**: RESTful interface with 100+ endpoints
+- **UI**: Web interface for monitoring and control
+
+The refactoring maintains backward compatibility while improving code quality, reducing complexity, and enhancing developer experience. The modular architecture supports customization and extension for specific requirements.

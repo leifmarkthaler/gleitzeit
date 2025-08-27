@@ -1,0 +1,324 @@
+# Database Provider Configuration  
+# Example showing how to create database providers using HTTP endpoints
+# Useful for database-as-a-service APIs or custom database HTTP interfaces
+
+provider:
+  id: database
+  protocol: database/v1
+  type: http
+  base_url: ${DATABASE_API_URL:-http://localhost:8080/api/v1}
+  name: Database Provider
+  description: Database operations via HTTP API
+  version: 1.0.0
+
+# Authentication for database API
+auth:
+  type: bearer
+  token: ${DATABASE_TOKEN}
+
+# Service discovery for local database APIs
+discovery:
+  enabled: true
+  service_type: database
+  host: localhost
+  port_range: [8080, 8090]
+
+methods:
+  create_table:
+    endpoint: /tables
+    method: POST
+    description: Create a new table
+    params:
+      - name: table_name
+        type: string
+        required: true
+        min_length: 1
+        max_length: 64
+        description: Name of the table to create
+      - name: columns
+        type: array
+        required: true
+        description: Array of column definitions
+      - name: primary_key
+        type: string
+        description: Primary key column name
+      - name: if_not_exists
+        type: boolean
+        default: true
+        description: Only create if table doesn't exist
+    transform_response: |
+      return {
+        'table_created': response.get('success', False),
+        'table_name': params.get('table_name'),
+        'columns': len(params.get('columns', [])),
+        'message': response.get('message', ''),
+        'provider': 'database'
+      }
+
+  insert_record:
+    endpoint: /tables/{table_name}/records
+    method: POST
+    description: Insert a new record
+    params:
+      - name: table_name
+        type: string
+        required: true
+        description: Table name
+      - name: data
+        type: object
+        required: true
+        description: Record data as key-value pairs
+      - name: return_id
+        type: boolean
+        default: true
+        description: Return the inserted record ID
+    transform_response: |
+      return {
+        'inserted': response.get('success', False),
+        'record_id': response.get('id'),
+        'table': params.get('table_name'),
+        'affected_rows': response.get('affected_rows', 1),
+        'provider': 'database'
+      }
+
+  query_records:
+    endpoint: /tables/{table_name}/records
+    method: GET
+    description: Query records from table
+    params:
+      - name: table_name
+        type: string
+        required: true
+        description: Table name to query
+      - name: where
+        type: string
+        description: WHERE clause conditions
+      - name: limit
+        type: integer
+        default: 100
+        min: 1
+        max: 1000
+        description: Maximum number of records
+      - name: offset
+        type: integer
+        default: 0
+        min: 0
+        description: Number of records to skip
+      - name: order_by
+        type: string
+        description: Column to order by
+      - name: order_direction
+        type: string
+        default: ASC
+        description: Sort direction (ASC or DESC)
+    transform_response: |
+      records = response.get('data', [])
+      
+      return {
+        'records': records,
+        'count': len(records),
+        'total': response.get('total', len(records)),
+        'table': params.get('table_name'),
+        'limit': params.get('limit', 100),
+        'offset': params.get('offset', 0),
+        'has_more': response.get('has_more', False),
+        'provider': 'database'
+      }
+
+  update_record:
+    endpoint: /tables/{table_name}/records/{record_id}
+    method: PUT
+    description: Update an existing record
+    params:
+      - name: table_name
+        type: string
+        required: true
+        description: Table name
+      - name: record_id
+        type: string
+        required: true
+        description: Record ID to update
+      - name: data
+        type: object
+        required: true
+        description: Updated data as key-value pairs
+    transform_response: |
+      return {
+        'updated': response.get('success', False),
+        'record_id': params.get('record_id'),
+        'table': params.get('table_name'),
+        'affected_rows': response.get('affected_rows', 0),
+        'previous_data': response.get('previous_data'),
+        'provider': 'database'
+      }
+
+  delete_record:
+    endpoint: /tables/{table_name}/records/{record_id}
+    method: DELETE
+    description: Delete a record
+    params:
+      - name: table_name
+        type: string
+        required: true
+        description: Table name
+      - name: record_id
+        type: string
+        required: true
+        description: Record ID to delete
+      - name: soft_delete
+        type: boolean
+        default: false
+        description: Perform soft delete (mark as deleted)
+    transform_response: |
+      return {
+        'deleted': response.get('success', False),
+        'record_id': params.get('record_id'),
+        'table': params.get('table_name'),
+        'soft_delete': params.get('soft_delete', False),
+        'affected_rows': response.get('affected_rows', 0),
+        'provider': 'database'
+      }
+
+  execute_query:
+    endpoint: /query
+    method: POST
+    description: Execute raw SQL query
+    params:
+      - name: sql
+        type: string
+        required: true
+        min_length: 1
+        description: SQL query to execute
+      - name: parameters
+        type: array
+        default: []
+        description: Query parameters for prepared statements
+      - name: readonly
+        type: boolean
+        default: true
+        description: Whether query is read-only
+    transform_response: |
+      # Handle different types of SQL results
+      result_type = response.get('type', 'unknown')
+      
+      if result_type == 'select':
+        return {
+          'query_type': 'select',
+          'records': response.get('data', []),
+          'count': len(response.get('data', [])),
+          'columns': response.get('columns', []),
+          'execution_time_ms': response.get('execution_time'),
+          'provider': 'database'
+        }
+      elif result_type in ['insert', 'update', 'delete']:
+        return {
+          'query_type': result_type,
+          'affected_rows': response.get('affected_rows', 0),
+          'last_insert_id': response.get('last_insert_id'),
+          'execution_time_ms': response.get('execution_time'),
+          'provider': 'database'
+        }
+      else:
+        return {
+          'query_type': 'other',
+          'success': response.get('success', True),
+          'message': response.get('message', ''),
+          'execution_time_ms': response.get('execution_time'),
+          'provider': 'database'
+        }
+
+  list_tables:
+    endpoint: /tables
+    method: GET
+    description: List all tables in database
+    params:
+      - name: schema
+        type: string
+        description: Database schema name (optional)
+      - name: pattern
+        type: string
+        description: Table name pattern to match
+    transform_response: |
+      tables = []
+      for table in response.get('tables', []):
+        tables.append({
+          'name': table.get('name'),
+          'schema': table.get('schema'),
+          'row_count': table.get('row_count'),
+          'created_at': table.get('created_at'),
+          'updated_at': table.get('updated_at'),
+          'columns': table.get('column_count')
+        })
+      
+      return {
+        'tables': tables,
+        'count': len(tables),
+        'schema': params.get('schema'),
+        'provider': 'database'
+      }
+
+  describe_table:
+    endpoint: /tables/{table_name}/schema
+    method: GET
+    description: Get table schema information
+    params:
+      - name: table_name
+        type: string
+        required: true
+        description: Table name to describe
+    transform_response: |
+      columns = []
+      for col in response.get('columns', []):
+        columns.append({
+          'name': col.get('name'),
+          'type': col.get('type'),
+          'nullable': col.get('nullable', True),
+          'primary_key': col.get('primary_key', False),
+          'default_value': col.get('default'),
+          'max_length': col.get('max_length')
+        })
+      
+      indexes = response.get('indexes', [])
+      
+      return {
+        'table_name': params.get('table_name'),
+        'columns': columns,
+        'column_count': len(columns),
+        'indexes': indexes,
+        'primary_keys': [col['name'] for col in columns if col.get('primary_key')],
+        'nullable_columns': [col['name'] for col in columns if col.get('nullable')],
+        'table_info': response.get('table_info', {}),
+        'provider': 'database'
+      }
+
+  create_index:
+    endpoint: /tables/{table_name}/indexes
+    method: POST
+    description: Create an index on table
+    params:
+      - name: table_name
+        type: string
+        required: true
+        description: Table name
+      - name: index_name
+        type: string
+        required: true
+        description: Name of the index
+      - name: columns
+        type: array
+        required: true
+        description: Columns to include in index
+      - name: unique
+        type: boolean
+        default: false
+        description: Whether index should be unique
+    transform_response: |
+      return {
+        'index_created': response.get('success', False),
+        'table': params.get('table_name'),
+        'index_name': params.get('index_name'),
+        'columns': params.get('columns', []),
+        'unique': params.get('unique', False),
+        'message': response.get('message', ''),
+        'provider': 'database'
+      }

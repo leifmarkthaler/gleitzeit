@@ -142,7 +142,9 @@ class LogRedisAdapter:
         workflow_id: Optional[str] = None,
         level: Optional[LogLevel] = None,
         limit: int = 100,
-        since: Optional[datetime] = None
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None,
+        offset: int = 0
     ) -> List[Dict[str, Any]]:
         """
         Retrieve logs with filtering.
@@ -402,3 +404,234 @@ class LogRedisAdapter:
             "critical": 50
         }
         return level_values.get(level, 0)
+    
+    async def count_logs(
+        self,
+        task_id: Optional[str] = None,
+        workflow_id: Optional[str] = None,
+        level: Optional[LogLevel] = None,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None
+    ) -> int:
+        """
+        Count logs matching criteria.
+        
+        Args:
+            task_id: Filter by task ID
+            workflow_id: Filter by workflow ID
+            level: Minimum log level
+            since: Count logs since timestamp
+            until: Count logs until timestamp
+            
+        Returns:
+            Number of matching logs
+        """
+        if not self._initialized:
+            return 0
+        
+        try:
+            # Determine which stream to count
+            if task_id:
+                stream_key = self._key("logs", "task", task_id)
+            elif workflow_id:
+                stream_key = self._key("logs", "workflow", workflow_id)
+            else:
+                stream_key = self._key("logs", "global")
+            
+            # Get stream length (basic count)
+            info = await self.redis.xinfo_stream(stream_key)
+            return info.get('length', 0)
+            
+        except Exception as e:
+            logger.debug(f"Failed to count logs: {e}")
+            return 0
+    
+    async def search_logs(
+        self,
+        query: str,
+        task_id: Optional[str] = None,
+        workflow_id: Optional[str] = None,
+        level: Optional[LogLevel] = None,
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        """
+        Search logs by message content.
+        
+        Args:
+            query: Search query text
+            task_id: Filter by task ID
+            workflow_id: Filter by workflow ID
+            level: Minimum log level
+            limit: Maximum results
+            
+        Returns:
+            List of matching log entries
+        """
+        if not self._initialized:
+            return []
+        
+        try:
+            # Get logs first
+            logs = await self.get_logs(
+                task_id=task_id,
+                workflow_id=workflow_id,
+                level=level,
+                limit=1000  # Get more to search through
+            )
+            
+            # Filter by query text
+            query_lower = query.lower()
+            matching = []
+            
+            for log in logs:
+                if query_lower in log.get('message', '').lower():
+                    matching.append(log)
+                    if len(matching) >= limit:
+                        break
+            
+            return matching
+            
+        except Exception as e:
+            logger.error(f"Failed to search logs: {e}")
+            return []
+    
+    async def get_stats(
+        self,
+        since: Optional[datetime] = None,
+        until: Optional[datetime] = None
+    ) -> Dict[str, Any]:
+        """
+        Get log statistics.
+        
+        Args:
+            since: Stats for logs since timestamp
+            until: Stats for logs until timestamp
+            
+        Returns:
+            Dictionary with statistics
+        """
+        if not self._initialized:
+            return {
+                "total": 0,
+                "by_level": {},
+                "by_source": {},
+                "oldest": None,
+                "newest": None
+            }
+        
+        try:
+            # Get global stream info
+            stream_key = self._key("logs", "global")
+            info = await self.redis.xinfo_stream(stream_key)
+            
+            # Get sample of logs to calculate level/source distribution
+            logs = await self.get_logs(limit=1000)
+            
+            by_level = {}
+            by_source = {}
+            oldest = None
+            newest = None
+            
+            for log in logs:
+                # Count by level
+                level = log.get('level', 'INFO')
+                by_level[level] = by_level.get(level, 0) + 1
+                
+                # Count by source  
+                source = log.get('source', 'SYSTEM')
+                by_source[source] = by_source.get(source, 0) + 1
+                
+                # Track oldest/newest
+                timestamp_str = log.get('timestamp')
+                if timestamp_str:
+                    try:
+                        timestamp = datetime.fromisoformat(timestamp_str)
+                        if not oldest or timestamp < oldest:
+                            oldest = timestamp
+                        if not newest or timestamp > newest:
+                            newest = timestamp
+                    except:
+                        pass
+            
+            return {
+                "total": info.get('length', 0),
+                "by_level": by_level,
+                "by_source": by_source,
+                "oldest": oldest,
+                "newest": newest
+            }
+            
+        except Exception as e:
+            logger.error(f"Failed to get stats: {e}")
+            return {
+                "total": 0,
+                "by_level": {},
+                "by_source": {},
+                "oldest": None,
+                "newest": None
+            }
+    
+    async def cleanup_old_logs(
+        self,
+        before: datetime,
+        max_level: Optional[LogLevel] = None
+    ) -> int:
+        """
+        Clean up logs before a certain date.
+        
+        Args:
+            before: Delete logs before this timestamp
+            max_level: Only delete logs of this level or lower
+            
+        Returns:
+            Number of logs deleted
+        """
+        if not self._initialized:
+            return 0
+        
+        cutoff_id = f"{int(before.timestamp() * 1000)}-0"
+        cleaned = 0
+        
+        try:
+            # Find all log streams
+            pattern = self._key("logs", "*")
+            cursor = 0
+            
+            while True:
+                cursor, keys = await self.redis.scan(
+                    cursor,
+                    match=pattern,
+                    count=100
+                )
+                
+                for key in keys:
+                    # Trim stream to remove old entries
+                    try:
+                        # Get count before trim
+                        info_before = await self.redis.xinfo_stream(key)
+                        count_before = info_before.get('length', 0)
+                        
+                        # Trim old entries
+                        await self.redis.xtrim(
+                            key,
+                            minid=cutoff_id,
+                            approximate=False
+                        )
+                        
+                        # Get count after trim
+                        info_after = await self.redis.xinfo_stream(key)
+                        count_after = info_after.get('length', 0)
+                        
+                        cleaned += (count_before - count_after)
+                    except:
+                        pass
+                
+                if cursor == 0:
+                    break
+            
+            logger.info(f"Cleaned up {cleaned} old log entries")
+            return cleaned
+            
+        except Exception as e:
+            logger.error(f"Failed to cleanup old logs: {e}")
+            return 0

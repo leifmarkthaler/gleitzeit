@@ -99,52 +99,45 @@ async def list_event_errors(
     Returns persisted errors for debugging and monitoring.
     Errors are returned in reverse chronological order (newest first).
     """
-    error_persistence = get_event_error_persistence()
-    if not error_persistence:
-        raise_api_error(
-            ErrorCode.SYSTEM_NOT_INITIALIZED,
-            "Event error persistence not available",
-            data={"suggestion": "Event error persistence may be disabled or not initialized"}
-        )
+    from ..main import app_state
+    
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        # Get recent errors
-        errors = await error_persistence.get_recent_errors(
+        result = await app_state.client.get_event_errors(
+            level=None,
+            source=handler_name,
+            task_id=None,
             limit=limit,
-            event_type=event_type
+            offset=0
         )
         
-        # Apply additional filters
-        if handler_name:
-            errors = [e for e in errors if e.handler_name == handler_name]
-        
-        if since:
-            errors = [e for e in errors if e.timestamp >= since]
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
         
         # Convert to response models
-        return [
-            EventErrorResponse(
-                id=error.id,
-                handler_name=error.handler_name,
-                event_type=error.event_type,
-                event_id=error.event_id,
-                error_type=error.error_type,
-                error_message=error.error_message,
-                error_traceback=error.error_traceback,
-                timestamp=error.timestamp,
-                metadata=error.metadata
-            )
-            for error in errors[:limit]
-        ]
+        error_responses = []
+        for error in result.get("errors", []):
+            error_responses.append(EventErrorResponse(
+                id=error.get('id', ''),
+                handler_name=error.get('source', ''),
+                event_type=event_type or 'UNKNOWN',
+                event_id=error.get('task_id'),
+                error_type=error.get('exception', 'Unknown'),
+                error_message=error.get('message', ''),
+                error_traceback=error.get('stack_trace'),
+                timestamp=datetime.fromisoformat(error['timestamp'].replace('Z', '+00:00')) if isinstance(error['timestamp'], str) else error['timestamp'],
+                metadata={}
+            ))
         
+        return error_responses
+        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to retrieve event errors: {e}")
-        from gleitzeit.core.errors import SystemError
-        raise SystemError(
-            message="Failed to retrieve event errors",
-            code=ErrorCode.INTERNAL_ERROR,
-            cause=e
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve event errors: {str(e)}")
 
 
 @router.get("/stats", 
@@ -159,14 +152,9 @@ async def get_error_statistics():
     
     Returns aggregated statistics for monitoring and debugging.
     """
-    from gleitzeit.events.base import EventBus
+    from ..main import app_state
     
-    # Try to get stats from the event bus if available
-    # This would need to be made accessible, for now we'll use persistence
-    error_persistence = get_event_error_persistence()
-    
-    if not error_persistence:
-        # Return empty stats if persistence not available
+    if not app_state.client:
         return EventErrorStats(
             total_errors=0,
             handlers_with_errors=[],
@@ -176,10 +164,9 @@ async def get_error_statistics():
         )
     
     try:
-        # Get recent errors to calculate stats
-        errors = await error_persistence.get_recent_errors(limit=1000)
+        result = await app_state.client.get_event_error_stats()
         
-        if not errors:
+        if "error" in result:
             return EventErrorStats(
                 total_errors=0,
                 handlers_with_errors=[],
@@ -188,44 +175,12 @@ async def get_error_statistics():
                 newest_error=None
             )
         
-        # Calculate statistics
-        handler_counts = {}
-        event_type_counts = {}
-        oldest = None
-        newest = None
-        
-        for error in errors:
-            # Count by handler
-            handler_counts[error.handler_name] = handler_counts.get(error.handler_name, 0) + 1
-            
-            # Count by event type
-            event_type_counts[error.event_type] = event_type_counts.get(error.event_type, 0) + 1
-            
-            # Track oldest/newest
-            if oldest is None or error.timestamp < oldest:
-                oldest = error.timestamp
-            if newest is None or error.timestamp > newest:
-                newest = error.timestamp
-        
-        # Sort by count
-        handlers_sorted = sorted(
-            [(h, c) for h, c in handler_counts.items()],
-            key=lambda x: x[1],
-            reverse=True
-        )
-        
-        event_types_sorted = sorted(
-            [(e, c) for e, c in event_type_counts.items()],
-            key=lambda x: x[1],
-            reverse=True
-        )
-        
         return EventErrorStats(
-            total_errors=len(errors),
-            handlers_with_errors=handlers_sorted,
-            event_types_with_errors=event_types_sorted,
-            oldest_error=oldest,
-            newest_error=newest
+            total_errors=result.get("total_errors", 0),
+            handlers_with_errors=result.get("by_level", {}).items(),
+            event_types_with_errors=[],  # Not implemented yet
+            oldest_error=None,  # Not implemented yet
+            newest_error=None   # Not implemented yet
         )
         
     except Exception as e:
@@ -299,39 +254,24 @@ async def cleanup_old_errors(
     Removes errors older than the specified number of days.
     Default retention is 30 days.
     """
-    error_persistence = get_event_error_persistence()
-    if not error_persistence:
-        raise_api_error(
-            ErrorCode.SYSTEM_NOT_INITIALIZED,
-            "Event error persistence not available",
-            data={"suggestion": "Event error persistence may be disabled or not initialized"}
-        )
+    from ..main import app_state
+    
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
     try:
-        # Temporarily set retention days
-        original_retention = error_persistence.retention_days
-        error_persistence.retention_days = days
+        result = await app_state.client.cleanup_event_errors(days=days)
         
-        # Cleanup
-        removed = await error_persistence.cleanup_old_errors()
+        if "error" in result:
+            raise HTTPException(status_code=500, detail=result["error"])
         
-        # Restore original retention
-        error_persistence.retention_days = original_retention
+        return result
         
-        return {
-            "success": True,
-            "removed": removed,
-            "message": f"Removed {removed} errors older than {days} days"
-        }
-        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to cleanup old errors: {e}")
-        from gleitzeit.core.errors import SystemError
-        raise SystemError(
-            message="Failed to cleanup old errors",
-            code=ErrorCode.INTERNAL_ERROR,
-            cause=e
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to cleanup old errors: {str(e)}")
 
 
 @router.get("/debug/event-bus-stats")

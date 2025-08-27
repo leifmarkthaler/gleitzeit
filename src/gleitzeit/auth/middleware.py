@@ -19,6 +19,7 @@ from .utils import (
     verify_password
 )
 from .database import get_auth_db
+from .basic_auth import basic_auth, is_basic_mode, is_admin_mode
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +27,9 @@ logger = logging.getLogger(__name__)
 class AuthConfig:
     """Authentication configuration"""
     def __init__(self):
-        self.enabled = os.getenv("GLEITZEIT_AUTH_ENABLED", "false").lower() == "true"
+        # Auth is ALWAYS enabled now, but mode determines behavior
+        self.auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+        self.enabled = True  # Always enabled for data isolation
         self.jwt_secret = os.getenv("GLEITZEIT_AUTH_JWT_SECRET", "change-me-in-production")
         self.jwt_algorithm = os.getenv("GLEITZEIT_AUTH_JWT_ALGORITHM", "HS256")
         self.api_key_header = os.getenv("GLEITZEIT_AUTH_API_KEY_HEADER", "X-API-Key")
@@ -69,15 +72,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         """Process request through authentication"""
         
-        # Skip authentication if disabled
-        if not self.config.enabled:
-            request.state.user = {
-                "id": "anonymous",
-                "email": "anonymous@localhost",
-                "roles": ["admin"],
-                "is_superuser": True,
-                "auth_method": "disabled"
-            }
+        # In basic mode, always use the basic user
+        if is_basic_mode():
+            request.state.user = basic_auth.get_basic_user()
             return await call_next(request)
         
         # Check if path requires authentication

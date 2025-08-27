@@ -36,7 +36,24 @@
                 <li class="nav-item">
                     <a href="/tasks" class="nav-link {% if request.url.path.startswith('/tasks') %}active{% endif %}">Tasks</a>
                 </li>
+                <li class="nav-item">
+                    <a href="/queues" class="nav-link {% if request.url.path.startswith('/queues') %}active{% endif %}">Queues</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/logs" class="nav-link {% if request.url.path.startswith('/logs') %}active{% endif %}">Logs</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/errors" class="nav-link {% if request.url.path.startswith('/errors') %}active{% endif %}">Errors</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/bulk" class="nav-link {% if request.url.path.startswith('/bulk') %}active{% endif %}">Bulk Ops</a>
+                </li>
             </ul>
+            <div class="nav-auth">
+                <span id="user-info" style="display: none;"></span>
+                <a href="/login" id="login-btn" class="nav-link">Login</a>
+                <button onclick="logout()" id="logout-btn" class="nav-link" style="display: none;">Logout</button>
+            </div>
             <div class="nav-status">
                 <div id="connection-status" class="status-indicator">
                     <span class="status-dot"></span>
@@ -66,6 +83,115 @@
     <!-- Base JavaScript -->
     <script src="/static/js/app.js"></script>
     <script src="/static/js/websocket.js"></script>
+    
+    <script>
+    // Check authentication mode
+    let authMode = 'basic';
+    let requiresLogin = false;
+    
+    async function checkAuthConfig() {
+        try {
+            // Check auth mode
+            const response = await fetch('/api/auth/status', { method: 'GET' });
+            if (response.ok) {
+                const data = await response.json();
+                authMode = data.mode || 'basic';
+                requiresLogin = data.requires_login || false;
+            }
+        } catch (error) {
+            authMode = 'basic';
+            requiresLogin = false;
+        }
+        
+        // Show/hide auth UI elements based on mode
+        const authElements = document.querySelector('.nav-auth');
+        if (authElements) {
+            // Only show login/logout in admin mode
+            authElements.style.display = requiresLogin ? 'block' : 'none';
+        }
+        
+        if (authMode === 'basic') {
+            // In basic mode, auto-create token if needed
+            autoLoginBasicMode();
+        } else if (requiresLogin) {
+            // In admin mode, check for existing auth
+            checkAuth();
+        }
+    }
+    
+    async function autoLoginBasicMode() {
+        // In basic mode, we don't need a token, but we can create one for consistency
+        if (!localStorage.getItem('access_token')) {
+            // The API will automatically use the basic user
+            console.log('Basic auth mode - no login required');
+        }
+    }
+    
+    // Authentication handling (only if auth is enabled)
+    function checkAuth() {
+        const token = localStorage.getItem('access_token');
+        if (token) {
+            // User is logged in
+            document.getElementById('login-btn').style.display = 'none';
+            document.getElementById('logout-btn').style.display = 'inline-block';
+            
+            // Optionally show user info
+            const userInfo = document.getElementById('user-info');
+            if (userInfo) {
+                userInfo.style.display = 'inline-block';
+                userInfo.textContent = 'Logged in';
+            }
+        } else {
+            // User is not logged in
+            const loginBtn = document.getElementById('login-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const userInfo = document.getElementById('user-info');
+            
+            if (loginBtn) loginBtn.style.display = 'inline-block';
+            if (logoutBtn) logoutBtn.style.display = 'none';
+            if (userInfo) userInfo.style.display = 'none';
+        }
+    }
+    
+    async function logout() {
+        try {
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                await fetch('/api/auth/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Logout error:', error);
+        } finally {
+            // Clear tokens
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            
+            // Redirect to login
+            window.location.href = '/login';
+        }
+    }
+    
+    // Conditionally add auth headers to API requests
+    const originalFetch = window.fetch;
+    window.fetch = function(...args) {
+        // Only add auth headers if we have a token
+        const token = localStorage.getItem('access_token');
+        if (token && authEnabled && args[0].startsWith('/api/')) {
+            if (!args[1]) args[1] = {};
+            if (!args[1].headers) args[1].headers = {};
+            args[1].headers['Authorization'] = `Bearer ${token}`;
+        }
+        return originalFetch.apply(this, args);
+    };
+    
+    // Check auth config on page load
+    document.addEventListener('DOMContentLoaded', checkAuthConfig);
+    </script>
     
     {% block scripts %}{% endblock %}
 </body>

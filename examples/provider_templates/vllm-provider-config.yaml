@@ -1,0 +1,202 @@
+# vLLM Provider Configuration
+# Complete configuration-based provider for vLLM inference engine
+# Zero Python code required!
+
+provider:
+  id: vllm
+  protocol: llm/v1
+  type: http
+  base_url: ${VLLM_URL:-http://localhost:8000}
+  name: vLLM Inference Provider
+  description: High-performance LLM inference with vLLM engine
+  version: 1.0.0
+
+# Authentication (if vLLM server requires it)
+auth:
+  type: bearer
+  token: ${VLLM_API_KEY}
+
+# Service discovery - automatically find vLLM instance
+discovery:
+  enabled: true
+  service_type: vllm
+  host: localhost
+  port_range: [8000, 8010]
+
+# Method definitions with full parameter validation
+methods:
+  generate:
+    endpoint: /v1/completions
+    method: POST
+    description: Generate text completion
+    params:
+      - name: prompt
+        type: string
+        required: true
+        min_length: 1
+        max_length: 32000
+        description: Text prompt for generation
+      - name: max_tokens
+        type: integer
+        default: 256
+        min: 1
+        max: 4096
+        description: Maximum tokens to generate
+      - name: temperature
+        type: number
+        default: 1.0
+        min: 0.0
+        max: 2.0
+        description: Sampling temperature
+      - name: top_p
+        type: number
+        default: 1.0
+        min: 0.0
+        max: 1.0
+        description: Top-p sampling
+      - name: stop
+        type: array
+        default: []
+        description: Stop sequences
+      - name: stream
+        type: boolean
+        default: false
+        description: Stream response
+    headers:
+      Content-Type: application/json
+    transform_response: |
+      # Extract the generated text and usage information
+      if 'choices' in response and response['choices']:
+        choice = response['choices'][0]
+        return {
+          'text': choice.get('text', ''),
+          'finish_reason': choice.get('finish_reason'),
+          'model': response.get('model', 'unknown'),
+          'usage': response.get('usage', {}),
+          'provider': 'vllm'
+        }
+      else:
+        return {'error': 'No completion generated', 'provider': 'vllm'}
+
+  chat:
+    endpoint: /v1/chat/completions
+    method: POST
+    description: Chat completion with conversation history
+    params:
+      - name: messages
+        type: array
+        required: true
+        description: Array of message objects
+      - name: max_tokens
+        type: integer
+        default: 256
+        min: 1
+        max: 4096
+        description: Maximum tokens to generate
+      - name: temperature
+        type: number
+        default: 1.0
+        min: 0.0
+        max: 2.0
+        description: Sampling temperature
+      - name: stream
+        type: boolean
+        default: false
+        description: Stream response
+    transform_response: |
+      if 'choices' in response and response['choices']:
+        choice = response['choices'][0]
+        return {
+          'message': choice.get('message', {}),
+          'finish_reason': choice.get('finish_reason'),
+          'model': response.get('model', 'unknown'),
+          'usage': response.get('usage', {}),
+          'provider': 'vllm'
+        }
+      else:
+        return {'error': 'No chat completion generated', 'provider': 'vllm'}
+
+  embeddings:
+    endpoint: /v1/embeddings
+    method: POST
+    description: Generate text embeddings
+    params:
+      - name: input
+        type: string
+        required: true
+        min_length: 1
+        description: Text to embed
+      - name: model
+        type: string
+        description: Model to use for embeddings
+    transform_response: |
+      if 'data' in response and response['data']:
+        embedding_data = response['data'][0]
+        return {
+          'embeddings': embedding_data.get('embedding', []),
+          'model': response.get('model', 'unknown'),
+          'usage': response.get('usage', {}),
+          'dimensions': len(embedding_data.get('embedding', [])),
+          'provider': 'vllm'
+        }
+      else:
+        return {'error': 'No embeddings generated', 'provider': 'vllm'}
+
+  models:
+    endpoint: /v1/models
+    method: GET
+    description: List available models
+    params: []
+    transform_response: |
+      if 'data' in response:
+        models = []
+        for model in response['data']:
+          models.append({
+            'id': model.get('id'),
+            'object': model.get('object', 'model'),
+            'created': model.get('created'),
+            'owned_by': model.get('owned_by', 'vllm')
+          })
+        return {
+          'models': models,
+          'count': len(models),
+          'provider': 'vllm'
+        }
+      else:
+        return {'models': [], 'count': 0, 'provider': 'vllm'}
+
+  tokenize:
+    endpoint: /v1/completions
+    method: POST
+    description: Tokenize text (estimate using completion endpoint)
+    params:
+      - name: text
+        type: string
+        required: true
+        description: Text to tokenize
+    transform_response: |
+      # vLLM doesn't have direct tokenize, so we estimate from completion
+      usage = response.get('usage', {})
+      prompt_tokens = usage.get('prompt_tokens', 0)
+      
+      return {
+        'token_count': prompt_tokens,
+        'text_length': len(params.get('text', '')),
+        'model': response.get('model', 'unknown'),
+        'provider': 'vllm',
+        'note': 'Token count estimated from completion endpoint'
+      }
+
+  health:
+    endpoint: /health
+    method: GET
+    description: Health check
+    params: []
+    transform_response: |
+      # vLLM health endpoint typically returns simple status
+      return {
+        'healthy': response.get('status') == 'ok' if 'status' in response else True,
+        'timestamp': response.get('timestamp'),
+        'version': response.get('version'),
+        'provider': 'vllm'
+      }

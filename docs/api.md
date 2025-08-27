@@ -16,7 +16,33 @@ http://localhost:8000
 
 ## Authentication
 
-Currently, the API does not require authentication. This may change in future versions.
+Gleitzeit uses a dual-mode authentication system:
+
+### Basic Mode (Default)
+No authentication required. All requests automatically authenticated with core permissions.
+
+```bash
+# Start in basic mode (default)
+gleitzeit serve --host localhost --port 8000
+```
+
+### Admin Mode  
+Full multi-user authentication with role-based access control.
+
+```bash
+# Start in admin mode
+GLEITZEIT_AUTH_MODE=admin gleitzeit serve --host localhost --port 8000
+```
+
+In admin mode, authenticate using:
+- **JWT tokens**: Login via `/auth/login` endpoint
+- **API keys**: Use Bearer tokens in Authorization header
+- **Session cookies**: Automatically handled by browser
+
+Example with JWT token:
+```bash
+curl -H "Authorization: Bearer <token>" http://localhost:8000/workflows
+```
 
 ## Content Types
 
@@ -578,6 +604,85 @@ Process files in batch.
   "failed": 0,
   "results": {}
 }
+```
+
+#### POST /bulk/directory
+Process all files in a directory with specified extensions using a workflow template.
+
+**Request Body:**
+```json
+{
+  "directory": "/path/to/directory",
+  "file_extensions": [".txt", ".md", ".json"],
+  "workflow_yaml": "name: Process ${file_name}\ntasks:\n  - name: Read file\n    id: read_file\n    method: file/read\n    input:\n      path: ${file_path}\n  - name: Process\n    id: process\n    method: llm/chat\n    input:\n      prompt: Analyze ${file_name}\n      model: llama3.2\n    depends_on: [read_file]",
+  "max_concurrent": 5,
+  "recursive": true
+}
+```
+
+**Parameters:**
+- `directory` (string, required): Path to the directory to process
+- `file_extensions` (array, required): List of file extensions to process (e.g., [".txt", ".md"])
+- `workflow_yaml` (string, required): Workflow template in YAML format with placeholders
+- `max_concurrent` (integer, optional): Maximum number of concurrent workflows (default: 5)
+- `recursive` (boolean, optional): Whether to search subdirectories (default: true)
+
+**Available Placeholders in Workflow Template:**
+- `${file_path}`: Full path to the file
+- `${file_name}`: File name with extension
+- `${file_ext}`: File extension (e.g., ".txt")
+- `${file_dir}`: Directory containing the file
+
+**Response:**
+```json
+{
+  "message": "Processing 10 files",
+  "directory": "/path/to/directory",
+  "extensions": [".txt", ".md"],
+  "results": {
+    "/path/to/file1.txt": {
+      "workflow_id": "wf_12345678",
+      "status": "submitted"
+    },
+    "/path/to/file2.md": {
+      "workflow_id": "wf_87654321",
+      "status": "submitted"
+    }
+  }
+}
+```
+
+**Example Workflow Template:**
+```yaml
+name: Process ${file_name}
+tasks:
+  - name: Read file
+    id: read_file
+    method: file/read
+    input:
+      path: ${file_path}
+  
+  - name: Analyze content
+    id: analyze
+    method: llm/chat
+    input:
+      prompt: |
+        Analyze the following file (${file_name}):
+        {{read_file.output}}
+        
+        Provide a summary.
+      model: llama3.2:latest
+    depends_on: [read_file]
+  
+  - name: Save results
+    id: save
+    method: file/write
+    input:
+      path: ${file_path}.analysis.txt
+      content: |
+        Analysis for ${file_name}:
+        {{analyze.output}}
+    depends_on: [analyze]
 ```
 
 ## Workflow Definition Format

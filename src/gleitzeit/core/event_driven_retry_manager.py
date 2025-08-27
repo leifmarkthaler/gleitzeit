@@ -9,7 +9,7 @@ is the sole source of task events.
 import asyncio
 import logging
 import random
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 from datetime import datetime, timedelta
 from enum import Enum
 
@@ -339,3 +339,16 @@ class EventDrivenRetryManager:
             await self.persistence.save_task(task)
             return current + 1
         return 1
+    
+    async def get_task_retry_info(self, task_id: str) -> Dict[str, int]:
+        """Get retry information for a task"""
+        task = await self.persistence.get_task(task_id)
+        if task and task.metadata:
+            return {
+                'current_attempt': task.metadata.get('retry_attempt', 0),
+                'max_attempts': self.max_retries
+            }
+        return {
+            'current_attempt': 0,
+            'max_attempts': self.max_retries
+        }

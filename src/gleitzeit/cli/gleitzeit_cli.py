@@ -15,6 +15,7 @@ import yaml
 import subprocess
 import time
 import httpx
+import uvicorn
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
@@ -1083,6 +1084,7 @@ def serve(host: str, port: int, reload: bool, workers: int, headless: bool, ui_p
 
 async def _async_serve(host: str, port: int, reload: bool, workers: int, headless: bool, ui_port: int, ui_host: str):
     """Async function to run both API and UI servers"""
+    global os  # Ensure os is available in this async function
     # Check dependencies
     from gleitzeit.core.dependency_check import verify_and_report_dependencies
     
@@ -1106,17 +1108,10 @@ async def _async_serve(host: str, port: int, reload: bool, workers: int, headles
             click.echo("\n❌ Dependency check failed. Please install missing packages.")
             sys.exit(1)
     
-    try:
-        import uvicorn
-    except ImportError:
-        click.echo("❌ Error: uvicorn is not installed. Install it with: pip install uvicorn")
-        sys.exit(1)
-    
     # Check Docker availability for isolated execution support
     docker_available = await _check_docker_availability()
     
     # Set environment variable for the API to know Docker status
-    import os
     os.environ['GLEITZEIT_DOCKER_AVAILABLE'] = 'true' if docker_available else 'false'
     
     # Load configuration for port ranges
@@ -1201,9 +1196,6 @@ async def _async_serve(host: str, port: int, reload: bool, workers: int, headles
     click.echo("\nPress CTRL+C to stop the servers\n")
     
     try:
-        # Import the FastAPI app
-        from gleitzeit.api.main import app
-        
         # Create API server config
         api_config_uvicorn = uvicorn.Config(
             app="gleitzeit.api.main:app",
@@ -1430,6 +1422,38 @@ async def _run_ui(port: int, host: str, browser: bool):
 
 def main():
     """Main CLI entry point"""
+    # Try to add auth setup commands first
+    auth_added = False
+    try:
+        from gleitzeit.auth.setup import auth
+        cli.add_command(auth)
+        auth_added = True
+    except ImportError:
+        # Auth module not available, skip
+        pass
+    
+    # Add API-based commands
+    try:
+        from gleitzeit.cli.api_commands import (
+            task, workflow, queue, logs, system, provider, errors
+        )
+        cli.add_command(task)
+        cli.add_command(workflow)
+        cli.add_command(queue)
+        cli.add_command(logs)
+        cli.add_command(system)
+        cli.add_command(provider)
+        cli.add_command(errors)
+        
+        # If auth setup wasn't added, try to add auth API commands
+        if not auth_added:
+            from gleitzeit.cli.api_commands import auth
+            cli.add_command(auth)
+    except ImportError as e:
+        # If httpx or tabulate not available, skip API commands
+        logger.debug(f"API commands not available: {e}")
+        pass
+    
     try:
         cli()
     except KeyboardInterrupt:

@@ -154,6 +154,126 @@ class GleitzeitAPIClient:
         if question:
             params["question"] = question
         return await self.execute_template("analyze", params)
+    
+    # Authentication endpoints
+    
+    async def login(self, username: str, password: str) -> Dict[str, Any]:
+        """Login with username/email and password"""
+        return await self._request("POST", "/auth/login", json={
+            "username": username,
+            "password": password
+        })
+    
+    async def logout(self) -> Dict[str, Any]:
+        """Logout current user"""
+        return await self._request("POST", "/auth/logout")
+    
+    async def get_current_user(self) -> Dict[str, Any]:
+        """Get current user information"""
+        return await self._request("GET", "/auth/me")
+    
+    async def register(self, email: str, password: str, username: str = None, full_name: str = None) -> Dict[str, Any]:
+        """Register a new user"""
+        user_data = {
+            "email": email,
+            "password": password,
+            "username": username,
+            "full_name": full_name
+        }
+        return await self._request("POST", "/auth/register", json=user_data)
+    
+    async def change_password(self, old_password: str, new_password: str) -> Dict[str, Any]:
+        """Change password for current user"""
+        return await self._request("POST", "/auth/change-password", json={
+            "old_password": old_password,
+            "new_password": new_password
+        })
+    
+    # User management endpoints (admin only)
+    
+    async def create_user(self, email: str, password: str, username: str = None, 
+                         full_name: str = None, roles: List[str] = None) -> Dict[str, Any]:
+        """Create a new user (admin only)"""
+        user_data = {
+            "email": email,
+            "password": password,
+            "username": username,
+            "full_name": full_name,
+            "roles": roles
+        }
+        return await self._request("POST", "/auth/users", json=user_data)
+    
+    async def get_user(self, user_id: str) -> Dict[str, Any]:
+        """Get user by ID"""
+        return await self._request("GET", f"/auth/users/{user_id}")
+    
+    async def list_users(self, skip: int = 0, limit: int = 100) -> Dict[str, Any]:
+        """List all users"""
+        return await self._request("GET", f"/auth/users?skip={skip}&limit={limit}")
+    
+    async def update_user(self, user_id: str, **updates) -> Dict[str, Any]:
+        """Update user by ID"""
+        return await self._request("PUT", f"/auth/users/{user_id}", json=updates)
+    
+    async def delete_user(self, user_id: str) -> Dict[str, Any]:
+        """Delete user by ID"""
+        return await self._request("DELETE", f"/auth/users/{user_id}")
+    
+    async def assign_user_role(self, user_id: str, role: str) -> Dict[str, Any]:
+        """Assign role to user"""
+        return await self._request("POST", f"/auth/users/{user_id}/roles", json={"role": role})
+    
+    async def remove_user_role(self, user_id: str, role_name: str) -> Dict[str, Any]:
+        """Remove role from user"""
+        return await self._request("DELETE", f"/auth/users/{user_id}/roles/{role_name}")
+    
+    # API key management
+    
+    async def create_api_key(self, name: str, description: str = None, 
+                           expires_in_days: int = None) -> Dict[str, Any]:
+        """Create an API key"""
+        key_data = {
+            "name": name,
+            "description": description,
+            "expires_in_days": expires_in_days
+        }
+        return await self._request("POST", "/auth/api-keys", json=key_data)
+    
+    async def list_api_keys(self) -> List[Dict[str, Any]]:
+        """List API keys for current user"""
+        return await self._request("GET", "/auth/api-keys")
+    
+    async def revoke_api_key(self, key_id: str) -> Dict[str, Any]:
+        """Revoke an API key"""
+        return await self._request("DELETE", f"/auth/api-keys/{key_id}")
+    
+    # Role management
+    
+    async def list_roles(self) -> List[Dict[str, Any]]:
+        """List all available roles"""
+        return await self._request("GET", "/auth/roles")
+    
+    # Audit logs
+    
+    async def get_audit_logs(self, user_id: str = None, action: str = None, 
+                           resource_type: str = None, skip: int = 0, limit: int = 100) -> Dict[str, Any]:
+        """Get audit logs"""
+        params = {"skip": skip, "limit": limit}
+        if user_id:
+            params["user_id"] = user_id
+        if action:
+            params["action"] = action
+        if resource_type:
+            params["resource_type"] = resource_type
+        
+        query_string = "&".join(f"{k}={v}" for k, v in params.items())
+        return await self._request("GET", f"/auth/audit-logs?{query_string}")
+    
+    # Auth status
+    
+    async def get_auth_status(self) -> Dict[str, Any]:
+        """Get authentication status and mode"""
+        return await self._request("GET", "/auth/status")
 
 
 # Synchronous wrapper for convenience
@@ -201,6 +321,51 @@ class GleitzeitAPIClientSync:
             async with self.async_client as client:
                 return await client.research(topic, depth)
         return self._run_async(_research())
+    
+    # Auth methods for sync client
+    
+    def login(self, username: str, password: str) -> Dict[str, Any]:
+        async def _login():
+            async with self.async_client as client:
+                return await client.login(username, password)
+        return self._run_async(_login())
+    
+    def logout(self) -> Dict[str, Any]:
+        async def _logout():
+            async with self.async_client as client:
+                return await client.logout()
+        return self._run_async(_logout())
+    
+    def get_current_user(self) -> Dict[str, Any]:
+        async def _get_user():
+            async with self.async_client as client:
+                return await client.get_current_user()
+        return self._run_async(_get_user())
+    
+    def create_user(self, email: str, password: str, username: str = None, 
+                   full_name: str = None, roles: List[str] = None) -> Dict[str, Any]:
+        async def _create():
+            async with self.async_client as client:
+                return await client.create_user(email, password, username, full_name, roles)
+        return self._run_async(_create())
+    
+    def list_users(self, skip: int = 0, limit: int = 100) -> Dict[str, Any]:
+        async def _list():
+            async with self.async_client as client:
+                return await client.list_users(skip, limit)
+        return self._run_async(_list())
+    
+    def create_api_key(self, name: str, description: str = None, expires_in_days: int = None) -> Dict[str, Any]:
+        async def _create_key():
+            async with self.async_client as client:
+                return await client.create_api_key(name, description, expires_in_days)
+        return self._run_async(_create_key())
+    
+    def get_auth_status(self) -> Dict[str, Any]:
+        async def _get_status():
+            async with self.async_client as client:
+                return await client.get_auth_status()
+        return self._run_async(_get_status())
 
 
 # Example usage
@@ -208,17 +373,58 @@ if __name__ == "__main__":
     async def main():
         # Example async usage
         async with GleitzeitAPIClient() as client:
-            # Check status
+            # Check system status
             status = await client.get_status()
             print(f"System status: {status['status']}")
             
+            # Check authentication status
+            auth_status = await client.get_auth_status()
+            print(f"Auth mode: {auth_status['mode']}")
+            print(f"Login required: {auth_status['requires_login']}")
+            
+            # Get current user (works in both basic and admin mode)
+            try:
+                user = await client.get_current_user()
+                print(f"Current user: {user['email']}")
+                
+                # Demo admin operations (will fail in basic mode)
+                if auth_status['mode'] == 'admin':
+                    print("\\n--- Admin Operations ---")
+                    
+                    # List users
+                    users_response = await client.list_users(limit=3)
+                    print(f"Users: {len(users_response.get('users', []))}")
+                    
+                    # List roles
+                    roles = await client.list_roles()
+                    print(f"Available roles: {[r.get('name', r) for r in roles]}")
+                    
+                    # Create API key (store the result securely!)
+                    api_key = await client.create_api_key(
+                        name="Demo Key",
+                        description="Example API key",
+                        expires_in_days=30
+                    )
+                    print(f"Created API key: {api_key['key_prefix']}...")
+                    
+                    # Clean up - revoke the demo key
+                    await client.revoke_api_key(api_key['id'])
+                    print("Revoked demo API key")
+                    
+                else:
+                    print("\\n--- Basic Mode (Limited Operations) ---")
+                    print("Admin operations not available in basic mode")
+                    
+            except Exception as e:
+                print(f"Auth operations failed: {e}")
+            
             # Execute Python code
             result = await client.execute_python("print('Hello from API!'); result = 2 + 2")
-            print(f"Python result: {result}")
+            print(f"\\nPython result: {result}")
             
             # Chat with LLM
             chat_result = await client.chat("What is workflow orchestration?")
-            print(f"Chat response: {chat_result['response'][:200]}...")
+            print(f"Chat response: {chat_result.get('response', 'No response')[:200]}...")
             
             # Submit a workflow
             workflow = {
@@ -227,7 +433,7 @@ if __name__ == "__main__":
                 "tasks": [
                     {
                         "name": "Calculate",
-                        "protocol": "python/v1",
+                        "protocol": "python/v1", 
                         "method": "python/execute",
                         "params": {
                             "code": "result = 10 * 20"
@@ -236,7 +442,28 @@ if __name__ == "__main__":
                 ]
             }
             workflow_result = await client.submit_workflow(workflow)
-            print(f"Workflow submitted: {workflow_result['workflow_id']}")
+            print(f"\\nWorkflow submitted: {workflow_result['workflow_id']}")
     
-    # Run example
+    # Example sync usage
+    def sync_example():
+        from gleitzeit.api.client import GleitzeitAPIClientSync
+        
+        print("\\n=== Sync Client Example ===")
+        client = GleitzeitAPIClientSync()
+        
+        # Check auth status
+        auth_status = client.get_auth_status()
+        print(f"Auth mode (sync): {auth_status['mode']}")
+        
+        # Get current user
+        user = client.get_current_user()
+        print(f"Current user (sync): {user['email']}")
+        
+        # Execute Python
+        result = client.execute_python("result = 5 * 5")
+        print(f"Python result (sync): {result}")
+    
+    # Run examples
+    print("=== Async Client Example ===")
     asyncio.run(main())
+    sync_example()

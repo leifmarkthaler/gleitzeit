@@ -12,7 +12,18 @@ http://localhost:8000
 
 ## Authentication
 
-Authentication is not yet implemented in the current version.
+Gleitzeit supports two authentication modes:
+
+### Basic Mode (Default)
+No authentication required. All requests are automatically authenticated as a basic user with core permissions.
+
+### Admin Mode
+When enabled via `GLEITZEIT_AUTH_MODE=admin`, requires authentication using:
+- JWT tokens (via login endpoint)
+- API keys (Bearer tokens)
+- Session cookies
+
+See the authentication endpoints section for login and token management.
 
 ## Core Endpoints
 
@@ -434,6 +445,163 @@ GET /protocols
 ```
 List all available protocols.
 
+### Log Management
+
+#### Query System Logs
+```http
+GET /logs
+```
+Query all system logs with filtering and pagination support.
+
+**Query Parameters:**
+- `level` (string): Filter by log level
+- `source` (string): Filter by source
+- `task_id` (string): Filter by task ID
+- `workflow_id` (string): Filter by workflow ID
+- `since` (datetime): Logs since timestamp
+- `until` (datetime): Logs until timestamp
+- `limit` (integer, default: 100): Maximum logs to return
+- `offset` (integer, default: 0): Pagination offset
+
+#### Search Logs
+```http
+GET /logs/search
+```
+Search logs by text content across all tasks and workflows.
+
+**Query Parameters:**
+- `query` (string, required): Search query text
+- `task_id` (string): Filter by task ID
+- `workflow_id` (string): Filter by workflow ID
+- `level` (string): Minimum log level
+- `limit` (integer, default: 50): Maximum results
+
+#### Get Log Statistics
+```http
+GET /logs/stats
+```
+Get aggregated statistics about system logs.
+
+#### Clean Up Old Logs
+```http
+DELETE /logs/cleanup
+```
+Remove logs older than specified retention period.
+
+**Query Parameters:**
+- `days` (integer, default: 30): Delete logs older than N days
+- `level` (string): Only delete logs of this level or lower
+
+#### Get/Update Retention Settings
+```http
+GET /logs/retention
+PUT /logs/retention
+```
+Manage log retention configuration.
+
+#### Tail Task Logs
+```http
+GET /logs/tail/{task_id}
+```
+Get the most recent logs for a specific task.
+
+### Audit Logs
+
+#### Get Audit Logs
+```http
+GET /audit-logs
+```
+Retrieve audit logs for user actions and system events. Requires `system:read` permission.
+
+**Query Parameters:**
+- `user_id` (string): Filter by user ID
+- `action` (string): Filter by action type
+- `resource_type` (string): Filter by resource type
+- `since` (datetime): Actions since timestamp
+- `skip` (integer): Pagination offset
+- `limit` (integer): Maximum results
+
+### Event Error Management
+
+#### List Event Errors
+```http
+GET /event-errors
+```
+Retrieve persisted event handler errors for debugging and monitoring.
+
+**Query Parameters:**
+- `limit` (integer, 1-1000, default: 100): Maximum errors to return
+- `event_type` (string): Filter by event type
+- `handler_name` (string): Filter by handler name  
+- `since` (datetime): Return errors since timestamp
+
+**Response:**
+```json
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "handler_name": "TaskCompletedHandler",
+    "event_type": "TASK_COMPLETED",
+    "event_id": "evt-123",
+    "error_type": "ValueError",
+    "error_message": "Task status invalid for completion",
+    "error_traceback": "Traceback (most recent call last)...",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "metadata": {"task_id": "task-456"}
+  }
+]
+```
+
+#### Get Error Statistics
+```http
+GET /event-errors/stats
+```
+Returns aggregated statistics about event handler errors.
+
+**Response:**
+```json
+{
+  "total_errors": 42,
+  "handlers_with_errors": [
+    ["TaskCompletedHandler", 25],
+    ["WorkflowHandler", 10]
+  ],
+  "event_types_with_errors": [
+    ["TASK_COMPLETED", 20],
+    ["TASK_FAILED", 15]
+  ],
+  "oldest_error": "2024-01-01T00:00:00Z",
+  "newest_error": "2024-01-15T14:30:00Z"
+}
+```
+
+#### Get Specific Error
+```http
+GET /event-errors/{error_id}
+```
+Retrieve detailed information about a specific event error.
+
+**Path Parameters:**
+- `error_id` (string): Event error identifier
+
+#### Clean Up Old Errors
+```http
+DELETE /event-errors/cleanup
+```
+Remove event errors older than specified retention period.
+
+**Query Parameters:**
+- `days` (integer, 1-365, default: 30): Delete errors older than this many days
+
+**Response:**
+```json
+{
+  "success": true,
+  "removed": 150,
+  "message": "Removed 150 errors older than 30 days"
+}
+```
+
 ## Response Codes
 
 | Code | Description |
@@ -515,5 +683,8 @@ The following endpoints are new in this version:
 - Statistics: `/statistics/tasks`, `/statistics/system`
 - Data management: `/cleanup`
 - Log streaming: WebSocket endpoints for real-time logs
+- Log management: `/logs`, `/logs/search`, `/logs/stats`, `/logs/cleanup`, `/logs/retention`, `/logs/tail/{id}`
+- Event error management: `/event-errors`, `/event-errors/stats`, `/event-errors/{id}`, `/event-errors/cleanup`
+- Audit logs: `/audit-logs` (now functional)
 
 All existing endpoints remain backward compatible.

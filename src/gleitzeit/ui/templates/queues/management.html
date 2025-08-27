@@ -1,0 +1,545 @@
+{% extends "base.html" %}
+
+{% block title %}Queue Management - Gleitzeit{% endblock %}
+
+{% block content %}
+<div class="queues-container">
+    <h1 class="page-title">Queue Management</h1>
+    
+    <!-- Queue List -->
+    <div class="queues-card">
+        <div class="card-header">
+            <h3>Task Queues</h3>
+            <button onclick="refreshQueues()" class="btn btn-primary">Refresh</button>
+        </div>
+        
+        <div id="queues-list">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Queue Name</th>
+                        <th>Status</th>
+                        <th>Size</th>
+                        <th>Processing</th>
+                        <th>Workers</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="queues-tbody">
+                    <tr>
+                        <td colspan="6" class="loading">Loading queues...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Queue Details -->
+    <div id="queue-details" class="queue-details-card" style="display: none;">
+        <h3>Queue Details: <span id="selected-queue-name">-</span></h3>
+        
+        <div class="details-grid">
+            <div class="detail-item">
+                <label>Status:</label>
+                <span id="queue-status" class="status-badge">-</span>
+            </div>
+            <div class="detail-item">
+                <label>Size:</label>
+                <span id="queue-size">-</span>
+            </div>
+            <div class="detail-item">
+                <label>Processing:</label>
+                <span id="queue-processing">-</span>
+            </div>
+            <div class="detail-item">
+                <label>Workers:</label>
+                <span id="queue-workers">-</span>
+            </div>
+            <div class="detail-item">
+                <label>Max Workers:</label>
+                <span id="queue-max-workers">-</span>
+            </div>
+            <div class="detail-item">
+                <label>Processed:</label>
+                <span id="queue-processed">-</span>
+            </div>
+            <div class="detail-item">
+                <label>Failed:</label>
+                <span id="queue-failed">-</span>
+            </div>
+            <div class="detail-item">
+                <label>Avg Time:</label>
+                <span id="queue-avg-time">-</span>
+            </div>
+        </div>
+        
+        <div class="queue-actions">
+            <button id="pause-btn" onclick="pauseQueue()" class="btn btn-warning">Pause</button>
+            <button id="resume-btn" onclick="resumeQueue()" class="btn btn-success" style="display: none;">Resume</button>
+            <button onclick="clearQueue()" class="btn btn-danger">Clear Queue</button>
+            <button onclick="configureQueue()" class="btn btn-secondary">Configure</button>
+        </div>
+        
+        <!-- Queue Chart -->
+        <div class="queue-chart">
+            <h4>Queue Activity</h4>
+            <canvas id="queue-activity-chart" width="600" height="200"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Modal -->
+<div id="config-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h3>Configure Queue: <span id="config-queue-name">-</span></h3>
+        <div class="form-group">
+            <label for="max-workers">Max Workers</label>
+            <input type="number" id="max-workers" min="1" max="100" value="5">
+        </div>
+        <div class="form-group">
+            <label for="max-retries">Max Retries</label>
+            <input type="number" id="max-retries" min="0" max="10" value="3">
+        </div>
+        <div class="form-group">
+            <label for="timeout">Timeout (seconds)</label>
+            <input type="number" id="timeout" min="1" max="3600" value="300">
+        </div>
+        <div class="modal-actions">
+            <button onclick="saveConfig()" class="btn btn-primary">Save</button>
+            <button onclick="closeConfigModal()" class="btn btn-secondary">Cancel</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.queues-container {
+    padding: 2rem;
+}
+
+.queues-card, .queue-details-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th {
+    background: #f5f5f5;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #ddd;
+}
+
+.data-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #eee;
+}
+
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-active {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.status-paused {
+    background: #fff3e0;
+    color: #e65100;
+}
+
+.status-inactive {
+    background: #fce4ec;
+    color: #c62828;
+}
+
+.queue-actions-btn {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background: #f9f9f9;
+    border-radius: 4px;
+}
+
+.detail-item label {
+    font-weight: 500;
+    color: #666;
+}
+
+.queue-actions {
+    display: flex;
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.btn-warning {
+    background-color: #ff9800;
+    color: white;
+}
+
+.btn-warning:hover {
+    background-color: #f57c00;
+}
+
+.btn-success {
+    background-color: #4caf50;
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #45a049;
+}
+
+.queue-chart {
+    margin-top: 2rem;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 100%;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    margin-top: 1.5rem;
+}
+
+.loading {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+}
+</style>
+
+<script>
+let selectedQueue = null;
+let queueChart = null;
+
+async function loadQueues() {
+    try {
+        const response = await fetch('/api/queues');
+        if (response.status === 404) {
+            // Queues not available
+            document.getElementById('queues-tbody').innerHTML = 
+                '<tr><td colspan="6" class="loading">Queue management not available</td></tr>';
+            return;
+        }
+        const data = await response.json();
+        
+        displayQueues(data.queues || []);
+    } catch (error) {
+        console.error('Error loading queues:', error);
+        document.getElementById('queues-tbody').innerHTML = 
+            '<tr><td colspan="6" class="loading">Error loading queues</td></tr>';
+    }
+}
+
+function displayQueues(queues) {
+    const tbody = document.getElementById('queues-tbody');
+    
+    if (queues.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="loading">No queues found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = queues.map(queue => `
+        <tr>
+            <td>${queue.name}</td>
+            <td><span class="status-badge status-${queue.status}">${queue.status}</span></td>
+            <td>${queue.size}</td>
+            <td>${queue.processing || 0}</td>
+            <td>${queue.workers || 0}</td>
+            <td>
+                <div class="queue-actions-btn">
+                    <button onclick="viewQueueDetails('${queue.name}')" class="btn btn-sm">View</button>
+                    ${queue.status === 'active' 
+                        ? `<button onclick="pauseQueueDirect('${queue.name}')" class="btn btn-sm btn-warning">Pause</button>`
+                        : `<button onclick="resumeQueueDirect('${queue.name}')" class="btn btn-sm btn-success">Resume</button>`
+                    }
+                </div>
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function viewQueueDetails(queueName) {
+    selectedQueue = queueName;
+    
+    try {
+        const response = await fetch(`/api/queues/${queueName}`);
+        const data = await response.json();
+        
+        document.getElementById('selected-queue-name').textContent = queueName;
+        document.getElementById('queue-status').textContent = data.status;
+        document.getElementById('queue-status').className = `status-badge status-${data.status}`;
+        document.getElementById('queue-size').textContent = data.size;
+        document.getElementById('queue-processing').textContent = data.processing || 0;
+        document.getElementById('queue-workers').textContent = data.workers || 0;
+        document.getElementById('queue-max-workers').textContent = data.max_workers || 'N/A';
+        
+        if (data.stats) {
+            document.getElementById('queue-processed').textContent = data.stats.processed || 0;
+            document.getElementById('queue-failed').textContent = data.stats.failed || 0;
+            document.getElementById('queue-avg-time').textContent = 
+                data.stats.avg_time ? `${data.stats.avg_time.toFixed(2)}s` : 'N/A';
+        }
+        
+        // Update buttons
+        if (data.status === 'active') {
+            document.getElementById('pause-btn').style.display = 'inline-block';
+            document.getElementById('resume-btn').style.display = 'none';
+        } else {
+            document.getElementById('pause-btn').style.display = 'none';
+            document.getElementById('resume-btn').style.display = 'inline-block';
+        }
+        
+        document.getElementById('queue-details').style.display = 'block';
+        
+        // Update chart
+        updateQueueChart(data);
+    } catch (error) {
+        console.error('Error loading queue details:', error);
+    }
+}
+
+async function pauseQueue() {
+    if (!selectedQueue) return;
+    
+    try {
+        const response = await fetch(`/api/queues/${selectedQueue}/pause`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            alert(`Queue ${selectedQueue} paused`);
+            viewQueueDetails(selectedQueue);
+            loadQueues();
+        }
+    } catch (error) {
+        alert('Failed to pause queue: ' + error.message);
+    }
+}
+
+async function resumeQueue() {
+    if (!selectedQueue) return;
+    
+    try {
+        const response = await fetch(`/api/queues/${selectedQueue}/resume`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            alert(`Queue ${selectedQueue} resumed`);
+            viewQueueDetails(selectedQueue);
+            loadQueues();
+        }
+    } catch (error) {
+        alert('Failed to resume queue: ' + error.message);
+    }
+}
+
+async function clearQueue() {
+    if (!selectedQueue) return;
+    
+    if (confirm(`Are you sure you want to clear all tasks from queue ${selectedQueue}?`)) {
+        try {
+            const response = await fetch(`/api/queues/${selectedQueue}/clear`, {
+                method: 'POST'
+            });
+            const data = await response.json();
+            
+            alert(`Queue cleared: ${data.message}`);
+            viewQueueDetails(selectedQueue);
+            loadQueues();
+        } catch (error) {
+            alert('Failed to clear queue: ' + error.message);
+        }
+    }
+}
+
+async function pauseQueueDirect(queueName) {
+    try {
+        const response = await fetch(`/api/queues/${queueName}/pause`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            loadQueues();
+        }
+    } catch (error) {
+        alert('Failed to pause queue: ' + error.message);
+    }
+}
+
+async function resumeQueueDirect(queueName) {
+    try {
+        const response = await fetch(`/api/queues/${queueName}/resume`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            loadQueues();
+        }
+    } catch (error) {
+        alert('Failed to resume queue: ' + error.message);
+    }
+}
+
+function configureQueue() {
+    if (!selectedQueue) return;
+    
+    document.getElementById('config-queue-name').textContent = selectedQueue;
+    document.getElementById('config-modal').style.display = 'flex';
+}
+
+function closeConfigModal() {
+    document.getElementById('config-modal').style.display = 'none';
+}
+
+async function saveConfig() {
+    if (!selectedQueue) return;
+    
+    const config = {
+        max_workers: parseInt(document.getElementById('max-workers').value),
+        max_retries: parseInt(document.getElementById('max-retries').value),
+        timeout: parseInt(document.getElementById('timeout').value)
+    };
+    
+    try {
+        const response = await fetch(`/api/queues/${selectedQueue}/config`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(config)
+        });
+        
+        if (response.ok) {
+            alert('Configuration saved');
+            closeConfigModal();
+            viewQueueDetails(selectedQueue);
+        }
+    } catch (error) {
+        alert('Failed to save configuration: ' + error.message);
+    }
+}
+
+function updateQueueChart(data) {
+    const canvas = document.getElementById('queue-activity-chart');
+    const ctx = canvas.getContext('2d');
+    
+    // Simple bar chart showing queue metrics
+    const metrics = [
+        { label: 'Size', value: data.size || 0, color: '#2196F3' },
+        { label: 'Processing', value: data.processing || 0, color: '#FF9800' },
+        { label: 'Workers', value: data.workers || 0, color: '#4CAF50' },
+        { label: 'Failed', value: data.stats?.failed || 0, color: '#f44336' }
+    ];
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw bars
+    const barWidth = 80;
+    const barSpacing = 40;
+    const maxValue = Math.max(...metrics.map(m => m.value), 10);
+    
+    metrics.forEach((metric, index) => {
+        const x = 50 + index * (barWidth + barSpacing);
+        const height = (metric.value / maxValue) * 150;
+        const y = 170 - height;
+        
+        // Draw bar
+        ctx.fillStyle = metric.color;
+        ctx.fillRect(x, y, barWidth, height);
+        
+        // Draw label
+        ctx.fillStyle = '#333';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(metric.label, x + barWidth/2, 190);
+        
+        // Draw value
+        ctx.fillText(metric.value, x + barWidth/2, y - 5);
+    });
+}
+
+function refreshQueues() {
+    loadQueues();
+    if (selectedQueue) {
+        viewQueueDetails(selectedQueue);
+    }
+}
+
+// Load queues on page load
+document.addEventListener('DOMContentLoaded', loadQueues);
+
+// Auto-refresh every 5 seconds
+setInterval(refreshQueues, 5000);
+</script>
+{% endblock %}

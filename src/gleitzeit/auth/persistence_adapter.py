@@ -11,7 +11,7 @@ from uuid import UUID, uuid4
 
 from ..persistence.factory import PersistenceFactory
 from ..persistence.unified_sqlalchemy import UnifiedSQLAlchemyPersistence
-from ..persistence.redis_adapter import RedisAdapter
+from ..persistence.unified_redis import UnifiedRedisAdapter
 from .models import User, ApiKey, Role, Session, AuditLog, DEFAULT_ROLES
 from .database import AuthDatabase
 
@@ -305,7 +305,7 @@ class AuthRedisPersistence(AuthDatabase):
     Uses Redis for session/token storage and caching, with SQL fallback for persistent data
     """
     
-    def __init__(self, redis_adapter: RedisAdapter, sql_backend: Optional[AuthSQLPersistence] = None):
+    def __init__(self, redis_adapter: UnifiedRedisAdapter, sql_backend: Optional[AuthSQLPersistence] = None):
         self.redis = redis_adapter
         self.sql_backend = sql_backend  # Optional SQL backend for persistent storage
         

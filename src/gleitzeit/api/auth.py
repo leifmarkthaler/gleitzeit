@@ -11,15 +11,16 @@ from fastapi import APIRouter, Request, HTTPException, Response, Depends
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel, EmailStr, Field
 
-from ..auth.utils import (
-    hash_password,
-    verify_password,
-    generate_api_key,
-    hash_api_key,
-    create_jwt_token,
-    decode_jwt_token
-)
-from ..auth.database import get_auth_db
+# Note: Most auth utilities now handled by GleitzeitClient for consistency
+# from ..auth.utils import (
+#     hash_password,
+#     verify_password, 
+#     generate_api_key,
+#     hash_api_key,
+#     create_jwt_token,
+#     decode_jwt_token
+# )
+# from ..auth.database import get_auth_db
 from ..auth.permissions import require_permission, Permissions
 
 logger = logging.getLogger(__name__)
@@ -88,91 +89,17 @@ async def login(request: LoginRequest):
     
     Returns JWT access token and refresh token
     """
-    auth_db = get_auth_db()
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Find user by email or username
-    user = await auth_db.get_user_by_email(request.username)
-    if not user:
-        user = await auth_db.get_user_by_username(request.username)
-    
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid username or password"
-        )
-    
-    # Verify password
-    if not user.password_hash or not verify_password(request.password, user.password_hash):
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid username or password"
-        )
-    
-    # Update last login
-    await auth_db.update_user_last_login(user.id)
-    
-    # Create tokens
-    jwt_secret = os.getenv("GLEITZEIT_AUTH_JWT_SECRET", "change-me-in-production")
-    
-    # Access token payload
-    access_payload = {
-        "sub": str(user.id),
-        "email": user.email,
-        "username": user.username,
-        "roles": [role.name for role in user.roles],
-        "is_superuser": user.is_superuser,
-        "type": "access"
-    }
-    
-    access_token = create_jwt_token(
-        access_payload,
-        jwt_secret,
-        expires_delta=timedelta(hours=1)
-    )
-    
-    # Refresh token payload
-    refresh_payload = {
-        "sub": str(user.id),
-        "type": "refresh"
-    }
-    
-    refresh_token = create_jwt_token(
-        refresh_payload,
-        jwt_secret,
-        expires_delta=timedelta(days=30)
-    )
-    
-    # Create session
-    session_data = {
-        "token_hash": hash_api_key(access_token),
-        "refresh_token_hash": hash_api_key(refresh_token),
-        "expires_at": datetime.utcnow() + timedelta(hours=1),
-        "refresh_expires_at": datetime.utcnow() + timedelta(days=30)
-    }
-    
-    await auth_db.create_session(user.id, session_data)
-    
-    # Log successful login
-    await auth_db.create_audit_log(
-        user_id=user.id,
-        action="login",
-        resource_type="auth",
-        details={"method": "password"}
-    )
-    
-    return LoginResponse(
-        access_token=access_token,
-        refresh_token=refresh_token,
-        expires_in=3600,
-        user={
-            "id": str(user.id),
-            "email": user.email,
-            "username": user.username,
-            "full_name": user.full_name,
-            "roles": [role.name for role in user.roles],
-            "is_superuser": user.is_superuser
-        }
-    )
+    try:
+        result = await app_state.client.login(request.username, request.password)
+        return LoginResponse(**result)
+    except Exception as e:
+        logger.error(f"Login failed: {e}")
+        raise HTTPException(status_code=401, detail=str(e))
 
 
 @router.post("/logout")
@@ -186,24 +113,21 @@ async def logout(request: Request, response: Response):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    auth_db = get_auth_db()
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Revoke session if exists
-    session_id = user.get("session_id")
-    if session_id:
-        await auth_db.revoke_session(session_id)
-    
-    # Clear session cookie if exists
-    response.delete_cookie("gleitzeit_session")
-    
-    # Log logout
-    await auth_db.create_audit_log(
-        user_id=user.get("id"),
-        action="logout",
-        resource_type="auth"
-    )
-    
-    return {"message": "Logged out successfully"}
+    try:
+        result = await app_state.client.logout()
+        
+        # Clear session cookie if exists
+        response.delete_cookie("gleitzeit_session")
+        
+        return result
+    except Exception as e:
+        logger.error(f"Logout failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/refresh", response_model=LoginResponse)
@@ -211,67 +135,17 @@ async def refresh_token(request: RefreshRequest):
     """
     Refresh access token using refresh token
     """
-    jwt_secret = os.getenv("GLEITZEIT_AUTH_JWT_SECRET", "change-me-in-production")
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Decode refresh token
-    payload = decode_jwt_token(request.refresh_token, jwt_secret)
-    if not payload or payload.get("type") != "refresh":
-        raise HTTPException(
-            status_code=401,
-            detail="Invalid refresh token"
-        )
-    
-    # Get user
-    auth_db = get_auth_db()
-    user = await auth_db.get_user(payload.get("sub"))
-    
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=401,
-            detail="User not found or inactive"
-        )
-    
-    # Create new access token
-    access_payload = {
-        "sub": str(user.id),
-        "email": user.email,
-        "username": user.username,
-        "roles": [role.name for role in user.roles],
-        "is_superuser": user.is_superuser,
-        "type": "access"
-    }
-    
-    new_access_token = create_jwt_token(
-        access_payload,
-        jwt_secret,
-        expires_delta=timedelta(hours=1)
-    )
-    
-    # Create new refresh token
-    new_refresh_payload = {
-        "sub": str(user.id),
-        "type": "refresh"
-    }
-    
-    new_refresh_token = create_jwt_token(
-        new_refresh_payload,
-        jwt_secret,
-        expires_delta=timedelta(days=30)
-    )
-    
-    return LoginResponse(
-        access_token=new_access_token,
-        refresh_token=new_refresh_token,
-        expires_in=3600,
-        user={
-            "id": str(user.id),
-            "email": user.email,
-            "username": user.username,
-            "full_name": user.full_name,
-            "roles": [role.name for role in user.roles],
-            "is_superuser": user.is_superuser
-        }
-    )
+    try:
+        result = await app_state.client.refresh_token(request.refresh_token)
+        return LoginResponse(**result)
+    except Exception as e:
+        logger.error(f"Token refresh failed: {e}")
+        raise HTTPException(status_code=401, detail=str(e))
 
 
 @router.get("/me")
@@ -293,62 +167,27 @@ async def register(request: RegisterRequest):
     
     Note: This endpoint may be disabled in production
     """
-    # Check if registration is enabled
-    if os.getenv("GLEITZEIT_AUTH_ALLOW_REGISTRATION", "false").lower() != "true":
-        raise HTTPException(
-            status_code=403,
-            detail="User registration is disabled"
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        result = await app_state.client.register_user(
+            email=request.email,
+            password=request.password,
+            username=request.username,
+            full_name=request.full_name
         )
-    
-    auth_db = get_auth_db()
-    
-    # Check if email already exists
-    existing = await auth_db.get_user_by_email(request.email)
-    if existing:
-        raise HTTPException(
-            status_code=400,
-            detail="Email already registered"
-        )
-    
-    # Check if username already exists
-    if request.username:
-        existing = await auth_db.get_user_by_username(request.username)
-        if existing:
-            raise HTTPException(
-                status_code=400,
-                detail="Username already taken"
-            )
-    
-    # Create user
-    user_data = {
-        "email": request.email,
-        "username": request.username or request.email.split("@")[0],
-        "password": request.password,
-        "full_name": request.full_name,
-        "is_active": True,
-        "is_superuser": False
-    }
-    
-    user = await auth_db.create_user(user_data)
-    
-    # Add default role
-    await auth_db.add_user_role(user.id, "viewer")
-    
-    # Log registration
-    await auth_db.create_audit_log(
-        user_id=user.id,
-        action="register",
-        resource_type="auth"
-    )
-    
-    return {
-        "message": "User registered successfully",
-        "user": {
-            "id": str(user.id),
-            "email": user.email,
-            "username": user.username
-        }
-    }
+        return result
+    except Exception as e:
+        logger.error(f"Registration failed: {e}")
+        if "already registered" in str(e).lower():
+            raise HTTPException(status_code=400, detail=str(e))
+        elif "admin mode" in str(e).lower() or "disabled" in str(e).lower():
+            raise HTTPException(status_code=403, detail=str(e))
+        else:
+            raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/api-keys", response_model=ApiKeyResponse)
@@ -360,47 +199,24 @@ async def create_api_key(request: CreateApiKeyRequest, req: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    auth_db = get_auth_db()
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Generate API key
-    raw_key = generate_api_key()
-    key_hash = hash_api_key(raw_key)
-    key_prefix = raw_key[:8]
-    
-    # Calculate expiration
-    expires_at = None
-    if request.expires_in_days:
-        expires_at = datetime.utcnow() + timedelta(days=request.expires_in_days)
-    
-    # Create API key record
-    key_data = {
-        "key_hash": key_hash,
-        "key_prefix": key_prefix,
-        "name": request.name,
-        "description": request.description,
-        "expires_at": expires_at,
-        "permissions": request.permissions or [],
-        "scopes": request.scopes or []
-    }
-    
-    api_key = await auth_db.create_api_key(user["id"], key_data)
-    
-    # Log API key creation
-    await auth_db.create_audit_log(
-        user_id=user["id"],
-        action="create_api_key",
-        resource_type="api_key",
-        resource_id=str(api_key.id),
-        details={"name": request.name}
-    )
-    
-    return ApiKeyResponse(
-        id=str(api_key.id),
-        key=raw_key,  # Only returned on creation
-        key_prefix=key_prefix,
-        name=api_key.name,
-        created_at=api_key.created_at
-    )
+    try:
+        result = await app_state.client.create_api_key(
+            name=request.name,
+            description=request.description,
+            expires_in_days=request.expires_in_days
+        )
+        return ApiKeyResponse(**result)
+    except Exception as e:
+        logger.error(f"API key creation failed: {e}")
+        if "admin mode" in str(e).lower():
+            raise HTTPException(status_code=403, detail=str(e))
+        else:
+            raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/api-keys", response_model=List[dict])
@@ -412,21 +228,20 @@ async def list_api_keys(req: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    auth_db = get_auth_db()
-    api_keys = await auth_db.get_user_api_keys(user["id"])
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    return [
-        {
-            "id": str(key.id),
-            "key_prefix": key.key_prefix,
-            "name": key.name,
-            "description": key.description,
-            "created_at": key.created_at,
-            "last_used_at": key.last_used_at,
-            "expires_at": key.expires_at
-        }
-        for key in api_keys
-    ]
+    try:
+        result = await app_state.client.list_api_keys()
+        return result
+    except Exception as e:
+        logger.error(f"API key listing failed: {e}")
+        if "admin mode" in str(e).lower():
+            raise HTTPException(status_code=403, detail=str(e))
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/api-keys/{key_id}")
@@ -438,20 +253,23 @@ async def revoke_api_key(key_id: str, req: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    auth_db = get_auth_db()
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Verify ownership (in production, check if key belongs to user)
-    await auth_db.revoke_api_key(UUID(key_id))
-    
-    # Log revocation
-    await auth_db.create_audit_log(
-        user_id=user["id"],
-        action="revoke_api_key",
-        resource_type="api_key",
-        resource_id=key_id
-    )
-    
-    return {"message": "API key revoked successfully"}
+    try:
+        success = await app_state.client.revoke_api_key(key_id)
+        if success:
+            return {"message": "API key revoked successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="API key not found")
+    except Exception as e:
+        logger.error(f"API key revocation failed: {e}")
+        if "admin mode" in str(e).lower():
+            raise HTTPException(status_code=403, detail=str(e))
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/change-password")
@@ -463,32 +281,26 @@ async def change_password(request: ChangePasswordRequest, req: Request):
     if not user:
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    auth_db = get_auth_db()
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Get full user record
-    user_record = await auth_db.get_user(user["id"])
-    if not user_record:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Verify old password
-    if not verify_password(request.old_password, user_record.password_hash):
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid old password"
+    try:
+        result = await app_state.client.change_password(
+            old_password=request.old_password,
+            new_password=request.new_password,
+            user_id=user["id"]
         )
-    
-    # Update password (would need to add this method to auth_db)
-    # For now, we'll update directly
-    user_record.password_hash = hash_password(request.new_password)
-    
-    # Log password change
-    await auth_db.create_audit_log(
-        user_id=user["id"],
-        action="change_password",
-        resource_type="auth"
-    )
-    
-    return {"message": "Password changed successfully"}
+        return result
+    except Exception as e:
+        logger.error(f"Password change failed: {e}")
+        if "invalid old password" in str(e).lower():
+            raise HTTPException(status_code=400, detail=str(e))
+        elif "admin mode" in str(e).lower():
+            raise HTTPException(status_code=403, detail=str(e))
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/roles")
@@ -499,12 +311,20 @@ async def list_roles(req: Request):
     
     Requires users:read permission
     """
-    auth_db = get_auth_db()
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
     
-    # Get all roles (would need to add this method)
-    from ..auth.models import DEFAULT_ROLES
-    
-    return DEFAULT_ROLES
+    try:
+        roles = await app_state.client.list_roles()
+        return roles
+    except Exception as e:
+        logger.error(f"Failed to list roles: {e}")
+        if "admin mode" in str(e).lower():
+            raise HTTPException(status_code=403, detail=str(e))
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/users")
@@ -515,6 +335,14 @@ async def list_users(req: Request, skip: int = 0, limit: int = 100):
     
     Requires users:read permission
     """
+    # Check auth mode - user management not available in basic mode
+    auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+    if auth_mode == "basic":
+        raise HTTPException(
+            status_code=403,
+            detail="User management requires admin mode. Set GLEITZEIT_AUTH_MODE=admin"
+        )
+    
     # This would need database method to list all users
     return {"message": "User listing not yet implemented"}
 
@@ -525,6 +353,8 @@ async def get_audit_logs(
     req: Request,
     user_id: Optional[str] = None,
     action: Optional[str] = None,
+    resource_type: Optional[str] = None,
+    since: Optional[datetime] = None,
     skip: int = 0,
     limit: int = 100
 ):
@@ -533,5 +363,250 @@ async def get_audit_logs(
     
     Requires system:read permission
     """
-    # This would need database method to query audit logs
-    return {"message": "Audit log retrieval not yet implemented"}
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        result = await app_state.client.get_audit_logs(
+            user_id=user_id,
+            action=action,
+            resource_type=resource_type,
+            since=since,
+            skip=skip,
+            limit=limit
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Failed to get audit logs: {e}")
+        if "admin mode" in str(e).lower():
+            raise HTTPException(status_code=403, detail=str(e))
+        else:
+            raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Missing CRUD Endpoints
+# ============================================================================
+
+class CreateUserRequest(BaseModel):
+    """Create user request"""
+    email: EmailStr
+    password: str
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    roles: Optional[List[str]] = None
+
+
+class UpdateUserRequest(BaseModel):
+    """Update user request"""
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_superuser: Optional[bool] = None
+
+
+class AssignRoleRequest(BaseModel):
+    """Assign role request"""
+    role: str
+
+
+@router.post("/users", response_model=dict)
+@require_permission(Permissions.USERS_CREATE)
+async def create_user_admin(request: CreateUserRequest, req: Request):
+    """
+    Create a new user (admin only)
+    
+    Requires users:create permission
+    """
+    # Check auth mode
+    auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+    if auth_mode == "basic":
+        raise HTTPException(
+            status_code=403,
+            detail="User management requires admin mode. Set GLEITZEIT_AUTH_MODE=admin"
+        )
+    
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        user = await app_state.client.create_user(
+            email=request.email,
+            password=request.password,
+            username=request.username,
+            full_name=request.full_name,
+            roles=request.roles
+        )
+        return user
+    except Exception as e:
+        logger.error(f"Failed to create user: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/users/{user_id}", response_model=dict)
+@require_permission(Permissions.USERS_READ)
+async def get_user_by_id(user_id: str, req: Request):
+    """
+    Get user by ID
+    
+    Requires users:read permission
+    """
+    # Check auth mode
+    auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+    if auth_mode == "basic":
+        raise HTTPException(
+            status_code=403,
+            detail="User management requires admin mode. Set GLEITZEIT_AUTH_MODE=admin"
+        )
+    
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        user = await app_state.client.get_user(user_id)
+        return user
+    except RuntimeError as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to get user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.put("/users/{user_id}", response_model=dict)
+@require_permission(Permissions.USERS_UPDATE)
+async def update_user_by_id(user_id: str, request: UpdateUserRequest, req: Request):
+    """
+    Update user by ID
+    
+    Requires users:update permission
+    """
+    # Check auth mode
+    auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+    if auth_mode == "basic":
+        raise HTTPException(
+            status_code=403,
+            detail="User management requires admin mode. Set GLEITZEIT_AUTH_MODE=admin"
+        )
+    
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        # Convert to dict and filter None values
+        updates = {k: v for k, v in request.dict().items() if v is not None}
+        user = await app_state.client.update_user(user_id, **updates)
+        return user
+    except RuntimeError as e:
+        if "not found" in str(e).lower():
+            raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Failed to update user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/users/{user_id}")
+@require_permission(Permissions.USERS_DELETE)
+async def delete_user_by_id(user_id: str, req: Request):
+    """
+    Delete user by ID
+    
+    Requires users:delete permission
+    """
+    # Check auth mode
+    auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+    if auth_mode == "basic":
+        raise HTTPException(
+            status_code=403,
+            detail="User management requires admin mode. Set GLEITZEIT_AUTH_MODE=admin"
+        )
+    
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        success = await app_state.client.delete_user(user_id)
+        if success:
+            return {"message": "User deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="User not found")
+    except Exception as e:
+        logger.error(f"Failed to delete user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/users/{user_id}/roles")
+@require_permission(Permissions.USERS_UPDATE)
+async def assign_user_role(user_id: str, request: AssignRoleRequest, req: Request):
+    """
+    Assign role to user
+    
+    Requires users:update permission
+    """
+    # Check auth mode
+    auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+    if auth_mode == "basic":
+        raise HTTPException(
+            status_code=403,
+            detail="User management requires admin mode. Set GLEITZEIT_AUTH_MODE=admin"
+        )
+    
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        success = await app_state.client.assign_user_role(user_id, request.role)
+        if success:
+            return {"message": f"Role '{request.role}' assigned to user successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="User or role not found")
+    except Exception as e:
+        logger.error(f"Failed to assign role to user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/users/{user_id}/roles/{role_name}")
+@require_permission(Permissions.USERS_UPDATE)
+async def remove_user_role(user_id: str, role_name: str, req: Request):
+    """
+    Remove role from user
+    
+    Requires users:update permission
+    """
+    # Check auth mode
+    auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+    if auth_mode == "basic":
+        raise HTTPException(
+            status_code=403,
+            detail="User management requires admin mode. Set GLEITZEIT_AUTH_MODE=admin"
+        )
+    
+    # Use GleitzeitClient (thin layer)
+    from ..api.main import app_state
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    try:
+        success = await app_state.client.remove_user_role(user_id, role_name)
+        if success:
+            return {"message": f"Role '{role_name}' removed from user successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="User or role not found")
+    except Exception as e:
+        logger.error(f"Failed to remove role from user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

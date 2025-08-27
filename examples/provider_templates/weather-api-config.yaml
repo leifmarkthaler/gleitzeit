@@ -1,0 +1,261 @@
+# Weather API Provider Configuration
+# Example configuration-based provider for weather services
+# Demonstrates parameter validation, response mapping, and service discovery
+
+provider:
+  id: weather
+  protocol: weather/v1  
+  type: http
+  base_url: ${WEATHER_API_URL:-https://api.openweathermap.org/data/2.5}
+  name: Weather API Provider
+  description: Weather data provider with automatic discovery and validation
+  version: 1.0.0
+
+# API Key authentication
+auth:
+  type: api_key
+  key: ${WEATHER_API_KEY}
+  header: X-API-Key
+
+# Service discovery for local weather services
+discovery:
+  enabled: false  # Disabled for external API
+  service_type: weather
+  host: localhost
+  port_range: [8080, 8090]
+
+# Weather API methods with comprehensive validation
+methods:
+  get_weather:
+    endpoint: /weather
+    method: GET
+    description: Get current weather for a city
+    params:
+      - name: city
+        type: string
+        required: true
+        min_length: 2
+        max_length: 100
+        description: City name
+      - name: country
+        type: string
+        description: Country code (optional)
+        max_length: 2
+      - name: units
+        type: string
+        default: metric
+        description: Temperature units (metric, imperial, kelvin)
+    headers:
+      Accept: application/json
+    # Simple field mapping
+    response_map:
+      city: name
+      country: sys.country
+      temperature: main.temp
+      feels_like: main.feels_like
+      humidity: main.humidity
+      pressure: main.pressure
+      description: weather[0].description
+      wind_speed: wind.speed
+      wind_direction: wind.deg
+      cloudiness: clouds.all
+      visibility: visibility
+
+  get_forecast:
+    endpoint: /forecast
+    method: GET
+    description: Get 5-day weather forecast
+    params:
+      - name: city
+        type: string
+        required: true
+        min_length: 2
+        description: City name
+      - name: country
+        type: string
+        description: Country code (optional)
+      - name: days
+        type: integer
+        default: 5
+        min: 1
+        max: 5
+        description: Number of days (max 5 for free API)
+      - name: units
+        type: string
+        default: metric
+        description: Temperature units
+    # Advanced response transformation
+    transform_response: |
+      # Process forecast data
+      forecast_list = []
+      city_name = response.get('city', {}).get('name', params.get('city', 'Unknown'))
+      
+      for item in response.get('list', [])[:params.get('days', 5) * 8]:  # 8 forecasts per day (3-hour intervals)
+        forecast_list.append({
+          'datetime': item.get('dt_txt'),
+          'temperature': item['main']['temp'],
+          'feels_like': item['main']['feels_like'],
+          'description': item['weather'][0]['description'],
+          'humidity': item['main']['humidity'],
+          'wind_speed': item.get('wind', {}).get('speed', 0),
+          'rain_chance': item.get('pop', 0) * 100  # Probability of precipitation
+        })
+      
+      return {
+        'city': city_name,
+        'country': response.get('city', {}).get('country'),
+        'forecast': forecast_list,
+        'total_forecasts': len(forecast_list),
+        'requested_days': params.get('days', 5),
+        'provider': 'weather-api'
+      }
+
+  get_air_quality:
+    endpoint: /air_pollution
+    method: GET
+    description: Get air quality data
+    params:
+      - name: lat
+        type: number
+        required: true
+        min: -90
+        max: 90
+        description: Latitude
+      - name: lon
+        type: number
+        required: true
+        min: -180
+        max: 180
+        description: Longitude
+    transform_response: |
+      # Process air quality data
+      if 'list' in response and response['list']:
+        aqi_data = response['list'][0]
+        main = aqi_data.get('main', {})
+        components = aqi_data.get('components', {})
+        
+        # AQI levels mapping
+        aqi_levels = {
+          1: 'Good',
+          2: 'Fair', 
+          3: 'Moderate',
+          4: 'Poor',
+          5: 'Very Poor'
+        }
+        
+        return {
+          'air_quality_index': main.get('aqi'),
+          'air_quality_level': aqi_levels.get(main.get('aqi', 0), 'Unknown'),
+          'coordinates': {
+            'latitude': params.get('lat'),
+            'longitude': params.get('lon')
+          },
+          'pollutants': {
+            'co': components.get('co'),      # Carbon monoxide
+            'no': components.get('no'),      # Nitric oxide
+            'no2': components.get('no2'),    # Nitrogen dioxide
+            'o3': components.get('o3'),      # Ozone
+            'so2': components.get('so2'),    # Sulfur dioxide
+            'pm2_5': components.get('pm2_5'), # PM2.5
+            'pm10': components.get('pm10'),   # PM10
+            'nh3': components.get('nh3')      # Ammonia
+          },
+          'timestamp': aqi_data.get('dt'),
+          'provider': 'weather-api'
+        }
+      else:
+        return {'error': 'No air quality data available', 'provider': 'weather-api'}
+
+  search_cities:
+    endpoint: /find
+    method: GET
+    description: Search for cities by name
+    params:
+      - name: query
+        type: string
+        required: true
+        min_length: 2
+        description: City name to search
+      - name: limit
+        type: integer
+        default: 10
+        min: 1
+        max: 50
+        description: Maximum number of results
+      - name: units
+        type: string
+        default: metric
+        description: Temperature units
+    transform_response: |
+      # Process city search results
+      cities = []
+      
+      for city in response.get('list', [])[:params.get('limit', 10)]:
+        cities.append({
+          'id': city.get('id'),
+          'name': city.get('name'),
+          'country': city.get('sys', {}).get('country'),
+          'coordinates': {
+            'latitude': city.get('coord', {}).get('lat'),
+            'longitude': city.get('coord', {}).get('lon')
+          },
+          'current_weather': {
+            'temperature': city.get('main', {}).get('temp'),
+            'description': city.get('weather', [{}])[0].get('description', '') if city.get('weather') else ''
+          }
+        })
+      
+      return {
+        'query': params.get('query'),
+        'cities': cities,
+        'count': len(cities),
+        'max_results': params.get('limit', 10),
+        'provider': 'weather-api'
+      }
+
+  get_weather_by_coords:
+    endpoint: /weather
+    method: GET
+    description: Get weather by coordinates
+    params:
+      - name: lat
+        type: number
+        required: true
+        min: -90
+        max: 90
+        description: Latitude
+      - name: lon
+        type: number
+        required: true
+        min: -180
+        max: 180
+        description: Longitude
+      - name: units
+        type: string
+        default: metric
+        description: Temperature units
+    transform_response: |
+      # Transform coordinate-based weather response
+      return {
+        'location': {
+          'latitude': params.get('lat'),
+          'longitude': params.get('lon'),
+          'city': response.get('name', 'Unknown'),
+          'country': response.get('sys', {}).get('country')
+        },
+        'weather': {
+          'temperature': response.get('main', {}).get('temp'),
+          'feels_like': response.get('main', {}).get('feels_like'),
+          'description': response.get('weather', [{}])[0].get('description', ''),
+          'humidity': response.get('main', {}).get('humidity'),
+          'pressure': response.get('main', {}).get('pressure')
+        },
+        'wind': {
+          'speed': response.get('wind', {}).get('speed', 0),
+          'direction': response.get('wind', {}).get('deg', 0)
+        },
+        'timestamp': response.get('dt'),
+        'sunrise': response.get('sys', {}).get('sunrise'),
+        'sunset': response.get('sys', {}).get('sunset'),
+        'provider': 'weather-api'
+      }
