@@ -223,7 +223,6 @@ Gleitzeit is a powerful, distributed workflow orchestration system designed for 
 ### ✅ Protocol Providers
 
 1. **Python Provider**
-   - Direct code execution
    - File-based scripts
    - Virtual environment support
    - Package management
