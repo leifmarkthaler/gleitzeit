@@ -144,18 +144,35 @@ class PersistenceFactory:
         try:
             logger.info(f"Attempting to connect to Redis at {redis_url}")
             
-            # Always use base adapter (no event emission from persistence layer)
-            # Events will be emitted by ExecutionEngine only
-            logger.info("Creating Redis adapter (centralized event architecture)")
-            adapter = UnifiedRedisAdapter(
-                redis_url=redis_url,
-                key_prefix=config.get("redis_key_prefix", "gleitzeit"),
-                max_connections=config.get("redis_max_connections", 50),
-                socket_timeout=config.get("redis_socket_timeout", 5),
-                socket_connect_timeout=config.get("redis_connect_timeout", 5),
-                retry_on_timeout=config.get("redis_retry_on_timeout", True),
-                health_check_interval=config.get("redis_health_check_interval", 30)
-            )
+            # Check if event-aware adapter is requested
+            use_event_aware = config.get("enable_distributed_events", False) or event_bus is not None
+            
+            if use_event_aware and event_bus:
+                # Use event-aware adapter for distributed event handling
+                logger.info("Creating Redis adapter with distributed event support (Redis pub/sub)")
+                from gleitzeit.persistence.unified_redis_events import UnifiedRedisEventsAdapter
+                adapter = UnifiedRedisEventsAdapter(
+                    redis_url=redis_url,
+                    event_bus=event_bus,
+                    key_prefix=config.get("redis_key_prefix", "gleitzeit"),
+                    max_connections=config.get("redis_max_connections", 50),
+                    socket_timeout=config.get("redis_socket_timeout", 5),
+                    socket_connect_timeout=config.get("redis_connect_timeout", 5),
+                    retry_on_timeout=config.get("redis_retry_on_timeout", True),
+                    health_check_interval=config.get("redis_health_check_interval", 30)
+                )
+            else:
+                # Use base adapter (centralized event architecture)
+                logger.info("Creating Redis adapter (centralized event architecture)")
+                adapter = UnifiedRedisAdapter(
+                    redis_url=redis_url,
+                    key_prefix=config.get("redis_key_prefix", "gleitzeit"),
+                    max_connections=config.get("redis_max_connections", 50),
+                    socket_timeout=config.get("redis_socket_timeout", 5),
+                    socket_connect_timeout=config.get("redis_connect_timeout", 5),
+                    retry_on_timeout=config.get("redis_retry_on_timeout", True),
+                    health_check_interval=config.get("redis_health_check_interval", 30)
+                )
             
             # Test connection
             await adapter.initialize()
@@ -289,10 +306,19 @@ class PersistenceFactory:
         event_bus: Optional[Any] = None
     ) -> UnifiedInMemoryAdapter:
         """Create in-memory adapter (always succeeds)"""
-        # Always use base adapter (no event emission from persistence layer)
-        # Events will be emitted by ExecutionEngine only
-        logger.info("Using in-memory persistence (centralized event architecture)")
-        adapter = UnifiedInMemoryAdapter()
+        # Check if event-aware adapter is requested
+        use_event_aware = config.get("enable_distributed_events", False) or event_bus is not None
+        
+        if use_event_aware and event_bus:
+            # Use event-aware adapter for local event handling
+            logger.info("Using in-memory persistence with event support")
+            from gleitzeit.persistence.unified_memory_events import UnifiedMemoryEventsAdapter
+            adapter = UnifiedMemoryEventsAdapter(event_bus=event_bus)
+        else:
+            # Use base adapter (centralized event architecture)
+            logger.info("Using in-memory persistence (centralized event architecture)")
+            adapter = UnifiedInMemoryAdapter()
+        
         await adapter.initialize()
         return adapter
     

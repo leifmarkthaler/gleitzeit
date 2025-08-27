@@ -142,6 +142,27 @@ class UnifiedPersistenceAdapter(ABC):
         """Save multiple tasks in a single operation"""
         pass
     
+    async def acquire_next_queued_task(self, check_dependencies: bool = True) -> Optional[Task]:
+        """
+        Atomically acquire the next queued task and mark it as EXECUTING.
+        
+        This method prevents race conditions by atomically checking and updating
+        task status in a single operation. Different backends implement this
+        differently:
+        - Redis: Uses Lua scripts or WATCH/MULTI/EXEC
+        - SQL: Uses SELECT FOR UPDATE or similar row locking
+        - Memory: Uses asyncio locks
+        
+        Args:
+            check_dependencies: Whether to check task dependencies
+            
+        Returns:
+            The acquired task with status already set to EXECUTING, or None
+        """
+        # Default implementation for backwards compatibility
+        # Backends should override this with atomic implementations
+        return None
+    
     @abstractmethod
     async def get_all_queued_tasks(self) -> List[Task]:
         """Get all tasks that should be in queues on startup"""

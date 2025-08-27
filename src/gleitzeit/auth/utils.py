@@ -99,7 +99,7 @@ def verify_password(password: str, hashed: str) -> bool:
 def create_jwt_token(
     user_data: Dict[str, Any],
     secret_key: str,
-    expires_in: Optional[timedelta] = None,
+    expires_delta: Optional[timedelta] = None,
     algorithm: str = JWT_ALGORITHM
 ) -> str:
     """
@@ -117,8 +117,8 @@ def create_jwt_token(
     payload = user_data.copy()
     
     # Add expiration
-    if expires_in:
-        expire = datetime.utcnow() + expires_in
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
         payload['exp'] = expire
     
     # Add issued at time

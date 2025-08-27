@@ -531,23 +531,38 @@ class ExecutionEngine:
         try:
             return await self._execute_task_skip_status_update(task)
         except Exception as e:
-            logger.error(f"Task {task.id} execution failed with unhandled exception: {e}")
+            logger.error(f"Task {task.id} execution failed with unhandled exception: {e}", exc_info=True)
             # Mark task as failed and clean up state
             try:
+                # Create a TaskError with full context
+                from gleitzeit.core.errors import TaskError, ErrorCode
+                task_error = TaskError(
+                    message=f"Unhandled exception during task execution: {str(e)}",
+                    code=ErrorCode.TASK_EXECUTION_FAILED,
+                    task_id=task.id,
+                    cause=e,
+                    data={
+                        "task_name": task.name,
+                        "protocol": task.protocol,
+                        "method": task.method,
+                        "unhandled": True
+                    }
+                )
+                
                 task.status = TaskStatus.FAILED
                 task.completed_at = datetime.utcnow()
-                task.error_message = str(e)
+                task.error_message = task_error.to_json_string()
                 if self.persistence:
                     await self.persistence.save_task(task)
                     
-                # Create failed task result
+                # Create failed task result with enriched error
                 from gleitzeit.core.models import TaskResult
                 failed_result = TaskResult(
                     task_id=task.id,
                     workflow_id=task.workflow_id,
                     status=TaskStatus.FAILED,
                     result=None,
-                    error=str(e),
+                    error=task_error.to_json_string(),
                     started_at=task.started_at,
                     completed_at=datetime.utcnow(),
                     metadata={"execution_engine": True, "unhandled_exception": True}
@@ -555,13 +570,13 @@ class ExecutionEngine:
                 if self.persistence:
                     await self.persistence.save_task_result(failed_result)
                     
-                # Emit task failed event
+                # Emit task failed event with full context
                 if hasattr(self, 'event_bus') and self.event_bus:
                     from ..core.events import create_task_failed_event
                     failed_event = create_task_failed_event(
                         task_id=task.id,
                         task_name=task.name,
-                        error=str(e),
+                        error=task_error.to_json_string(),
                         workflow_id=task.workflow_id,
                         source="execution_engine"
                     )
@@ -831,21 +846,42 @@ class ExecutionEngine:
                         cause=e
                     )
                 
-                error_message = str(structured_error)
+                # Get rich error context for logging and storage
+                error_context = structured_error.to_context_dict() if hasattr(structured_error, 'to_context_dict') else {
+                    "message": str(structured_error),
+                    "type": type(structured_error).__name__
+                }
                 
-                # Log task failure
+                # Store error as JSON string with full context
+                error_message = structured_error.to_json_string() if hasattr(structured_error, 'to_json_string') else str(structured_error)
+                
+                # Log task failure with full context
                 log_collector = get_log_collector()
                 if log_collector:
+                    # Include full error context in metadata
+                    log_metadata = {
+                        "error_type": type(structured_error).__name__,
+                        "is_retryable": is_retryable_error(structured_error),
+                        "error_code": error_context.get("code"),
+                        "error_code_name": error_context.get("code_name"),
+                        "error_data": error_context.get("data"),
+                        "task_name": task.name,
+                        "task_protocol": task.protocol,
+                        "task_method": task.method,
+                        "attempt_count": task.attempt_count
+                    }
+                    
+                    # Add cause if present
+                    if error_context.get("cause"):
+                        log_metadata["cause"] = error_context["cause"]
+                    
                     await log_collector.log(
                         LogLevel.ERROR,
-                        f"Task failed: {task.name} - {error_message}",
+                        f"Task failed: {task.name} - {error_context.get('message', str(structured_error))}",
                         LogSource.ENGINE,
                         task_id=task.id,
                         workflow_id=task.workflow_id,
-                        metadata={
-                            "error_type": type(structured_error).__name__,
-                            "is_retryable": is_retryable_error(structured_error)
-                        }
+                        metadata=log_metadata
                     )
                 
                 # Update task status to failed FIRST

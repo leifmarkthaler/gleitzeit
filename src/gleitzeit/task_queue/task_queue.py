@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 
 from gleitzeit.core.models import Task, Workflow, TaskStatus, Priority, WorkflowStatus
 from gleitzeit.persistence.base import PersistenceBackend, InMemoryBackend
+from gleitzeit.core.logging_mixin import LoggingMixin
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,7 @@ class QueuedTask:
         return self.queued_at < other.queued_at
 
 
-class TaskQueue:
+class TaskQueue(LoggingMixin):
     """
     Priority-based task queue using persistence backend
     
@@ -97,7 +98,12 @@ class TaskQueue:
             # Check if task already exists and is queued
             existing_task = await self.persistence.get_task(task.id)
             if existing_task and existing_task.status == TaskStatus.QUEUED:
-                logger.warning(f"Task {task.id} already queued, skipping")
+                await self.log_warning(
+                    "enqueue_duplicate",
+                    f"Task already queued, skipping",
+                    task_id=task.id,
+                    workflow_id=task.workflow_id
+                )
                 return
             
             # Check if dependencies are satisfied before enqueueing
@@ -106,7 +112,13 @@ class TaskQueue:
                     # Dependencies not satisfied, save as PENDING
                     task.status = TaskStatus.PENDING
                     await self.persistence.save_task(task)
-                    logger.info(f"Task {task.id} has unsatisfied dependencies {task.dependencies}, saved as pending")
+                    await self.log_operation(
+                        "enqueue_pending",
+                        task_id=task.id,
+                        workflow_id=task.workflow_id,
+                        dependencies=task.dependencies,
+                        status="pending"
+                    )
                     return
             
             # Save to persistence with QUEUED status
@@ -114,12 +126,18 @@ class TaskQueue:
             await self.persistence.save_task(task)
             
             self.total_enqueued += 1
-            logger.debug(f"Enqueued task {task.id} with priority {task.priority} to persistence")
+            await self.log_operation(
+                "enqueue_success",
+                task_id=task.id,
+                workflow_id=task.workflow_id,
+                priority=task.priority.value if task.priority else "normal",
+                total_enqueued=self.total_enqueued
+            )
     
     
     async def dequeue(self, check_dependencies: bool = True) -> Optional[Task]:
         """
-        Get the next available task from persistence
+        Get the next available task from persistence using atomic acquisition.
         
         Args:
             check_dependencies: Whether to check task dependencies
@@ -127,6 +145,15 @@ class TaskQueue:
         Returns:
             Next available task or None if no tasks ready
         """
+        # Try to use atomic acquisition if available
+        if hasattr(self.persistence, 'acquire_next_queued_task'):
+            task = await self.persistence.acquire_next_queued_task(check_dependencies)
+            if task:
+                self.total_dequeued += 1
+                logger.debug(f"Atomically acquired task {task.id} from persistence")
+            return task
+        
+        # Fallback to non-atomic implementation for backwards compatibility
         async with self._lock:
             # Get all queued tasks from persistence
             result = await self.persistence.list_tasks(status=TaskStatus.QUEUED)

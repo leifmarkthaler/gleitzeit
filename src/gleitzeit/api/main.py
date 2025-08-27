@@ -34,6 +34,8 @@ from gleitzeit.core.logs import LogLevel, LogSource
 # Import GleitzeitClient at runtime to avoid circular imports
 from gleitzeit.common.shutdown import unified_shutdown
 
+# Authentication will be imported conditionally when needed
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -116,6 +118,8 @@ class SystemStatus(BaseModel):
     persistence_backend: str
     task_statistics: Dict[str, int]
     uptime_seconds: float
+    event_errors_enabled: bool = Field(False, description="Whether event errors are being persisted")
+    event_error_count: int = Field(0, description="Number of event errors in current session")
 
 
 # Global application state
@@ -153,6 +157,53 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# Add structured error handlers
+from gleitzeit.api.error_responses import APIErrorHandler
+from gleitzeit.core.errors import GleitzeitError
+
+@app.exception_handler(GleitzeitError)
+async def gleitzeit_error_handler(request, exc):
+    return await APIErrorHandler.handle_gleitzeit_error(request, exc)
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request, exc):
+    return await APIErrorHandler.handle_http_exception(request, exc)
+
+@app.exception_handler(Exception)
+async def generic_exception_handler(request, exc):
+    return await APIErrorHandler.handle_generic_exception(request, exc)
+
+# Add event errors router for debugging
+from gleitzeit.api.routes.event_errors import router as event_errors_router
+app.include_router(event_errors_router)
+
+# Add authentication middleware if enabled
+import os
+from gleitzeit.core.dependency_check import check_auth_dependencies
+
+if os.getenv("GLEITZEIT_AUTH_ENABLED", "false").lower() == "true":
+    # Check dependencies first
+    auth_deps_ok, auth_error_msg = check_auth_dependencies()
+    if not auth_deps_ok:
+        logger.error(f"Authentication dependencies check failed: {auth_error_msg}")
+        raise ImportError(auth_error_msg)
+    
+    try:
+        from gleitzeit.auth.middleware import AuthMiddleware
+        from gleitzeit.auth.permissions import require_permission, require_role, Permissions
+        app.add_middleware(AuthMiddleware)
+        logger.info("Authentication middleware enabled")
+        
+        # Include authentication routes
+        from gleitzeit.api.auth import router as auth_router
+        app.include_router(auth_router)
+        logger.info("Authentication routes added")
+    except ImportError as e:
+        logger.error(f"Authentication module import failed: {e}")
+        raise
+else:
+    logger.info("Authentication disabled - running without authentication")
+
 
 async def setup_system():
     """Initialize the Gleitzeit system using GleitzeitClient"""
@@ -188,6 +239,15 @@ async def setup_system():
             elif hasattr(persistence, 'redis'):
                 # Direct Redis adapter
                 redis_adapter = persistence
+            
+            # Initialize authentication database if auth is enabled
+            if os.getenv("GLEITZEIT_AUTH_ENABLED", "false").lower() == "true":
+                try:
+                    from gleitzeit.auth.database import init_auth_db
+                    init_auth_db(persistence, redis_adapter)
+                    logger.info("Authentication database initialized")
+                except ImportError as e:
+                    logger.warning(f"Authentication database initialization failed: {e}")
             
             # Create and start log collector
             app_state.log_collector = LogCollector(
@@ -248,7 +308,13 @@ async def root():
 async def get_status():
     """Get system status"""
     if not app_state.client:
-        raise HTTPException(status_code=503, detail="System not initialized")
+        from gleitzeit.api.error_responses import raise_api_error
+        from gleitzeit.core.errors import ErrorCode
+        raise_api_error(
+            ErrorCode.SYSTEM_NOT_INITIALIZED,
+            "System not initialized. Please wait for startup to complete.",
+            data={"suggestion": "The system is still starting up. Try again in a few seconds."}
+        )
     
     try:
         # Get available statistics from client
@@ -290,23 +356,51 @@ async def get_status():
                 if persistence:
                     persistence_backend = persistence.__class__.__name__
         
+        # Check event error persistence status
+        event_errors_enabled = False
+        event_error_count = 0
+        try:
+            from gleitzeit.core.event_error_persistence import get_event_error_persistence
+            error_persistence = get_event_error_persistence()
+            if error_persistence:
+                event_errors_enabled = True
+                # Get recent error count
+                recent_errors = await error_persistence.get_recent_errors(limit=1000)
+                event_error_count = len(recent_errors)
+        except Exception as e:
+            logger.debug(f"Could not get event error stats: {e}")
+        
         return SystemStatus(
             status="running",
             providers=providers,
             persistence_backend=persistence_backend, 
             task_statistics=task_stats,
-            uptime_seconds=uptime
+            uptime_seconds=uptime,
+            event_errors_enabled=event_errors_enabled,
+            event_error_count=event_error_count
         )
     except Exception as e:
         logger.error(f"Failed to get status: {e}")
-        raise HTTPException(status_code=503, detail="Failed to get status")
+        from gleitzeit.core.errors import SystemError, ErrorCode
+        raise SystemError(
+            message="Failed to retrieve system status",
+            code=ErrorCode.INTERNAL_ERROR,
+            cause=e,
+            data={"error_type": type(e).__name__}
+        )
 
 
 @app.get("/resources")
 async def get_resources_status():
     """Get resource manager and hub status"""
     if not app_state.client:
-        raise HTTPException(status_code=503, detail="System not initialized")
+        from gleitzeit.api.error_responses import raise_api_error
+        from gleitzeit.core.errors import ErrorCode
+        raise_api_error(
+            ErrorCode.SYSTEM_NOT_INITIALIZED,
+            "System not initialized. Please wait for startup to complete.",
+            data={"suggestion": "The system is still starting up. Try again in a few seconds."}
+        )
     
     try:
         # Try to get resource information from client if available
@@ -475,8 +569,26 @@ async def submit_workflow(workflow: WorkflowRequest):
         return response
         
     except Exception as e:
-        logger.error(f"Workflow submission failed: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Workflow submission failed: {e}", exc_info=True)
+        from gleitzeit.core.errors import WorkflowError, ErrorCode
+        
+        # Provide more specific error if possible
+        error_msg = str(e)
+        if "validation" in error_msg.lower():
+            raise WorkflowError(
+                message=f"Workflow validation failed: {error_msg}",
+                code=ErrorCode.WORKFLOW_VALIDATION_FAILED,
+                workflow_id=workflow_id,
+                cause=e,
+                data={"tasks_count": len(workflow.tasks) if workflow else 0}
+            )
+        else:
+            raise WorkflowError(
+                message=f"Failed to submit workflow: {error_msg}",
+                code=ErrorCode.WORKFLOW_EXECUTION_FAILED,
+                workflow_id=workflow_id,
+                cause=e
+            )
 
 
 

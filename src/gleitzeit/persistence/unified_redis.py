@@ -841,6 +841,132 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
         except Exception as e:
             logger.error(f"Failed to save tasks batch: {e}")
     
+    async def acquire_next_queued_task(self, check_dependencies: bool = True) -> Optional[Task]:
+        """
+        Atomically acquire the next queued task using Redis Lua script.
+        
+        This prevents race conditions by atomically:
+        1. Finding the highest priority QUEUED task
+        2. Checking its dependencies if needed
+        3. Updating its status to EXECUTING
+        4. Returning the task
+        
+        All in a single atomic operation.
+        """
+        if not self.redis:
+            return None
+            
+        # Lua script for atomic task acquisition
+        lua_script = """
+        local key_prefix = ARGV[1]
+        local now_iso = ARGV[2]
+        local check_deps = ARGV[3] == "true"
+        
+        -- Get all QUEUED task IDs
+        local queued_tasks = redis.call('SMEMBERS', key_prefix .. ':tasks:status:queued')
+        if #queued_tasks == 0 then
+            return nil
+        end
+        
+        -- Load and sort tasks by priority and creation time
+        local tasks = {}
+        for _, task_id in ipairs(queued_tasks) do
+            local task_key = key_prefix .. ':task:' .. task_id
+            local task_data = redis.call('HGET', task_key, 'data')
+            if task_data then
+                local task = cjson.decode(task_data)
+                -- Priority order: urgent=0, high=1, normal=2, low=3
+                local priority_val = 2  -- default to normal
+                if task.priority == 'urgent' then priority_val = 0
+                elseif task.priority == 'high' then priority_val = 1
+                elseif task.priority == 'normal' then priority_val = 2
+                elseif task.priority == 'low' then priority_val = 3
+                end
+                table.insert(tasks, {
+                    id = task_id,
+                    priority = priority_val,
+                    created_at = task.created_at or now_iso,
+                    data = task_data,
+                    task = task
+                })
+            end
+        end
+        
+        -- Sort by priority then creation time
+        table.sort(tasks, function(a, b)
+            if a.priority ~= b.priority then
+                return a.priority < b.priority
+            end
+            return a.created_at < b.created_at
+        end)
+        
+        -- Find first task with satisfied dependencies
+        for _, task_entry in ipairs(tasks) do
+            local task = task_entry.task
+            local can_execute = true
+            
+            -- Check dependencies if needed
+            if check_deps and task.dependencies and #task.dependencies > 0 then
+                for _, dep_id in ipairs(task.dependencies) do
+                    local dep_key = key_prefix .. ':task:' .. dep_id
+                    local dep_data = redis.call('HGET', dep_key, 'data')
+                    if dep_data then
+                        local dep_task = cjson.decode(dep_data)
+                        if dep_task.status ~= 'completed' then
+                            can_execute = false
+                            break
+                        end
+                    else
+                        -- Dependency not found, can't execute
+                        can_execute = false
+                        break
+                    end
+                end
+            end
+            
+            if can_execute then
+                -- Atomically update task status to EXECUTING
+                task.status = 'executing'
+                task.started_at = now_iso
+                
+                -- Save updated task
+                local task_key = key_prefix .. ':task:' .. task.id
+                redis.call('HSET', task_key, 'data', cjson.encode(task))
+                
+                -- Update status indices
+                redis.call('SREM', key_prefix .. ':tasks:status:queued', task.id)
+                redis.call('SADD', key_prefix .. ':tasks:status:executing', task.id)
+                
+                -- Return the task data
+                return cjson.encode(task)
+            end
+        end
+        
+        return nil
+        """
+        
+        try:
+            # Execute Lua script
+            result = await self.redis.eval(
+                lua_script,
+                0,  # no keys, only args
+                self.key_prefix,
+                datetime.utcnow().isoformat(),
+                "true" if check_dependencies else "false"
+            )
+            
+            if result:
+                # Parse and return the acquired task
+                task_data = json.loads(result)
+                return Task(**task_data)
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Failed to acquire queued task atomically: {e}")
+            # Fall back to non-atomic implementation if Lua fails
+            return None
+    
     async def get_all_queued_tasks(self) -> List[Task]:
         """Get all tasks that should be in queues on startup"""
         if not self._initialized:

@@ -14,7 +14,7 @@ from pathlib import Path
 from sqlalchemy import (
     create_engine, Column, String, Integer, Float, DateTime, 
     Boolean, Text, Index, ForeignKey, and_, or_, select, delete,
-    func, text
+    func, text, case
 )
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
@@ -1174,6 +1174,80 @@ class UnifiedSQLAlchemyAdapter(UnifiedPersistenceAdapter):
                 
         except Exception as e:
             logger.error(f"Failed to save tasks batch: {e}")
+    
+    async def acquire_next_queued_task(self, check_dependencies: bool = True) -> Optional[Task]:
+        """
+        Atomically acquire the next queued task using SELECT FOR UPDATE.
+        
+        This prevents race conditions by using database row-level locking.
+        """
+        async with self._get_session() as session:
+            try:
+                # Start a transaction
+                async with session.begin():
+                    # Priority mapping
+                    priority_order = case(
+                        (DBTask.priority == 'urgent', 0),
+                        (DBTask.priority == 'high', 1),
+                        (DBTask.priority == 'normal', 2),
+                        (DBTask.priority == 'low', 3),
+                        else_=2
+                    )
+                    
+                    # Select QUEUED tasks ordered by priority and creation time
+                    # Use FOR UPDATE to lock the rows
+                    query = (
+                        select(DBTask)
+                        .where(DBTask.status == 'queued')
+                        .order_by(priority_order, DBTask.created_at)
+                        .with_for_update(skip_locked=True)  # Skip locked rows to avoid blocking
+                        .limit(10)  # Check first 10 tasks for dependencies
+                    )
+                    
+                    result = await session.execute(query)
+                    db_tasks = result.scalars().all()
+                    
+                    if not db_tasks:
+                        return None
+                    
+                    # Find first task with satisfied dependencies
+                    for db_task in db_tasks:
+                        task = self._db_task_to_model(db_task)
+                        
+                        # Check dependencies if needed
+                        if check_dependencies and task.dependencies:
+                            deps_satisfied = True
+                            for dep_id in task.dependencies:
+                                dep_query = select(DBTask).where(DBTask.id == dep_id)
+                                dep_result = await session.execute(dep_query)
+                                dep_task = dep_result.scalar_one_or_none()
+                                
+                                if not dep_task or dep_task.status != 'completed':
+                                    deps_satisfied = False
+                                    break
+                            
+                            if not deps_satisfied:
+                                continue
+                        
+                        # Found a task we can execute - update it atomically
+                        db_task.status = 'executing'
+                        db_task.started_at = datetime.utcnow()
+                        
+                        # Commit happens automatically at end of transaction block
+                        await session.flush()
+                        
+                        # Update the task object
+                        task.status = TaskStatus.EXECUTING
+                        task.started_at = db_task.started_at
+                        
+                        return task
+                    
+                    # No tasks with satisfied dependencies
+                    return None
+                    
+            except Exception as e:
+                logger.error(f"Failed to acquire queued task atomically: {e}")
+                return None
     
     async def get_all_queued_tasks(self) -> List[Task]:
         """Get all tasks that should be in queues on startup"""

@@ -8,6 +8,8 @@ including JSON-RPC 2.0 compliant error codes and domain-specific exceptions.
 from enum import IntEnum
 from typing import Optional, Dict, Any, Union
 from dataclasses import dataclass
+import json
+import traceback
 
 
 class ErrorCode(IntEnum):
@@ -154,6 +156,54 @@ class GleitzeitError(Exception):
         if self.cause:
             return f"[{self.code.name}] {self.message} (caused by: {self.cause})"
         return f"[{self.code.name}] {self.message}"
+    
+    def to_context_dict(self) -> Dict[str, Any]:
+        """
+        Get comprehensive error context for logging and debugging.
+        
+        Returns a dictionary with:
+        - Error code and message
+        - Full traceback
+        - Cause information
+        - Additional data
+        """
+        context = {
+            "code": self.code.value,
+            "code_name": self.code.name,
+            "message": self.message,
+            "type": type(self).__name__,
+            "data": self.data
+        }
+        
+        # Add traceback if available
+        tb = traceback.format_exc()
+        if tb and tb != "NoneType: None\n":
+            context["traceback"] = tb
+            
+        # Add cause information
+        if self.cause:
+            context["cause"] = {
+                "message": str(self.cause),
+                "type": type(self.cause).__name__
+            }
+            # If cause has its own traceback, include it
+            if hasattr(self.cause, '__traceback__'):
+                cause_tb = ''.join(traceback.format_tb(self.cause.__traceback__))
+                if cause_tb:
+                    context["cause"]["traceback"] = cause_tb
+                    
+        return context
+    
+    def to_json_string(self) -> str:
+        """
+        Get error context as a JSON string for storage.
+        Handles non-serializable objects gracefully.
+        """
+        try:
+            return json.dumps(self.to_context_dict(), indent=2, default=str)
+        except Exception:
+            # Fallback to simple string if serialization fails
+            return str(self)
 
 
 # System Errors

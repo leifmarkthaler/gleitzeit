@@ -332,12 +332,32 @@ class GleitzeitClient:
         from gleitzeit.events.task_handlers import TaskCompletedHandler
         from gleitzeit.events.workflow_handlers import WorkflowCompletedHandler
         from gleitzeit.core.events import EventType
+        from gleitzeit.core.event_error_persistence import EventErrorPersistence
         
-        event_bus = EventBus()
+        # Create event bus with error persistence if available
+        event_error_persistence = None
+        if factory_kwargs.get('config', {}).get('persist_event_errors', True):
+            # Will use the same persistence adapter once created
+            event_error_persistence = EventErrorPersistence()
+        
+        event_bus = EventBus(
+            isolate_errors=True,
+            track_errors=True,
+            error_persistence=event_error_persistence
+        )
         
         # Create persistence adapter WITH event_bus for event-driven support
         factory_kwargs['event_bus'] = event_bus
         self._persistence_adapter = await PersistenceFactory.create(**factory_kwargs)
+        
+        # Initialize event error persistence with the adapter
+        if event_error_persistence:
+            event_error_persistence.persistence = self._persistence_adapter
+            await event_error_persistence.initialize()
+            
+            # Also set it globally for access
+            from gleitzeit.core.event_error_persistence import set_event_error_persistence
+            set_event_error_persistence(event_error_persistence)
         
         # Setup execution components with persistence and event bus
         # IMPORTANT: All components share the SAME persistence adapter instance

@@ -1083,6 +1083,29 @@ def serve(host: str, port: int, reload: bool, workers: int, headless: bool, ui_p
 
 async def _async_serve(host: str, port: int, reload: bool, workers: int, headless: bool, ui_port: int, ui_host: str):
     """Async function to run both API and UI servers"""
+    # Check dependencies
+    from gleitzeit.core.dependency_check import verify_and_report_dependencies
+    
+    features_to_check = []
+    
+    # Check if auth is enabled
+    if os.getenv("GLEITZEIT_AUTH_ENABLED", "false").lower() == "true":
+        features_to_check.append('auth')
+    
+    # Check if Redis is configured
+    persistence_type = os.getenv("GLEITZEIT_PERSISTENCE_TYPE", "memory").lower()
+    if persistence_type == "redis":
+        features_to_check.append('redis')
+    
+    # Check UI dependencies if not headless
+    if not headless:
+        features_to_check.append('ui')
+    
+    if features_to_check:
+        if not verify_and_report_dependencies(features_to_check):
+            click.echo("\n❌ Dependency check failed. Please install missing packages.")
+            sys.exit(1)
+    
     try:
         import uvicorn
     except ImportError:
