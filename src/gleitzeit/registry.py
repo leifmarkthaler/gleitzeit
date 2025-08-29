@@ -421,6 +421,22 @@ class ProtocolProviderRegistry:
             if provider_id in self.providers:
                 self.providers[provider_id].status = ProviderStatus.UNHEALTHY
     
+    def list_protocols(self) -> List[str]:
+        """List all registered protocol IDs."""
+        return list(self.protocol_providers.keys())
+    
+    def get_provider(self, protocol_id: str) -> Optional[Any]:
+        """Get a provider instance for a protocol."""
+        provider_ids = self.protocol_providers.get(protocol_id, set())
+        if provider_ids:
+            # Return the first available healthy provider
+            for provider_id in provider_ids:
+                if provider_id in self.provider_instances:
+                    provider_info = self.providers.get(provider_id)
+                    if provider_info and provider_info.is_healthy:
+                        return self.provider_instances[provider_id]
+        return None
+    
     async def list_providers(self) -> Dict[str, Dict[str, Any]]:
         """List all registered providers with their status and metrics"""
         result = {}

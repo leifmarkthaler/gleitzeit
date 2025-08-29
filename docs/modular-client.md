@@ -280,18 +280,17 @@ async def switch_modes():
 
 ## Migration Guide
 
-### From Legacy Client
+### Migration Complete
 
-The new modular client maintains backward compatibility:
+The modular client is now the standard implementation:
 
 ```python
-# Old code continues to work
+# Standard way to use Gleitzeit
 from gleitzeit import GleitzeitClient
 
-client = GleitzeitClient()  # Works with new modular client
+client = GleitzeitClient()  # Uses the modular architecture
 
-# To use legacy client explicitly (deprecated)
-client = GleitzeitClient(use_legacy=True)
+# Legacy mode has been removed - all clients use the modular design
 ```
 
 ### Extending the Client
@@ -455,17 +454,19 @@ All mixin methods are available on the client instance. See individual mixin doc
 6. **Monitor queue health** in production environments
 7. **Enable authentication** in production deployments
 
-## Comparison with Legacy Client
+## Architecture Benefits
 
-| Aspect | Legacy Client | Modular Client |
-|--------|--------------|----------------|
-| File Size | 3,712 lines | ~300 lines per module |
-| Organization | Monolithic | Mixin-based |
-| Mode Handling | Duplicate methods | Adapter pattern |
-| Testing | Difficult | Easy per-component |
-| Extension | Modify core | Add mixins |
-| Maintenance | Hard | Easy |
-| Performance | Same | Better (pooling) |
+The modular client architecture provides:
+
+| Aspect | Benefit |
+|--------|---------|
+| File Size | ~300 lines per module (maintainable) |
+| Organization | Clean mixin-based design |
+| Mode Handling | Adapter pattern for flexibility |
+| Testing | Easy per-component testing |
+| Extension | Add mixins without modifying core |
+| Maintenance | Simple and focused modules |
+| Performance | Better with connection pooling |
 
 ## Future Enhancements
 

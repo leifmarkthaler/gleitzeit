@@ -57,6 +57,10 @@ class TaskQueue(LoggingMixin):
     """
     
     def __init__(self, name: str = "default", persistence: Optional[PersistenceBackend] = None, event_bus: Optional[Any] = None):
+        # Initialize LoggingMixin without arguments
+        super().__init__()
+        self._component_name = f"TaskQueue.{name}"
+        
         self.name = name
         self.persistence = persistence or InMemoryBackend()
         self.event_bus = event_bus
@@ -130,7 +134,7 @@ class TaskQueue(LoggingMixin):
                 "enqueue_success",
                 task_id=task.id,
                 workflow_id=task.workflow_id,
-                priority=task.priority.value if task.priority else "normal",
+                priority=task.priority if isinstance(task.priority, str) else (task.priority.value if task.priority else "normal"),
                 total_enqueued=self.total_enqueued
             )
     

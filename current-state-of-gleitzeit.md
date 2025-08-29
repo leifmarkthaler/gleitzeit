@@ -170,6 +170,15 @@ Core GleitzeitClient (business logic)
 - `GET /workflows/{id}/results` - Workflow results
 - `GET /workflows/{id}/tasks` - List workflow tasks
 
+#### Workflow Replay Endpoints ✅ NEW
+- `POST /workflows/{id}/replay` - Replay workflow with options
+- `POST /workflows/{id}/continue` - Continue incomplete workflow
+- `POST /workflows/{id}/debug` - Debug workflow with breakpoints
+- `POST /workflows/{id}/template` - Use workflow as template
+- `GET /workflows/{id}/restore` - Restore workflow state
+- `GET /workflows/replayable` - List replayable workflows
+- `GET /workflows/{id}/replay-history` - Get replay history
+
 #### Task Endpoints
 - `POST /tasks` - Submit task
 - `GET /tasks` - List tasks
@@ -426,6 +435,29 @@ docker-compose up -d
 - Maintained full backward compatibility
 - Added comprehensive documentation in docs/modular-client.md
 
+#### 6. **Auto-Discovery System** ✅ NEW
+- Replaced hardcoded provider registration with dynamic discovery
+- Integrated existing hub infrastructure (OllamaHub, MCPHub, ResourceManager)
+- Added service discovery for protocols and providers
+- Environment-agnostic operation (development, production, Kubernetes)
+- Automatic adaptation to available resources
+
+#### 7. **Workflow Replay System** ✅ NEW
+- Complete workflow replay functionality with 5 modes:
+  - **Re-execute**: Run workflow again from scratch
+  - **Restore**: Restore previous execution state
+  - **Template**: Use workflow as template with modifications
+  - **Continue**: Resume from failed/incomplete tasks
+  - **Debug**: Run with breakpoints for debugging
+- Full authentication and authorization integration
+- Event-sourcing based replay with complete state restoration
+
+#### 8. **Enhanced Security Implementation** ✅ NEW
+- Secured all API endpoints with authentication decorators
+- Added ownership-based access control for events and logs
+- Enhanced basic authentication with comprehensive permissions
+- Audit logging for all security-sensitive operations
+
 ### Core Version 0.0.6 Features
 1. **Comprehensive Logging System**
    - Centralized log collection
@@ -454,6 +486,24 @@ docker-compose up -d
    - Workflow dependency visualization
    - Critical path analysis
    - Export/Clone functionality
+
+5. **Modular Client Architecture** ✅ NEW
+   - Unified GleitzeitClient interface for all components
+   - Mixin-based functional separation (workflows, tasks, queues, auth, system)
+   - Adapter pattern for API/native mode switching
+   - Full backward compatibility maintained
+
+6. **Auto-Discovery System** ✅ NEW
+   - Dynamic provider registration based on available services
+   - Hub-based resource management (OllamaHub, MCPHub, ResourceManager)
+   - Service discovery with port scanning, DNS, environment variables
+   - Zero-configuration deployment capabilities
+
+7. **Workflow Replay System** ✅ NEW
+   - Complete workflow replayability with 5 execution modes
+   - Event-sourcing architecture for state reconstruction
+   - Authentication-integrated replay operations
+   - Template system for workflow reuse and customization
 
 ## 📊 Performance Characteristics
 
@@ -486,12 +536,15 @@ docker-compose up -d
 - Logging system with global queries
 - Simplified provider system
 - Basic authentication mode
-- Modular client architecture
+- Modular client architecture ✅ NEW
+- Auto-discovery system ✅ NEW
+- Workflow replay functionality ✅ NEW
+- Enhanced security and authentication ✅ NEW
 
 ### Beta Features
 - Admin authentication mode (multi-user)
-- MCP Hub provider
-- Service discovery system
+- MCP Hub provider with auto-discovery
+- Advanced service discovery (DNS, Kubernetes)
 - Configuration-based providers
 
 ### Planned Features
@@ -655,23 +708,27 @@ src/gleitzeit/
 - **Web UI**: ✅ Stable
 - **Redis Backend**: ✅ Stable
 - **SQL Backend**: ✅ Stable
-- **Authentication**: 🚧 Beta (opt-in)
+- **Authentication**: ✅ Stable (enhanced security)
 - **Logging System**: ✅ Stable
+- **Modular Client**: ✅ Stable (production ready)
+- **Auto-Discovery**: ✅ Stable (dynamic provider registration)
+- **Replay System**: ✅ Stable (full workflow replay capabilities)
+- **Security**: ✅ Enhanced (comprehensive endpoint protection)
 
 ### Known Limitations
 1. No built-in workflow versioning
-2. Limited to single-region deployment
+2. Limited to single-region deployment  
 3. No automatic failover
-4. Template system not yet implemented
+4. ~~Template system not yet implemented~~ ✅ RESOLVED (Template replay mode)
 5. Scheduling requires external trigger
 
 ## 🔮 Future Roadmap
 
-### Near Term
-- Complete authentication integration
-- Template management system
-- Workflow scheduling
-- Prometheus metrics
+### Near Term  
+- ~~Complete authentication integration~~ ✅ COMPLETED
+- ~~Template management system~~ ✅ COMPLETED (Template replay mode)
+- Workflow scheduling (cron-based)
+- Prometheus metrics integration
 
 ### Medium Term
 - Kubernetes operator
@@ -707,13 +764,17 @@ src/gleitzeit/
 
 ## Summary
 
-Gleitzeit v0.0.6 is a workflow orchestration system that includes:
+Gleitzeit v0.0.6 is a comprehensive workflow orchestration system that includes:
 - **Architecture**: Thin-layer API design with clear separation of concerns
-- **Provider System**: Simplified development with built-in enterprise features
-- **Authentication**: Dual-mode system with data isolation
+- **Provider System**: Simplified development with built-in enterprise features and auto-discovery
+- **Authentication**: Enhanced dual-mode system with comprehensive security
+- **Client Architecture**: Fully modular design using mixins and adapters
+- **Auto-Discovery**: Dynamic provider registration and service discovery
+- **Replay System**: Complete workflow replay capabilities with 5 execution modes
 - **Scalability**: Redis caching and defined path to horizontal scaling
 - **Logging**: Comprehensive system with streaming and global queries
-- **API**: RESTful interface with 100+ endpoints
+- **API**: RESTful interface with 100+ endpoints including replay functionality
 - **UI**: Web interface for monitoring and control
+- **Security**: Enhanced endpoint protection and ownership-based access control
 
-The refactoring maintains backward compatibility while improving code quality, reducing complexity, and enhancing developer experience. The modular architecture supports customization and extension for specific requirements.
+The system maintains backward compatibility while adding significant new capabilities. The modular architecture with auto-discovery makes it highly adaptable to different deployment environments, from development to production to Kubernetes clusters. The replay system provides comprehensive workflow debugging and reuse capabilities previously unavailable in similar orchestration systems.

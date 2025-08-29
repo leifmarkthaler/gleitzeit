@@ -6,7 +6,7 @@ import click
 import asyncio
 from typing import Any, Dict
 
-from gleitzeit.cli.client import GleitzeitClient
+from gleitzeit.client import GleitzeitClient
 
 async def execute(ctx: click.Context, workflow_id: str, detailed: bool) -> None:
     """Execute status command"""

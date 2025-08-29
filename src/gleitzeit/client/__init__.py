@@ -1,44 +1,29 @@
 """
 Modular Gleitzeit client package.
 
-Provides a backward-compatible interface while using the new modular architecture.
+The new modular architecture for the Gleitzeit client.
 """
 
-import warnings
-from typing import Union
 from .base import ModularGleitzeitClient, ClientMode
 
 
 class GleitzeitClient(ModularGleitzeitClient):
     """
-    Backward-compatible Gleitzeit client.
+    Gleitzeit client using the modular architecture.
     
-    This is a facade that provides compatibility with the old monolithic client
-    while using the new modular architecture under the hood.
+    This client provides a clean, modular design with separate modules
+    for different functionality (tasks, workflows, resources, etc.).
     """
     
-    def __init__(self, *args, use_legacy: bool = False, **kwargs):
+    def __init__(self, *args, **kwargs):
         """
         Initialize Gleitzeit client.
         
         Args:
-            use_legacy: If True, use the old monolithic client (deprecated)
             *args, **kwargs: Arguments passed to ModularGleitzeitClient
         """
-        if use_legacy:
-            warnings.warn(
-                "Legacy client mode is deprecated and will be removed in v1.0. "
-                "Please migrate to the new modular client.",
-                DeprecationWarning,
-                stacklevel=2
-            )
-            # Import and use legacy client
-            from gleitzeit.client_legacy import GleitzeitClient as LegacyClient
-            self.__class__ = LegacyClient
-            LegacyClient.__init__(self, *args, **kwargs)
-        else:
-            # Use new modular client
-            super().__init__(*args, **kwargs)
+        # Use new modular client
+        super().__init__(*args, **kwargs)
 
 
 # Export main components

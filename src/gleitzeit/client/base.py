@@ -5,10 +5,10 @@ Base Gleitzeit client with modular mixins.
 import asyncio
 import aiohttp
 from enum import Enum
-from typing import Optional, Union, Any, Dict
+from typing import Optional, Union, Any, Dict, List
 from ..client.mixins import (
     WorkflowMixin, TaskMixin, QueueMixin, 
-    BatchProcessingMixin, AuthMixin, SystemMixin
+    BatchProcessingMixin, AuthMixin, SystemMixin, ReplayMixin
 )
 from ..client.adapters import BaseAdapter, APIAdapter, NativeAdapter
 
@@ -26,7 +26,8 @@ class ModularGleitzeitClient(
     QueueMixin,
     BatchProcessingMixin,
     AuthMixin,
-    SystemMixin
+    SystemMixin,
+    ReplayMixin
 ):
     """
     Modular Gleitzeit client with clean separation of concerns.
@@ -262,3 +263,71 @@ class ModularGleitzeitClient(
         if asyncio.iscoroutinefunction(fn):
             return await fn(*args, **kwargs)
         return fn(*args, **kwargs)
+    
+    async def get_events(self, workflow_id: Optional[str] = None,
+                        task_id: Optional[str] = None,
+                        event_type: Optional[str] = None,
+                        limit: int = 1000) -> List[Dict[str, Any]]:
+        """
+        Get persisted events.
+        
+        Args:
+            workflow_id: Filter by workflow ID
+            task_id: Filter by task ID
+            event_type: Filter by event type
+            limit: Maximum number of events to return
+            
+        Returns:
+            List of event dictionaries
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        
+        if hasattr(self._adapter, 'get_events'):
+            return await self._adapter.get_events(
+                workflow_id=workflow_id,
+                task_id=task_id,
+                event_type=event_type,
+                limit=limit
+            )
+        else:
+            return []
+    
+    async def start_engine(self, mode: str = 'EVENT_DRIVEN'):
+        """
+        Start the execution engine in background.
+        
+        Args:
+            mode: Execution mode (EVENT_DRIVEN, BATCH, etc.)
+        
+        Returns:
+            Background task if started
+        """
+        if self.mode != ClientMode.NATIVE:
+            return None  # Only native mode has engine
+        
+        if hasattr(self._adapter, 'start_engine'):
+            return await self._adapter.start_engine(mode)
+        return None
+    
+    async def stop_engine(self):
+        """Stop the execution engine."""
+        if hasattr(self._adapter, 'stop_engine'):
+            return await self._adapter.stop_engine()
+    
+    @property
+    def execution_engine(self):
+        """
+        Get execution engine for backward compatibility.
+        
+        Returns:
+            ExecutionEngine instance or None
+        """
+        if hasattr(self._adapter, 'execution_engine'):
+            return self._adapter.execution_engine
+        return None
+    
+    @property
+    def _execution_engine(self):
+        """Alias for backward compatibility with legacy code."""
+        return self.execution_engine

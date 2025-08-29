@@ -316,6 +316,12 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         self.workflow_executions: Dict[str, WorkflowExecution] = {}
         self.queue_states: Dict[str, Dict[str, Any]] = {}
         
+        # Event storage - using deques with maxlen for automatic trimming
+        from collections import deque
+        self.events_global = deque(maxlen=10000)  # Global event stream
+        self.events_by_workflow: Dict[str, deque] = {}  # Per-workflow streams
+        self.events_by_task: Dict[str, deque] = {}  # Per-task streams
+        
         # Hub Resource storage
         self.instances: Dict[str, Dict[str, Any]] = {}
         self.hub_instances: Dict[str, Set[str]] = {}  # hub_id -> set of instance_ids
@@ -336,6 +342,9 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         self.workflows.clear()
         self.workflow_executions.clear()
         self.queue_states.clear()
+        self.events_global.clear()
+        self.events_by_workflow.clear()
+        self.events_by_task.clear()
         self.instances.clear()
         self.hub_instances.clear()
         self.metrics.clear()
@@ -666,6 +675,105 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
                 # Lock expired
                 del self.locks[resource_id]
         return None
+    
+    # Event persistence methods
+    async def save_event(self, event_data: Dict[str, Any]) -> None:
+        """
+        Save an event to in-memory storage.
+        
+        Args:
+            event_data: Event dictionary with event_id, event_type, timestamp, etc.
+        """
+        from collections import deque
+        
+        # Add timestamp if not present
+        if 'timestamp' not in event_data:
+            event_data['timestamp'] = datetime.utcnow().isoformat()
+        
+        # Add to global stream
+        self.events_global.append(event_data)
+        
+        # Add to workflow-specific stream if workflow_id present
+        if 'workflow_id' in event_data and event_data['workflow_id']:
+            if event_data['workflow_id'] not in self.events_by_workflow:
+                self.events_by_workflow[event_data['workflow_id']] = deque(maxlen=1000)
+            self.events_by_workflow[event_data['workflow_id']].append(event_data)
+        
+        # Add to task-specific stream if task_id present
+        if 'task_id' in event_data and event_data['task_id']:
+            if event_data['task_id'] not in self.events_by_task:
+                self.events_by_task[event_data['task_id']] = deque(maxlen=100)
+            self.events_by_task[event_data['task_id']].append(event_data)
+    
+    async def get_events(self,
+                         workflow_id: Optional[str] = None,
+                         task_id: Optional[str] = None,
+                         event_type: Optional[str] = None,
+                         since: Optional[datetime] = None,
+                         until: Optional[datetime] = None,
+                         limit: int = 1000) -> List[Dict[str, Any]]:
+        """
+        Retrieve events from in-memory storage with filters.
+        
+        Args:
+            workflow_id: Filter by workflow ID
+            task_id: Filter by task ID
+            event_type: Filter by event type
+            since: Events after this time
+            until: Events before this time
+            limit: Maximum number of events
+            
+        Returns:
+            List of event dictionaries
+        """
+        # Determine which stream to use
+        if task_id and task_id in self.events_by_task:
+            events = list(self.events_by_task[task_id])
+        elif workflow_id and workflow_id in self.events_by_workflow:
+            events = list(self.events_by_workflow[workflow_id])
+        else:
+            events = list(self.events_global)
+        
+        # Apply filters
+        filtered_events = []
+        for event in events:
+            # Filter by event type
+            if event_type and event.get('event_type') != event_type:
+                continue
+            
+            # Filter by time range
+            if 'timestamp' in event:
+                try:
+                    event_time = datetime.fromisoformat(event['timestamp'])
+                    if since and event_time < since:
+                        continue
+                    if until and event_time > until:
+                        continue
+                except:
+                    pass  # Skip events with invalid timestamps
+            
+            filtered_events.append(event)
+            
+            if len(filtered_events) >= limit:
+                break
+        
+        return filtered_events
+    
+    async def delete_old_events(self, days: int = 30) -> int:
+        """
+        Delete events older than specified days.
+        Note: In-memory backend with deque automatically limits size,
+        so this is a no-op but provided for interface compatibility.
+        
+        Args:
+            days: Number of days to retain
+            
+        Returns:
+            Always returns 0 (automatic trimming handles cleanup)
+        """
+        # Deques with maxlen automatically trim old events
+        # This method exists for interface compatibility
+        return 0
 
 
 # ============================================================================

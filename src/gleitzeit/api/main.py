@@ -225,20 +225,32 @@ async def setup_system():
         from gleitzeit.core.execution_engine import ExecutionMode
         
         # Initialize GleitzeitClient in native mode to handle all the complexity
-        app_state.client = GleitzeitClient(mode="native")
+        # Enable event persistence via environment variable or default to True
+        persist_events = os.getenv("GLEITZEIT_PERSIST_EVENTS", "true").lower() == "true"
+        logger.info(f"Initializing GleitzeitClient with persist_events={persist_events}")
+        app_state.client = GleitzeitClient(mode="native", persist_events=persist_events)
         await app_state.client.__aenter__()
         logger.info("GleitzeitClient initialized successfully")
         
+        # Log event persistence status
+        if hasattr(app_state.client._adapter, 'event_store'):
+            if app_state.client._adapter.event_store:
+                logger.info("Event persistence is ENABLED - EventStore initialized")
+            else:
+                logger.warning("Event persistence is DISABLED - EventStore is None")
+        else:
+            logger.warning("Event persistence is DISABLED - No event_store attribute")
+        
         # Start the execution engine in event-driven mode
         # This allows it to process tasks as they are submitted
-        if hasattr(app_state.client, '_execution_engine') and app_state.client._execution_engine:
-            # Start the engine in a background task so it runs continuously
-            asyncio.create_task(app_state.client._execution_engine.start(ExecutionMode.EVENT_DRIVEN))
-            logger.info("Execution engine started in event-driven mode")
-            
+        await app_state.client.start_engine('EVENT_DRIVEN')
+        logger.info("Execution engine started in event-driven mode")
+        
+        # Get engine for log collector initialization
+        if app_state.client.execution_engine:
             # Initialize log collector with event bus and persistence
-            event_bus = app_state.client._execution_engine.event_bus
-            persistence = app_state.client._execution_engine.persistence
+            event_bus = app_state.client.execution_engine.event_bus
+            persistence = app_state.client.execution_engine.persistence
             
             # Check if we have Redis persistence
             redis_adapter = None
@@ -1351,8 +1363,8 @@ async def list_providers():
     
     try:
         # Get providers from client if available
-        if hasattr(app_state.client, 'list_providers'):
-            providers = await app_state.client.list_providers()
+        if hasattr(app_state.client, 'get_providers'):
+            providers = await app_state.client.get_providers()
             return {"providers": providers}
         else:
             # Fallback to empty list
@@ -1370,8 +1382,8 @@ async def list_protocols():
     
     try:
         # Get protocols from client if available
-        if hasattr(app_state.client, 'list_protocols'):
-            protocols = await app_state.client.list_protocols()
+        if hasattr(app_state.client, 'get_protocols'):
+            protocols = await app_state.client.get_protocols()
             return {"protocols": protocols}
         else:
             # Fallback to basic protocols
@@ -2515,6 +2527,38 @@ async def get_workflow_critical_path(workflow_id: str):
     except Exception as e:
         logger.error(f"Failed to get critical path: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to get critical path: {str(e)}")
+
+
+# Event endpoints
+@app.get("/events")
+async def get_events(
+    workflow_id: Optional[str] = Query(None, description="Filter by workflow ID"),
+    task_id: Optional[str] = Query(None, description="Filter by task ID"),
+    event_type: Optional[str] = Query(None, description="Filter by event type"),
+    limit: int = Query(1000, description="Maximum number of events to return")
+):
+    """Get persisted events with optional filters"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    return await app_state.client.get_events(
+        workflow_id=workflow_id,
+        task_id=task_id,
+        event_type=event_type,
+        limit=limit
+    )
+
+
+@app.get("/workflows/{workflow_id}/events")
+async def get_workflow_events(workflow_id: str, limit: int = Query(1000)):
+    """Get all events for a specific workflow"""
+    if not app_state.client:
+        raise HTTPException(status_code=503, detail="System not initialized")
+    
+    return await app_state.client.get_events(
+        workflow_id=workflow_id,
+        limit=limit
+    )
 
 # ============================================================================
 # Data Management Endpoints

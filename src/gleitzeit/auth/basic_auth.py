@@ -55,6 +55,7 @@ class BasicAuthMode:
                 "workflows:read", 
                 "workflows:update",
                 "workflows:delete",
+                "workflows:replay",  # Replay functionality
                 "tasks:create",
                 "tasks:read",
                 "tasks:update", 
@@ -62,12 +63,17 @@ class BasicAuthMode:
                 "queues:read",
                 "queues:manage",
                 "logs:read",
+                "logs:write",  # For cleanup operations 
+                "events:read",  # Event error access
+                "events:write",  # Event error cleanup
                 "system:read",
+                "system:debug",  # For debug endpoints
                 # Explicitly NO admin permissions like:
                 # - users:create/delete/update
                 # - roles:manage
                 # - system:configure
                 # - auth:manage
+                # - system:admin (for admin-level cleanup)
             ],
             "is_superuser": False,  # Not a superuser
             "created_at": datetime.utcnow().isoformat()

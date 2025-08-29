@@ -38,7 +38,7 @@ class EventBus:
     """
     
     def __init__(self, isolate_errors: bool = True, track_errors: bool = True, 
-                 error_persistence = None):
+                 error_persistence = None, event_store = None):
         """
         Initialize the event bus.
         
@@ -46,6 +46,7 @@ class EventBus:
             isolate_errors: If True, handler errors won't affect other handlers
             track_errors: If True, keep track of handler errors for debugging
             error_persistence: Optional EventErrorPersistence for saving errors
+            event_store: Optional EventStore for persisting events
         """
         self._handlers: Dict[str, List[EventHandler]] = {}
         self.isolate_errors = isolate_errors
@@ -53,6 +54,7 @@ class EventBus:
         self.handler_errors: List[HandlerError] = []
         self.max_error_history = 100  # Keep last 100 errors
         self.error_persistence = error_persistence
+        self.event_store = event_store
     
     def register(self, event_type: str, handler) -> None:
         """Register an event handler for a specific event type.
@@ -76,6 +78,14 @@ class EventBus:
     
     async def emit(self, event: GleitzeitEvent) -> None:
         """Emit an event to all registered handlers."""
+        # Persist event if store is configured
+        if self.event_store:
+            try:
+                await self.event_store.save_event(event)
+            except Exception as e:
+                logger.warning(f"Failed to persist event {event.event_type}: {e}")
+                # Don't fail emission if persistence fails
+        
         event_type = event.event_type
         handlers = self._handlers.get(event_type, [])
         

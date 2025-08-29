@@ -7,12 +7,13 @@ for debugging and monitoring purposes.
 
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Query, HTTPException, Path
+from fastapi import APIRouter, Query, HTTPException, Path, Request
 from pydantic import BaseModel, Field
 
 from gleitzeit.core.event_error_persistence import get_event_error_persistence
 from gleitzeit.api.error_responses import raise_api_error
 from gleitzeit.core.errors import ErrorCode
+from gleitzeit.auth.decorators import optional_permission, filter_by_ownership
 
 import logging
 logger = logging.getLogger(__name__)
@@ -87,7 +88,10 @@ class EventErrorStats(BaseModel):
     description="Retrieve persisted event handler errors for debugging and monitoring. Errors are returned in reverse chronological order.",
     response_description="List of event errors with full details"
 )
+@optional_permission("events:read")
+@filter_by_ownership()
 async def list_event_errors(
+    request: Request,
     limit: int = Query(100, le=1000, description="Maximum errors to return"),
     event_type: Optional[str] = Query(None, description="Filter by event type"),
     handler_name: Optional[str] = Query(None, description="Filter by handler name"),
@@ -146,7 +150,8 @@ async def list_event_errors(
     description="Retrieve aggregated statistics about event handler errors for monitoring and identifying problematic handlers.",
     response_description="Aggregated error statistics"
 )
-async def get_error_statistics():
+@optional_permission("events:read")
+async def get_error_statistics(request: Request):
     """
     Get statistics about event handler errors.
     
@@ -194,7 +199,9 @@ async def get_error_statistics():
 
 
 @router.get("/{error_id}", response_model=EventErrorResponse)
+@optional_permission("events:read")
 async def get_event_error(
+    request: Request,
     error_id: str = Path(..., description="Event error ID")
 ):
     """
@@ -245,7 +252,9 @@ async def get_event_error(
 
 
 @router.delete("/cleanup")
+@optional_permission(["events:write", "system:admin"], any_permission=True)
 async def cleanup_old_errors(
+    request: Request,
     days: int = Query(30, ge=1, le=365, description="Delete errors older than this many days")
 ):
     """
@@ -275,7 +284,8 @@ async def cleanup_old_errors(
 
 
 @router.get("/debug/event-bus-stats")
-async def get_event_bus_stats():
+@optional_permission(["events:read", "system:debug"], any_permission=True)
+async def get_event_bus_stats(request: Request):
     """
     Get current event bus error statistics.
     

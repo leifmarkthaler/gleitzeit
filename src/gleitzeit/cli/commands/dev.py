@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Optional
 
-from gleitzeit.cli.client import GleitzeitClient
+from gleitzeit.client import GleitzeitClient
 from gleitzeit.server.central_server import CentralServer
 from gleitzeit.core.errors import SystemError
 

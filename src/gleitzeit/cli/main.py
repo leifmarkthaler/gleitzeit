@@ -14,8 +14,9 @@ from pathlib import Path
 from typing import Optional
 
 from gleitzeit.cli.config import CLIConfig, load_config
-from gleitzeit.cli.client import GleitzeitClient
-from gleitzeit.cli.commands import submit, status, dev, ui
+from gleitzeit.client import GleitzeitClient
+# Import command modules individually to avoid missing dependencies
+# from gleitzeit.cli.commands import submit, status, dev, ui
 
 # Set up logging
 logging.basicConfig(
@@ -290,6 +291,27 @@ def config_profiles(ctx):
 def config_init(ctx, interactive: bool):
     """Initialize configuration"""
     return asyncio.run(config_cmd.init_config(ctx, interactive))
+
+
+# Server commands
+@cli.command('serve')
+@click.option('--host', default='127.0.0.1', help='Server host')
+@click.option('--port', default=8000, help='Server port')
+@click.option('--workers', default=1, help='Number of worker processes')
+@click.pass_context
+def serve(ctx, host: str, port: int, workers: int):
+    """Start the Gleitzeit API server"""
+    import uvicorn
+    from gleitzeit.api.main import app
+    
+    logger.info(f"Starting Gleitzeit API server on {host}:{port}")
+    uvicorn.run(
+        "gleitzeit.api.main:app",
+        host=host,
+        port=port,
+        workers=workers,
+        log_level="info"
+    )
 
 
 def main():

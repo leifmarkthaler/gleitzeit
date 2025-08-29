@@ -6,8 +6,12 @@ import asyncio
 from typing import Any, Dict, List, Optional
 from gleitzeit.core.models import Task, Workflow, TaskResult
 from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.task_queue.task_queue import QueueManager
+from gleitzeit.task_queue.dependency_resolver import DependencyResolver
 from gleitzeit.persistence.factory import create_persistence
 from gleitzeit.registry import ProtocolProviderRegistry
+from gleitzeit.events.base import EventBus
+from gleitzeit.events.store import EventStore
 from .base import BaseAdapter
 
 
@@ -19,30 +23,212 @@ class NativeAdapter(BaseAdapter):
         self.execution_engine = None
         self.persistence = None
         self.registry = None
+        self.event_bus = None
+        self.event_store = None
+        self.queue_manager = None
+        self.dependency_resolver = None
+        self._engine_task = None  # Track engine background task
     
     async def initialize(self) -> None:
         """Initialize native components."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
         # Create persistence backend
         persistence_type = self.config.get('persistence_type', 'memory')
-        self.persistence = create_persistence(persistence_type, self.config)
-        await self.persistence.initialize()
+        # Only pass persistence-specific config to the factory
+        persistence_config = {}
+        # Known persistence parameters
+        if 'redis_url' in self.config:
+            persistence_config['redis_url'] = self.config['redis_url']
+        if 'sql_connection' in self.config:
+            persistence_config['sql_connection'] = self.config['sql_connection']
+        if 'sql_db_path' in self.config:
+            persistence_config['sql_db_path'] = self.config['sql_db_path']
+        
+        self.persistence = await create_persistence(persistence_type, **persistence_config)
+        
+        # Create event bus with optional event persistence
+        persist_events = self.config.get('persist_events', False)
+        logger.info(f"NativeAdapter: persist_events={persist_events}, config keys={list(self.config.keys())}")
+        self.event_bus = EventBus(isolate_errors=True, track_errors=True)
+        
+        if persist_events:
+            # Create event store for persistence
+            self.event_store = EventStore(persistence=self.persistence)
+            # Connect event store to event bus
+            self.event_bus.event_store = self.event_store
         
         # Create provider registry
         self.registry = ProtocolProviderRegistry()
         
-        # Create execution engine
+        # Initialize hub-based auto-discovery system
+        await self._initialize_auto_discovery()
+        
+        # Create queue manager and dependency resolver
+        self.queue_manager = QueueManager(persistence=self.persistence, event_bus=self.event_bus)
+        self.dependency_resolver = DependencyResolver()
+        
+        # Create execution engine with all dependencies
         self.execution_engine = ExecutionEngine(
+            registry=self.registry,
+            queue_manager=self.queue_manager,
+            dependency_resolver=self.dependency_resolver,
             persistence=self.persistence,
-            registry=self.registry
+            event_bus=self.event_bus,
+            max_concurrent_tasks=self.config.get('max_concurrent_tasks', 10)
         )
-        await self.execution_engine.start()
+        # Don't start the execution engine here - it blocks!
+        # The engine should be started in a background task if needed
+    
+    async def _initialize_auto_discovery(self) -> None:
+        """Initialize hub-based auto-discovery system."""
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Import required components
+        try:
+            from gleitzeit.hub.resource_manager import ResourceManager
+            from gleitzeit.hub.ollama_hub import OllamaHub
+            from gleitzeit.hub.mcp_hub import MCPHub
+            from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
+            from gleitzeit.providers.python_provider import PythonProvider
+            from gleitzeit.providers.ollama_provider import OllamaProvider
+            from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+            
+            # Initialize resource manager for hub coordination
+            self.resource_manager = ResourceManager("native-resource-manager")
+            
+            # Always register Python protocol and provider (doesn't require discovery)
+            try:
+                self.registry.register_protocol(PYTHON_PROTOCOL_V1)
+                python_provider = PythonProvider(
+                    "native-python-provider",
+                    allow_local=True
+                )
+                await python_provider.initialize()
+                self.registry.register_provider("native-python-provider", "python/v1", python_provider)
+                logger.info("✓ Python provider registered in NativeAdapter")
+            except Exception as e:
+                logger.warning(f"⚠️  Failed to register Python provider: {e}")
+            
+            # Auto-discover Ollama instances via OllamaHub
+            try:
+                ollama_hub = OllamaHub(
+                    hub_id="native-ollama-hub",
+                    auto_discover=True,  # Enable auto-discovery
+                    persistence=self.persistence
+                )
+                await ollama_hub.initialize()
+                await self.resource_manager.add_hub("ollama", ollama_hub)
+                
+                # Register LLM protocol and Ollama provider with hub
+                self.registry.register_protocol(LLM_PROTOCOL_V1)
+                ollama_provider = OllamaProvider(
+                    "native-ollama-provider",
+                    auto_discover=False,  # Hub handles discovery
+                    resource_manager=self.resource_manager,
+                    hub=ollama_hub
+                )
+                await ollama_provider.initialize()
+                self.registry.register_provider("native-ollama-provider", "llm/v1", ollama_provider)
+                logger.info("✓ Ollama provider with auto-discovery registered in NativeAdapter")
+                
+            except Exception as e:
+                logger.debug(f"Ollama auto-discovery not available: {e}")
+            
+            # Auto-discover MCP servers if configured
+            try:
+                # Check for MCP configuration
+                mcp_config = self.config.get('mcp', {})
+                if mcp_config.get('enabled', False) or mcp_config.get('auto_discover', False):
+                    mcp_hub = MCPHub(
+                        hub_id="native-mcp-hub",
+                        auto_discover=mcp_config.get('auto_discover', True),
+                        config_data=mcp_config
+                    )
+                    await mcp_hub.initialize()
+                    await self.resource_manager.add_hub("mcp", mcp_hub)
+                    
+                    # Register MCP protocol and provider
+                    self.registry.register_protocol(MCP_PROTOCOL_V1)
+                    mcp_provider = MCPHubProvider(
+                        provider_id="native-mcp-provider",
+                        hub=mcp_hub,
+                        config_data=mcp_config
+                    )
+                    await mcp_provider.initialize()
+                    self.registry.register_provider("native-mcp-provider", "mcp/v1", mcp_provider)
+                    logger.info("✓ MCP provider with auto-discovery registered in NativeAdapter")
+                
+            except Exception as e:
+                logger.debug(f"MCP auto-discovery not available: {e}")
+            
+            logger.info("Auto-discovery system initialized successfully")
+            
+        except Exception as e:
+            logger.error(f"Failed to initialize auto-discovery system: {e}")
+            # Fallback to basic Python provider only
+            try:
+                from gleitzeit.protocols import PYTHON_PROTOCOL_V1
+                from gleitzeit.providers.python_provider import PythonProvider
+                
+                self.registry.register_protocol(PYTHON_PROTOCOL_V1)
+                python_provider = PythonProvider("native-python-provider", allow_local=True)
+                await python_provider.initialize()
+                self.registry.register_provider("native-python-provider", "python/v1", python_provider)
+                logger.info("✓ Fallback Python provider registered")
+            except Exception as fallback_error:
+                logger.error(f"Even fallback provider registration failed: {fallback_error}")
+    
+    async def start_engine(self, mode='EVENT_DRIVEN'):
+        """Start execution engine in background."""
+        if not self.execution_engine:
+            raise RuntimeError("Execution engine not initialized")
+        
+        if self._engine_task and not self._engine_task.done():
+            return  # Already running
+        
+        # Import ExecutionMode here to avoid circular imports
+        from gleitzeit.core.execution_engine import ExecutionMode
+        exec_mode = ExecutionMode[mode] if isinstance(mode, str) else mode
+        
+        # Start engine in background task
+        self._engine_task = asyncio.create_task(
+            self.execution_engine.start(exec_mode)
+        )
+        
+        # Wait a moment for engine to initialize
+        await asyncio.sleep(0.1)
+        
+        return self._engine_task
+    
+    async def stop_engine(self) -> None:
+        """Stop execution engine."""
+        if self.execution_engine:
+            self.execution_engine.running = False
+            
+        if self._engine_task and not self._engine_task.done():
+            self._engine_task.cancel()
+            try:
+                await self._engine_task
+            except asyncio.CancelledError:
+                pass
     
     async def shutdown(self) -> None:
         """Shutdown native components."""
+        # Stop engine first
+        await self.stop_engine()
+        
         if self.execution_engine:
             await self.execution_engine.stop()
+        
+        # Shutdown resource manager and hubs
+        if hasattr(self, 'resource_manager') and self.resource_manager:
+            await self.resource_manager.stop()
+        
         if self.persistence:
-            await self.persistence.close()
+            await self.persistence.shutdown()
     
     # Workflow operations
     async def submit_workflow(self, workflow: Workflow) -> Dict[str, Any]:
@@ -50,8 +236,9 @@ class NativeAdapter(BaseAdapter):
         if not self.execution_engine:
             raise RuntimeError("Execution engine not initialized")
         
+        # Don't auto-start engine - let client control lifecycle
         result = await self.execution_engine.submit_workflow(workflow)
-        return {"workflow_id": result.id, "status": "submitted"}
+        return {"workflow_id": workflow.id, "status": "submitted"}
     
     async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
         """Get workflow natively."""
@@ -296,3 +483,19 @@ class NativeAdapter(BaseAdapter):
             return []
         
         return [{"protocol": p} for p in self.registry.list_protocols()]
+    
+    # Event operations
+    async def get_events(self, workflow_id: Optional[str] = None,
+                        task_id: Optional[str] = None,
+                        event_type: Optional[str] = None,
+                        limit: int = 1000) -> List[Dict[str, Any]]:
+        """Get persisted events."""
+        if not self.event_store:
+            return []
+        
+        return await self.event_store.get_events(
+            workflow_id=workflow_id,
+            task_id=task_id,
+            event_type=event_type,
+            limit=limit
+        )

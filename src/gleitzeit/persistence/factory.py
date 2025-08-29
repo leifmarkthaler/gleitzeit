@@ -18,6 +18,8 @@ from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter,
 from gleitzeit.persistence.unified_sqlalchemy import UnifiedSQLAlchemyAdapter
 from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
 from gleitzeit.persistence.hybrid_sql import HybridSQLAdapter
+from gleitzeit.persistence.simple_adapter import SimpleAdapter
+# UnifiedRedisAdapter is imported in _create_scaling method when needed
 from gleitzeit.core.models import TaskStatus, WorkflowStatus
 # Event-driven adapters are no longer used - centralized event architecture
 # Events are emitted only by ExecutionEngine
@@ -31,6 +33,8 @@ class PersistenceType(Enum):
     SQL = "sql"
     MEMORY = "memory"
     AUTO = "auto"  # Use automatic fallback chain
+    SCALING = "scaling"  # Redis-only for horizontal scaling
+    SIMPLE = "simple"    # InMemory with optional SQL backup
 
 
 class PersistenceFactory:
@@ -114,6 +118,12 @@ class PersistenceFactory:
         
         elif persistence_type == PersistenceType.MEMORY:
             return await cls._create_memory(final_config, event_bus)
+        
+        elif persistence_type == PersistenceType.SCALING:
+            return await cls._create_scaling(redis_url, final_config, event_bus)
+        
+        elif persistence_type == PersistenceType.SIMPLE:
+            return await cls._create_simple(sql_connection, sql_db_path, final_config, event_bus)
         
         elif persistence_type == PersistenceType.AUTO:
             # Try Redis first
@@ -323,6 +333,68 @@ class PersistenceFactory:
         return adapter
     
     @classmethod
+    async def _create_scaling(
+        cls,
+        redis_url: str,
+        config: Dict[str, Any],
+        event_bus: Optional[Any] = None
+    ) -> UnifiedPersistenceAdapter:
+        """Create Redis-only scaling adapter for horizontal scaling using existing UnifiedRedisAdapter"""
+        logger.info(f"Creating Redis scaling adapter using UnifiedRedisAdapter: {redis_url}")
+        
+        # Use the existing UnifiedRedisAdapter which is already fully implemented
+        from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
+        
+        adapter = UnifiedRedisAdapter(
+            redis_url=redis_url,
+            key_prefix=config.get('key_prefix', 'gleitzeit'),
+            metrics_retention_hours=config.get('metrics_retention_hours', 24),
+            enable_pubsub=config.get('enable_pub_sub', True),
+            max_connections=config.get('max_connections', 50),
+            socket_timeout=config.get('socket_timeout', 5),
+            socket_connect_timeout=config.get('socket_connect_timeout', 5),
+            retry_on_timeout=config.get('retry_on_timeout', True),
+            health_check_interval=config.get('health_check_interval', 30)
+        )
+        
+        await adapter.initialize()
+        logger.info("✓ Redis adapter (UnifiedRedisAdapter) initialized for horizontal scaling")
+        return adapter
+    
+    @classmethod
+    async def _create_simple(
+        cls,
+        sql_connection: Optional[str],
+        sql_db_path: str,
+        config: Dict[str, Any],
+        event_bus: Optional[Any] = None
+    ) -> SimpleAdapter:
+        """Create simple in-memory adapter with optional SQL backup"""
+        logger.info("Creating simple adapter for single-node deployment")
+        
+        # Extract simple adapter config
+        sql_backup = config.get('sql_backup', False)
+        backup_interval = config.get('backup_interval', 300)
+        max_tasks = config.get('max_tasks', 100000)
+        max_workflows = config.get('max_workflows', 10000)
+        
+        # Use provided SQL connection or default SQLite
+        sql_url = sql_connection or f"sqlite:///{sql_db_path}"
+        
+        adapter = SimpleAdapter(
+            sql_backup=sql_backup and sql_url,
+            sql_url=sql_url if sql_backup else None,
+            backup_interval=backup_interval,
+            max_tasks=max_tasks,
+            max_workflows=max_workflows
+        )
+        
+        await adapter.initialize()
+        logger.info(f"✓ Simple adapter initialized: sql_backup={sql_backup}, "
+                   f"max_tasks={max_tasks}, max_workflows={max_workflows}")
+        return adapter
+    
+    @classmethod
     async def create_for_testing(cls) -> UnifiedInMemoryAdapter:
         """
         Create an in-memory adapter for testing
@@ -430,7 +502,7 @@ async def create_persistence(
     Create a persistence adapter (backward compatibility)
     
     Args:
-        persistence_type: Type string ("redis", "sql", "memory", "auto")
+        persistence_type: Type string ("redis", "sql", "memory", "auto", "scaling", "simple")
         **kwargs: Additional configuration
         
     Returns:

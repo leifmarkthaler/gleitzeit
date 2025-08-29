@@ -51,13 +51,17 @@ class LoggingMixin:
         elif "provider" in name_lower:
             return LogSource.PROVIDER
         elif "queue" in name_lower or "task" in name_lower:
-            return LogSource.TASK
-        elif "workflow" in name_lower:
-            return LogSource.WORKFLOW
+            return LogSource.QUEUE  # Changed from TASK to QUEUE
+        elif "dependency" in name_lower or "workflow" in name_lower:
+            return LogSource.DEPENDENCY
         elif "api" in name_lower or "endpoint" in name_lower:
             return LogSource.API
-        elif "ui" in name_lower or "interface" in name_lower:
-            return LogSource.UI
+        elif "hub" in name_lower:
+            return LogSource.HUB
+        elif "retry" in name_lower:
+            return LogSource.RETRY
+        elif "scheduler" in name_lower:
+            return LogSource.SCHEDULER
         else:
             return LogSource.SYSTEM
     

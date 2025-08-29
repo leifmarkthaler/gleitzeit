@@ -7,7 +7,7 @@ collected by the LogCollector service.
 
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
-from fastapi import APIRouter, Query, HTTPException, Depends
+from fastapi import APIRouter, Query, HTTPException, Depends, Request
 from pydantic import BaseModel, Field
 import logging
 
@@ -15,6 +15,7 @@ from gleitzeit.core.log_collector import get_log_collector
 from gleitzeit.core.logs import LogLevel, LogSource
 from gleitzeit.api.error_responses import raise_api_error
 from gleitzeit.core.errors import ErrorCode
+from gleitzeit.auth.decorators import optional_permission, filter_by_ownership
 
 logger = logging.getLogger(__name__)
 
@@ -109,7 +110,10 @@ class RetentionSettings(BaseModel):
     summary="Query system logs",
     description="Query all system logs with filtering and pagination support."
 )
+@optional_permission("logs:read")
+@filter_by_ownership()
 async def query_logs(
+    request: Request,
     level: Optional[str] = Query(None, description="Filter by log level"),
     source: Optional[str] = Query(None, description="Filter by source"),
     task_id: Optional[str] = Query(None, description="Filter by task ID"),
@@ -175,7 +179,10 @@ async def query_logs(
     summary="Search logs",
     description="Search logs by text content across all tasks and workflows."
 )
+@optional_permission("logs:read")
+@filter_by_ownership()
 async def search_logs(
+    request: Request,
     query: str = Query(..., description="Search query text"),
     task_id: Optional[str] = Query(None, description="Filter by task ID"),
     workflow_id: Optional[str] = Query(None, description="Filter by workflow ID"),
@@ -235,7 +242,9 @@ async def search_logs(
     summary="Get log statistics",
     description="Get aggregated statistics about system logs."
 )
+@optional_permission("logs:read")
 async def get_log_statistics(
+    request: Request,
     since: Optional[datetime] = Query(None, description="Stats since timestamp"),
     until: Optional[datetime] = Query(None, description="Stats until timestamp")
 ):
@@ -276,7 +285,9 @@ async def get_log_statistics(
     summary="Clean up old logs",
     description="Remove logs older than specified retention period."
 )
+@optional_permission(["logs:write", "system:admin"], any_permission=True)
 async def cleanup_logs(
+    request: Request,
     days: int = Query(30, ge=1, le=365, description="Delete logs older than N days"),
     level: Optional[str] = Query(None, description="Only delete logs of this level or lower")
 ):
@@ -311,7 +322,8 @@ async def cleanup_logs(
     summary="Get retention settings",
     description="Get current log retention configuration."
 )
-async def get_retention_settings():
+@optional_permission("logs:read")
+async def get_retention_settings(request: Request):
     """
     Get log retention settings.
     
@@ -338,7 +350,8 @@ async def get_retention_settings():
     summary="Update retention settings",
     description="Update log retention configuration."
 )
-async def update_retention_settings(settings: RetentionSettings):
+@optional_permission(["logs:write", "system:admin"], any_permission=True)
+async def update_retention_settings(request: Request, settings: RetentionSettings):
     """
     Update log retention settings.
     
@@ -364,7 +377,9 @@ async def update_retention_settings(settings: RetentionSettings):
     summary="Tail task logs",
     description="Get the most recent logs for a specific task."
 )
+@optional_permission("logs:read")
 async def tail_task_logs(
+    request: Request,
     task_id: str,
     lines: int = Query(50, le=500, description="Number of recent lines")
 ):

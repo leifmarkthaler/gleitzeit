@@ -8,6 +8,7 @@ from .queue import QueueMixin
 from .batch import BatchProcessingMixin
 from .auth import AuthMixin
 from .system import SystemMixin
+from .replay import ReplayMixin
 
 __all__ = [
     'WorkflowMixin',
@@ -15,5 +16,6 @@ __all__ = [
     'QueueMixin',
     'BatchProcessingMixin',
     'AuthMixin',
-    'SystemMixin'
+    'SystemMixin',
+    'ReplayMixin'
 ]

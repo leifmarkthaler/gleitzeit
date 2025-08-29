@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict
 
-from gleitzeit.cli.client import GleitzeitClient
+from gleitzeit.client import GleitzeitClient
 from gleitzeit.cli.workflow import load_workflow, validate_workflow
 
 logger = logging.getLogger(__name__)
