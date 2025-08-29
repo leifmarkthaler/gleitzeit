@@ -20,12 +20,12 @@ gleitzeit [OPTIONS] COMMAND [ARGS]
 
 ## Commands
 
-### gleitzeit run
+### gleitzeit submit
 
 Execute a workflow file.
 
 ```bash
-gleitzeit run [OPTIONS] WORKFLOW_FILE
+gleitzeit submit [OPTIONS] WORKFLOW_FILE
 ```
 
 **Options:**
@@ -45,19 +45,19 @@ gleitzeit run [OPTIONS] WORKFLOW_FILE
 
 ```bash
 # Run a workflow
-gleitzeit run workflow.yaml
+gleitzeit submit workflow.yaml
 
 # With input parameters
-gleitzeit run pipeline.yaml --input topic="AI" --input length=500
+gleitzeit submit pipeline.yaml --input topic="AI" --input length=500
 
 # Watch for changes
-gleitzeit run workflow.yaml --watch
+gleitzeit submit workflow.yaml --watch
 
 # Force local execution
-gleitzeit run workflow.yaml --local
+gleitzeit submit workflow.yaml --local
 
 # Save output
-gleitzeit run workflow.yaml --output results.json --format json
+gleitzeit submit workflow.yaml --output results.json --format json
 ```
 
 ### gleitzeit status
@@ -531,7 +531,7 @@ gleitzeit batch incoming --pattern "*.csv" \
   --output metrics/
 
 # Run analysis workflow
-gleitzeit run analysis.yaml \
+gleitzeit submit analysis.yaml \
   --input date=$(date +%Y-%m-%d) \
   --output reports/daily_$(date +%Y%m%d).json
 
@@ -545,14 +545,14 @@ gleitzeit chat "Summarize today's metrics" \
 
 ```bash
 # Watch and run on changes
-gleitzeit run dev_workflow.yaml --watch --local
+gleitzeit submit dev_workflow.yaml --watch --local
 
 # In another terminal, check logs
 gleitzeit logs --follow --component executor
 
 # Test with different models
 for model in llama3.2 mistral codellama; do
-  gleitzeit run test.yaml --input model=$model
+  gleitzeit submit test.yaml --input model=$model
 done
 ```
 
@@ -565,5 +565,5 @@ gleitzeit serve --host 0.0.0.0 --port 8000 --workers 4
 # In client scripts
 export GLEITZEIT_API_HOST=api.example.com
 export GLEITZEIT_API_PORT=8000
-gleitzeit run workflow.yaml
+gleitzeit submit workflow.yaml
 ```

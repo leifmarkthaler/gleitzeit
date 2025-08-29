@@ -1,334 +1,1010 @@
 #!/usr/bin/env python3
 """
-Gleitzeit V4 CLI - Main Entry Point
-
-Event-native command line interface for distributed task execution.
-Supports both local development and distributed production modes.
+Gleitzeit CLI - Complete command-line interface for Gleitzeit
+Uses the client for server management and API endpoints for operations
 """
 
 import asyncio
 import click
-import logging
+import httpx
+import json
+import yaml
 import sys
+import subprocess
+import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Any, List
+from datetime import datetime
 
-from gleitzeit.cli.config import CLIConfig, load_config
+# Import the actual Gleitzeit client for server management
 from gleitzeit.client import GleitzeitClient
-# Import command modules individually to avoid missing dependencies
-# from gleitzeit.cli.commands import submit, status, dev, ui
-
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+from gleitzeit.client.base import ClientMode
 
 
+class GleitzeitCLIClient:
+    """CLI client that uses API endpoints for operations"""
+    
+    def __init__(self, host: str = "localhost", port: int = 8000):
+        self.host = host
+        self.port = port
+        self.base_url = f"http://{host}:{port}"
+        self.client = httpx.AsyncClient(timeout=60.0)
+        self.gleitzeit_client = None  # Will be set if auto-start is used
+        
+    async def __aenter__(self):
+        # Check if server is running, start if needed
+        await self.ensure_server_running()
+        return self
+    
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.client.aclose()
+        # Clean up the gleitzeit client if we created one
+        if self.gleitzeit_client:
+            await self.gleitzeit_client.__aexit__(None, None, None)
+    
+    async def ensure_server_running(self) -> bool:
+        """Ensure server is running, start if needed using GleitzeitClient"""
+        # Use GleitzeitClient which will:
+        # 1. Check if server is already running
+        # 2. Start it only if needed
+        # 3. Use the existing instance if available
+        try:
+            # The client will automatically detect and use existing server
+            # or start a new one if needed
+            self.gleitzeit_client = GleitzeitClient(
+                mode=ClientMode.AUTO,  # Let it auto-detect
+                api_host=self.host,
+                api_port=self.port,
+                auto_start_server=True,
+                keep_server_running=True
+            )
+            
+            # Initialize the client
+            await self.gleitzeit_client.__aenter__()
+            
+            # Check if we have API mode (server is running)
+            if self.gleitzeit_client.mode == ClientMode.API:
+                if await self.check_server():
+                    # Don't show message every time - it's expected behavior
+                    return True
+            
+            # If we're in native mode, the server couldn't be started
+            click.echo("⚠️ Running in native mode (no API server)", err=True)
+            return False
+            
+        except Exception as e:
+            click.echo(f"❌ Failed to initialize client: {e}", err=True)
+            return False
+    
+    async def check_server(self) -> bool:
+        """Check if server is running"""
+        try:
+            response = await self.client.get(f"{self.base_url}/health")
+            return response.status_code == 200
+        except:
+            return False
+    
+    # Workflow operations
+    async def run_workflow(self, workflow_path: Path, wait: bool = True) -> Dict[str, Any]:
+        """Submit and run a workflow"""
+        with open(workflow_path, 'r') as f:
+            if workflow_path.suffix in ['.yaml', '.yml']:
+                workflow_data = yaml.safe_load(f)
+            else:
+                workflow_data = json.load(f)
+        
+        response = await self.client.post(f"{self.base_url}/workflows", json=workflow_data)
+        response.raise_for_status()
+        result = response.json()
+        workflow_id = result['workflow_id']
+        
+        if not wait:
+            return result
+        
+        # Poll for completion
+        while True:
+            response = await self.client.get(f"{self.base_url}/workflows/{workflow_id}")
+            response.raise_for_status()
+            workflow = response.json()
+            
+            status = workflow.get('status', 'pending')
+            if status in ['completed', 'failed', 'cancelled']:
+                return workflow
+            
+            await asyncio.sleep(1)
+    
+    async def list_workflows(self, limit: int = 10, status: Optional[str] = None, 
+                           offset: int = 0) -> Dict[str, Any]:
+        """List workflows with filtering"""
+        params = {"limit": limit, "offset": offset}
+        if status:
+            params["status"] = status
+        
+        response = await self.client.get(f"{self.base_url}/workflows", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        """Get workflow details"""
+        response = await self.client.get(f"{self.base_url}/workflows/{workflow_id}")
+        response.raise_for_status()
+        return response.json()
+    
+    async def delete_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        """Delete a workflow"""
+        response = await self.client.delete(f"{self.base_url}/workflows/{workflow_id}")
+        response.raise_for_status()
+        return response.json()
+    
+    async def pause_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        """Pause a workflow"""
+        response = await self.client.post(f"{self.base_url}/workflows/{workflow_id}/pause")
+        response.raise_for_status()
+        return response.json()
+    
+    async def resume_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        """Resume a workflow"""
+        response = await self.client.post(f"{self.base_url}/workflows/{workflow_id}/resume")
+        response.raise_for_status()
+        return response.json()
+    
+    async def retry_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        """Retry a failed workflow"""
+        response = await self.client.post(f"{self.base_url}/workflows/{workflow_id}/retry")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_workflow_results(self, workflow_id: str) -> Dict[str, Any]:
+        """Get workflow results"""
+        response = await self.client.get(f"{self.base_url}/workflows/{workflow_id}/results")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_workflow_timeline(self, workflow_id: str) -> Dict[str, Any]:
+        """Get workflow execution timeline"""
+        response = await self.client.get(f"{self.base_url}/workflows/{workflow_id}/timeline")
+        response.raise_for_status()
+        return response.json()
+    
+    # Task operations
+    async def list_tasks(self, workflow_id: Optional[str] = None, status: Optional[str] = None,
+                        limit: int = 50, offset: int = 0) -> Dict[str, Any]:
+        """List tasks with filtering"""
+        params = {"limit": limit, "offset": offset}
+        if workflow_id:
+            params["workflow_id"] = workflow_id
+        if status:
+            params["status"] = status
+        
+        response = await self.client.get(f"{self.base_url}/tasks", params=params)
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_task(self, task_id: str) -> Dict[str, Any]:
+        """Get task details"""
+        response = await self.client.get(f"{self.base_url}/tasks/{task_id}")
+        response.raise_for_status()
+        return response.json()
+    
+    async def cancel_task(self, task_id: str) -> Dict[str, Any]:
+        """Cancel a task"""
+        response = await self.client.post(f"{self.base_url}/tasks/{task_id}/cancel")
+        response.raise_for_status()
+        return response.json()
+    
+    async def retry_task(self, task_id: str) -> Dict[str, Any]:
+        """Retry a failed task"""
+        response = await self.client.post(f"{self.base_url}/tasks/{task_id}/retry")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_task_result(self, task_id: str) -> Dict[str, Any]:
+        """Get task result"""
+        response = await self.client.get(f"{self.base_url}/tasks/{task_id}/result")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_task_logs(self, task_id: str) -> Dict[str, Any]:
+        """Get task logs"""
+        response = await self.client.get(f"{self.base_url}/tasks/{task_id}/logs")
+        response.raise_for_status()
+        return response.json()
+    
+    # Queue operations
+    async def list_queues(self) -> Dict[str, Any]:
+        """List all queues"""
+        response = await self.client.get(f"{self.base_url}/queues")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_queue(self, queue_name: str) -> Dict[str, Any]:
+        """Get queue details"""
+        response = await self.client.get(f"{self.base_url}/queues/{queue_name}")
+        response.raise_for_status()
+        return response.json()
+    
+    async def pause_queue(self, queue_name: str) -> Dict[str, Any]:
+        """Pause a queue"""
+        response = await self.client.post(f"{self.base_url}/queues/{queue_name}/pause")
+        response.raise_for_status()
+        return response.json()
+    
+    async def resume_queue(self, queue_name: str) -> Dict[str, Any]:
+        """Resume a queue"""
+        response = await self.client.post(f"{self.base_url}/queues/{queue_name}/resume")
+        response.raise_for_status()
+        return response.json()
+    
+    async def clear_queue(self, queue_name: str) -> Dict[str, Any]:
+        """Clear a queue"""
+        response = await self.client.post(f"{self.base_url}/queues/{queue_name}/clear")
+        response.raise_for_status()
+        return response.json()
+    
+    # System operations
+    async def get_status(self) -> Dict[str, Any]:
+        """Get system status"""
+        response = await self.client.get(f"{self.base_url}/status")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_resources(self) -> Dict[str, Any]:
+        """Get resource information"""
+        response = await self.client.get(f"{self.base_url}/resources")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_providers(self) -> List[Dict[str, Any]]:
+        """Get registered providers"""
+        response = await self.client.get(f"{self.base_url}/providers")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_protocols(self) -> List[str]:
+        """Get supported protocols"""
+        response = await self.client.get(f"{self.base_url}/protocols")
+        response.raise_for_status()
+        return response.json()
+    
+    async def get_statistics(self) -> Dict[str, Any]:
+        """Get task statistics"""
+        response = await self.client.get(f"{self.base_url}/statistics/tasks")
+        response.raise_for_status()
+        return response.json()
+    
+    # Batch operations
+    async def batch_process(self, directory: str, pattern: str, prompt: str) -> Dict[str, Any]:
+        """Process files in batch"""
+        response = await self.client.post(
+            f"{self.base_url}/bulk/directory",
+            json={"directory": directory, "pattern": pattern, "prompt": prompt}
+        )
+        response.raise_for_status()
+        return response.json()
+
+
+# CLI Commands
 @click.group()
-@click.option('--config', '-c', type=click.Path(exists=True), 
-              help='Path to configuration file')
-@click.option('--profile', '-p', default='default',
-              help='Configuration profile to use')
-@click.option('--cluster', help='Cluster endpoint (overrides profile)')
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose logging')
-@click.option('--debug', is_flag=True, help='Enable debug logging')
+@click.option('--host', default='localhost', help='API server host')
+@click.option('--port', default=8000, help='API server port')
 @click.pass_context
-def cli(ctx: click.Context, config: Optional[str], profile: str, 
-        cluster: Optional[str], verbose: bool, debug: bool):
-    """
-    Gleitzeit V4 - Event-driven distributed task execution
-    
-    Submit workflows, manage providers, and monitor execution across
-    distributed execution engines with real-time event streaming.
-    """
-    # Set up logging level
-    if debug:
-        logging.getLogger().setLevel(logging.DEBUG)
-    elif verbose:
-        logging.getLogger().setLevel(logging.INFO)
-    else:
-        logging.getLogger().setLevel(logging.WARNING)
-    
-    # Load configuration
-    try:
-        cli_config = load_config(config, profile)
-        
-        # Override cluster if provided
-        if cluster:
-            cli_config.cluster.endpoint = cluster
-            cli_config.mode = 'cluster'
-        
-        # Store config in context for subcommands
-        ctx.ensure_object(dict)
-        ctx.obj['config'] = cli_config
-        ctx.obj['profile'] = profile
-        
-        logger.debug(f"Using profile: {profile}, mode: {cli_config.mode}")
-        
-    except Exception as e:
-        click.echo(f"Configuration error: {e}", err=True)
-        sys.exit(1)
+def cli(ctx, host: str, port: int):
+    """Gleitzeit - Workflow orchestration system"""
+    ctx.ensure_object(dict)
+    ctx.obj['host'] = host
+    ctx.obj['port'] = port
 
 
-# Core workflow commands
-@cli.command('submit')
-@click.argument('workflow', type=click.Path(exists=True))
-@click.option('--watch', '-w', is_flag=True, help='Stream execution events')
-@click.option('--dry-run', is_flag=True, help='Validate workflow without execution')
-@click.option('--priority', type=click.Choice(['low', 'normal', 'high', 'urgent']),
-              default='normal', help='Workflow execution priority')
+# Workflow commands
+@cli.group()
+def workflow():
+    """Manage workflows"""
+    pass
+
+
+@workflow.command('run')
+@click.argument('workflow_file', type=click.Path(exists=True))
+@click.option('--wait/--no-wait', default=True, help='Wait for completion')
+@click.option('--output', '-o', type=click.Choice(['json', 'yaml', 'text']), default='text')
 @click.pass_context
-def submit_cmd(ctx, workflow: str, watch: bool, dry_run: bool, priority: str):
-    """Submit a workflow for execution"""
-    return asyncio.run(submit.execute(ctx, workflow, watch, dry_run, priority))
+def run_workflow(ctx, workflow_file: str, wait: bool, output: str):
+    """Run a workflow from file"""
+    async def _run():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            workflow_path = Path(workflow_file)
+            click.echo(f"📋 Loading workflow: {workflow_path}")
+            
+            try:
+                result = await client.run_workflow(workflow_path, wait=wait)
+                
+                if output == 'json':
+                    click.echo(json.dumps(result, indent=2))
+                elif output == 'yaml':
+                    click.echo(yaml.dump(result, default_flow_style=False))
+                else:
+                    workflow_id = result.get('workflow_id', result.get('id', 'unknown'))
+                    status = result.get('status', 'unknown')
+                    
+                    if wait:
+                        if status == 'completed':
+                            click.echo(f"✅ Workflow {workflow_id} completed successfully!")
+                        elif status == 'failed':
+                            click.echo(f"❌ Workflow {workflow_id} failed", err=True)
+                            if result.get('error'):
+                                click.echo(f"Error: {result['error']}", err=True)
+                        else:
+                            click.echo(f"⚠️ Workflow {workflow_id} ended with status: {status}")
+                    else:
+                        click.echo(f"🚀 Workflow submitted: {workflow_id}")
+                        click.echo(f"   Use 'gleitzeit workflow get {workflow_id}' to check progress")
+                        
+            except httpx.HTTPStatusError as e:
+                click.echo(f"❌ API error: {e.response.text}", err=True)
+                sys.exit(1)
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_run())
 
 
-@cli.command('status')
+@workflow.command('list')
+@click.option('--limit', default=10, help='Number of workflows')
+@click.option('--status', help='Filter by status')
+@click.option('--offset', default=0, help='Offset for pagination')
+@click.pass_context
+def list_workflows(ctx, limit: int, status: Optional[str], offset: int):
+    """List workflows"""
+    async def _list():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.list_workflows(limit=limit, status=status, offset=offset)
+                workflows = result.get('workflows', [])
+                
+                if not workflows:
+                    click.echo("No workflows found")
+                    return
+                
+                click.echo(f"Workflows (showing {len(workflows)} of {result.get('total', 0)}):")
+                for wf in workflows:
+                    if isinstance(wf, dict):
+                        wf_id = wf.get('workflow_id', wf.get('id', 'unknown'))
+                        name = wf.get('name', 'Unnamed')
+                        wf_status = wf.get('status', 'unknown')
+                        created = wf.get('created_at', 'unknown')
+                        
+                        status_icon = {
+                            'completed': '✅', 'failed': '❌', 'running': '🔄',
+                            'pending': '⏳', 'cancelled': '⚠️'
+                        }.get(wf_status, '❓')
+                        
+                        click.echo(f"{status_icon} {wf_id[:8]}... | {name} | {wf_status} | {created}")
+                        
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_list())
+
+
+@workflow.command('get')
 @click.argument('workflow_id')
-@click.option('--detailed', '-d', is_flag=True, help='Show detailed task status')
+@click.option('--output', '-o', type=click.Choice(['json', 'yaml', 'text']), default='text')
 @click.pass_context
-def status_cmd(ctx, workflow_id: str, detailed: bool):
-    """Get workflow or task status"""
-    return asyncio.run(status.execute(ctx, workflow_id, detailed))
+def get_workflow(ctx, workflow_id: str, output: str):
+    """Get workflow details"""
+    async def _get():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.get_workflow(workflow_id)
+                
+                if output == 'json':
+                    click.echo(json.dumps(result, indent=2))
+                elif output == 'yaml':
+                    click.echo(yaml.dump(result, default_flow_style=False))
+                else:
+                    click.echo(f"Workflow: {workflow_id}")
+                    click.echo(f"Name: {result.get('name', 'Unnamed')}")
+                    click.echo(f"Status: {result.get('status', 'unknown')}")
+                    click.echo(f"Created: {result.get('created_at', 'unknown')}")
+                    
+                    tasks = result.get('tasks', [])
+                    if tasks:
+                        click.echo(f"\nTasks ({len(tasks)}):")
+                        for task in tasks:
+                            task_id = task.get('id', task.get('task_id'))
+                            task_status = task.get('status')
+                            click.echo(f"  • {task_id}: {task_status}")
+                            
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_get())
 
 
-# Development commands
+@workflow.command('delete')
+@click.argument('workflow_id')
+@click.confirmation_option(prompt='Are you sure you want to delete this workflow?')
+@click.pass_context
+def delete_workflow(ctx, workflow_id: str):
+    """Delete a workflow"""
+    async def _delete():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                await client.delete_workflow(workflow_id)
+                click.echo(f"✅ Workflow {workflow_id} deleted")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_delete())
+
+
+@workflow.command('pause')
+@click.argument('workflow_id')
+@click.pass_context
+def pause_workflow(ctx, workflow_id: str):
+    """Pause a running workflow"""
+    async def _pause():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                await client.pause_workflow(workflow_id)
+                click.echo(f"⏸️ Workflow {workflow_id} paused")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_pause())
+
+
+@workflow.command('resume')
+@click.argument('workflow_id')
+@click.pass_context
+def resume_workflow(ctx, workflow_id: str):
+    """Resume a paused workflow"""
+    async def _resume():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                await client.resume_workflow(workflow_id)
+                click.echo(f"▶️ Workflow {workflow_id} resumed")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_resume())
+
+
+@workflow.command('retry')
+@click.argument('workflow_id')
+@click.pass_context
+def retry_workflow(ctx, workflow_id: str):
+    """Retry a failed workflow"""
+    async def _retry():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.retry_workflow(workflow_id)
+                click.echo(f"🔄 Workflow {workflow_id} retry started")
+                click.echo(f"   New workflow ID: {result.get('workflow_id', 'unknown')}")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_retry())
+
+
+@workflow.command('results')
+@click.argument('workflow_id')
+@click.option('--output', '-o', type=click.Choice(['json', 'yaml', 'text']), default='text')
+@click.pass_context
+def get_workflow_results(ctx, workflow_id: str, output: str):
+    """Get workflow results"""
+    async def _results():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.get_workflow_results(workflow_id)
+                
+                if output == 'json':
+                    click.echo(json.dumps(result, indent=2))
+                elif output == 'yaml':
+                    click.echo(yaml.dump(result, default_flow_style=False))
+                else:
+                    results = result.get('results', {})
+                    click.echo(f"Results for workflow {workflow_id}:")
+                    for task_id, task_result in results.items():
+                        click.echo(f"\n  Task {task_id}:")
+                        click.echo(f"    {task_result}")
+                        
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_results())
+
+
+# Task commands
 @cli.group()
-def dev():
-    """Local development commands"""
+def task():
+    """Manage tasks"""
     pass
 
 
-@dev.command()
-@click.option('--port', default=8000, help='Local server port')
-@click.option('--redis', is_flag=True, help='Use Redis instead of SQLite')
+@task.command('list')
+@click.option('--workflow-id', help='Filter by workflow')
+@click.option('--status', help='Filter by status')
+@click.option('--limit', default=50, help='Number of tasks')
 @click.pass_context
-def start(ctx, port: int, redis: bool):
-    """Start local development environment"""
-    return asyncio.run(dev.start_local(ctx, port, redis))
+def list_tasks(ctx, workflow_id: Optional[str], status: Optional[str], limit: int):
+    """List tasks"""
+    async def _list():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.list_tasks(
+                    workflow_id=workflow_id, status=status, limit=limit
+                )
+                tasks = result.get('tasks', [])
+                
+                if not tasks:
+                    click.echo("No tasks found")
+                    return
+                
+                click.echo(f"Tasks (showing {len(tasks)}):")
+                for task in tasks:
+                    task_id = task.get('task_id', task.get('id'))
+                    task_status = task.get('status')
+                    wf_id = task.get('workflow_id', '')
+                    
+                    status_icon = {
+                        'completed': '✅', 'failed': '❌', 'running': '🔄',
+                        'pending': '⏳', 'cancelled': '⚠️'
+                    }.get(task_status, '❓')
+                    
+                    click.echo(f"{status_icon} {task_id} | {task_status} | Workflow: {wf_id[:8]}...")
+                    
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_list())
 
 
-@dev.command()
-@click.pass_context 
-def stop(ctx):
-    """Stop local development environment"""
-    return asyncio.run(dev.stop_local(ctx))
-
-
-@dev.command()
-@click.option('--mcp-server', help='Start specific MCP server')
-@click.option('--path', help='Path for filesystem MCP server')
+@task.command('get')
+@click.argument('task_id')
+@click.option('--output', '-o', type=click.Choice(['json', 'yaml', 'text']), default='text')
 @click.pass_context
-def start_mcp(ctx, mcp_server: Optional[str], path: Optional[str]):
-    """Start MCP server for development"""
-    return asyncio.run(dev.start_mcp_server(ctx, mcp_server, path))
+def get_task(ctx, task_id: str, output: str):
+    """Get task details"""
+    async def _get():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.get_task(task_id)
+                
+                if output == 'json':
+                    click.echo(json.dumps(result, indent=2))
+                elif output == 'yaml':
+                    click.echo(yaml.dump(result, default_flow_style=False))
+                else:
+                    click.echo(f"Task: {task_id}")
+                    click.echo(f"Status: {result.get('status')}")
+                    click.echo(f"Method: {result.get('method')}")
+                    click.echo(f"Workflow: {result.get('workflow_id')}")
+                    
+                    if result.get('error'):
+                        click.echo(f"Error: {result['error']}")
+                    if result.get('result'):
+                        click.echo(f"Result: {result['result']}")
+                        
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_get())
 
 
-# Workflow management
-@cli.command()
-@click.argument('workflow', type=click.Path(exists=True))
-@click.option('--schema', is_flag=True, help='Validate against schema only')
+@task.command('cancel')
+@click.argument('task_id')
 @click.pass_context
-def validate(ctx, workflow: str, schema: bool):
-    """Validate workflow definition"""
-    return asyncio.run(validate.execute(ctx, workflow, schema))
+def cancel_task(ctx, task_id: str):
+    """Cancel a running task"""
+    async def _cancel():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                await client.cancel_task(task_id)
+                click.echo(f"✅ Task {task_id} cancelled")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_cancel())
 
 
-@cli.command('init')
-@click.argument('name')
-@click.option('--template', help='Template to use (data-pipeline, api-workflow, etc.)')
-@click.option('--interactive', '-i', is_flag=True, help='Interactive workflow builder')
+@task.command('retry')
+@click.argument('task_id')
 @click.pass_context
-def init_workflow_cmd(ctx, name: str, template: Optional[str], interactive: bool):
-    """Create new workflow definition"""
-    return asyncio.run(init_workflow.execute(ctx, name, template, interactive))
+def retry_task(ctx, task_id: str):
+    """Retry a failed task"""
+    async def _retry():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.retry_task(task_id)
+                click.echo(f"🔄 Task {task_id} retry started")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_retry())
 
 
-# Provider and protocol management
+@task.command('logs')
+@click.argument('task_id')
+@click.pass_context
+def task_logs(ctx, task_id: str):
+    """Get task logs"""
+    async def _logs():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.get_task_logs(task_id)
+                logs = result.get('logs', [])
+                
+                if not logs:
+                    click.echo(f"No logs found for task {task_id}")
+                    return
+                
+                click.echo(f"Logs for task {task_id}:")
+                click.echo("-" * 50)
+                
+                for log in logs:
+                    timestamp = log.get('timestamp', '')
+                    level = log.get('level', 'INFO')
+                    message = log.get('message', '')
+                    
+                    if level == 'ERROR':
+                        click.echo(click.style(f"[{timestamp}] {level}: {message}", fg='red'))
+                    elif level == 'WARNING':
+                        click.echo(click.style(f"[{timestamp}] {level}: {message}", fg='yellow'))
+                    else:
+                        click.echo(f"[{timestamp}] {level}: {message}")
+                        
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_logs())
+
+
+# Queue commands
 @cli.group()
-def providers():
-    """Manage protocol providers"""
+def queue():
+    """Manage queues"""
     pass
 
 
-@providers.command('list')
-@click.option('--available', '-a', is_flag=True, help='Show available providers')
-@click.option('--format', type=click.Choice(['table', 'json']), default='table')
+@queue.command('list')
 @click.pass_context
-def list_providers(ctx, available: bool, format: str):
+def list_queues(ctx):
+    """List all queues"""
+    async def _list():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.list_queues()
+                queues = result.get('queues', [])
+                
+                click.echo("Queues:")
+                for q in queues:
+                    name = q.get('name', 'unknown')
+                    size = q.get('size', 0)
+                    status = q.get('status', 'unknown')
+                    click.echo(f"  • {name}: {size} items, status: {status}")
+                    
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_list())
+
+
+@queue.command('pause')
+@click.argument('queue_name')
+@click.pass_context
+def pause_queue(ctx, queue_name: str):
+    """Pause a queue"""
+    async def _pause():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                await client.pause_queue(queue_name)
+                click.echo(f"⏸️ Queue {queue_name} paused")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_pause())
+
+
+@queue.command('resume')
+@click.argument('queue_name')
+@click.pass_context
+def resume_queue(ctx, queue_name: str):
+    """Resume a queue"""
+    async def _resume():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                await client.resume_queue(queue_name)
+                click.echo(f"▶️ Queue {queue_name} resumed")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_resume())
+
+
+@queue.command('clear')
+@click.argument('queue_name')
+@click.confirmation_option(prompt='Are you sure you want to clear this queue?')
+@click.pass_context
+def clear_queue(ctx, queue_name: str):
+    """Clear a queue"""
+    async def _clear():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                await client.clear_queue(queue_name)
+                click.echo(f"✅ Queue {queue_name} cleared")
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_clear())
+
+
+# System commands
+@cli.command('status')
+@click.pass_context
+def system_status(ctx):
+    """Get system status"""
+    async def _status():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.get_status()
+                
+                click.echo("System Status:")
+                click.echo(f"  Version: {result.get('version', 'unknown')}")
+                click.echo(f"  API: ✅ Running on {ctx.obj['host']}:{ctx.obj['port']}")
+                
+                if result.get('persistence'):
+                    click.echo(f"  Persistence: {result['persistence'].get('type', 'unknown')}")
+                
+                if result.get('resources'):
+                    click.echo("  Resources:")
+                    for resource, info in result['resources'].items():
+                        click.echo(f"    • {resource}: {info}")
+                        
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_status())
+
+
+@cli.command('resources')
+@click.pass_context
+def resources(ctx):
+    """Get resource information"""
+    async def _resources():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                result = await client.get_resources()
+                
+                click.echo("Resources:")
+                for category, items in result.items():
+                    click.echo(f"\n{category}:")
+                    if isinstance(items, dict):
+                        for key, value in items.items():
+                            click.echo(f"  • {key}: {value}")
+                    elif isinstance(items, list):
+                        for item in items:
+                            click.echo(f"  • {item}")
+                    else:
+                        click.echo(f"  {items}")
+                        
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_resources())
+
+
+@cli.command('providers')
+@click.pass_context
+def providers(ctx):
     """List registered providers"""
-    return asyncio.run(providers.list_providers(ctx, available, format))
+    async def _providers():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                providers = await client.get_providers()
+                
+                click.echo("Registered Providers:")
+                for provider in providers:
+                    name = provider.get('name', 'unknown')
+                    protocol = provider.get('protocol', 'unknown')
+                    methods = provider.get('methods', [])
+                    click.echo(f"\n  {name} ({protocol}):")
+                    for method in methods:
+                        click.echo(f"    • {method}")
+                        
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_providers())
 
 
-@providers.command('discover')
-@click.option('--mcp', is_flag=True, help='Discover MCP servers')
-@click.option('--network', is_flag=True, help='Network discovery')
+@cli.command('protocols')
 @click.pass_context
-def discover_providers(ctx, mcp: bool, network: bool):
-    """Discover available providers"""
-    return asyncio.run(providers.discover(ctx, mcp, network))
+def protocols(ctx):
+    """List supported protocols"""
+    async def _protocols():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                protocols = await client.get_protocols()
+                
+                click.echo("Supported Protocols:")
+                for protocol in protocols:
+                    click.echo(f"  • {protocol}")
+                    
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_protocols())
 
 
-@providers.command('inspect')
-@click.argument('provider_id')
+@cli.command('statistics')
 @click.pass_context
-def inspect_provider(ctx, provider_id: str):
-    """Inspect provider capabilities"""
-    return asyncio.run(providers.inspect(ctx, provider_id))
+def statistics(ctx):
+    """Get task statistics"""
+    async def _stats():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                stats = await client.get_statistics()
+                
+                click.echo("Task Statistics:")
+                click.echo(f"  Total: {stats.get('total', 0)}")
+                click.echo(f"  Completed: {stats.get('completed', 0)}")
+                click.echo(f"  Failed: {stats.get('failed', 0)}")
+                click.echo(f"  Running: {stats.get('running', 0)}")
+                click.echo(f"  Pending: {stats.get('pending', 0)}")
+                
+                if stats.get('by_method'):
+                    click.echo("\nBy Method:")
+                    for method, count in stats['by_method'].items():
+                        click.echo(f"  • {method}: {count}")
+                        
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_stats())
 
 
-@cli.group()
-def protocols():
-    """Manage protocols"""
-    pass
-
-
-@protocols.command('list')
-@click.option('--format', type=click.Choice(['table', 'json']), default='table')
+# Batch operations
+@cli.command('batch')
+@click.argument('directory', type=click.Path(exists=True))
+@click.option('--pattern', '-p', default='*', help='File pattern')
+@click.option('--prompt', default='Process this file', help='Processing prompt')
 @click.pass_context
-def list_protocols(ctx, format: str):
-    """List available protocols"""
-    return asyncio.run(protocols.list_protocols(ctx, format))
-
-
-@protocols.command('show')
-@click.argument('protocol_id')
-@click.pass_context
-def show_protocol(ctx, protocol_id: str):
-    """Show protocol specification"""
-    return asyncio.run(protocols.show(ctx, protocol_id))
-
-
-@protocols.command('methods')
-@click.argument('protocol_id')
-@click.option('--filter', help='Filter methods by name pattern')
-@click.pass_context
-def list_methods(ctx, protocol_id: str, filter: Optional[str]):
-    """List protocol methods"""
-    return asyncio.run(protocols.methods(ctx, protocol_id, filter))
-
-
-# UI management
-@cli.command('ui')
-@click.option('--port', default=8004, help='UI server port')
-@click.option('--host', default='127.0.0.1', help='UI server host')
-@click.option('--reload', is_flag=True, help='Enable auto-reload for development')
-@click.pass_context
-def ui_cmd(ctx, port: int, host: str, reload: bool):
-    """Start the Web UI for monitoring workflows and tasks"""
-    return asyncio.run(ui.start_ui(ctx, port, host, reload))
-
-
-# Cluster management  
-@cli.group()
-def cluster():
-    """Manage cluster connections"""
-    pass
-
-
-@cluster.command('connect')
-@click.argument('endpoint')
-@click.option('--auth', help='Authentication method')
-@click.pass_context
-def connect_cluster(ctx, endpoint: str, auth: Optional[str]):
-    """Connect to cluster"""
-    return asyncio.run(cluster.connect(ctx, endpoint, auth))
-
-
-@cluster.command('status')
-@click.pass_context
-def cluster_status(ctx):
-    """Show cluster status"""
-    return asyncio.run(cluster.status(ctx))
-
-
-@cluster.command('nodes')
-@click.option('--detailed', '-d', is_flag=True)
-@click.pass_context
-def cluster_nodes(ctx, detailed: bool):
-    """List cluster nodes"""
-    return asyncio.run(cluster.nodes(ctx, detailed))
-
-
-# Configuration management
-@cli.group('config')
-def config_group():
-    """Manage CLI configuration"""
-    pass
-
-
-@config_group.command('set')
-@click.argument('key')
-@click.argument('value')
-@click.option('--profile', help='Profile to modify')
-@click.pass_context
-def config_set(ctx, key: str, value: str, profile: Optional[str]):
-    """Set configuration value"""
-    return asyncio.run(config_cmd.set_config(ctx, key, value, profile))
-
-
-@config_group.command('get')
-@click.argument('key')
-@click.option('--profile', help='Profile to query')
-@click.pass_context
-def config_get(ctx, key: str, profile: Optional[str]):
-    """Get configuration value"""
-    return asyncio.run(config_cmd.get_config(ctx, key, profile))
-
-
-@config_group.command('profiles')
-@click.pass_context
-def config_profiles(ctx):
-    """List configuration profiles"""
-    return asyncio.run(config_cmd.list_profiles(ctx))
-
-
-@config_group.command('init')
-@click.option('--interactive', '-i', is_flag=True)
-@click.pass_context
-def config_init(ctx, interactive: bool):
-    """Initialize configuration"""
-    return asyncio.run(config_cmd.init_config(ctx, interactive))
+def batch_process(ctx, directory: str, pattern: str, prompt: str):
+    """Process files in batch"""
+    async def _batch():
+        async with GleitzeitCLIClient(
+            ctx.obj['host'], ctx.obj['port']
+        ) as client:
+            try:
+                click.echo(f"🔄 Processing files in {directory} matching {pattern}")
+                result = await client.batch_process(directory, pattern, prompt)
+                
+                workflow_id = result.get('workflow_id')
+                click.echo(f"✅ Batch workflow submitted: {workflow_id}")
+                click.echo(f"   Use 'gleitzeit workflow get {workflow_id}' to check progress")
+                
+            except Exception as e:
+                click.echo(f"❌ Error: {e}", err=True)
+                sys.exit(1)
+    
+    asyncio.run(_batch())
 
 
 # Server commands
 @cli.command('serve')
-@click.option('--host', default='127.0.0.1', help='Server host')
+@click.option('--host', default='0.0.0.0', help='Server host')
 @click.option('--port', default=8000, help='Server port')
-@click.option('--workers', default=1, help='Number of worker processes')
-@click.pass_context
-def serve(ctx, host: str, port: int, workers: int):
-    """Start the Gleitzeit API server"""
+def serve(host: str, port: int):
+    """Start the API server"""
+    click.echo(f"🚀 Starting Gleitzeit API server on {host}:{port}")
+    
     import uvicorn
     from gleitzeit.api.main import app
     
-    logger.info(f"Starting Gleitzeit API server on {host}:{port}")
-    uvicorn.run(
-        "gleitzeit.api.main:app",
-        host=host,
-        port=port,
-        workers=workers,
-        log_level="info"
-    )
+    uvicorn.run(app, host=host, port=port)
 
 
-def main():
-    """Main CLI entry point"""
-    try:
-        cli()
-    except KeyboardInterrupt:
-        click.echo("\nInterrupted by user", err=True)
-        sys.exit(130)
-    except Exception as e:
-        if logger.isEnabledFor(logging.DEBUG):
-            import traceback
-            traceback.print_exc()
-        else:
-            click.echo(f"Error: {e}", err=True)
-        sys.exit(1)
+@cli.command('ui')
+@click.option('--port', default=8001, help='UI port')
+@click.pass_context
+def ui(ctx, port: int):
+    """Start the Web UI"""
+    click.echo(f"🌐 Starting Gleitzeit Web UI on port {port}")
+    click.echo(f"   API endpoint: http://{ctx.obj['host']}:{ctx.obj['port']}")
+    
+    import uvicorn
+    from gleitzeit.ui.api.app import app
+    
+    uvicorn.run(app, host='0.0.0.0', port=port)
+
+
+# Convenience aliases for common operations
+@cli.command('run')
+@click.argument('workflow_file', type=click.Path(exists=True))
+@click.option('--wait/--no-wait', default=True, help='Wait for completion')
+@click.pass_context
+def run(ctx, workflow_file: str, wait: bool):
+    """Run a workflow (alias for workflow run)"""
+    ctx.invoke(run_workflow, workflow_file=workflow_file, wait=wait, output='text')
+
+
+@cli.command('list')
+@click.option('--tasks', is_flag=True, help='List tasks instead of workflows')
+@click.option('--limit', default=10, help='Number to show')
+@click.pass_context
+def list_items(ctx, tasks: bool, limit: int):
+    """List workflows or tasks"""
+    if tasks:
+        ctx.invoke(list_tasks, limit=limit)
+    else:
+        ctx.invoke(list_workflows, limit=limit)
 
 
 if __name__ == '__main__':
-    main()
+    cli()

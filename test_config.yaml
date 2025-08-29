@@ -1,5 +1,0 @@
-native:
-  persist_events: true
-  persistence_type: memory
-  max_concurrent_tasks: 5
-  event_retention_days: 30
