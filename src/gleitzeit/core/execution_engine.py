@@ -575,8 +575,7 @@ class ExecutionEngine:
                     from ..core.events import create_task_failed_event
                     failed_event = create_task_failed_event(
                         task_id=task.id,
-                        task_name=task.name,
-                        error=task_error.to_json_string(),
+                        error_message=task_error.to_json_string(),
                         workflow_id=task.workflow_id,
                         source="execution_engine"
                     )

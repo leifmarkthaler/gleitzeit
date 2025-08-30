@@ -679,7 +679,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             execution_data = {
                 'execution_id': execution.execution_id,
                 'workflow_id': execution.workflow_id,
-                'status': execution.status,
+                'status': execution.status.value if hasattr(execution.status, 'value') else str(execution.status),
                 'started_at': execution.started_at.isoformat() if execution.started_at else '',
                 'completed_at': execution.completed_at.isoformat() if execution.completed_at else '',
                 'error_message': execution.error_message or '',

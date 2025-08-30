@@ -8,7 +8,8 @@ from enum import Enum
 from typing import Optional, Union, Any, Dict, List
 from ..client.mixins import (
     WorkflowMixin, TaskMixin, QueueMixin, 
-    BatchProcessingMixin, AuthMixin, SystemMixin, ReplayMixin
+    BatchProcessingMixin, AuthMixin, SystemMixin, ReplayMixin,
+    LogMixin, EventErrorMixin, MonitoringMixin, AdminMixin, StreamingMixin
 )
 from ..client.adapters import BaseAdapter, APIAdapter, NativeAdapter
 
@@ -27,7 +28,12 @@ class ModularGleitzeitClient(
     BatchProcessingMixin,
     AuthMixin,
     SystemMixin,
-    ReplayMixin
+    ReplayMixin,
+    LogMixin,
+    EventErrorMixin,
+    MonitoringMixin,
+    AdminMixin,
+    StreamingMixin
 ):
     """
     Modular Gleitzeit client with clean separation of concerns.
@@ -43,6 +49,7 @@ class ModularGleitzeitClient(
         api_port: int = 8000,
         auto_start_server: bool = True,
         keep_server_running: bool = True,
+        headless: bool = False,
         **native_config
     ):
         """
@@ -54,6 +61,7 @@ class ModularGleitzeitClient(
             api_port: API server port
             auto_start_server: Auto-start API server if not running
             keep_server_running: Keep server running after client closes
+            headless: Run server without UI when auto-starting
             **native_config: Configuration for native mode
         """
         self.mode = ClientMode(mode) if isinstance(mode, str) else mode
@@ -61,6 +69,7 @@ class ModularGleitzeitClient(
         self.api_port = api_port
         self.auto_start_server = auto_start_server
         self.keep_server_running = keep_server_running
+        self.headless = headless
         self.native_config = native_config
         
         self._adapter: Optional[BaseAdapter] = None
@@ -155,12 +164,16 @@ class ModularGleitzeitClient(
         
         try:
             # Start server process
+            cmd = [
+                "python", "-m", "gleitzeit.cli.main",
+                "serve", "--port", str(self.api_port),
+                "--host", self.api_host
+            ]
+            if self.headless:
+                cmd.append("--headless")
+            
             self._server_process = subprocess.Popen(
-                [
-                    "python", "-m", "gleitzeit.cli.gleitzeit_cli",
-                    "serve", "--port", str(self.api_port),
-                    "--host", self.api_host, "--headless"
-                ],
+                cmd,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )

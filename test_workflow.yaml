@@ -1,0 +1,7 @@
+name: Test Auth Workflow
+description: Testing auth system with basic mode
+tasks:
+  - id: test_task
+    type: shell
+    config:
+      command: echo "Hello from basic user"

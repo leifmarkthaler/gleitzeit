@@ -56,7 +56,8 @@ class GleitzeitCLIClient:
                 api_host=self.host,
                 api_port=self.port,
                 auto_start_server=True,
-                keep_server_running=True
+                keep_server_running=True,
+                headless=False  # CLI users typically want the UI
             )
             
             # Initialize the client
@@ -65,7 +66,8 @@ class GleitzeitCLIClient:
             # Check if we have API mode (server is running)
             if self.gleitzeit_client.mode == ClientMode.API:
                 if await self.check_server():
-                    # Don't show message every time - it's expected behavior
+                    # In basic mode, auth is handled automatically by the server
+                    # No need to get a token - the middleware assigns basic user
                     return True
             
             # If we're in native mode, the server couldn't be started
@@ -75,6 +77,7 @@ class GleitzeitCLIClient:
         except Exception as e:
             click.echo(f"❌ Failed to initialize client: {e}", err=True)
             return False
+    
     
     async def check_server(self) -> bool:
         """Check if server is running"""
@@ -960,14 +963,34 @@ def batch_process(ctx, directory: str, pattern: str, prompt: str):
 @cli.command('serve')
 @click.option('--host', default='0.0.0.0', help='Server host')
 @click.option('--port', default=8000, help='Server port')
-def serve(host: str, port: int):
-    """Start the API server"""
+@click.option('--headless', is_flag=True, help='Run without UI (API only)')
+@click.option('--ui-port', default=8001, help='UI port (if not headless)')
+def serve(host: str, port: int, headless: bool, ui_port: int):
+    """Start the API server (and UI unless --headless)"""
     click.echo(f"🚀 Starting Gleitzeit API server on {host}:{port}")
+    
+    if not headless:
+        # Start UI in background
+        import subprocess
+        import time
+        click.echo(f"🌐 Starting Web UI on port {ui_port}")
+        ui_process = subprocess.Popen(
+            ["python", "-m", "uvicorn", "gleitzeit.ui.api.app:app", 
+             "--host", "0.0.0.0", "--port", str(ui_port)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        time.sleep(1)  # Give UI a moment to start
+        click.echo(f"✨ Web UI available at http://localhost:{ui_port}")
     
     import uvicorn
     from gleitzeit.api.main import app
     
-    uvicorn.run(app, host=host, port=port)
+    try:
+        uvicorn.run(app, host=host, port=port)
+    finally:
+        if not headless and 'ui_process' in locals():
+            ui_process.terminate()
 
 
 @cli.command('ui')

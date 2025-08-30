@@ -29,9 +29,9 @@ class HTTPProvider(SimpleProvider):
         class WeatherProvider(HTTPProvider):
             base_url = "https://api.weather.com"
             
-            async def execute(self, method: str, **params):
+            async def execute(self, method: str, params: Dict[str, Any]):
                 if method == "get_weather":
-                    response = await self.get("/current", params={"city": params["city"]})
+                    response = await self.get("/current", params={"city": params.get("city")})
                     return {
                         "temperature": response["main"]["temp"],
                         "condition": response["weather"][0]["main"]
@@ -73,6 +73,9 @@ class HTTPProvider(SimpleProvider):
     
     async def initialize(self) -> None:
         """Initialize HTTP session with configured settings"""
+        # Call parent initialize first
+        await super().initialize()
+        
         timeout_config = aiohttp.ClientTimeout(total=self.timeout)
         
         self.session = aiohttp.ClientSession(
@@ -80,7 +83,10 @@ class HTTPProvider(SimpleProvider):
             headers=self.default_headers
         )
         
-        self.logger.info(f"HTTP provider initialized: {self.base_url}")
+        # Use module-level logger if instance logger not available
+        import logging
+        logger = getattr(self, 'logger', logging.getLogger(f'gleitzeit.providers.{self.provider_id}'))
+        logger.info(f"HTTP provider initialized: {self.base_url}")
     
     async def shutdown(self) -> None:
         """Clean up HTTP session"""
@@ -204,9 +210,9 @@ class HTTPProvider(SimpleProvider):
                 
                 # Handle different status codes
                 if response.status == 401:
-                    raise AuthenticationError("Authentication failed (401)")
+                    raise AuthenticationError(endpoint=url, auth_method="bearer")
                 elif response.status == 403:
-                    raise AuthenticationError("Access forbidden (403)")
+                    raise AuthenticationError(endpoint=url, auth_method="bearer")
                 elif response.status >= 500:
                     error_text = await response.text()
                     raise ProviderError(f"Server error ({response.status}): {error_text}")
@@ -255,7 +261,7 @@ class RESTProvider(HTTPProvider):
     # Override this in subclasses
     endpoints: Dict[str, Dict[str, str]] = {}
     
-    async def execute(self, method: str, **params) -> Dict[str, Any]:
+    async def execute(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """
         Automatically route to REST endpoints based on configuration.
         
@@ -331,7 +337,9 @@ def create_simple_http_provider(
         )
     """
     class DynamicRESTProvider(RESTProvider):
-        endpoints = endpoints
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.endpoints = endpoints
     
     provider_id = provider_id or protocol_id.split('/')[0]
     

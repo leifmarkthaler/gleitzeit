@@ -381,3 +381,55 @@ def simple_http_provider(
         return HTTPConfigProvider()
     
     return decorator
+
+
+# New decorators for enhanced validation and monitoring
+
+def validated_provider(
+    strict: bool = False,
+    auto_validate: bool = True
+):
+    """
+    Class decorator that ensures provider is validated on creation.
+    
+    Usage:
+        @validated_provider(strict=True)
+        class MyProvider(SimpleProvider):
+            async def execute(self, method, params):
+                return {"result": "data"}
+    
+    Args:
+        strict: Enable strict validation mode
+        auto_validate: Validate on initialization (default: True)
+    """
+    def decorator(cls):
+        original_init = cls.__init__
+        
+        @wraps(original_init)
+        def new_init(self, *args, **kwargs):
+            # Force validation settings
+            kwargs['validate_on_init'] = auto_validate
+            kwargs['strict_validation'] = strict
+            
+            # Call original init
+            original_init(self, *args, **kwargs)
+        
+        cls.__init__ = new_init
+        cls._validated_provider = True
+        
+        return cls
+    
+    return decorator
+
+
+def auto_validated(cls):
+    """
+    Simple class decorator that enables automatic validation.
+    
+    Usage:
+        @auto_validated
+        class MyProvider(SimpleProvider):
+            async def execute(self, method, params):
+                return {"result": "data"}
+    """
+    return validated_provider(strict=False, auto_validate=True)(cls)

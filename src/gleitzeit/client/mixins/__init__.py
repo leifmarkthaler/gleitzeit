@@ -9,6 +9,11 @@ from .batch import BatchProcessingMixin
 from .auth import AuthMixin
 from .system import SystemMixin
 from .replay import ReplayMixin
+from .logs import LogMixin
+from .event_errors import EventErrorMixin
+from .monitoring import MonitoringMixin
+from .admin import AdminMixin
+from .streaming import StreamingMixin
 
 __all__ = [
     'WorkflowMixin',
@@ -17,5 +22,10 @@ __all__ = [
     'BatchProcessingMixin',
     'AuthMixin',
     'SystemMixin',
-    'ReplayMixin'
+    'ReplayMixin',
+    'LogMixin',
+    'EventErrorMixin',
+    'MonitoringMixin',
+    'AdminMixin',
+    'StreamingMixin'
 ]

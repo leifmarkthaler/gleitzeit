@@ -255,3 +255,56 @@ class TaskMixin:
             for task_id, result in zip(task_ids, results)
             if not isinstance(result, Exception)
         }
+    
+    async def get_queue_status(self) -> Dict[str, Any]:
+        """
+        Get task queue status overview.
+        
+        Returns:
+            Queue status with counts and processing rates
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.get_queue_status()
+    
+    async def bulk_cancel_tasks(self, task_ids: List[str]) -> Dict[str, Any]:
+        """
+        Cancel multiple tasks at once.
+        
+        Args:
+            task_ids: List of task IDs to cancel
+            
+        Returns:
+            Results of bulk cancellation
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.bulk_cancel_tasks(task_ids)
+    
+    async def bulk_retry_tasks(self, task_ids: List[str]) -> Dict[str, Any]:
+        """
+        Retry multiple tasks at once.
+        
+        Args:
+            task_ids: List of task IDs to retry
+            
+        Returns:
+            Results of bulk retry with new task IDs
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.bulk_retry_tasks(task_ids)
+    
+    async def get_bulk_task_status(self, task_ids: List[str]) -> Dict[str, Any]:
+        """
+        Get status of multiple tasks at once.
+        
+        Args:
+            task_ids: List of task IDs to check
+            
+        Returns:
+            Dictionary mapping task IDs to their status
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.get_bulk_task_status(task_ids)

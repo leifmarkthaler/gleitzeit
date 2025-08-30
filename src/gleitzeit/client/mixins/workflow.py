@@ -249,3 +249,117 @@ class WorkflowMixin:
             stats['success_rate'] = (completed / stats['total']) * 100
         
         return stats
+    
+    async def get_workflow_timeline(self, workflow_id: str) -> Dict[str, Any]:
+        """
+        Get execution timeline for a workflow.
+        
+        Args:
+            workflow_id: Workflow ID
+            
+        Returns:
+            Timeline with task execution times and dependencies
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.get_workflow_timeline(workflow_id)
+    
+    async def get_workflow_dependencies(self, workflow_id: str) -> Dict[str, Any]:
+        """
+        Get dependency graph for a workflow.
+        
+        Args:
+            workflow_id: Workflow ID
+            
+        Returns:
+            Dependency graph showing task relationships
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.get_workflow_dependencies(workflow_id)
+    
+    async def get_workflow_critical_path(self, workflow_id: str) -> Dict[str, Any]:
+        """
+        Get critical path analysis for a workflow.
+        
+        Args:
+            workflow_id: Workflow ID
+            
+        Returns:
+            Critical path showing longest execution chain
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.get_workflow_critical_path(workflow_id)
+    
+    async def export_workflow(self, workflow_id: str, format: str = "yaml") -> str:
+        """
+        Export workflow definition in specified format.
+        
+        Args:
+            workflow_id: Workflow ID
+            format: Export format (yaml, json, etc.)
+            
+        Returns:
+            Exported workflow definition as string
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.export_workflow(workflow_id, format)
+    
+    async def retry_workflow(self, workflow_id: str, from_task: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Retry a failed workflow.
+        
+        Args:
+            workflow_id: Workflow ID to retry
+            from_task: Optional task ID to retry from
+            
+        Returns:
+            New workflow execution result
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.retry_workflow(workflow_id, from_task)
+    
+    async def bulk_cancel_workflows(self, workflow_ids: List[str]) -> Dict[str, Any]:
+        """
+        Cancel multiple workflows at once.
+        
+        Args:
+            workflow_ids: List of workflow IDs to cancel
+            
+        Returns:
+            Results of bulk cancellation
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.bulk_cancel_workflows(workflow_ids)
+    
+    async def bulk_delete_workflows(self, workflow_ids: List[str]) -> Dict[str, Any]:
+        """
+        Delete multiple workflows at once.
+        
+        Args:
+            workflow_ids: List of workflow IDs to delete
+            
+        Returns:
+            Results of bulk deletion
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.bulk_delete_workflows(workflow_ids)
+    
+    async def get_workflow_templates(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Get available workflow templates.
+        
+        Args:
+            category: Optional category filter
+            
+        Returns:
+            List of workflow templates
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.get_workflow_templates(category)

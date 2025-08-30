@@ -16,7 +16,7 @@ from enum import Enum
 from gleitzeit.core.models import Task, TaskStatus, RetryConfig
 from gleitzeit.core.events import EventType, GleitzeitEvent, create_custom_event
 from gleitzeit.persistence.base import PersistenceBackend
-from gleitzeit.core.errors import is_retryable_error
+from gleitzeit.core.errors import is_retryable_error, TaskError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
@@ -115,15 +115,28 @@ class EventDrivenRetryManager:
             return
         
         # Calculate retry delay
-        delay = self._calculate_backoff(
-            attempt_number,
-            retry_config.backoff_strategy,
-            retry_config.base_delay,
-            retry_config.max_delay,
-            retry_config.jitter
-        )
-        
-        retry_at = datetime.utcnow() + timedelta(seconds=delay)
+        try:
+            delay = self._calculate_backoff(
+                attempt_number,
+                retry_config.backoff_strategy,
+                retry_config.base_delay,
+                retry_config.max_delay,
+                retry_config.jitter
+            )
+            retry_at = datetime.utcnow() + timedelta(seconds=delay)
+        except Exception as e:
+            logger.error(f"Failed to calculate retry delay for task {task_id}: {e}")
+            raise TaskError(
+                f"Failed to calculate retry delay: {str(e)}",
+                code=ErrorCode.TASK_RETRY_ERROR,
+                task_id=task_id,
+                data={
+                    "attempt_number": attempt_number,
+                    "strategy": retry_config.backoff_strategy,
+                    "base_delay": retry_config.base_delay,
+                    "error": str(e)
+                }
+            )
         
         # Update task for retry
         task.status = TaskStatus.RETRY_PENDING
@@ -137,14 +150,18 @@ class EventDrivenRetryManager:
         
         # Schedule the retry if we have a scheduler
         if self.scheduler and hasattr(self.scheduler, 'schedule_task_retry'):
-            # Use the EventScheduler's task retry method
-            from datetime import timedelta
-            await self.scheduler.schedule_task_retry(
-                task_id=task_id,
-                retry_delay=timedelta(seconds=delay),
-                attempt_count=attempt_number + 1,
-                error_message=task.metadata.get('last_error', 'Unknown error') if task.metadata else 'Unknown error'
-            )
+            try:
+                # Use the EventScheduler's task retry method
+                await self.scheduler.schedule_task_retry(
+                    task_id=task_id,
+                    retry_delay=timedelta(seconds=delay),
+                    attempt_count=attempt_number + 1,
+                    error_message=task.metadata.get('last_error', 'Unknown error') if task.metadata else 'Unknown error'
+                )
+            except Exception as e:
+                logger.error(f"Failed to schedule retry for task {task_id}: {e}")
+                # Fall back to asyncio scheduling
+                asyncio.create_task(self._delayed_retry(task_id, delay))
         else:
             # Without scheduler or if method not available, use asyncio
             asyncio.create_task(self._delayed_retry(task_id, delay))
