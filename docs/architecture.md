@@ -86,12 +86,12 @@ async with GleitzeitClient(mode="auto") as client:
 
 ### 2. Execution Layer
 
-#### ExecutionEngine (`core/execution_engine.py`)
+#### ExecutionEngine (`core/execution_engine_v2.py`)
 The central orchestrator that:
 - **Manages workflow lifecycle**: Submission, execution, completion
-- **Runs in event-driven mode**: Continuously processes task queue
+- **Fully event-driven**: No polling loops, responds to events
 - **Handles task state transitions**: PENDING → RUNNING → COMPLETED/FAILED
-- **Manages retries**: Exponential backoff with configurable attempts
+- **Delegates to specialized managers**: TaskOrchestrator, TaskExecutor, RetryManager
 
 #### TaskQueue (`task_queue/queue_manager.py`)
 Priority-based task queue with:

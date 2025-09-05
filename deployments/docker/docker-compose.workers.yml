@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  # Redis for persistence
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - gleitzeit
+
+  # Resource Service (future - using placeholder for now)
+  resource-service:
+    image: nginx:alpine
+    ports:
+      - "8080:80"
+    networks:
+      - gleitzeit
+    # Placeholder - will be replaced with actual resource service
+
+  # Worker Service 1
+  worker-1:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.worker
+    ports:
+      - "8091:8091"
+    environment:
+      WORKER_POOL_SIZE: 20
+      REDIS_URL: redis://redis:6379
+      PERSISTENCE_TYPE: redis
+      RESOURCE_SERVICE_URL: http://resource-service:80
+      WORKER_SERVICE_NAME: worker-1
+    depends_on:
+      - redis
+      - resource-service
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+
+  # Worker Service 2
+  worker-2:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.worker
+    ports:
+      - "8092:8091"
+    environment:
+      WORKER_POOL_SIZE: 20
+      REDIS_URL: redis://redis:6379
+      PERSISTENCE_TYPE: redis
+      RESOURCE_SERVICE_URL: http://resource-service:80
+      WORKER_SERVICE_NAME: worker-2
+    depends_on:
+      - redis
+      - resource-service
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+
+  # Worker Service 3
+  worker-3:
+    build:
+      context: ../..
+      dockerfile: deployments/docker/Dockerfile.worker
+    ports:
+      - "8093:8091"
+    environment:
+      WORKER_POOL_SIZE: 20
+      REDIS_URL: redis://redis:6379
+      PERSISTENCE_TYPE: redis
+      RESOURCE_SERVICE_URL: http://resource-service:80
+      WORKER_SERVICE_NAME: worker-3
+    depends_on:
+      - redis
+      - resource-service
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+
+  # API Service (configured to use workers)
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      REDIS_URL: redis://redis:6379
+      PERSISTENCE_TYPE: redis
+      WORKER_SERVICE_URLS: "http://worker-1:8091,http://worker-2:8091,http://worker-3:8091"
+    depends_on:
+      - redis
+      - worker-1
+      - worker-2
+      - worker-3
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+
+  # Load Balancer for workers
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8090:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - worker-1
+      - worker-2
+      - worker-3
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+
+networks:
+  gleitzeit:
+    driver: bridge
+
+volumes:
+  redis_data:

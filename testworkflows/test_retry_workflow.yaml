@@ -1,0 +1,39 @@
+# Test Retry Workflow
+# Uses an invalid model name to test retry mechanism
+
+name: "Test Retry Workflow"
+description: "Tests retry mechanism with a failing LLM task"
+version: "1.0"
+
+# Workflow configuration
+timeout: 120
+wait_for_completion: true
+
+# Task definitions
+tasks:
+  - name: "working_task"
+    method: "python/execute"
+    priority: 2
+    params:
+      file: "examples/scripts/count_words.py"
+      timeout: 10
+
+  - name: "failing_llm_task"
+    method: "llm/chat"
+    priority: 2
+    retry:
+      max_attempts: 3
+      delay: 2
+      backoff: "exponential"
+    params:
+      model: "invalid_model_name_xyz"  # This model doesn't exist - will fail
+      messages:
+        - role: "user"
+          content: "Hello, this should fail due to invalid model name"
+
+  - name: "another_working_task"
+    method: "python/execute"
+    priority: 1
+    params:
+      file: "examples/scripts/generate_numbers.py"
+      timeout: 10

@@ -17,7 +17,7 @@ import yaml
 from pathlib import Path
 from typing import Dict, Any
 
-from gleitzeit.core.execution_engine import ExecutionEngine, ExecutionMode
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine, ExecutionMode
 from gleitzeit.core.workflow_loader import load_workflow_from_dict
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.providers.ollama_provider import OllamaProvider

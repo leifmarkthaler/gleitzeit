@@ -1,0 +1,41 @@
+# Mixed Provider Workflow Example
+# Demonstrates using both LLM and Python execution
+
+name: "Mixed Provider Workflow"
+description: "Combines LLM tasks with Python code execution"
+version: "1.0"
+
+# Workflow configuration
+timeout: 180
+wait_for_completion: true
+
+# Tasks using different providers
+tasks:
+  - name: "generate_numbers"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Generate 5 random numbers between 1 and 100. Reply with just the numbers separated by commas, nothing else."
+
+  - name: "calculate_stats"
+    protocol: "python/v1"
+    method: "python/execute"
+    dependencies: ["generate_numbers"]
+    params:
+      file: "examples/scripts/calculate_stats.py"
+      context:
+        numbers_str: "${generate_numbers.response}"
+      timeout: 30
+
+  - name: "summarize_results"
+    protocol: "llm/v1"
+    method: "llm/chat"
+    dependencies: ["calculate_stats"]
+    params:
+      model: "llama3.2:latest"
+      messages:
+        - role: "user"
+          content: "Summarize these statistical results in a friendly, easy-to-understand way: ${calculate_stats.result}"

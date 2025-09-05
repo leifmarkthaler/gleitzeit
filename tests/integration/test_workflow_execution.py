@@ -23,7 +23,7 @@ from typing import Dict, Any, List
 from unittest.mock import Mock, AsyncMock, patch
 from datetime import datetime
 
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.core.models import Task, Workflow, TaskStatus, WorkflowStatus, Priority
 from gleitzeit.providers.base import ProtocolProvider
 from gleitzeit.registry import ProtocolProviderRegistry

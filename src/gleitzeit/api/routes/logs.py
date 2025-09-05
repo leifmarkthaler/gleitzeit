@@ -1,24 +1,21 @@
 """
 Logging API routes that delegate to client methods.
+
+Uses dependency injection for stateless operation.
 """
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Request, Query
-from .base import APIRouteBase, get_shared_client
+from fastapi import APIRouter, Request, Query, Depends
+from gleitzeit.client import GleitzeitClient
+from ..dependencies import get_client
+from .base import APIRouteBase
 
 router = APIRouter(prefix="/logs", tags=["logs"])
 
 
-# Create a single instance to use for all routes
-_log_routes = None
-
-def _get_routes() -> APIRouteBase:
-    """Get the log routes instance."""
-    global _log_routes
-    if _log_routes is None:
-        _log_routes = APIRouteBase(get_shared_client())
-    return _log_routes
+# Create route handler instance (stateless - just contains logic)
+log_routes = APIRouteBase()
 
 
 @router.get("/", response_model=List[Dict[str, Any]])
@@ -29,31 +26,36 @@ async def get_logs(
     end_time: Optional[datetime] = Query(None, description="End time for log range"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    req: Request = None
+    client: GleitzeitClient = Depends(get_client)
 ):
     """Get logs with optional filtering."""
-    routes = _get_routes()
-    return await routes.handle_client_call(
+    return await log_routes.handle_client_call(
         "get_logs",
         level=level,
         source=source,
         start_time=start_time,
         end_time=end_time,
         limit=limit,
-        offset=offset
+        offset=offset,
+        client=client
     )
 
+
 @router.get("/levels", response_model=List[str])
-async def get_log_levels(req: Request):
+async def get_log_levels(
+    client: GleitzeitClient = Depends(get_client)
+):
     """Get available log levels."""
-    routes = _get_routes()
-    return await routes.handle_client_call("get_log_levels")
+    return await log_routes.handle_client_call("get_log_levels", client=client)
+
 
 @router.get("/sources", response_model=List[str])
-async def get_log_sources(req: Request):
+async def get_log_sources(
+    client: GleitzeitClient = Depends(get_client)
+):
     """Get available log sources."""
-    routes = _get_routes()
-    return await routes.handle_client_call("get_log_sources")
+    return await log_routes.handle_client_call("get_log_sources", client=client)
+
 
 @router.get("/task/{task_id}", response_model=List[Dict[str, Any]])
 async def get_task_logs(
@@ -61,17 +63,18 @@ async def get_task_logs(
     level: Optional[str] = Query(None, description="Log level filter"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    req: Request = None
+    client: GleitzeitClient = Depends(get_client)
 ):
     """Get logs for a specific task."""
-    routes = _get_routes()
-    return await routes.handle_client_call(
+    return await log_routes.handle_client_call(
         "get_task_logs",
         task_id=task_id,
         level=level,
         limit=limit,
-        offset=offset
+        offset=offset,
+        client=client
     )
+
 
 @router.get("/workflow/{workflow_id}", response_model=List[Dict[str, Any]])
 async def get_workflow_logs(
@@ -79,48 +82,52 @@ async def get_workflow_logs(
     level: Optional[str] = Query(None, description="Log level filter"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    req: Request = None
+    client: GleitzeitClient = Depends(get_client)
 ):
     """Get logs for a specific workflow."""
-    routes = _get_routes()
-    return await routes.handle_client_call(
+    return await log_routes.handle_client_call(
         "get_workflow_logs",
         workflow_id=workflow_id,
         level=level,
         limit=limit,
-        offset=offset
+        offset=offset,
+        client=client
     )
+
 
 @router.delete("/", response_model=Dict[str, Any])
 async def clear_logs(
+    req: Request,
     before: Optional[datetime] = Query(None, description="Clear logs before this time"),
     level: Optional[str] = Query(None, description="Only clear logs of this level"),
     source: Optional[str] = Query(None, description="Only clear logs from this source"),
-    req: Request = None
+    client: GleitzeitClient = Depends(get_client)
 ):
     """Clear logs with optional filters (admin only)."""
-    routes = _get_routes()
-    routes.require_admin(req)
-    return await routes.handle_client_call(
+    log_routes.require_admin(req)
+    return await log_routes.handle_client_call(
         "clear_logs",
         before=before,
         level=level,
-        source=source
+        source=source,
+        client=client
     )
+
 
 @router.get("/stats", response_model=Dict[str, Any])
 async def get_log_statistics(
     start_time: Optional[datetime] = Query(None, description="Start time for stats"),
     end_time: Optional[datetime] = Query(None, description="End time for stats"),
-    req: Request = None
+    client: GleitzeitClient = Depends(get_client)
 ):
     """Get log statistics."""
-    routes = _get_routes()
-    return await routes.handle_client_call(
+    return await log_routes.handle_client_call(
         "get_log_statistics",
         start_time=start_time,
-        end_time=end_time
+        end_time=end_time,
+        client=client
     )
+
 
 @router.post("/export", response_model=Dict[str, Any])
 async def export_logs(
@@ -129,18 +136,32 @@ async def export_logs(
     source: Optional[str] = Query(None, description="Source filter"),
     start_time: Optional[datetime] = Query(None, description="Start time"),
     end_time: Optional[datetime] = Query(None, description="End time"),
-    req: Request = None
+    client: GleitzeitClient = Depends(get_client)
 ):
     """Export logs in specified format."""
-    routes = _get_routes()
-    return await routes.handle_client_call(
+    return await log_routes.handle_client_call(
         "export_logs",
         format=format,
         level=level,
         source=source,
         start_time=start_time,
-        end_time=end_time
+        end_time=end_time,
+        client=client
     )
 
-# Export router for inclusion in main API
-__all__ = ["router"]
+
+@router.get("/stream", response_model=List[Dict[str, Any]])
+async def stream_logs(
+    level: Optional[str] = Query(None, description="Log level filter"),
+    source: Optional[str] = Query(None, description="Source filter"),
+    tail: int = Query(100, description="Number of recent logs to return"),
+    client: GleitzeitClient = Depends(get_client)
+):
+    """Stream recent logs with optional filtering."""
+    return await log_routes.handle_client_call(
+        "stream_logs",
+        level=level,
+        source=source,
+        tail=tail,
+        client=client
+    )

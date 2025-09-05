@@ -1,0 +1,19 @@
+name: test_persistence_workflow
+description: Test workflow to verify persistence is working
+
+tasks:
+  - id: task1
+    type: python
+    code_file: persistence_task1.py
+
+  - id: task2
+    type: python
+    code_file: persistence_task2.py
+    depends_on:
+      - task1
+
+  - id: task3
+    type: python
+    code_file: persistence_task3.py
+    depends_on:
+      - task2

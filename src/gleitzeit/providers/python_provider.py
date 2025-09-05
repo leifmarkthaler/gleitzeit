@@ -14,11 +14,12 @@ import shutil
 
 from gleitzeit.providers.base import ProtocolProvider
 from gleitzeit.core.errors import InvalidParameterError, TaskExecutionError
+from gleitzeit.core.logging_mixin import LoggingMixin
 
 logger = logging.getLogger(__name__)
 
 
-class PythonProvider(ProtocolProvider):
+class PythonProvider(ProtocolProvider, LoggingMixin):
     """
     Clean Python file execution provider - pure protocol implementation
     
@@ -65,6 +66,9 @@ class PythonProvider(ProtocolProvider):
             resource_manager=resource_manager,
             hub=hub
         )
+        
+        # Initialize LoggingMixin to set _component_name
+        LoggingMixin.__init__(self)
         
         self.allow_local = allow_local
         self.trusted_dirs = [Path(d).resolve() for d in (trusted_dirs or [])]
@@ -124,31 +128,59 @@ class PythonProvider(ProtocolProvider):
         For container execution, expects 'container_endpoint' parameter from ResourceManager.
         Otherwise executes locally if file is trusted.
         """
-        if method == "python/execute":
-            return await self._execute_file(params)
-        elif method == "python/validate":
-            return await self._validate_file(params)
-        elif method == "python/info":
-            return self._get_info()
-        else:
-            raise InvalidParameterError(param_name='method', reason=f"Unsupported method: {method}")
+        # Extract task context for logging
+        task_id = params.get('task_id')
+        workflow_id = params.get('workflow_id')
+        
+        await self.log_operation(
+            "execute_start", 
+            task_id=task_id, 
+            workflow_id=workflow_id, 
+            method=method,
+            has_file=bool(params.get('file') or params.get('file_path'))
+        )
+        
+        try:
+            if method == "python/execute":
+                result = await self._execute_file(params)
+                await self.log_success(
+                    "execute_complete",
+                    task_id=task_id,
+                    workflow_id=workflow_id,
+                    method=method,
+                    output_length=len(str(result.get('output', '')))
+                )
+                return result
+            elif method == "python/validate":
+                result = await self._validate_file(params)
+                await self.log_success("validate_complete", task_id=task_id, workflow_id=workflow_id)
+                return result
+            elif method == "python/info":
+                result = self._get_info()
+                await self.log_success("info_complete", task_id=task_id, workflow_id=workflow_id)
+                return result
+            else:
+                error = InvalidParameterError(param_name='method', reason=f"Unsupported method: {method}")
+                await self.log_error("execute_failed", error, task_id=task_id, workflow_id=workflow_id, method=method)
+                raise error
+        except Exception as e:
+            await self.log_error("execute_failed", e, task_id=task_id, workflow_id=workflow_id, method=method)
+            raise
     
     async def _execute_file(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """Execute a Python file or code"""
-        file_path = params.get('file') or params.get('file_path')
-        code = params.get('code')
+        """Execute a Python file"""
+        # Extract context for logging
+        task_id = params.get('task_id')
+        workflow_id = params.get('workflow_id')
         
-        # If code is provided, create a temporary file
-        if code and not file_path:
-            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False)
-            temp_file.write(code)
-            temp_file.close()
-            file_path = temp_file.name
-            is_temp = True
-        elif not file_path:
-            raise InvalidParameterError(param_name='file', reason="Missing 'file', 'file_path', or 'code' parameter")
-        else:
-            is_temp = False
+        file_path = params.get('file') or params.get('file_path')
+        
+        if not file_path:
+            error = InvalidParameterError(param_name='file', reason="Missing 'file' or 'file_path' parameter")
+            await self.log_error("file_validation_failed", error, task_id=task_id, workflow_id=workflow_id)
+            raise error
+        
+        is_temp = False
         
         args = params.get('args', [])
         env = params.get('env', {})
@@ -157,29 +189,60 @@ class PythonProvider(ProtocolProvider):
         # Container endpoint provided by ResourceManager/DockerHub
         container_endpoint = params.get('container_endpoint')
         
+        await self.log_operation(
+            "file_validation", 
+            task_id=task_id, 
+            workflow_id=workflow_id, 
+            file_path=str(file_path),
+            has_container_endpoint=bool(container_endpoint),
+            timeout=timeout
+        )
+        
         # Resolve file path
         file_path = Path(file_path).resolve()
         
         # Validate file
         if not file_path.exists():
-            raise InvalidParameterError(param_name='file', reason=f"File not found: {file_path}")
+            error = InvalidParameterError(param_name='file', reason=f"File not found: {file_path}")
+            await self.log_error("file_not_found", error, task_id=task_id, workflow_id=workflow_id, file_path=str(file_path))
+            raise error
         if not file_path.suffix == '.py':
-            raise InvalidParameterError(param_name='file', reason=f"Not a Python file: {file_path}")
+            error = InvalidParameterError(param_name='file', reason=f"Not a Python file: {file_path}")
+            await self.log_error("invalid_file_type", error, task_id=task_id, workflow_id=workflow_id, file_path=str(file_path))
+            raise error
         
         try:
             # If container endpoint provided, execute in container
             if container_endpoint:
+                await self.log_operation("container_execution_start", task_id=task_id, workflow_id=workflow_id, endpoint=container_endpoint)
                 result = await self._execute_in_container(
                     container_endpoint, file_path, args, env, timeout
                 )
+                await self.log_operation("container_execution_complete", task_id=task_id, workflow_id=workflow_id, success=result.get('success'))
                 return result
             
             # Otherwise check if local execution is allowed
             # For temporary files (from code), always trust them
             is_trusted = is_temp or self._is_trusted_file(file_path)
             
+            await self.log_debug(
+                "trust_check", 
+                f"File trust check: trusted={is_trusted}, temp={is_temp}", 
+                task_id=task_id, 
+                workflow_id=workflow_id,
+                file_path=str(file_path),
+                is_trusted=is_trusted
+            )
+            
             if not is_trusted:
                 # File is not trusted and no container provided
+                await self.log_warning(
+                    "execution_blocked",
+                    "File not in trusted directories and no container provided",
+                    task_id=task_id,
+                    workflow_id=workflow_id,
+                    file_path=str(file_path)
+                )
                 return {
                     'success': False,
                     'error': f"File {file_path} is not in trusted directories and no container provided",
@@ -188,6 +251,12 @@ class PythonProvider(ProtocolProvider):
                 }
             
             if not self.allow_local:
+                await self.log_warning(
+                    "local_execution_disabled",
+                    "Local execution is disabled",
+                    task_id=task_id,
+                    workflow_id=workflow_id
+                )
                 return {
                     'success': False,
                     'error': "Local execution is disabled",

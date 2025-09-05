@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Dict, Any
 from unittest.mock import Mock, AsyncMock, patch
 
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.core.workflow_loader import load_workflow_from_dict
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.hub.ollama_hub import OllamaHub

@@ -25,7 +25,7 @@ from httpx import AsyncClient, ASGITransport
 
 # Import API and system components
 from gleitzeit.api.main import app, app_state, setup_system, cleanup_system
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.core.workflow_loader import load_workflow_from_file
 from gleitzeit.core.models import Task, Workflow, Priority, TaskStatus
 from gleitzeit.registry import ProtocolProviderRegistry
@@ -35,7 +35,6 @@ from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
 from gleitzeit.hub.mcp_hub import MCPHub
-from gleitzeit.core.batch_processor import BatchProcessor
 from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
 
 

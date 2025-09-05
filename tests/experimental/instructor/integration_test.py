@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch, AsyncMock
 import sys
 
 from gleitzeit.registry import ProtocolProviderRegistry
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.task_queue import QueueManager, DependencyResolver
 from gleitzeit.core.models import Task, TaskStatus
 from gleitzeit.experimental.instructor import InstructorProvider

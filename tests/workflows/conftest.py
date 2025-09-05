@@ -7,7 +7,7 @@ from pathlib import Path
 from unittest.mock import Mock, AsyncMock
 import yaml
 
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter
 from gleitzeit.task_queue import QueueManager, DependencyResolver

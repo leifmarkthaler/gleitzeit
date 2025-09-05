@@ -8,6 +8,8 @@ from datetime import datetime
 import logging
 import os
 
+from gleitzeit.core.models import TaskStatus
+
 logger = logging.getLogger(__name__)
 
 
@@ -220,7 +222,7 @@ class ReplayManager:
         
         # Reset task states for re-execution
         for task in workflow.tasks:
-            task.status = "pending"
+            task.status = TaskStatus.PENDING
             if hasattr(task, 'started_at'):
                 task.started_at = None
             if hasattr(task, 'completed_at'):
@@ -325,7 +327,7 @@ class ReplayManager:
         
         # Reset all task states
         for task in workflow.tasks:
-            task.status = "pending"
+            task.status = TaskStatus.PENDING
             if hasattr(task, 'started_at'):
                 task.started_at = None
             if hasattr(task, 'completed_at'):
@@ -380,13 +382,13 @@ class ReplayManager:
             if task.id in completed_ids and options.skip_completed:
                 tasks_to_skip.append(task.id)
                 # Mark as already completed
-                task.status = "skipped"
+                task.status = TaskStatus.COMPLETED
                 task.metadata = task.metadata or {}
                 task.metadata["skipped_in_replay"] = True
             else:
                 tasks_to_run.append(task.id)
                 # Reset status for re-execution
-                task.status = "pending"
+                task.status = TaskStatus.PENDING
                 if hasattr(task, 'retry_attempts'):
                     task.retry_attempts = 0
                 if task.id in failed_ids:
@@ -429,7 +431,7 @@ class ReplayManager:
         # Configure tasks for debugging
         for task in workflow.tasks:
             # Reset state
-            task.status = "pending"
+            task.status = TaskStatus.PENDING
             if hasattr(task, 'started_at'):
                 task.started_at = None
             if hasattr(task, 'completed_at'):

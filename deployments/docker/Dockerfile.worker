@@ -1,0 +1,36 @@
+# Worker Service Dockerfile
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code
+COPY src/ ./src/
+
+# Set Python path
+ENV PYTHONPATH=/app/src
+
+# Default environment variables
+ENV WORKER_POOL_SIZE=50
+ENV WORKER_PORT=8091
+ENV PERSISTENCE_TYPE=redis
+ENV CLIENT_MODE=native
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8091/health || exit 1
+
+# Expose port
+EXPOSE 8091
+
+# Run worker service
+CMD ["python", "-m", "gleitzeit.worker"]

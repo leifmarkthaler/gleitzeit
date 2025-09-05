@@ -52,13 +52,42 @@ def load_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
     - Retry configuration
     - Priority parsing
     - Batch workflows with dynamic file discovery
+    
+    ID/Name handling logic:
+    - ID is ALWAYS generated internally by Gleitzeit
+    - If file has both ID and name: Use the name, generate ID internally
+    - If file has ID but no name: Use the ID as the name, generate ID internally
+    - If file has neither ID nor name: Set name to "anonymous_<timestamp>", generate ID internally
     """
     # Check if this is a batch workflow
     if data.get('type') == 'batch' or 'batch' in data:
         return create_batch_workflow_from_dict(data)
     
-    # Generate workflow ID if not provided
-    workflow_id = data.get('id', f"workflow-{uuid4().hex[:8]}")
+    # ALWAYS generate workflow ID internally - never use ID from file
+    workflow_id = f"workflow-{uuid4().hex[:8]}"
+    
+    # Determine workflow name based on what's provided in the file
+    file_id = data.get('id')
+    file_name = data.get('name')
+    
+    if file_name:
+        # If name is provided, use it (regardless of whether ID is present)
+        workflow_name = file_name
+    elif file_id:
+        # If only ID is provided, use it as the name
+        workflow_name = file_id
+        logger.info(f"Using file ID '{file_id}' as workflow name since no name was provided")
+    else:
+        # Neither ID nor name provided - generate anonymous name
+        from datetime import datetime
+        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+        workflow_name = f"anonymous_{timestamp}"
+        logger.info(f"No ID or name provided in workflow file, using '{workflow_name}'")
+    
+    # Store the original file ID in metadata if it was provided
+    metadata = data.get('metadata', {})
+    if file_id:
+        metadata['original_file_id'] = file_id
     
     # Parse tasks with name-to-ID mapping for dependency resolution
     tasks = []
@@ -88,10 +117,10 @@ def load_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
     # Create workflow
     workflow = Workflow(
         id=workflow_id,
-        name=data.get('name', 'Unnamed Workflow'),
+        name=workflow_name,
         description=data.get('description', ''),
         tasks=tasks,
-        metadata=data.get('metadata', {})
+        metadata=metadata
     )
     
     # Store provider requirements in metadata if specified
@@ -107,9 +136,27 @@ def create_task_from_dict(data: Dict[str, Any], workflow_id: str,
     Create a Task from dictionary data.
     
     IMPORTANT: Uses 'params' as the key for task parameters, not 'parameters'.
+    
+    ID/Name logic:
+    - Always generate a UUID for the internal task ID
+    - If 'name' is provided in YAML, use it as the task name
+    - If only 'id' is provided in YAML, use it as the task name
+    - The 'id' field in YAML is for user reference, not the internal ID
     """
-    # Generate task ID if not provided
-    task_id = data.get('id', f"task-{uuid4().hex[:8]}")
+    # Always generate a UUID for the internal task ID
+    task_id = f"task-{uuid4().hex[:8]}"
+    
+    # Determine the task name
+    # If 'name' is provided, use it. Otherwise, use 'id' as the name, or generate one
+    provided_id = data.get('id')
+    provided_name = data.get('name')
+    
+    if provided_name:
+        task_name = provided_name
+    elif provided_id:
+        task_name = provided_id  # Use the YAML 'id' as the name
+    else:
+        task_name = task_id  # Fallback to generated ID
     
     # Parse retry configuration (support both 'retry' and 'retry_config' keys)
     retry_config = None
@@ -160,7 +207,7 @@ def create_task_from_dict(data: Dict[str, Any], workflow_id: str,
     # Create task
     task = Task(
         id=task_id,
-        name=data.get('name', task_id),
+        name=task_name,
         protocol=protocol,
         method=method,
         params=params,
@@ -222,9 +269,23 @@ def create_batch_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
     
     logger.info(f"Found {len(files)} files matching '{pattern}' in {directory}")
     
-    # Generate workflow ID
-    workflow_id = data.get('id', f"batch-{uuid4().hex[:8]}")
-    workflow_name = data.get('name', f"Batch Processing ({len(files)} files)")
+    # ALWAYS generate workflow ID internally - never use ID from file
+    workflow_id = f"batch-{uuid4().hex[:8]}"
+    
+    # Determine workflow name based on what's provided in the file
+    file_id = data.get('id')
+    file_name = data.get('name')
+    
+    if file_name:
+        # If name is provided, use it
+        workflow_name = file_name
+    elif file_id:
+        # If only ID is provided, use it as the name
+        workflow_name = file_id
+        logger.info(f"Using file ID '{file_id}' as batch workflow name since no name was provided")
+    else:
+        # Neither ID nor name provided - use default batch name
+        workflow_name = f"Batch Processing ({len(files)} files)"
     
     # Create tasks for each file
     tasks = []
@@ -268,19 +329,26 @@ def create_batch_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
         task = create_task_from_dict(task_data, workflow_id, resolve_dependencies=False)
         tasks.append(task)
     
+    # Build metadata
+    metadata = {
+        'batch': True,
+        'file_count': len(files),
+        'directory': directory,
+        'pattern': pattern,
+        'template': template
+    }
+    
+    # Store the original file ID in metadata if it was provided
+    if file_id:
+        metadata['original_file_id'] = file_id
+    
     # Create workflow
     workflow = Workflow(
         id=workflow_id,
         name=workflow_name,
         description=data.get('description', f"Batch processing of {len(files)} files"),
         tasks=tasks,
-        metadata={
-            'batch': True,
-            'file_count': len(files),
-            'directory': directory,
-            'pattern': pattern,
-            'template': template
-        }
+        metadata=metadata
     )
     
     return workflow

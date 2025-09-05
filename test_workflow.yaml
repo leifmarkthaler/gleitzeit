@@ -1,7 +1,16 @@
-name: Test Auth Workflow
-description: Testing auth system with basic mode
+name: Test Workflow
 tasks:
-  - id: test_task
-    type: shell
-    config:
-      command: echo "Hello from basic user"
+  - id: python-task
+    name: Execute Python
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: test_hello.py
+      
+  - id: llm-task
+    name: Generate Text
+    protocol: llm/v1
+    method: llm/generate
+    params:
+      model: llama5
+      prompt: "Say hello in one sentence."

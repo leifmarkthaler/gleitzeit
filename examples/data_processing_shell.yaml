@@ -1,0 +1,113 @@
+# Data processing workflow using shell commands
+# Demonstrates text processing, file manipulation, and data analysis
+
+name: "Data Processing Pipeline"
+description: "Process CSV data using shell commands and utilities"
+version: "1.0"
+
+timeout: 300
+wait_for_completion: true
+
+tasks:
+  # Step 1: Create sample data
+  - id: "create_sample_data"
+    method: "shell/exec"
+    parameters:
+      command: "echo"
+      args: [
+        "id,name,score,date\n1,Alice,95,2024-01-01\n2,Bob,87,2024-01-02\n3,Charlie,92,2024-01-03\n4,Diana,88,2024-01-04\n5,Eve,94,2024-01-05"
+      ]
+  
+  - id: "save_to_file"
+    method: "shell/exec"
+    dependencies: ["create_sample_data"]
+    parameters:
+      command: "sh"
+      args: ["-c", "echo '${create_sample_data.stdout}' > /tmp/data.csv"]
+  
+  # Step 2: Analyze the data
+  - id: "count_records"
+    method: "shell/pipe"
+    dependencies: ["save_to_file"]
+    parameters:
+      commands:
+        - "cat /tmp/data.csv"
+        - "tail -n +2"  # Skip header
+        - "wc -l"
+  
+  - id: "extract_names"
+    method: "shell/pipe"
+    dependencies: ["save_to_file"]
+    parameters:
+      commands:
+        - "cat /tmp/data.csv"
+        - "tail -n +2"
+        - "cut -d',' -f2"
+  
+  - id: "calculate_average"
+    method: "shell/pipe"
+    dependencies: ["save_to_file"]
+    parameters:
+      commands:
+        - "cat /tmp/data.csv"
+        - "tail -n +2"
+        - "cut -d',' -f3"
+        - "awk '{sum+=$1} END {print sum/NR}'"
+  
+  - id: "find_top_scorer"
+    method: "shell/pipe"
+    dependencies: ["save_to_file"]
+    parameters:
+      commands:
+        - "cat /tmp/data.csv"
+        - "tail -n +2"
+        - "sort -t',' -k3 -nr"
+        - "head -1"
+  
+  # Step 3: Generate report
+  - id: "generate_json_report"
+    method: "shell/exec"
+    dependencies: ["count_records", "calculate_average", "find_top_scorer"]
+    parameters:
+      command: "echo"
+      args: [
+        '{"total_records": ${count_records.stdout}, "average_score": ${calculate_average.stdout}, "top_scorer": "${find_top_scorer.stdout}"}'
+      ]
+  
+  # Step 4: Process with jq (if available)
+  - id: "check_jq"
+    method: "shell/exec"
+    parameters:
+      command: "which"
+      args: ["jq"]
+  
+  - id: "format_with_jq"
+    method: "shell/pipe"
+    dependencies: ["generate_json_report", "check_jq"]
+    parameters:
+      commands:
+        - "echo '${generate_json_report.stdout}'"
+        - "jq '.'"
+  
+  # Step 5: Archive results
+  - id: "create_archive"
+    method: "shell/batch"
+    dependencies: ["format_with_jq"]
+    parameters:
+      commands:
+        - "mkdir -p /tmp/results"
+        - "cp /tmp/data.csv /tmp/results/"
+        - "echo '${generate_json_report.stdout}' > /tmp/results/report.json"
+        - "tar -czf /tmp/results.tar.gz -C /tmp results"
+        - "ls -lh /tmp/results.tar.gz"
+  
+  # Step 6: Cleanup
+  - id: "cleanup"
+    method: "shell/batch"
+    dependencies: ["create_archive"]
+    parameters:
+      commands:
+        - "rm -f /tmp/data.csv"
+        - "rm -rf /tmp/results"
+        - "echo 'Cleanup complete'"
+      stop_on_error: false  # Continue even if files don't exist

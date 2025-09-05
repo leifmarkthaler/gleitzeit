@@ -81,7 +81,7 @@ async def list_workflows(
                         "offset": offset
                     }
         except Exception as e:
-            print(f"Error listing workflows: {e}")
+            logger.error(f"Error listing workflows: {e}")
             return {
                 "workflows": [],
                 "total": 0,
@@ -357,7 +357,7 @@ async def get_workflow_tasks(request: Request, workflow_id: str) -> Dict[str, An
                 else:
                     return {"workflow_id": workflow_id, "tasks": [], "total": 0}
         except Exception as e:
-            print(f"Error getting workflow tasks: {e}")
+            logger.error(f"Error getting workflow tasks: {e}")
             return {"workflow_id": workflow_id, "tasks": [], "total": 0}
 
 @router.get("/{workflow_id}/timeline")
@@ -403,7 +403,7 @@ async def get_workflow_timeline(request: Request, workflow_id: str) -> Dict[str,
                 else:
                     return {"workflow_id": workflow_id, "timeline": [], "total_tasks": 0}
         except Exception as e:
-            print(f"Error getting workflow timeline: {e}")
+            logger.error(f"Error getting workflow timeline: {e}")
             return {"workflow_id": workflow_id, "timeline": [], "total_tasks": 0}
 
 @router.get("/{workflow_id}/results")
@@ -476,7 +476,7 @@ async def get_workflow_results(request: Request, workflow_id: str) -> Dict[str, 
                         "total_tasks": 0
                     }
         except Exception as e:
-            print(f"Error getting workflow results: {e}")
+            logger.error(f"Error getting workflow results: {e}")
             return {
                 "workflow_id": workflow_id,
                 "status": "error",

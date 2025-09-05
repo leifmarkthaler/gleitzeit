@@ -14,6 +14,14 @@ import contextvars
 from gleitzeit.core.logs import LogLevel, LogSource
 from gleitzeit.core.log_collector import get_log_collector, log_context
 
+# Optional OpenTelemetry integration
+try:
+    from opentelemetry import trace
+    OPENTELEMETRY_AVAILABLE = True
+except ImportError:
+    OPENTELEMETRY_AVAILABLE = False
+    trace = None
+
 # Standard logger for fallback
 logger = logging.getLogger(__name__)
 
@@ -263,31 +271,97 @@ class LoggingMixin:
     def clear_log_context(self) -> None:
         """Clear the current log context."""
         log_context.set({})
+    
+    async def traced_operation(self, operation_name: str, **attributes):
+        """Simple traced operation - just logs start/end and adds span attributes if OpenTelemetry available"""
+        from contextlib import asynccontextmanager
+        
+        @asynccontextmanager
+        async def _traced_op():
+            start_time = datetime.utcnow()
+            await self.log_operation(f"{operation_name}_start", **attributes)
+            
+            span = None
+            if OPENTELEMETRY_AVAILABLE and trace:
+                try:
+                    current_span = trace.get_current_span()
+                    if current_span and current_span.is_recording():
+                        span = current_span
+                        # Add attributes to current span
+                        for key, value in attributes.items():
+                            span.set_attribute(f"op.{key}", value)
+                        span.set_attribute("op.component", self._component_name)
+                        span.set_attribute("op.operation", operation_name)
+                except:
+                    pass
+            
+            try:
+                yield span
+                duration = (datetime.utcnow() - start_time).total_seconds()
+                await self.log_success(f"{operation_name}_complete", duration_seconds=duration, **attributes)
+            except Exception as e:
+                duration = (datetime.utcnow() - start_time).total_seconds()
+                await self.log_error(operation_name, e, duration_seconds=duration, **attributes)
+                raise
+        
+        return _traced_op()
 
 
 class SyncLoggingMixin(LoggingMixin):
     """
     Synchronous version of LoggingMixin for non-async components.
     
-    Wraps async methods to make them synchronous.
+    Uses synchronous fallback logging instead of creating async tasks.
+    This ensures true stateless operation without creating event loops.
     """
+    
+    def _sync_log(self, level: LogLevel, message: str, context: Dict[str, Any]):
+        """Direct synchronous logging without async operations."""
+        # Always use fallback logging in sync contexts to avoid event loop issues
+        self._fallback_log(level, message, context)
     
     def log_operation(self, operation: str, level: LogLevel = LogLevel.INFO, **context) -> None:
         """Synchronous version of log_operation."""
-        asyncio.create_task(super().log_operation(operation, level, **context))
+        message = f"{self._component_name}.{operation}"
+        self._sync_log(level, message, context)
     
     def log_success(self, operation: str, **context) -> None:
         """Synchronous version of log_success."""
-        asyncio.create_task(super().log_success(operation, **context))
+        message = f"{self._component_name}.{operation} succeeded"
+        self._sync_log(LogLevel.INFO, message, context)
     
     def log_error(self, operation: str, error: Exception, **context) -> None:
         """Synchronous version of log_error."""
-        asyncio.create_task(super().log_error(operation, error, **context))
+        message = f"{self._component_name}.{operation} failed: {str(error)}"
+        
+        # Add error details to context
+        error_context = {
+            **context,
+            "error_type": type(error).__name__,
+            "error_message": str(error),
+            "operation": operation
+        }
+        
+        # Add error code if it's a GleitzeitError
+        if hasattr(error, 'code'):
+            error_context["error_code"] = error.code.value if hasattr(error.code, 'value') else error.code
+            error_context["error_code_name"] = error.code.name if hasattr(error.code, 'name') else str(error.code)
+        
+        # Add cause if available
+        if hasattr(error, 'cause') and error.cause:
+            error_context["cause"] = str(error.cause)
+            error_context["cause_type"] = type(error.cause).__name__
+        
+        self._sync_log(LogLevel.ERROR, message, error_context)
     
     def log_warning(self, operation: str, warning_message: str, **context) -> None:
         """Synchronous version of log_warning."""
-        asyncio.create_task(super().log_warning(operation, warning_message, **context))
+        message = f"{self._component_name}.{operation}: {warning_message}"
+        self._sync_log(LogLevel.WARNING, message, context)
     
     def log_debug(self, operation: str, debug_message: str, **context) -> None:
         """Synchronous version of log_debug."""
-        asyncio.create_task(super().log_debug(operation, debug_message, **context))
+        message = f"{self._component_name}.{operation}: {debug_message}"
+        self._sync_log(LogLevel.DEBUG, message, context)
+
+

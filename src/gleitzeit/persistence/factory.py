@@ -3,8 +3,7 @@ Persistence Factory with automatic fallback chain
 
 Provides a factory for creating persistence adapters with automatic fallback:
 1. Redis (default) - High performance distributed persistence
-2. SQL (fallback) - If Redis is not available
-3. In-Memory (final fallback) - If SQL fails or for testing
+2. In-Memory (fallback) - If Redis is not available or for testing
 
 This ensures the system always has a working persistence layer.
 """
@@ -15,10 +14,7 @@ from typing import Optional, Dict, Any
 from enum import Enum
 
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter, UnifiedInMemoryAdapter
-from gleitzeit.persistence.unified_sqlalchemy import UnifiedSQLAlchemyAdapter
 from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
-from gleitzeit.persistence.hybrid_sql import HybridSQLAdapter
-from gleitzeit.persistence.simple_adapter import SimpleAdapter
 # UnifiedRedisAdapter is imported in _create_scaling method when needed
 from gleitzeit.core.models import TaskStatus, WorkflowStatus
 # Event-driven adapters are no longer used - centralized event architecture
@@ -30,11 +26,9 @@ logger = logging.getLogger(__name__)
 class PersistenceType(Enum):
     """Available persistence types"""
     REDIS = "redis"
-    SQL = "sql"
     MEMORY = "memory"
     AUTO = "auto"  # Use automatic fallback chain
     SCALING = "scaling"  # Redis-only for horizontal scaling
-    SIMPLE = "simple"    # InMemory with optional SQL backup
 
 
 class PersistenceFactory:
@@ -43,11 +37,10 @@ class PersistenceFactory:
     
     The factory attempts to create adapters in the following order:
     1. Redis - Fast, distributed, production-ready
-    2. SQLAlchemy - Reliable, ACID compliant fallback
-    3. In-Memory - Always works, useful for testing
+    2. In-Memory - Always works, useful for testing
     
     Usage:
-        # Automatic fallback (Redis -> SQL -> Memory)
+        # Automatic fallback (Redis -> Memory)
         adapter = await PersistenceFactory.create()
         
         # Force specific type
@@ -113,17 +106,11 @@ class PersistenceFactory:
         if persistence_type == PersistenceType.REDIS:
             return await cls._create_redis(redis_url, final_config, event_bus)
         
-        elif persistence_type == PersistenceType.SQL:
-            return await cls._create_sql(sql_connection, sql_db_path, final_config, event_bus)
-        
         elif persistence_type == PersistenceType.MEMORY:
             return await cls._create_memory(final_config, event_bus)
         
         elif persistence_type == PersistenceType.SCALING:
             return await cls._create_scaling(redis_url, final_config, event_bus)
-        
-        elif persistence_type == PersistenceType.SIMPLE:
-            return await cls._create_simple(sql_connection, sql_db_path, final_config, event_bus)
         
         elif persistence_type == PersistenceType.AUTO:
             # Try Redis first
@@ -131,13 +118,8 @@ class PersistenceFactory:
             if adapter:
                 return adapter
             
-            # Fall back to SQL
-            adapter = await cls._try_sql(sql_connection, sql_db_path, final_config, event_bus)
-            if adapter:
-                return adapter
-            
-            # Final fallback to in-memory
-            logger.warning("Redis and SQL both failed, using in-memory persistence")
+            # Skip SQL - directly fallback to in-memory
+            logger.warning("Redis not available, using in-memory persistence")
             return await cls._create_memory(final_config, event_bus)
         
         # Should never reach here
@@ -204,83 +186,6 @@ class PersistenceFactory:
             logger.warning(f"Failed to create Redis adapter: {e}")
             return None
     
-    @classmethod
-    async def _try_sql(
-        cls,
-        sql_connection: Optional[str],
-        sql_db_path: str,
-        config: Dict[str, Any],
-        event_bus: Optional[Any] = None
-    ) -> Optional[HybridSQLAdapter]:
-        """Try to create hybrid SQL adapter, return None if fails"""
-        try:
-            # Use hybrid adapter for SQL persistence
-            logger.info("Creating hybrid SQL adapter (memory runtime + SQL archive)")
-            
-            # Determine connection string
-            if sql_connection:
-                logger.info(f"Using SQL database: {sql_connection}")
-                connection_string = sql_connection
-            else:
-                logger.info(f"Using SQLite database: {sql_db_path}")
-                connection_string = f"sqlite+aiosqlite:///{sql_db_path}"
-            
-            # Create hybrid adapter
-            adapter = HybridSQLAdapter(
-                connection_string=connection_string,
-                max_memory_mb=config.get("max_memory_mb"),
-                event_bus=event_bus
-            )
-            
-            # Test connection
-            await adapter.initialize()
-            
-            # Verify with a simple operation
-            from gleitzeit.core.models import Task, Workflow
-            from datetime import datetime
-            
-            # Create a test workflow for the test task
-            test_workflow_id = f"__test_workflow_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}__"
-            test_workflow = Workflow(
-                id=test_workflow_id,
-                name="Connection Test Workflow",
-                description="Auto-generated workflow for persistence connection test",
-                tasks=[]
-            )
-            
-            test_task = Task(
-                id="__test_task__",
-                name="Connection Test",
-                workflow_id=test_workflow_id,  # Now has a workflow!
-                protocol="test",
-                method="test",
-                params={},
-                priority="normal"
-            )
-            test_workflow.tasks.append(test_task)
-            
-            # Save both workflow and task
-            await adapter.save_workflow(test_workflow)
-            await adapter.save_task(test_task)
-            retrieved = await adapter.get_task("__test_task__")
-            
-            # Mark as completed
-            test_task.status = TaskStatus.COMPLETED
-            await adapter.save_task(test_task)
-            test_workflow.status = WorkflowStatus.COMPLETED
-            await adapter.save_workflow(test_workflow)
-            
-            if retrieved and retrieved.id == "__test_task__":
-                logger.info("Successfully connected to hybrid SQL persistence")
-                return adapter
-            else:
-                logger.warning("Hybrid SQL connection test failed")
-                await adapter.cleanup()
-                return None
-                
-        except Exception as e:
-            logger.warning(f"Failed to create hybrid SQL adapter: {e}")
-            return None
     
     @classmethod
     async def _create_redis(
@@ -295,19 +200,6 @@ class PersistenceFactory:
             return adapter
         raise RuntimeError("Failed to create Redis adapter")
     
-    @classmethod
-    async def _create_sql(
-        cls,
-        sql_connection: Optional[str],
-        sql_db_path: str,
-        config: Dict[str, Any],
-        event_bus: Optional[Any] = None
-    ) -> HybridSQLAdapter:
-        """Create hybrid SQL adapter or raise exception"""
-        adapter = await cls._try_sql(sql_connection, sql_db_path, config, event_bus)
-        if adapter:
-            return adapter
-        raise RuntimeError("Failed to create hybrid SQL adapter")
     
     @classmethod
     async def _create_memory(
@@ -361,38 +253,6 @@ class PersistenceFactory:
         logger.info("✓ Redis adapter (UnifiedRedisAdapter) initialized for horizontal scaling")
         return adapter
     
-    @classmethod
-    async def _create_simple(
-        cls,
-        sql_connection: Optional[str],
-        sql_db_path: str,
-        config: Dict[str, Any],
-        event_bus: Optional[Any] = None
-    ) -> SimpleAdapter:
-        """Create simple in-memory adapter with optional SQL backup"""
-        logger.info("Creating simple adapter for single-node deployment")
-        
-        # Extract simple adapter config
-        sql_backup = config.get('sql_backup', False)
-        backup_interval = config.get('backup_interval', 300)
-        max_tasks = config.get('max_tasks', 100000)
-        max_workflows = config.get('max_workflows', 10000)
-        
-        # Use provided SQL connection or default SQLite
-        sql_url = sql_connection or f"sqlite:///{sql_db_path}"
-        
-        adapter = SimpleAdapter(
-            sql_backup=sql_backup and sql_url,
-            sql_url=sql_url if sql_backup else None,
-            backup_interval=backup_interval,
-            max_tasks=max_tasks,
-            max_workflows=max_workflows
-        )
-        
-        await adapter.initialize()
-        logger.info(f"✓ Simple adapter initialized: sql_backup={sql_backup}, "
-                   f"max_tasks={max_tasks}, max_workflows={max_workflows}")
-        return adapter
     
     @classmethod
     async def create_for_testing(cls) -> UnifiedInMemoryAdapter:

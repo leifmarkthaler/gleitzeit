@@ -1,0 +1,273 @@
+"""
+Dependency injection for Gleitzeit API.
+
+This module provides FastAPI dependencies for injecting shared resources
+like client pools into route handlers, enabling stateless operation.
+"""
+
+import socket
+import logging
+from typing import AsyncGenerator, Optional, TYPE_CHECKING
+from contextlib import asynccontextmanager
+
+from fastapi import Request, Depends
+from gleitzeit.client import GleitzeitClient, ClientMode
+from gleitzeit.persistence.base import PersistenceBackend
+from gleitzeit.persistence.factory import PersistenceFactory
+
+if TYPE_CHECKING:
+    from gleitzeit.core.workflow_manager import WorkflowManager
+
+logger = logging.getLogger(__name__)
+
+# Global reference to shared client pool
+_shared_client_pool = None
+# Global reference to shared SystemManager
+_shared_system_manager = None
+
+
+async def _get_or_create_system_manager(persistence):
+    """
+    Create a SystemManager for this API instance.
+    
+    Each API instance creates its own SystemManager that coordinates
+    with others via the shared persistence backend.
+    
+    Args:
+        persistence: The persistence backend to use
+        
+    Returns:
+        SystemManager instance or None
+    """
+    global _shared_system_manager
+    
+    if _shared_system_manager is not None:
+        return _shared_system_manager
+    
+    try:
+        from gleitzeit.system.system_manager import SystemManager
+        
+        # Always create a new SystemManager for this API instance
+        # Multiple SystemManagers can coexist and coordinate via persistence
+        logger.info("Creating SystemManager for API instance")
+        system_manager = SystemManager(persistence=persistence)
+        await system_manager.initialize()
+        await system_manager.start_system()
+        logger.info("SystemManager initialized and started for API")
+        
+        _shared_system_manager = system_manager
+        return system_manager
+        
+    except Exception as e:
+        logger.warning(f"Could not initialize SystemManager: {e}")
+        # Continue without system manager - workflows will be stored but not executed
+        return None
+
+
+async def get_shared_client_pool(request: Optional[Request] = None):
+    """
+    Get or create the shared client pool instance.
+    
+    This creates a distributed client pool that coordinates
+    across multiple API instances using the persistence backend.
+    
+    Args:
+        request: Optional FastAPI request to get service token from app state
+    
+    Returns:
+        SharedClientPool instance
+    """
+    global _shared_client_pool
+    
+    if _shared_client_pool is None:
+        # Import here to avoid circular imports
+        from gleitzeit.api.shared_dependencies import SharedClientPool
+        from gleitzeit.client import GleitzeitClient
+        import os
+        
+        # Get persistence backend (shared with SystemManager)
+        persistence = await PersistenceFactory.create()
+        
+        # Try to discover existing SystemManager or create a new one
+        system_manager = await _get_or_create_system_manager(persistence)
+        
+        # Create connection to shared pool
+        instance_id = f"api_{socket.gethostname()}_{os.getpid()}"
+        
+        # Get service token from GleitzeitClient class (set by API startup)
+        service_token = GleitzeitClient._SERVICE_TOKEN
+        
+        _shared_client_pool = SharedClientPool(
+            persistence=persistence,
+            instance_id=instance_id,
+            max_size=20,  # Total across all API instances
+            mode=ClientMode.NATIVE,  # Use NATIVE mode to avoid circular deps
+            service_token=service_token,  # Pass service token for NATIVE mode auth
+            system_manager=system_manager  # Pass system manager for workflow execution
+        )
+        await _shared_client_pool.initialize()
+    
+    return _shared_client_pool
+
+
+async def get_client_pool():
+    """
+    Compatibility wrapper - returns SharedClientPool.
+    
+    Returns:
+        The SharedClientPool instance
+    """
+    return await get_shared_client_pool()
+
+
+async def get_pooled_client() -> AsyncGenerator[GleitzeitClient, None]:
+    """
+    FastAPI dependency that provides a pooled client.
+    
+    This dependency acquires a client from the pool for the request
+    and returns it to the pool when the request completes.
+    
+    Yields:
+        An initialized GleitzeitClient instance
+    """
+    pool = await get_client_pool()
+    client = await pool.acquire()
+    
+    try:
+        yield client
+    finally:
+        await pool.release(client)
+
+
+async def get_request_client(request: Request) -> GleitzeitClient:
+    """
+    FastAPI dependency that provides a per-request client.
+    
+    This creates a new client for each request and stores it
+    in the request state for reuse within the same request.
+    
+    Args:
+        request: The FastAPI request object
+        
+    Returns:
+        An initialized GleitzeitClient instance
+    """
+    # Check if we already have a client for this request
+    if hasattr(request.state, 'gleitzeit_client'):
+        return request.state.gleitzeit_client
+    
+    # Create a new client for this request
+    # Get service token from GleitzeitClient class
+    from gleitzeit.client import GleitzeitClient as ClientClass
+    service_token = ClientClass._SERVICE_TOKEN
+    
+    client = GleitzeitClient(
+        mode=ClientMode.NATIVE,  # Use NATIVE mode for direct access
+        event_mode='direct',
+        service_token=service_token  # Pass service token for NATIVE mode auth
+    )
+    await client.initialize()
+    
+    # Store in request state for reuse
+    request.state.gleitzeit_client = client
+    
+    # Register cleanup
+    request.state.cleanup_tasks = getattr(request.state, 'cleanup_tasks', [])
+    request.state.cleanup_tasks.append(client.shutdown)
+    
+    return client
+
+
+# Convenience alias for the preferred dependency
+get_client = get_pooled_client  # Use pooled clients by default
+
+
+@asynccontextmanager
+async def client_lifespan():
+    """
+    Manage client pool lifecycle for the application.
+    
+    This context manager initializes the client pool on startup
+    and shuts it down on application shutdown.
+    
+    Usage:
+        @asynccontextmanager
+        async def lifespan(app: FastAPI):
+            async with client_lifespan():
+                yield
+    """
+    # Startup
+    pool = await get_client_pool()
+    logger.info("Client pool initialized for API")
+    
+    yield
+    
+    # Shutdown
+    if pool:
+        await pool.shutdown()
+        logger.info("Client pool shutdown complete")
+
+
+async def initialize_client_pool():
+    """Initialize the client pool (for backward compatibility)."""
+    await get_client_pool()
+
+
+async def shutdown_client_pool():
+    """Shutdown the client pool (for backward compatibility)."""
+    global _shared_client_pool, _shared_system_manager
+    
+    if _shared_client_pool:
+        await _shared_client_pool.shutdown()
+        _shared_client_pool = None
+    
+    # Only shutdown SystemManager if we created it (not if we're using an existing one)
+    if _shared_system_manager:
+        try:
+            await _shared_system_manager.shutdown_system()
+            await _shared_system_manager.shutdown()
+            logger.info("SystemManager shutdown complete")
+        except Exception as e:
+            logger.error(f"Error shutting down SystemManager: {e}")
+        _shared_system_manager = None
+
+
+async def get_workflow_manager(
+    client: GleitzeitClient = Depends(get_pooled_client)
+) -> Optional["WorkflowManager"]:
+    """
+    Get WorkflowManager instance via client's adapter.
+    
+    This dependency provides access to the WorkflowManager for advanced
+    workflow operations like templates, scheduling, and execution policies.
+    
+    Args:
+        client: Pooled client instance
+        
+    Returns:
+        WorkflowManager instance or None if unavailable
+    """
+    try:
+        # Check if adapter has get_workflow_manager method
+        if hasattr(client._adapter, 'get_workflow_manager'):
+            workflow_manager = await client._adapter.get_workflow_manager()
+            if workflow_manager:
+                logger.debug("Got WorkflowManager via client adapter")
+                return workflow_manager
+        
+        # Fallback: create local instance
+        from gleitzeit.core.workflow_manager_factory import WorkflowManagerFactory
+        persistence = await PersistenceFactory.create()
+        
+        workflow_manager = await WorkflowManagerFactory.create(
+            persistence=persistence,
+            event_bus=None,
+            execution_engine=None,
+            dependency_resolver=None
+        )
+        logger.info("Created local WorkflowManager instance")
+        return workflow_manager
+        
+    except Exception as e:
+        logger.error(f"Error getting WorkflowManager: {e}")
+        return None

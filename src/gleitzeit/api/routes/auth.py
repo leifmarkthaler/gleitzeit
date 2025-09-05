@@ -1,12 +1,16 @@
 """
 Authentication API routes that delegate to client methods.
+
+Uses dependency injection for stateless operation.
 """
 
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, Request, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
-from .base import APIRouteBase, get_shared_client
+from gleitzeit.client import GleitzeitClient
+from ..dependencies import get_client
+from .base import APIRouteBase
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -26,85 +30,125 @@ class RegisterRequest(BaseModel):
     full_name: Optional[str] = None
 
 
-# Create a single instance to use for all routes
-_auth_routes = None
+class ChangePasswordRequest(BaseModel):
+    old_password: str
+    new_password: str
 
-def _get_routes() -> APIRouteBase:
-    """Get the auth routes instance."""
-    global _auth_routes
-    if _auth_routes is None:
-        _auth_routes = APIRouteBase(get_shared_client())
-    return _auth_routes
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+
+
+# Create route handler instance (stateless - just contains logic)
+auth_routes = APIRouteBase()
 
 
 @router.post("/login", response_model=Dict[str, Any])
-async def login(request: LoginRequest, req: Request):
+async def login(
+    request: LoginRequest,
+    client: GleitzeitClient = Depends(get_client)
+):
     """Login and get authentication token."""
-    routes = _get_routes()
-    return await routes.handle_client_call("login", request.username, request.password)
+    return await auth_routes.handle_client_call(
+        "login", 
+        request.username, 
+        request.password,
+        client=client
+    )
+
 
 @router.post("/logout", response_model=Dict[str, Any])
-async def logout(req: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def logout(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: GleitzeitClient = Depends(get_client)
+):
     """Logout current user."""
-    routes = _get_routes()
     if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return await routes.handle_client_call("logout")
+    return await auth_routes.handle_client_call("logout", client=client)
+
 
 @router.get("/me", response_model=Dict[str, Any])
-async def get_current_user(req: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: GleitzeitClient = Depends(get_client)
+):
     """Get current authenticated user."""
-    routes = _get_routes()
     if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return await routes.handle_client_call("get_current_user")
+    return await auth_routes.handle_client_call("get_current_user", client=client)
+
 
 @router.post("/register", response_model=Dict[str, Any])
-async def register(request: RegisterRequest, req: Request):
+async def register(
+    request: RegisterRequest,
+    client: GleitzeitClient = Depends(get_client)
+):
     """Register a new user."""
-    routes = _get_routes()
-    return await routes.handle_client_call(
+    return await auth_routes.handle_client_call(
         "register_user",
         request.username,
         request.email,
         request.password,
-        request.full_name
+        request.full_name,
+        client=client
     )
 
+
 @router.post("/refresh", response_model=Dict[str, Any])
-async def refresh_token(req: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def refresh_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: GleitzeitClient = Depends(get_client)
+):
     """Refresh authentication token."""
-    routes = _get_routes()
     if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return await routes.handle_client_call("refresh_token")
+    return await auth_routes.handle_client_call("refresh_token", client=client)
+
 
 @router.post("/change-password", response_model=Dict[str, Any])
 async def change_password(
-    old_password: str,
-    new_password: str,
-    req: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
+    request: ChangePasswordRequest,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: GleitzeitClient = Depends(get_client)
 ):
     """Change user password."""
-    routes = _get_routes()
     if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return await routes.handle_client_call("change_password", old_password, new_password)
+    return await auth_routes.handle_client_call(
+        "change_password", 
+        request.old_password, 
+        request.new_password,
+        client=client
+    )
+
 
 @router.post("/reset-password", response_model=Dict[str, Any])
-async def reset_password(email: str, req: Request):
+async def reset_password(
+    request: ResetPasswordRequest,
+    client: GleitzeitClient = Depends(get_client)
+):
     """Request password reset."""
-    routes = _get_routes()
-    return await routes.handle_client_call("reset_password", email)
+    return await auth_routes.handle_client_call("reset_password", request.email, client=client)
+
 
 @router.get("/permissions", response_model=Dict[str, Any])
-async def get_user_permissions(req: Request, credentials: HTTPAuthorizationCredentials = Depends(security)):
+async def get_user_permissions(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: GleitzeitClient = Depends(get_client)
+):
     """Get current user's permissions."""
-    routes = _get_routes()
     if not credentials:
         raise HTTPException(status_code=401, detail="Not authenticated")
-    return await routes.handle_client_call("get_user_permissions")
+    return await auth_routes.handle_client_call("get_user_permissions", client=client)
 
-# Export router for inclusion in main API
-__all__ = ["router"]
+
+@router.post("/verify-token", response_model=Dict[str, Any])
+async def verify_token(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    client: GleitzeitClient = Depends(get_client)
+):
+    """Verify authentication token validity."""
+    if not credentials:
+        raise HTTPException(status_code=401, detail="No token provided")
+    return await auth_routes.handle_client_call("verify_token", credentials.credentials, client=client)

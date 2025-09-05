@@ -546,7 +546,7 @@ async def discover_service(
     Example:
         service = await discover_service("vllm")
         if service:
-            print(f"Found vLLM at {service.url}")
+            logger.info(f"Found vLLM at {service.url}")
     """
     return await _discovery.discover_service(service_type, host, port_range, force_refresh)
 
@@ -561,7 +561,7 @@ async def discover_all_services(
     Example:
         services = await discover_all_services()
         for service_type, service_list in services.items():
-            print(f"Found {len(service_list)} {service_type} services")
+            logger.info(f"Found {len(service_list)} {service_type} services")
     """
     return await _discovery.discover_all_services(hosts, service_types)
 

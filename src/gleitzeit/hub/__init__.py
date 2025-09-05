@@ -10,7 +10,7 @@ from .base import ResourceHub, ResourceInstance, ResourceStatus, ResourceMetrics
 from .configs import OllamaConfig, DockerConfig
 from .ollama_hub import OllamaHub
 from .docker_hub import DockerHub
-from .resource_manager import ResourceManager
+# ResourceManager removed - use stateless resource coordination instead
 
 __all__ = [
     'ResourceHub',
@@ -21,6 +21,5 @@ __all__ = [
     'OllamaConfig',
     'DockerConfig',
     'OllamaHub',
-    'DockerHub',
-    'ResourceManager'
+    'DockerHub'
 ]

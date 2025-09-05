@@ -111,6 +111,14 @@ class ProtocolProviderRegistry:
         """Stop the registry and health monitoring"""
         self._running = False
         
+        # Cleanup hub connector if present
+        if hasattr(self, 'hub_connector') and self.hub_connector:
+            try:
+                await self.hub_connector.disconnect()
+                logger.debug("Disconnected hub connector")
+            except Exception as e:
+                logger.error(f"Error disconnecting hub connector: {e}")
+        
         # Cleanup all provider instances
         await self._cleanup_all_providers()
         
@@ -282,6 +290,14 @@ class ProtocolProviderRegistry:
         """Get provider instance by ID"""
         return self.provider_instances.get(provider_id)
     
+    async def is_protocol_available(self, protocol: str) -> bool:
+        """Check if a protocol is available"""
+        # Check hub connector first
+        if hasattr(self, 'hub_connector') and self.hub_connector:
+            return await self.hub_connector.is_protocol_available(protocol)
+        # Otherwise check local providers
+        return protocol in self.protocols
+    
     async def execute_request(
         self, 
         protocol_id: str,
@@ -297,6 +313,10 @@ class ProtocolProviderRegistry:
         Returns:
             JSON-RPC response
         """
+        # Check if we have a hub connector
+        if hasattr(self, 'hub_connector') and self.hub_connector:
+            return await self.hub_connector.execute_request(protocol_id, request)
+        
         # Select provider
         provider_info = self.select_provider(protocol_id, request.method)
         if not provider_info:
@@ -436,6 +456,50 @@ class ProtocolProviderRegistry:
                     if provider_info and provider_info.is_healthy:
                         return self.provider_instances[provider_id]
         return None
+    
+    async def validate_provider_availability(self, protocol_id: str) -> tuple[bool, str]:
+        """
+        Validate that a provider is available and can handle requests.
+        
+        Args:
+            protocol_id: Protocol identifier
+            
+        Returns:
+            Tuple of (is_available, error_message)
+        """
+        # Check if protocol is registered
+        if protocol_id not in self.protocol_providers:
+            return False, f"Protocol '{protocol_id}' is not registered"
+        
+        # Get provider IDs for this protocol
+        provider_ids = self.protocol_providers.get(protocol_id, set())
+        if not provider_ids:
+            return False, f"No providers registered for protocol '{protocol_id}'"
+        
+        # Check if any provider is healthy and available
+        for provider_id in provider_ids:
+            provider_instance = self.provider_instances.get(provider_id)
+            if not provider_instance:
+                continue
+                
+            provider_info = self.providers.get(provider_id)
+            if not provider_info or not provider_info.is_healthy:
+                continue
+            
+            # If provider has a validate_availability method, use it
+            if hasattr(provider_instance, 'validate_availability'):
+                try:
+                    is_available = await provider_instance.validate_availability()
+                    if is_available:
+                        return True, ""
+                except Exception as e:
+                    logger.debug(f"Provider {provider_id} availability check failed: {e}")
+                    continue
+            
+            # Otherwise assume healthy providers are available
+            return True, ""
+        
+        return False, f"No available providers for protocol '{protocol_id}' - service may not be running"
     
     async def list_providers(self) -> Dict[str, Dict[str, Any]]:
         """List all registered providers with their status and metrics"""

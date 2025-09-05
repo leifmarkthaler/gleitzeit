@@ -122,8 +122,41 @@ class EventType(str, Enum):
     
     # System Events
     SYSTEM_SHUTDOWN = "system:shutdown"
+    SYSTEM_STARTED = "system:started"
     CLEANUP_STARTED = "cleanup:started"
     CLEANUP_COMPLETED = "cleanup:completed"
+    
+    # Service Registry Events
+    SERVICE_REGISTERED = "service:registered"
+    SERVICE_DEREGISTERED = "service:deregistered"
+    SERVICE_HEALTH_CHANGED = "service:health_changed"
+    COMPONENT_FAILURE = "component:failure"
+    
+    # Configuration Events
+    CONFIG_CHANGED = "config:changed"
+    
+    # Resource Coordination Events
+    RESOURCE_ALLOCATED = "resource:allocated"
+    RESOURCE_RELEASED = "resource:released"
+    
+    # Client Events (for event-driven client)
+    CLIENT_CONNECTION_ESTABLISHED = "client:connection:established"
+    CLIENT_CONNECTION_LOST = "client:connection:lost"
+    CLIENT_CONNECTION_ERROR = "client:connection:error"
+    CLIENT_RECONNECTION_ATTEMPT = "client:reconnection:attempt"
+    CLIENT_RECONNECTION_SUCCESS = "client:reconnection:success"
+    CLIENT_RECONNECTION_FAILED = "client:reconnection:failed"
+    CLIENT_SUBSCRIBED = "client:subscribed"
+    CLIENT_UNSUBSCRIBED = "client:unsubscribed"
+    CLIENT_INITIALIZED = "client:initialized"
+    CLIENT_READY = "client:ready"
+    CLIENT_SHUTTING_DOWN = "client:shutting_down"
+    CLIENT_SHUTDOWN = "client:shutdown"
+    CLIENT_ERROR = "client:error"
+    
+    # Test Events (for testing purposes only)
+    TEST_EVENT = "test:event"
+    TEST_PRIORITY = "test:priority"
 
 
 class EventSeverity(str, Enum):

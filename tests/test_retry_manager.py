@@ -20,7 +20,8 @@ from gleitzeit.persistence.base import InMemoryBackend
 async def setup_retry_manager():
     """Set up retry manager with event bus and persistence"""
     persistence = InMemoryBackend()
-    event_bus = EventBus()
+    persistence.redis = persistence  # Mock Redis interface
+    event_bus = EventBus(persistence=persistence)
     scheduler = None  # We'll test without scheduler for simplicity
     
     retry_manager = EventDrivenRetryManager(

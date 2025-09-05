@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gleitzeit-api
+  namespace: gleitzeit
+  labels:
+    app: gleitzeit
+    component: api
+spec:
+  replicas: 2  # Smaller API layer since workers handle execution
+  selector:
+    matchLabels:
+      app: gleitzeit
+      component: api
+  template:
+    metadata:
+      labels:
+        app: gleitzeit
+        component: api
+    spec:
+      containers:
+      - name: api
+        image: gleitzeit:api-latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: PERSISTENCE_TYPE
+          value: "redis"
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: gleitzeit-secrets
+              key: redis-url
+        - name: WORKER_SERVICE_URLS
+          value: "http://gleitzeit-workers:8091"
+        - name: CLIENT_POOL_SIZE
+          value: "5"  # Smaller pool since workers handle heavy lifting
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 30
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gleitzeit-api
+  namespace: gleitzeit
+  labels:
+    app: gleitzeit
+    component: api
+spec:
+  type: LoadBalancer
+  selector:
+    app: gleitzeit
+    component: api
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gleitzeit-api-hpa
+  namespace: gleitzeit
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gleitzeit-api
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70

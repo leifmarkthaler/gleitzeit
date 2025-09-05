@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import Mock, AsyncMock, MagicMock
 import yaml
 
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.core.workflow_loader import load_workflow_from_dict
 from gleitzeit.core.dependency_tracker import DependencyTracker
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter

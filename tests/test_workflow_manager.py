@@ -20,7 +20,8 @@ from gleitzeit.persistence.base import InMemoryBackend
 async def setup_workflow_manager():
     """Set up workflow manager with event bus and persistence"""
     persistence = InMemoryBackend()
-    event_bus = EventBus()
+    persistence.redis = persistence  # Mock Redis interface
+    event_bus = EventBus(persistence=persistence)
     
     workflow_manager = EventDrivenWorkflowManager(
         persistence=persistence,

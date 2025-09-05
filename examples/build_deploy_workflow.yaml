@@ -1,0 +1,165 @@
+# Build and deployment workflow using ShellProvider
+# Example CI/CD pipeline workflow
+
+name: "Build and Deploy Pipeline"
+description: "Automated build, test, and deployment workflow"
+version: "1.0"
+
+# Global parameters
+parameters:
+  branch: "main"
+  environment: "staging"
+  node_version: "18"
+
+# Workflow settings
+timeout: 600  # 10 minutes
+wait_for_completion: true
+
+tasks:
+  # Step 1: Update code
+  - id: "git_fetch"
+    method: "shell/exec"
+    priority: 3
+    parameters:
+      command: "git"
+      args: ["fetch", "origin"]
+      capture_output: true
+  
+  - id: "git_checkout"
+    method: "shell/exec"
+    dependencies: ["git_fetch"]
+    parameters:
+      command: "git"
+      args: ["checkout", "${parameters.branch}"]
+  
+  - id: "git_pull"
+    method: "shell/exec"
+    dependencies: ["git_checkout"]
+    parameters:
+      command: "git"
+      args: ["pull", "origin", "${parameters.branch}"]
+  
+  # Step 2: Install dependencies
+  - id: "check_node_version"
+    method: "shell/exec"
+    dependencies: ["git_pull"]
+    parameters:
+      command: "node"
+      args: ["--version"]
+  
+  - id: "install_dependencies"
+    method: "shell/exec"
+    dependencies: ["check_node_version"]
+    parameters:
+      command: "npm"
+      args: ["ci", "--prefer-offline"]
+      timeout: 120
+  
+  # Step 3: Run quality checks in parallel
+  - id: "lint"
+    method: "shell/exec"
+    dependencies: ["install_dependencies"]
+    priority: 2
+    parameters:
+      command: "npm"
+      args: ["run", "lint"]
+  
+  - id: "type_check"
+    method: "shell/exec"
+    dependencies: ["install_dependencies"]
+    priority: 2
+    parameters:
+      command: "npm"
+      args: ["run", "type-check"]
+  
+  - id: "security_audit"
+    method: "shell/exec"
+    dependencies: ["install_dependencies"]
+    priority: 2
+    parameters:
+      command: "npm"
+      args: ["audit", "--audit-level=moderate"]
+  
+  # Step 4: Run tests
+  - id: "unit_tests"
+    method: "shell/exec"
+    dependencies: ["lint", "type_check"]
+    parameters:
+      command: "npm"
+      args: ["run", "test:unit"]
+      env:
+        CI: "true"
+        NODE_ENV: "test"
+  
+  - id: "integration_tests"
+    method: "shell/exec"
+    dependencies: ["unit_tests"]
+    parameters:
+      command: "npm"
+      args: ["run", "test:integration"]
+      env:
+        CI: "true"
+        NODE_ENV: "test"
+      timeout: 180
+  
+  # Step 5: Build
+  - id: "build"
+    method: "shell/exec"
+    dependencies: ["integration_tests", "security_audit"]
+    parameters:
+      command: "npm"
+      args: ["run", "build"]
+      env:
+        NODE_ENV: "${parameters.environment}"
+        BUILD_ENV: "${parameters.environment}"
+  
+  # Step 6: Generate build info
+  - id: "build_info"
+    method: "shell/pipe"
+    dependencies: ["build"]
+    parameters:
+      commands:
+        - "git rev-parse HEAD"
+        - "head -c 8"
+  
+  - id: "create_build_manifest"
+    method: "shell/exec"
+    dependencies: ["build_info"]
+    parameters:
+      command: "echo"
+      args: [
+        '{"version": "1.0.0", "commit": "${build_info.stdout}", "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)", "environment": "${parameters.environment}"}'
+      ]
+  
+  # Step 7: Deploy (example using docker)
+  - id: "docker_build"
+    method: "shell/exec"
+    dependencies: ["create_build_manifest"]
+    parameters:
+      command: "docker"
+      args: [
+        "build",
+        "-t", "myapp:${build_info.stdout}",
+        "-t", "myapp:latest",
+        "."
+      ]
+      timeout: 300
+  
+  - id: "docker_tag"
+    method: "shell/exec"
+    dependencies: ["docker_build"]
+    parameters:
+      command: "docker"
+      args: [
+        "tag",
+        "myapp:latest",
+        "registry.example.com/myapp:${parameters.environment}"
+      ]
+  
+  # Step 8: Notify completion
+  - id: "notify_success"
+    method: "shell/exec"
+    dependencies: ["docker_tag"]
+    parameters:
+      command: "echo"
+      args: ["✅ Build and deployment successful for ${parameters.environment}"]

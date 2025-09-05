@@ -95,6 +95,26 @@ class ErrorCode(IntEnum):
     CONNECTION_LOST = -25004
     AUTHENTICATION_FAILED = -25005
     AUTHORIZATION_FAILED = -25006
+    
+    # SystemManager and Distributed System Errors (-24999 to -24000)
+    SYSTEM_MANAGER_INITIALIZATION_FAILED = -24001
+    
+    # Workflow Loader Errors (-23999 to -23000)
+    WORKFLOW_LOADER_ERROR = -23001
+    FILE_SYSTEM_ERROR = -23002
+    SECURITY_ERROR = -23003
+    RESOURCE_LIMIT_ERROR = -23004
+    SERVICE_DISCOVERY_FAILED = -24002
+    RESOURCE_ALLOCATION_FAILED = -24003
+    DISTRIBUTED_REGISTRY_ERROR = -24004
+    CONFIG_VALIDATION_FAILED = -24005
+    HEALTH_CHECK_FAILED = -24006
+    SERVICE_REGISTRATION_FAILED = -24007
+    CLIENT_POOL_EXHAUSTED = -24008
+    CLIENT_POOL_ERROR = -24009
+    PROVIDER_HUB_ERROR = -24010
+    SHARED_RESOURCE_ERROR = -24011
+    COORDINATION_ERROR = -24012
 
 
 @dataclass
@@ -692,3 +712,275 @@ def get_error_severity(error: Union[Exception, GleitzeitError]) -> str:
     
     # Default to error for unknown exceptions
     return "error"
+
+
+# Event System Errors
+class EventError(GleitzeitError):
+    """Event system errors"""
+    
+    def __init__(self, message: str, code: ErrorCode = ErrorCode.INTERNAL_ERROR, **kwargs):
+        super().__init__(message, code, **kwargs)
+
+
+class InvalidEventTypeError(EventError):
+    """Invalid event type error"""
+    
+    def __init__(self, message: str, event_type: Optional[str] = None, **kwargs):
+        data = kwargs.pop("data", {})
+        if event_type:
+            data["event_type"] = event_type
+        super().__init__(
+            message,
+            ErrorCode.INVALID_PARAMS,
+            data=data,
+            **kwargs
+        )
+
+
+# SystemManager and Distributed System Errors
+class SystemManagerError(SystemError):
+    """SystemManager operation failures"""
+    
+    def __init__(self, message: str, code: ErrorCode = ErrorCode.SYSTEM_MANAGER_INITIALIZATION_FAILED, **kwargs):
+        super().__init__(message, code, **kwargs)
+
+
+class ServiceDiscoveryError(SystemManagerError):
+    """Service discovery failed"""
+    
+    def __init__(self, service_name: str, reason: Optional[str] = None, **kwargs):
+        message = f"Service discovery failed for '{service_name}'"
+        if reason:
+            message += f": {reason}"
+        data = kwargs.pop("data", {})
+        data["service_name"] = service_name
+        if reason:
+            data["reason"] = reason
+        super().__init__(
+            message,
+            ErrorCode.SERVICE_DISCOVERY_FAILED,
+            data=data,
+            **kwargs
+        )
+
+
+class ResourceAllocationError(SystemManagerError):
+    """Resource allocation failed"""
+    
+    def __init__(self, resource_type: str, reason: Optional[str] = None, **kwargs):
+        message = f"Resource allocation failed for '{resource_type}'"
+        if reason:
+            message += f": {reason}"
+        data = kwargs.pop("data", {})
+        data["resource_type"] = resource_type
+        if reason:
+            data["reason"] = reason
+        super().__init__(
+            message,
+            ErrorCode.RESOURCE_ALLOCATION_FAILED,
+            data=data,
+            **kwargs
+        )
+
+
+class DistributedRegistryError(SystemManagerError):
+    """Distributed registry operation failed"""
+    
+    def __init__(self, operation: str, component_id: Optional[str] = None, **kwargs):
+        message = f"Registry operation '{operation}' failed"
+        if component_id:
+            message += f" for component '{component_id}'"
+        data = kwargs.pop("data", {})
+        data["operation"] = operation
+        if component_id:
+            data["component_id"] = component_id
+        super().__init__(
+            message,
+            ErrorCode.DISTRIBUTED_REGISTRY_ERROR,
+            data=data,
+            **kwargs
+        )
+
+
+class ConfigValidationError(SystemManagerError):
+    """Configuration validation failed"""
+    
+    def __init__(self, config_key: str, validation_error: str, **kwargs):
+        data = kwargs.pop("data", {})
+        data["config_key"] = config_key
+        data["validation_error"] = validation_error
+        super().__init__(
+            f"Configuration validation failed for '{config_key}': {validation_error}",
+            ErrorCode.CONFIG_VALIDATION_FAILED,
+            data=data,
+            **kwargs
+        )
+
+
+class HealthCheckError(SystemManagerError):
+    """Health check failed"""
+    
+    def __init__(self, component_id: str, check_name: Optional[str] = None, **kwargs):
+        message = f"Health check failed for component '{component_id}'"
+        if check_name:
+            message += f" (check: {check_name})"
+        data = kwargs.pop("data", {})
+        data["component_id"] = component_id
+        if check_name:
+            data["check_name"] = check_name
+        super().__init__(
+            message,
+            ErrorCode.HEALTH_CHECK_FAILED,
+            data=data,
+            **kwargs
+        )
+
+
+class ServiceRegistrationError(SystemManagerError):
+    """Service registration failed"""
+    
+    def __init__(self, service_id: str, operation: str, **kwargs):
+        data = kwargs.pop("data", {})
+        data["service_id"] = service_id
+        data["operation"] = operation
+        super().__init__(
+            f"Service registration {operation} failed for '{service_id}'",
+            ErrorCode.SERVICE_REGISTRATION_FAILED,
+            data=data,
+            **kwargs
+        )
+
+
+class ClientPoolError(GleitzeitError):
+    """Client pool operation errors"""
+    
+    def __init__(self, message: str, code: ErrorCode = ErrorCode.CLIENT_POOL_ERROR, **kwargs):
+        super().__init__(message, code, **kwargs)
+
+
+class ClientPoolExhaustedError(ClientPoolError):
+    """No available clients in pool"""
+    
+    def __init__(self, pool_id: str, max_size: int, **kwargs):
+        data = kwargs.pop("data", {})
+        data["pool_id"] = pool_id
+        data["max_size"] = max_size
+        super().__init__(
+            f"Client pool '{pool_id}' is exhausted (max size: {max_size})",
+            ErrorCode.CLIENT_POOL_EXHAUSTED,
+            data=data,
+            **kwargs
+        )
+
+
+class ProviderHubError(GleitzeitError):
+    """Provider hub operation errors"""
+    
+    def __init__(self, message: str, hub_id: Optional[str] = None, **kwargs):
+        data = kwargs.pop("data", {})
+        if hub_id:
+            data["hub_id"] = hub_id
+        super().__init__(
+            message,
+            ErrorCode.PROVIDER_HUB_ERROR,
+            data=data,
+            **kwargs
+        )
+
+
+class SharedResourceError(SystemManagerError):
+    """Shared resource coordination error"""
+    
+    def __init__(self, resource_id: str, operation: str, **kwargs):
+        data = kwargs.pop("data", {})
+        data["resource_id"] = resource_id
+        data["operation"] = operation
+        super().__init__(
+            f"Shared resource operation '{operation}' failed for '{resource_id}'",
+            ErrorCode.SHARED_RESOURCE_ERROR,
+            data=data,
+            **kwargs
+        )
+
+
+class CoordinationError(SystemManagerError):
+    """Distributed coordination error"""
+    
+    def __init__(self, operation: str, nodes: Optional[list] = None, **kwargs):
+        message = f"Distributed coordination failed for operation '{operation}'"
+        data = kwargs.pop("data", {})
+        data["operation"] = operation
+        if nodes:
+            data["affected_nodes"] = nodes
+            message += f" (nodes: {', '.join(nodes)})"
+        super().__init__(
+            message,
+            ErrorCode.COORDINATION_ERROR,
+            data=data,
+            **kwargs
+        )
+
+# Workflow Loader Errors
+class WorkflowLoaderError(GleitzeitError):
+    """Base class for workflow loader errors"""
+    
+    def __init__(
+        self,
+        message: str,
+        code: ErrorCode = ErrorCode.WORKFLOW_LOADER_ERROR,
+        file_path: Optional[str] = None,
+        **kwargs
+    ):
+        data = kwargs.pop("data", {})
+        if file_path:
+            data["file_path"] = file_path
+        super().__init__(message, code, data=data, **kwargs)
+
+
+class FileSystemError(WorkflowLoaderError):
+    """File system operation error"""
+    
+    def __init__(self, operation: str, path: str, reason: str, **kwargs):
+        data = kwargs.pop("data", {})
+        data["operation"] = operation
+        data["path"] = path
+        super().__init__(
+            f"File system {operation} failed for '{path}': {reason}",
+            ErrorCode.FILE_SYSTEM_ERROR,
+            file_path=path,
+            data=data,
+            **kwargs
+        )
+
+
+class SecurityError(WorkflowLoaderError):
+    """Security violation in workflow loading"""
+    
+    def __init__(self, violation_type: str, path: str, details: str, **kwargs):
+        data = kwargs.pop("data", {})
+        data["violation_type"] = violation_type
+        data["path"] = path
+        data["details"] = details
+        super().__init__(
+            f"Security violation ({violation_type}) for '{path}': {details}",
+            ErrorCode.SECURITY_ERROR,
+            file_path=path,
+            data=data,
+            **kwargs
+        )
+
+
+class ResourceLimitError(WorkflowLoaderError):
+    """Resource limit exceeded"""
+    
+    def __init__(self, resource_type: str, current_value: Any, limit: Any, **kwargs):
+        data = kwargs.pop("data", {})
+        data["resource_type"] = resource_type
+        data["current_value"] = current_value
+        data["limit"] = limit
+        super().__init__(
+            f"Resource limit exceeded for {resource_type}: {current_value} > {limit}",
+            ErrorCode.RESOURCE_LIMIT_ERROR,
+            data=data,
+            **kwargs
+        )

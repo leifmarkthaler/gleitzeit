@@ -13,13 +13,13 @@ from gleitzeit.hub.agent_hub import (
     AgentSession, AgentStep
 )
 from gleitzeit.hub.base import ResourceStatus, ResourceType
-from gleitzeit.hub.resource_manager import ResourceManager
+# ResourceManager removed - using stateless coordination
 
 
 @pytest.fixture
 async def mock_resource_manager():
     """Create a mock resource manager with mock hubs"""
-    manager = MagicMock(spec=ResourceManager)
+    manager = MagicMock()  # Mock for legacy compatibility
     
     # Mock Ollama hub
     ollama_hub = AsyncMock()

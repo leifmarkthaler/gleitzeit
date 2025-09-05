@@ -350,9 +350,13 @@ class TestSessionPooling:
             await hub.cleanup()
 
 
+# ResourceManager test class removed - ResourceManager has been removed from codebase
+# Tests need to be rewritten for stateless architecture
+"""
 @pytest.mark.unit
 class TestResourceManager:
-    """Test ResourceManager coordination with hubs"""
+    # Test ResourceManager coordination with hubs (DISABLED - ResourceManager removed)
+\"\"\"
     
     @pytest.fixture
     def resource_manager(self):
@@ -471,6 +475,7 @@ class TestResourceManager:
         assert len(metrics["hub_metrics"]) == 2
         assert metrics["total_resources"] == 2
         assert metrics["total_hubs"] == 2
+"""
 
 
 @pytest.mark.unit

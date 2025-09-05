@@ -14,18 +14,12 @@ from typing import Dict, List, Optional, Set, Any
 from datetime import datetime, timedelta
 from enum import Enum
 
-from gleitzeit.core.models import Task, TaskStatus, RetryConfig
+from gleitzeit.core.models import Task, TaskStatus, RetryConfig, BackoffStrategy
 from gleitzeit.persistence.base import PersistenceBackend
 from gleitzeit.task_queue.task_queue import QueueManager
 
 logger = logging.getLogger(__name__)
 
-
-class BackoffStrategy(str, Enum):
-    """Retry backoff strategies"""
-    FIXED = "fixed"
-    LINEAR = "linear"
-    EXPONENTIAL = "exponential"
 
 
 class RetryManager:

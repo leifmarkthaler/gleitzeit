@@ -93,6 +93,38 @@ class OllamaProvider(ProtocolProvider):
             # The hub will handle instance availability
             return True
     
+    async def validate_availability(self) -> bool:
+        """
+        Validate that Ollama service is actually available.
+        Unlike health_check, this fails if Ollama is not running.
+        
+        Returns:
+            True only if Ollama service is running and responsive
+        """
+        if not self.session:
+            await self.initialize()
+        
+        # If we have a resource manager, try to allocate a resource
+        if self.resource_manager:
+            try:
+                resource = await self.resource_manager.allocate_resource({})
+                if resource:
+                    await self.resource_manager.release_resource(resource.get('id', ''))
+                    return True
+                return False
+            except Exception:
+                return False
+        
+        # Otherwise check if Ollama endpoint is actually responsive
+        try:
+            async with self.session.get(
+                f"{self.default_endpoint}/api/tags",
+                timeout=aiohttp.ClientTimeout(total=1)
+            ) as response:
+                return response.status == 200
+        except Exception:
+            return False
+    
     async def handle_request(self, method: str, params: Dict[str, Any]) -> Dict[str, Any]:
         """
         Handle a request - main entry point for protocol execution

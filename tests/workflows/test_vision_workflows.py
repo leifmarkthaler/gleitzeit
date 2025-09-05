@@ -10,7 +10,7 @@ from PIL import Image
 import io
 import base64
 
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.providers.ollama_provider import OllamaProvider
 
 

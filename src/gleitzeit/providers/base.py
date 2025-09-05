@@ -21,17 +21,18 @@ from gleitzeit.core.errors import (
     ProviderTimeoutError, SystemError, ConnectionTimeoutError,
     AuthenticationError, NetworkError, is_retryable_error
 )
+from gleitzeit.core.logging_mixin import LoggingMixin
 
 # Avoid circular imports
 if TYPE_CHECKING:
-    from gleitzeit.hub.resource_manager import ResourceManager
+    # ResourceManager removed - use stateless resource coordination
     from gleitzeit.hub.base import ResourceHub, ResourceInstance
     from gleitzeit.core.protocol import ProtocolSpec
 
 logger = logging.getLogger(__name__)
 
 
-class ProtocolProvider(ABC):
+class ProtocolProvider(ABC, LoggingMixin):
     """
     Abstract base class for protocol providers
     
@@ -107,6 +108,7 @@ class ProtocolProvider(ABC):
             if register_protocol and self._generated_protocol and protocol_registry:
                 self._register_generated_protocol()
         
+        # Note: Initial setup logging will be done on first async operation
         logger.info(f"Initialized {self.__class__.__name__}: {provider_id}")
     
     async def handle_request(self, method: str, params: Dict[str, Any]) -> Any:
@@ -132,7 +134,16 @@ class ProtocolProvider(ABC):
         request_id = str(uuid.uuid4())[:8]
         start_time = time.time()
         
-        # Enhanced logging - start
+        # Add centralized logging via LoggingMixin
+        await self.log_operation(
+            "provider_handle_request",
+            request_id=request_id,
+            method=method,
+            provider_id=self.provider_id,
+            params_count=len(params)
+        )
+        
+        # Enhanced logging - start (keep existing format for compatibility)
         self.logger.info(
             f"[{request_id}] Starting {method}",
             extra={
@@ -159,7 +170,18 @@ class ProtocolProvider(ABC):
                 self.latencies.append(duration)
                 self.last_request_time = datetime.utcnow()
                 
-                # Enhanced logging - success
+                # Add centralized success logging
+                await self.log_success(
+                    "provider_handle_request_success",
+                    f"Provider method {method} completed successfully",
+                    request_id=request_id,
+                    method=method,
+                    duration_ms=duration * 1000,
+                    attempt=attempt + 1,
+                    result_size=len(str(result)) if result else 0
+                )
+                
+                # Enhanced logging - success (keep existing format for compatibility)
                 self.logger.info(
                     f"[{request_id}] Success {method} in {duration:.3f}s",
                     extra={
@@ -182,7 +204,30 @@ class ProtocolProvider(ABC):
                 is_retryable = is_retryable_error(e)
                 is_final_attempt = (attempt == self.max_retries - 1)
                 
-                # Enhanced logging - error
+                # Add centralized error logging
+                if is_final_attempt:
+                    await self.log_error(
+                        "provider_handle_request_failed",
+                        f"Provider method {method} failed after {attempt + 1} attempts: {str(e)}",
+                        request_id=request_id,
+                        method=method,
+                        error_type=e.__class__.__name__,
+                        error_message=str(e),
+                        total_attempts=attempt + 1,
+                        duration_ms=duration * 1000
+                    )
+                else:
+                    await self.log_debug(
+                        "provider_handle_request_retry",
+                        f"Provider method {method} attempt {attempt + 1} failed, will retry: {str(e)}",
+                        request_id=request_id,
+                        method=method,
+                        error_type=e.__class__.__name__,
+                        attempt=attempt + 1,
+                        retryable=is_retryable
+                    )
+                
+                # Enhanced logging - error (keep existing format for compatibility)
                 log_level = 'error' if is_final_attempt else 'warning'
                 getattr(self.logger, log_level)(
                     f"[{request_id}] {'Final ' if is_final_attempt else ''}Attempt {attempt + 1} failed: {e}",
@@ -268,6 +313,29 @@ class ProtocolProvider(ABC):
         """
         pass
     
+    async def validate_availability(self) -> bool:
+        """
+        Validate that this provider is available and can handle requests.
+        
+        By default, this uses the health_check method, but providers can
+        override this to provide more specific availability validation
+        (e.g., checking if external services are running).
+        
+        Returns:
+            True if provider is available, False otherwise
+        """
+        try:
+            # First check if provider is initialized
+            if not self._initialized:
+                await self.initialize()
+                self._initialized = True
+            
+            # Then perform health check
+            return await self.health_check()
+        except Exception as e:
+            self.logger.debug(f"Provider {self.provider_id} availability check failed: {e}")
+            return False
+    
     def get_supported_methods(self) -> List[str]:
         """
         Get list of methods this provider supports
@@ -283,15 +351,41 @@ class ProtocolProvider(ABC):
     async def start(self) -> None:
         """Start the provider"""
         if self._running:
+            await self.log_debug(
+                "provider_already_running",
+                "Provider already running, ignoring start request",
+                provider_id=self.provider_id
+            )
             return
+        
+        await self.log_operation(
+            "provider_start",
+            provider_id=self.provider_id,
+            provider_type=self.__class__.__name__
+        )
         
         try:
             await self.initialize()
             self._initialized = True
             self._running = True
+            
+            await self.log_success(
+                "provider_started",
+                "Provider started successfully",
+                provider_id=self.provider_id
+            )
+            
             logger.info(f"Started provider: {self.provider_id}")
             
         except Exception as e:
+            await self.log_error(
+                "provider_start_failed",
+                f"Failed to start provider: {str(e)}",
+                provider_id=self.provider_id,
+                error=str(e),
+                error_type=type(e).__name__
+            )
+            
             provider_error = ProviderError(
                 message=f"Failed to initialize provider: {e}",
                 code=ErrorCode.PROVIDER_INITIALIZATION_FAILED,
@@ -304,14 +398,39 @@ class ProtocolProvider(ABC):
     async def stop(self) -> None:
         """Stop the provider"""
         if not self._running:
+            await self.log_debug(
+                "provider_not_running",
+                "Provider not running, ignoring stop request",
+                provider_id=self.provider_id
+            )
             return
+        
+        await self.log_operation(
+            "provider_stop",
+            provider_id=self.provider_id
+        )
         
         try:
             await self.shutdown()
             self._running = False
+            
+            await self.log_success(
+                "provider_stopped",
+                "Provider stopped successfully",
+                provider_id=self.provider_id
+            )
+            
             logger.info(f"Stopped provider: {self.provider_id}")
             
         except Exception as e:
+            await self.log_error(
+                "provider_stop_failed",
+                f"Error stopping provider: {str(e)}",
+                provider_id=self.provider_id,
+                error=str(e),
+                error_type=type(e).__name__
+            )
+            
             logger.error(f"Error stopping provider {self.provider_id}: {e}")
             # Don't raise errors during shutdown to avoid cascading failures
     

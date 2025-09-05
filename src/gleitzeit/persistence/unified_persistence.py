@@ -14,7 +14,7 @@ from datetime import datetime
 import logging
 
 # Task/Workflow models
-from gleitzeit.core.models import Task, Workflow, TaskResult, WorkflowExecution
+from gleitzeit.core.models import Task, Workflow, TaskResult, WorkflowExecution, TaskStatus
 
 # Hub Resource models
 from gleitzeit.hub.base import ResourceInstance, ResourceMetrics, ResourceStatus, ResourceType
@@ -65,6 +65,16 @@ class UnifiedPersistenceAdapter(ABC):
             )
             logger.error(error_msg)
             raise ValueError(error_msg)
+        pass
+    
+    @abstractmethod
+    async def update_task(self, task_data: Any) -> None:
+        """
+        Update an existing task - used by reconciliation service.
+        
+        Args:
+            task_data: Task object or dict with task updates
+        """
         pass
     
     @abstractmethod
@@ -306,9 +316,20 @@ class UnifiedPersistenceAdapter(ABC):
 # ============================================================================
 
 class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
-    """In-memory implementation for testing and development"""
+    """In-memory implementation for testing and development with thread-safety"""
+    
+    def supports_atomic_operations(self) -> bool:
+        """In-memory adapter supports thread-local atomic operations via asyncio.Lock."""
+        return True  # We now support atomic operations through locks
     
     def __init__(self):
+        import asyncio
+        from collections import deque
+        
+        # Thread safety lock for atomic operations
+        self._lock = asyncio.Lock()
+        self._task_locks: Dict[str, asyncio.Lock] = {}  # Per-task locks
+        
         # Task/Workflow storage
         self.tasks: Dict[str, Task] = {}
         self.task_results: Dict[str, TaskResult] = {}
@@ -317,7 +338,6 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         self.queue_states: Dict[str, Dict[str, Any]] = {}
         
         # Event storage - using deques with maxlen for automatic trimming
-        from collections import deque
         self.events_global = deque(maxlen=10000)  # Global event stream
         self.events_by_workflow: Dict[str, deque] = {}  # Per-workflow streams
         self.events_by_task: Dict[str, deque] = {}  # Per-task streams
@@ -327,6 +347,16 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         self.hub_instances: Dict[str, Set[str]] = {}  # hub_id -> set of instance_ids
         self.metrics: Dict[str, List[Dict[str, Any]]] = {}
         self.locks: Dict[str, tuple] = {}  # resource_id -> (owner_id, expiry)
+        
+        # Redis-like storage structures for StatelessEventBus
+        self._hashes: Dict[str, Dict[str, str]] = {}  # For hset/hget operations
+        self._sorted_sets: Dict[str, List[tuple]] = {}  # For zadd/zrange operations  
+        self._sets: Dict[str, set] = {}  # For sadd/smembers operations
+        self._lists: Dict[str, list] = {}  # For lpush/lrange operations
+        self._keys_ttl: Dict[str, float] = {}  # For expire operations
+        
+        # Create a mock Redis client for atomic operations
+        self.redis = MockRedisClient(self)
         
         self._initialized = False
     
@@ -363,7 +393,39 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
             )
             logger.error(error_msg)
             raise ValueError(error_msg)
-        self.tasks[task.id] = task
+        
+        async with self._lock:
+            self.tasks[task.id] = task
+    
+    async def update_task(self, task_data: Any) -> None:
+        """Update an existing task - used by reconciliation service"""
+        from typing import Union
+        
+        async with self._lock:
+            if isinstance(task_data, dict):
+                # Handle dict format
+                task_id = task_data.get('task_id') or task_data.get('id')
+                if not task_id or task_id not in self.tasks:
+                    return
+                
+                task = self.tasks[task_id]
+                
+                # Update task fields from dict
+                if 'status' in task_data:
+                    task.status = TaskStatus(task_data['status'])
+                if 'result' in task_data:
+                    task.result = task_data['result']
+                if 'error' in task_data:
+                    task.error = task_data['error']
+                if 'metadata' in task_data:
+                    if task.metadata:
+                        task.metadata.update(task_data['metadata'])
+                    else:
+                        task.metadata = task_data['metadata']
+            elif isinstance(task_data, Task):
+                # Handle Task object
+                if task_data.id in self.tasks:
+                    self.tasks[task_data.id] = task_data
     
     async def get_task(self, task_id: str) -> Optional[Task]:
         return self.tasks.get(task_id)
@@ -506,6 +568,10 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         return len(old_tasks)
     
     # List operations for UI/API
+    async def get_workflow_tasks(self, workflow_id: str) -> List[Task]:
+        """Get all tasks for a workflow"""
+        return [task for task in self.tasks.values() if task.workflow_id == workflow_id]
+    
     async def list_workflows(self, status: Optional[str] = None, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
         """List all workflows with optional filtering and pagination"""
         workflows = list(self.workflows.values())
@@ -775,6 +841,272 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         # This method exists for interface compatibility
         return 0
 
+    # =========================================================================
+    # Redis Compatibility Methods for StatelessEventBus
+    # =========================================================================
+        
+    # Hash operations
+    async def hset(self, key: str, *args, mapping=None, **kwargs) -> int:
+        """Set hash field values"""
+        if key not in self._hashes:
+            self._hashes[key] = {}
+            
+        count = 0
+        # Handle positional args (field, value, field, value, ...)
+        if args:
+            if len(args) % 2 != 0:
+                raise ValueError("hset requires an even number of field/value pairs")
+            for i in range(0, len(args), 2):
+                field, value = args[i], args[i + 1]
+                if field not in self._hashes[key] or self._hashes[key][field] != str(value):
+                    self._hashes[key][field] = str(value)
+                    count += 1
+        
+        # Handle mapping dict
+        if mapping:
+            for field, value in mapping.items():
+                if field not in self._hashes[key] or self._hashes[key][field] != str(value):
+                    self._hashes[key][field] = str(value)
+                    count += 1
+                    
+        # Handle keyword args
+        for field, value in kwargs.items():
+            if field not in self._hashes[key] or self._hashes[key][field] != str(value):
+                self._hashes[key][field] = str(value)
+                count += 1
+                
+        return count
+    
+    async def hgetall(self, key: str) -> Dict[str, str]:
+        """Get all hash fields and values"""
+        return self._hashes.get(key, {})
+    
+    async def hincrby(self, key: str, field: str, amount: int = 1) -> int:
+        """Increment hash field by amount"""
+        if key not in self._hashes:
+            self._hashes[key] = {}
+        current = int(self._hashes[key].get(field, 0))
+        new_value = current + amount
+        self._hashes[key][field] = str(new_value)
+        return new_value
+    
+    # Sorted set operations
+    async def zadd(self, key: str, mapping: Dict[str, float]) -> int:
+        """Add members to sorted set"""
+        if key not in self._sorted_sets:
+            self._sorted_sets[key] = []
+            
+        count = 0
+        for member, score in mapping.items():
+            # Remove existing member if present
+            self._sorted_sets[key] = [
+                (m, s) for m, s in self._sorted_sets[key] if m != member
+            ]
+            # Add with new score
+            self._sorted_sets[key].append((member, score))
+            count += 1
+            
+        # Keep sorted by score
+        self._sorted_sets[key].sort(key=lambda x: x[1])
+        return count
+    
+    async def zrange(self, key: str, start: int, stop: int) -> List[str]:
+        """Get range of members from sorted set"""
+        if key not in self._sorted_sets:
+            return []
+        items = self._sorted_sets[key]
+        if stop == -1:
+            stop = len(items)
+        else:
+            stop = min(stop + 1, len(items))
+        start = max(0, start)
+        return [item[0] for item in items[start:stop]]
+    
+    async def zrem(self, key: str, *members) -> int:
+        """Remove members from sorted set"""
+        if key not in self._sorted_sets:
+            return 0
+        count = 0
+        for member in members:
+            original_len = len(self._sorted_sets[key])
+            self._sorted_sets[key] = [
+                (m, s) for m, s in self._sorted_sets[key] if m != member
+            ]
+            if len(self._sorted_sets[key]) < original_len:
+                count += 1
+        return count
+    
+    # Set operations
+    async def sadd(self, key: str, *values) -> int:
+        """Add members to set"""
+        if key not in self._sets:
+            self._sets[key] = set()
+        original_size = len(self._sets[key])
+        self._sets[key].update(values)
+        return len(self._sets[key]) - original_size
+    
+    async def srem(self, key: str, *values) -> int:
+        """Remove members from set"""
+        if key not in self._sets:
+            return 0
+        count = 0
+        for value in values:
+            if value in self._sets[key]:
+                self._sets[key].remove(value)
+                count += 1
+        return count
+    
+    async def smembers(self, key: str) -> set:
+        """Get all members of set"""
+        return self._sets.get(key, set()).copy()
+    
+    # List operations
+    async def lpush(self, key: str, *values) -> int:
+        """Push values to front of list"""
+        if key not in self._lists:
+            self._lists[key] = []
+        for value in reversed(values):  # Insert in reverse to maintain order
+            self._lists[key].insert(0, value)
+        return len(self._lists[key])
+    
+    async def lrange(self, key: str, start: int, stop: int) -> List[str]:
+        """Get range of elements from list"""
+        if key not in self._lists:
+            return []
+        items = self._lists[key]
+        if stop == -1:
+            stop = len(items)
+        else:
+            stop = min(stop + 1, len(items))
+        start = max(0, start)
+        return items[start:stop]
+    
+    async def ltrim(self, key: str, start: int, stop: int) -> bool:
+        """Trim list to specified range"""
+        if key not in self._lists:
+            return True
+        items = self._lists[key]
+        if stop == -1:
+            stop = len(items) - 1
+        start = max(0, start)
+        stop = min(stop, len(items) - 1)
+        self._lists[key] = items[start:stop + 1]
+        return True
+    
+    # Key management
+    async def delete(self, *keys) -> int:
+        """Delete keys"""
+        count = 0
+        for key in keys:
+            if (key in self._hashes or key in self._sorted_sets or 
+                key in self._sets or key in self._lists):
+                self._hashes.pop(key, None)
+                self._sorted_sets.pop(key, None)  
+                self._sets.pop(key, None)
+                self._lists.pop(key, None)
+                self._keys_ttl.pop(key, None)
+                count += 1
+        return count
+    
+    # Simple key-value operations (for rate limiting and other uses)
+    async def get(self, key: str) -> Optional[Any]:
+        """Get value by key (Redis GET)"""
+        import json
+        
+        # Store simple values in _hashes with a special field
+        if key in self._hashes and "__value__" in self._hashes[key]:
+            value = self._hashes[key]["__value__"]
+            # Try to parse as JSON if it looks like JSON
+            if value and value.startswith('{'):
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    pass
+            return value
+        return None
+    
+    async def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
+        """Set key-value pair (Redis SET)"""
+        import json
+        
+        # Handle different value types
+        if isinstance(value, dict):
+            # Store as JSON string for dict values
+            value_str = json.dumps(value, default=str)
+        elif isinstance(value, str):
+            value_str = value
+        else:
+            value_str = str(value)
+        
+        if key not in self._hashes:
+            self._hashes[key] = {}
+        self._hashes[key]["__value__"] = value_str
+        
+        # Handle expiry if provided
+        if ex:
+            await self.expire(key, ex)
+        return True
+    
+    async def incr(self, key: str) -> int:
+        """Increment value by 1 (Redis INCR)"""
+        current = await self.get(key)
+        new_value = int(current) + 1 if current else 1
+        await self.set(key, str(new_value))
+        return new_value
+    
+    async def incrby(self, key: str, amount: int) -> int:
+        """Increment value by amount (Redis INCRBY)"""
+        current = await self.get(key)
+        new_value = int(current) + amount if current else amount
+        await self.set(key, str(new_value))
+        return new_value
+    
+    async def expire(self, key: str, seconds: int) -> bool:
+        """Set key expiration (simplified - no actual expiry logic)"""
+        # For testing, we just track that expire was called
+        # Real implementation would need background cleanup
+        import time
+        self._keys_ttl[key] = time.time() + seconds
+        return True
+    
+    async def keys(self, pattern: str = "*") -> List[str]:
+        """Get all keys matching pattern (Redis KEYS)"""
+        import fnmatch
+        all_keys = set()
+        
+        # Collect keys from all storage types
+        all_keys.update(self._hashes.keys())
+        all_keys.update(self._sorted_sets.keys())
+        all_keys.update(self._sets.keys())
+        all_keys.update(self._lists.keys())
+        
+        # Filter by pattern
+        if pattern == "*":
+            return list(all_keys)
+        else:
+            return [k for k in all_keys if fnmatch.fnmatch(k, pattern)]
+    
+    async def scan(self, cursor: int = 0, match: str = None, count: int = 10):
+        """Scan keys (simplified implementation)"""
+        all_keys = set()
+        all_keys.update(self._hashes.keys())
+        all_keys.update(self._sorted_sets.keys())
+        all_keys.update(self._sets.keys())
+        all_keys.update(self._lists.keys())
+        
+        keys_list = list(all_keys)
+        if match:
+            # Simple glob matching
+            import fnmatch
+            keys_list = [k for k in keys_list if fnmatch.fnmatch(k, match)]
+        
+        # Simple pagination
+        start = cursor
+        end = min(cursor + count, len(keys_list))
+        next_cursor = end if end < len(keys_list) else 0
+        
+        return next_cursor, [key.encode() for key in keys_list[start:end]]
+
 
 # ============================================================================
 # Backward Compatibility Wrappers
@@ -910,3 +1242,94 @@ class HubPersistenceAdapterWrapper(UnifiedPersistenceAdapter):
     
     async def get_lock_owner(self, resource_id: str) -> Optional[str]:
         return await self._adapter.get_lock_owner(resource_id)
+
+
+class MockRedisClient:
+    """
+    Mock Redis client for in-memory adapter to support atomic operations.
+    Provides Redis-like operations that work with the in-memory adapter's lock.
+    """
+    
+    def __init__(self, adapter: 'UnifiedInMemoryAdapter'):
+        self.adapter = adapter
+        import asyncio
+        self._script_lock = asyncio.Lock()
+    
+    async def eval(self, script: str, numkeys: int, *args):
+        """
+        Mock implementation of Redis EVAL for atomic operations.
+        Used by AtomicPersistenceOperations for task claiming, status transitions, etc.
+        """
+        async with self._script_lock:
+            # Parse the script to determine operation type
+            if "task:status" in script and "HGET" in script:
+                # Task status transition or claim operation
+                task_key = args[0] if args else None
+                if not task_key:
+                    return 0
+                
+                task_id = task_key.decode() if isinstance(task_key, bytes) else task_key
+                task_id = task_id.replace("task:status:", "")
+                
+                # Check if this is a claim operation
+                if "executing" in script.lower() or "claim" in script.lower():
+                    # Try to claim the task
+                    task = self.adapter.tasks.get(task_id)
+                    if task and task.status in ["pending", "ready"]:
+                        task.status = TaskStatus.EXECUTING
+                        self.adapter.tasks[task_id] = task
+                        return 1  # Success
+                    return 0  # Failed to claim
+                
+                # Regular status transition
+                if len(args) >= 3:
+                    new_status = args[2].decode() if isinstance(args[2], bytes) else args[2]
+                    task = self.adapter.tasks.get(task_id)
+                    if task:
+                        task.status = new_status
+                        self.adapter.tasks[task_id] = task
+                        return 1
+                return 0
+                
+            elif "workflow:lock" in script:
+                # Workflow locking operation
+                lock_key = args[0] if args else None
+                if not lock_key:
+                    return 0
+                    
+                lock_id = args[1] if len(args) > 1 else None
+                timeout = int(args[2]) if len(args) > 2 else 30
+                
+                # Acquire lock
+                from datetime import datetime, timedelta
+                lock_key_str = lock_key.decode() if isinstance(lock_key, bytes) else lock_key
+                
+                if lock_key_str in self.adapter.locks:
+                    _, expiry = self.adapter.locks[lock_key_str]
+                    if expiry > datetime.utcnow():
+                        return 0  # Lock held
+                
+                self.adapter.locks[lock_key_str] = (lock_id, datetime.utcnow() + timedelta(seconds=timeout))
+                return 1  # Lock acquired
+                
+            # Default: operation succeeded
+            return 1
+    
+    async def hget(self, key: str, field: str):
+        """Mock HGET operation."""
+        if key in self.adapter._hashes:
+            return self.adapter._hashes[key].get(field)
+        return None
+    
+    async def hset(self, key: str, field: str, value: str):
+        """Mock HSET operation."""
+        if key not in self.adapter._hashes:
+            self.adapter._hashes[key] = {}
+        self.adapter._hashes[key][field] = value
+        return 1
+    
+    async def expire(self, key: str, seconds: int):
+        """Mock EXPIRE operation."""
+        from datetime import datetime, timedelta
+        self.adapter._keys_ttl[key] = datetime.utcnow() + timedelta(seconds=seconds)
+        return 1

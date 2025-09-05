@@ -137,19 +137,31 @@ class LogMixin:
             raise RuntimeError("Client not initialized")
         return await self._adapter.get_log_size()
     
-    async def get_task_logs(self, task_id: str) -> List[Dict[str, Any]]:
+    async def get_task_logs(self, 
+                          task_id: str,
+                          level: Optional[str] = None,
+                          limit: int = 100,
+                          offset: int = 0) -> List[Dict[str, Any]]:
         """
         Get logs for a specific task.
         
         Args:
             task_id: Task ID to get logs for
+            level: Optional log level filter
+            limit: Maximum number of logs to return
+            offset: Offset for pagination
             
         Returns:
             List of log entries for the task
         """
         if not self._adapter:
             raise RuntimeError("Client not initialized")
-        return await self._adapter.get_task_logs(task_id)
+        return await self._adapter.get_task_logs(
+            task_id,
+            level=level,
+            limit=limit,
+            offset=offset
+        )
     
     async def get_workflow_logs(self, workflow_id: str) -> List[Dict[str, Any]]:
         """

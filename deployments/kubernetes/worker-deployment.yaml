@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gleitzeit-workers
+  namespace: gleitzeit
+  labels:
+    app: gleitzeit
+    component: worker
+spec:
+  replicas: 3  # Start with 3 worker pods
+  selector:
+    matchLabels:
+      app: gleitzeit
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: gleitzeit
+        component: worker
+    spec:
+      containers:
+      - name: worker
+        image: gleitzeit:worker-latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8091
+          name: http
+        env:
+        - name: WORKER_POOL_SIZE
+          value: "50"  # 50 clients per pod
+        - name: WORKER_PORT
+          value: "8091"
+        - name: PERSISTENCE_TYPE
+          value: "redis"
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: gleitzeit-secrets
+              key: redis-url
+        - name: RESOURCE_SERVICE_URL
+          value: "http://resource-service:8080"
+        - name: WORKER_SERVICE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "1"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8091
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 3
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8091
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gleitzeit-workers
+  namespace: gleitzeit
+  labels:
+    app: gleitzeit
+    component: worker
+spec:
+  type: ClusterIP
+  selector:
+    app: gleitzeit
+    component: worker
+  ports:
+  - port: 8091
+    targetPort: 8091
+    protocol: TCP
+    name: http
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: gleitzeit-workers-hpa
+  namespace: gleitzeit
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: gleitzeit-workers
+  minReplicas: 3
+  maxReplicas: 20
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80

@@ -1,501 +1,650 @@
 """
-Native adapter for Gleitzeit client.
+Native adapter for direct access to Gleitzeit components.
+
+This adapter provides direct access to persistence and core components
+without HTTP overhead. Used by the API to avoid circular dependencies.
 """
 
-import asyncio
-from typing import Any, Dict, List, Optional
-from gleitzeit.core.models import Task, Workflow, TaskResult
-from gleitzeit.core.execution_engine import ExecutionEngine
-from gleitzeit.task_queue.task_queue import QueueManager
-from gleitzeit.task_queue.dependency_resolver import DependencyResolver
-from gleitzeit.persistence.factory import create_persistence
-from gleitzeit.registry import ProtocolProviderRegistry
-from gleitzeit.events.base import EventBus
-from gleitzeit.events.store import EventStore
-from .base import BaseAdapter
+import logging
+from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from datetime import datetime
+
+from gleitzeit.core.models import Task, Workflow, TaskResult, TaskStatus, WorkflowStatus
+from gleitzeit.persistence.factory import PersistenceFactory
+from gleitzeit.core.events import EventType
+
+if TYPE_CHECKING:
+    from gleitzeit.core.workflow_manager import WorkflowManager
+
+logger = logging.getLogger(__name__)
 
 
-class NativeAdapter(BaseAdapter):
-    """Adapter for native mode operations."""
+class NativeAdapter:
+    """
+    Native adapter that directly accesses persistence and core components.
     
-    def __init__(self, config: Dict[str, Any] = None):
-        self.config = config or {}
-        self.execution_engine = None
+    This adapter is used when the client needs direct access without HTTP,
+    particularly for the API server to avoid circular dependencies.
+    """
+    
+    def __init__(self):
+        """Initialize the native adapter."""
         self.persistence = None
-        self.registry = None
-        self.event_bus = None
-        self.event_store = None
-        self.queue_manager = None
-        self.dependency_resolver = None
-        self._engine_task = None  # Track engine background task
-    
-    async def initialize(self) -> None:
-        """Initialize native components."""
-        import logging
-        logger = logging.getLogger(__name__)
+        self.workflow_manager = None
+        self.system_manager = None
+        self.initialized = False
         
-        # Create persistence backend
-        persistence_type = self.config.get('persistence_type', 'memory')
-        # Only pass persistence-specific config to the factory
-        persistence_config = {}
-        # Known persistence parameters
-        if 'redis_url' in self.config:
-            persistence_config['redis_url'] = self.config['redis_url']
-        if 'sql_connection' in self.config:
-            persistence_config['sql_connection'] = self.config['sql_connection']
-        if 'sql_db_path' in self.config:
-            persistence_config['sql_db_path'] = self.config['sql_db_path']
-        
-        self.persistence = await create_persistence(persistence_type, **persistence_config)
-        
-        # Create event bus with optional event persistence
-        persist_events = self.config.get('persist_events', False)
-        logger.info(f"NativeAdapter: persist_events={persist_events}, config keys={list(self.config.keys())}")
-        self.event_bus = EventBus(isolate_errors=True, track_errors=True)
-        
-        if persist_events:
-            # Create event store for persistence
-            self.event_store = EventStore(persistence=self.persistence)
-            # Connect event store to event bus
-            self.event_bus.event_store = self.event_store
-        
-        # Create provider registry
-        self.registry = ProtocolProviderRegistry()
-        
-        # Initialize hub-based auto-discovery system
-        await self._initialize_auto_discovery()
-        
-        # Create queue manager and dependency resolver
-        self.queue_manager = QueueManager(persistence=self.persistence, event_bus=self.event_bus)
-        self.dependency_resolver = DependencyResolver()
-        
-        # Create execution engine with all dependencies
-        self.execution_engine = ExecutionEngine(
-            registry=self.registry,
-            queue_manager=self.queue_manager,
-            dependency_resolver=self.dependency_resolver,
-            persistence=self.persistence,
-            event_bus=self.event_bus,
-            max_concurrent_tasks=self.config.get('max_concurrent_tasks', 10)
-        )
-        # Don't start the execution engine here - it blocks!
-        # The engine should be started in a background task if needed
-    
-    async def _initialize_auto_discovery(self) -> None:
-        """Initialize hub-based auto-discovery system."""
-        import logging
-        logger = logging.getLogger(__name__)
-        
-        # Import required components
-        try:
-            from gleitzeit.hub.resource_manager import ResourceManager
-            from gleitzeit.hub.ollama_hub import OllamaHub
-            from gleitzeit.hub.mcp_hub import MCPHub
-            from gleitzeit.protocols import PYTHON_PROTOCOL_V1, LLM_PROTOCOL_V1, MCP_PROTOCOL_V1
-            from gleitzeit.providers.python_provider import PythonProvider
-            from gleitzeit.providers.ollama_provider import OllamaProvider
-            from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+    async def initialize(self):
+        """Initialize the adapter with persistence backend and workflow manager."""
+        if self.initialized:
+            return
             
-            # Initialize resource manager for hub coordination
-            self.resource_manager = ResourceManager("native-resource-manager")
-            
-            # Always register Python protocol and provider (doesn't require discovery)
-            try:
-                self.registry.register_protocol(PYTHON_PROTOCOL_V1)
-                python_provider = PythonProvider(
-                    "native-python-provider",
-                    allow_local=True
-                )
-                await python_provider.initialize()
-                self.registry.register_provider("native-python-provider", "python/v1", python_provider)
-                logger.info("✓ Python provider registered in NativeAdapter")
-            except Exception as e:
-                logger.warning(f"⚠️  Failed to register Python provider: {e}")
-            
-            # Auto-discover Ollama instances via OllamaHub
-            try:
-                ollama_hub = OllamaHub(
-                    hub_id="native-ollama-hub",
-                    auto_discover=True,  # Enable auto-discovery
-                    persistence=self.persistence
-                )
-                await ollama_hub.initialize()
-                await self.resource_manager.add_hub("ollama", ollama_hub)
-                
-                # Register LLM protocol and Ollama provider with hub
-                self.registry.register_protocol(LLM_PROTOCOL_V1)
-                ollama_provider = OllamaProvider(
-                    "native-ollama-provider",
-                    auto_discover=False,  # Hub handles discovery
-                    resource_manager=self.resource_manager,
-                    hub=ollama_hub
-                )
-                await ollama_provider.initialize()
-                self.registry.register_provider("native-ollama-provider", "llm/v1", ollama_provider)
-                logger.info("✓ Ollama provider with auto-discovery registered in NativeAdapter")
-                
-            except Exception as e:
-                logger.debug(f"Ollama auto-discovery not available: {e}")
-            
-            # Auto-discover MCP servers if configured
-            try:
-                # Check for MCP configuration
-                mcp_config = self.config.get('mcp', {})
-                if mcp_config.get('enabled', False) or mcp_config.get('auto_discover', False):
-                    mcp_hub = MCPHub(
-                        hub_id="native-mcp-hub",
-                        auto_discover=mcp_config.get('auto_discover', True),
-                        config_data=mcp_config
-                    )
-                    await mcp_hub.initialize()
-                    await self.resource_manager.add_hub("mcp", mcp_hub)
-                    
-                    # Register MCP protocol and provider
-                    self.registry.register_protocol(MCP_PROTOCOL_V1)
-                    mcp_provider = MCPHubProvider(
-                        provider_id="native-mcp-provider",
-                        hub=mcp_hub,
-                        config_data=mcp_config
-                    )
-                    await mcp_provider.initialize()
-                    self.registry.register_provider("native-mcp-provider", "mcp/v1", mcp_provider)
-                    logger.info("✓ MCP provider with auto-discovery registered in NativeAdapter")
-                
-            except Exception as e:
-                logger.debug(f"MCP auto-discovery not available: {e}")
-            
-            logger.info("Auto-discovery system initialized successfully")
-            
-        except Exception as e:
-            logger.error(f"Failed to initialize auto-discovery system: {e}")
-            # Fallback to basic Python provider only
-            try:
-                from gleitzeit.protocols import PYTHON_PROTOCOL_V1
-                from gleitzeit.providers.python_provider import PythonProvider
-                
-                self.registry.register_protocol(PYTHON_PROTOCOL_V1)
-                python_provider = PythonProvider("native-python-provider", allow_local=True)
-                await python_provider.initialize()
-                self.registry.register_provider("native-python-provider", "python/v1", python_provider)
-                logger.info("✓ Fallback Python provider registered")
-            except Exception as fallback_error:
-                logger.error(f"Even fallback provider registration failed: {fallback_error}")
-    
-    async def start_engine(self, mode='EVENT_DRIVEN'):
-        """Start execution engine in background."""
-        if not self.execution_engine:
-            raise RuntimeError("Execution engine not initialized")
+        # Get persistence backend (shared with SystemManager)
+        self.persistence = await PersistenceFactory.create()
         
-        if self._engine_task and not self._engine_task.done():
-            return  # Already running
+        # Get SystemManager instance to access workflow manager
+        from gleitzeit.system.system_manager import SystemManager
         
-        # Import ExecutionMode here to avoid circular imports
-        from gleitzeit.core.execution_engine import ExecutionMode
-        exec_mode = ExecutionMode[mode] if isinstance(mode, str) else mode
+        # Check if SystemManager is already initialized (e.g., by API)
+        # If not, we only use persistence directly (backward compatibility)
+        # The API should provide the system_manager via set_system_manager
         
-        # Start engine in background task
-        self._engine_task = asyncio.create_task(
-            self.execution_engine.start(exec_mode)
-        )
+        self.initialized = True
+        logger.info("NativeAdapter initialized with direct persistence access")
         
-        # Wait a moment for engine to initialize
-        await asyncio.sleep(0.1)
+    def set_system_manager(self, system_manager):
+        """Set the system manager to access workflow manager.
         
-        return self._engine_task
-    
-    async def stop_engine(self) -> None:
-        """Stop execution engine."""
-        if self.execution_engine:
-            self.execution_engine.running = False
-            
-        if self._engine_task and not self._engine_task.done():
-            self._engine_task.cancel()
-            try:
-                await self._engine_task
-            except asyncio.CancelledError:
-                pass
-    
-    async def shutdown(self) -> None:
-        """Shutdown native components."""
-        # Stop engine first
-        await self.stop_engine()
+        Args:
+            system_manager: SystemManager instance with workflow_manager
+        """
+        self.system_manager = system_manager
+        if system_manager and hasattr(system_manager, 'workflow_manager'):
+            self.workflow_manager = system_manager.workflow_manager
+            logger.info("NativeAdapter configured with WorkflowManager from SystemManager")
         
-        if self.execution_engine:
-            await self.execution_engine.stop()
+    async def shutdown(self):
+        """Cleanup adapter resources."""
+        # Persistence is shared, don't close it
+        self.initialized = False
+        logger.info("NativeAdapter shutdown")
         
-        # Shutdown resource manager and hubs
-        if hasattr(self, 'resource_manager') and self.resource_manager:
-            await self.resource_manager.stop()
-        
-        if self.persistence:
-            await self.persistence.shutdown()
-    
     # Workflow operations
-    async def submit_workflow(self, workflow: Workflow) -> Dict[str, Any]:
-        """Submit workflow natively."""
-        if not self.execution_engine:
-            raise RuntimeError("Execution engine not initialized")
-        
-        # Don't auto-start engine - let client control lifecycle
-        result = await self.execution_engine.submit_workflow(workflow)
-        return {"workflow_id": workflow.id, "status": "submitted"}
-    
-    async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
-        """Get workflow natively."""
-        if not self.persistence:
-            raise RuntimeError("Persistence not initialized")
-        return await self.persistence.get_workflow(workflow_id)
     
     async def list_workflows(self, status: Optional[str] = None,
-                           limit: int = 100, offset: int = 0) -> Dict[str, Any]:
-        """List workflows natively."""
-        if not self.persistence:
-            raise RuntimeError("Persistence not initialized")
-        
-        workflows = await self.persistence.list_workflows(
-            status=status, limit=limit, offset=offset
-        )
-        return {"workflows": workflows, "total": len(workflows)}
+                           limit: int = 100, offset: int = 0) -> List[Workflow]:
+        """List workflows directly from persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            result = await self.persistence.list_workflows(
+                status=status, limit=limit, offset=offset
+            )
+            # Handle dict response from persistence layer
+            if isinstance(result, dict):
+                workflows = result.get("workflows", [])
+            else:
+                workflows = result
+                
+            # Convert to Workflow objects if needed
+            if workflows and len(workflows) > 0 and isinstance(workflows[0], dict):
+                workflows = [Workflow(**w) for w in workflows]
+            return workflows or []
+        except Exception as e:
+            logger.error(f"Error listing workflows: {e}")
+            return []
+    
+    async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
+        """Get workflow directly from persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            workflow = await self.persistence.get_workflow(workflow_id)
+            if workflow and isinstance(workflow, dict):
+                workflow = Workflow(**workflow)
+            return workflow
+        except Exception as e:
+            logger.error(f"Error getting workflow {workflow_id}: {e}")
+            return None
+    
+    async def submit_workflow(self, workflow: Workflow) -> Dict[str, Any]:
+        """Submit workflow for execution."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            workflow_dict = workflow.dict() if hasattr(workflow, 'dict') else workflow
+            
+            # Store in persistence first
+            await self.persistence.save_workflow(workflow)
+            
+            # If we have a workflow manager, use it to execute
+            if self.workflow_manager:
+                logger.info(f"Executing workflow {workflow.id} via WorkflowManager")
+                result = await self.workflow_manager.execute_workflow(workflow)
+                return {"success": True, "workflow_id": workflow.id, "execution": result}
+            else:
+                # Backward compatibility: just store in persistence
+                # The execution engine should pick it up via events
+                logger.warning(f"No WorkflowManager available, workflow {workflow.id} stored but not executed")
+                return {"success": True, "workflow_id": workflow_dict.get("id")}
+        except Exception as e:
+            logger.error(f"Error submitting workflow: {e}")
+            return {"success": False, "error": str(e)}
     
     async def cancel_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Cancel workflow natively."""
-        if not self.execution_engine:
-            raise RuntimeError("Execution engine not initialized")
-        
-        success = await self.execution_engine.cancel_workflow(workflow_id)
-        return {"success": success, "workflow_id": workflow_id}
+        """Cancel workflow directly via persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            workflow = await self.persistence.get_workflow(workflow_id)
+            if workflow:
+                workflow.status = WorkflowStatus.CANCELLED
+                await self.persistence.save_workflow(workflow)
+            return {"success": True, "workflow_id": workflow_id}
+        except Exception as e:
+            logger.error(f"Error cancelling workflow {workflow_id}: {e}")
+            return {"success": False, "error": str(e)}
     
     async def pause_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Pause workflow natively."""
-        # Would need execution engine support
-        return {"error": "Pause not yet implemented in native mode"}
+        """Pause workflow directly via persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            workflow = await self.persistence.get_workflow(workflow_id)
+            if workflow:
+                workflow.status = WorkflowStatus.PAUSED
+                await self.persistence.save_workflow(workflow)
+            return {"success": True, "workflow_id": workflow_id}
+        except Exception as e:
+            logger.error(f"Error pausing workflow {workflow_id}: {e}")
+            return {"success": False, "error": str(e)}
     
     async def resume_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Resume workflow natively."""
-        # Would need execution engine support
-        return {"error": "Resume not yet implemented in native mode"}
+        """Resume workflow directly via persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            workflow = await self.persistence.get_workflow(workflow_id)
+            if workflow:
+                workflow.status = WorkflowStatus.RUNNING
+                await self.persistence.save_workflow(workflow)
+            return {"success": True, "workflow_id": workflow_id}
+        except Exception as e:
+            logger.error(f"Error resuming workflow {workflow_id}: {e}")
+            return {"success": False, "error": str(e)}
     
     async def delete_workflow(self, workflow_id: str) -> bool:
-        """Delete workflow natively."""
-        if not self.persistence:
-            raise RuntimeError("Persistence not initialized")
-        return await self.persistence.delete_workflow(workflow_id)
+        """Delete workflow directly from persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            await self.persistence.delete_workflow(workflow_id)
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting workflow {workflow_id}: {e}")
+            return False
     
     async def get_workflow_tasks(self, workflow_id: str) -> List[Task]:
-        """Get workflow tasks natively."""
-        if not self.persistence:
-            raise RuntimeError("Persistence not initialized")
-        return await self.persistence.get_workflow_tasks(workflow_id)
+        """Get workflow tasks directly from persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            tasks = await self.persistence.list_tasks(workflow_id=workflow_id)
+            if tasks and isinstance(tasks[0], dict):
+                tasks = [Task(**t) for t in tasks]
+            return tasks or []
+        except Exception as e:
+            logger.error(f"Error getting workflow tasks: {e}")
+            return []
     
     # Task operations
-    async def submit_task(self, task: Task) -> Dict[str, Any]:
-        """Submit task natively."""
-        if not self.execution_engine:
-            raise RuntimeError("Execution engine not initialized")
-        
-        result = await self.execution_engine.submit_task(task)
-        return {"task_id": result.id, "status": "submitted"}
-    
-    async def get_task(self, task_id: str) -> Optional[Task]:
-        """Get task natively."""
-        if not self.persistence:
-            raise RuntimeError("Persistence not initialized")
-        return await self.persistence.get_task(task_id)
-    
-    async def get_task_result(self, task_id: str) -> Optional[TaskResult]:
-        """Get task result natively."""
-        if not self.persistence:
-            raise RuntimeError("Persistence not initialized")
-        return await self.persistence.get_task_result(task_id)
     
     async def list_tasks(self, status: Optional[str] = None,
                         workflow_id: Optional[str] = None,
-                        limit: int = 100, offset: int = 0) -> Dict[str, Any]:
-        """List tasks natively."""
-        if not self.persistence:
-            raise RuntimeError("Persistence not initialized")
-        
-        tasks = await self.persistence.list_tasks(
-            status=status, workflow_id=workflow_id,
-            limit=limit, offset=offset
-        )
-        return {"tasks": tasks, "total": len(tasks)}
+                        limit: int = 100, offset: int = 0) -> List[Task]:
+        """List tasks directly from persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            result = await self.persistence.list_tasks(
+                workflow_id=workflow_id, status=status,
+                limit=limit, offset=offset
+            )
+            # Handle dict response from persistence layer
+            if isinstance(result, dict):
+                tasks = result.get("tasks", [])
+            else:
+                tasks = result
+                
+            if tasks and len(tasks) > 0 and isinstance(tasks[0], dict):
+                tasks = [Task(**t) for t in tasks]
+            return tasks or []
+        except Exception as e:
+            logger.error(f"Error listing tasks: {e}")
+            return []
+    
+    async def get_task(self, task_id: str) -> Optional[Task]:
+        """Get task directly from persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            task = await self.persistence.get_task(task_id)
+            if task and isinstance(task, dict):
+                task = Task(**task)
+            return task
+        except Exception as e:
+            logger.error(f"Error getting task {task_id}: {e}")
+            return None
+    
+    async def get_task_result(self, task_id: str) -> Optional[TaskResult]:
+        """Get task result directly from persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            result = await self.persistence.get_task_result(task_id)
+            if result and isinstance(result, dict):
+                result = TaskResult(**result)
+            return result
+        except Exception as e:
+            logger.error(f"Error getting task result {task_id}: {e}")
+            return None
+    
+    async def submit_task(self, task: Task) -> Dict[str, Any]:
+        """Submit task directly to persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            task_dict = task.dict() if hasattr(task, 'dict') else task
+            await self.persistence.create_task(task_dict)
+            return {"success": True, "task_id": task_dict.get("id")}
+        except Exception as e:
+            logger.error(f"Error submitting task: {e}")
+            return {"success": False, "error": str(e)}
     
     async def cancel_task(self, task_id: str) -> bool:
-        """Cancel task natively."""
-        if not self.execution_engine:
-            raise RuntimeError("Execution engine not initialized")
-        return await self.execution_engine.cancel_task(task_id)
+        """Cancel task directly via persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            await self.persistence.update_task_status(task_id, TaskStatus.CANCELLED)
+            return True
+        except Exception as e:
+            logger.error(f"Error cancelling task {task_id}: {e}")
+            return False
     
     async def delete_task(self, task_id: str) -> bool:
-        """Delete task natively."""
-        if not self.persistence:
-            raise RuntimeError("Persistence not initialized")
-        return await self.persistence.delete_task(task_id)
+        """Delete task directly from persistence."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            await self.persistence.delete_task(task_id)
+            return True
+        except Exception as e:
+            logger.error(f"Error deleting task {task_id}: {e}")
+            return False
     
     async def wait_for_task(self, task_id: str, timeout: float = 300.0,
                            poll_interval: float = 1.0) -> Optional[TaskResult]:
-        """Wait for task completion natively."""
+        """
+        Wait for task completion.
+        
+        In native mode, this polls the persistence layer directly.
+        """
+        import asyncio
         import time
+        
         start_time = time.time()
         
         while time.time() - start_time < timeout:
             task = await self.get_task(task_id)
-            if task and task.status in ['completed', 'failed', 'cancelled']:
+            if task and task.status in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
                 return await self.get_task_result(task_id)
-            
+                
             await asyncio.sleep(poll_interval)
-        
+            
         return None
     
     # Queue operations
+    
     async def get_queues(self) -> Dict[str, Any]:
-        """Get queues natively."""
-        if not self.execution_engine:
-            raise RuntimeError("Execution engine not initialized")
-        
-        # Would need queue manager access
-        return {"default": {"size": 0, "status": "active"}}
+        """Get queue information."""
+        # Simplified for now
+        return {"queues": []}
     
     async def get_queue_details(self, queue_name: str) -> Dict[str, Any]:
-        """Get queue details natively."""
-        return {"name": queue_name, "size": 0, "status": "active"}
-    
-    async def pause_queue(self, queue_name: str) -> Dict[str, Any]:
-        """Pause queue natively."""
-        return {"error": "Queue operations not yet implemented in native mode"}
-    
-    async def resume_queue(self, queue_name: str) -> Dict[str, Any]:
-        """Resume queue natively."""
-        return {"error": "Queue operations not yet implemented in native mode"}
-    
-    async def clear_queue(self, queue_name: str) -> Dict[str, Any]:
-        """Clear queue natively."""
-        return {"error": "Queue operations not yet implemented in native mode"}
-    
-    # Batch operations
-    async def batch_process(self, directory: str, pattern: str = "*",
-                           method: str = "llm/chat", prompt: str = None,
-                           model: str = "llama3.2:latest",
-                           max_concurrent: int = 5,
-                           name: Optional[str] = None) -> Dict[str, Any]:
-        """Batch process natively."""
-        # Simple implementation - would be expanded
-        from pathlib import Path
-        import glob
-        
-        files = glob.glob(f"{directory}/{pattern}")
-        results = {}
-        
-        for file_path in files[:max_concurrent]:
-            task = Task(
-                method=method,
-                parameters={"file": file_path, "prompt": prompt, "model": model}
-            )
-            result = await self.submit_task(task)
-            results[file_path] = result
-        
-        return results
-    
-    async def process_directory(self, directory: str, file_extensions: List[str],
-                               workflow_yaml: str, max_concurrent: int = 5,
-                               recursive: bool = True) -> Dict[str, Any]:
-        """Process directory natively."""
-        # Simplified implementation
-        from pathlib import Path
-        import yaml
-        
-        dir_path = Path(directory)
-        results = {}
-        
-        for ext in file_extensions:
-            if recursive:
-                files = dir_path.rglob(f"*{ext}")
-            else:
-                files = dir_path.glob(f"*{ext}")
-            
-            for file_path in files:
-                # Parse and substitute workflow
-                workflow_dict = yaml.safe_load(workflow_yaml)
-                workflow_dict['name'] = f"Process {file_path.name}"
-                
-                # Simple substitution
-                workflow_yaml_substituted = workflow_yaml.replace("${file_path}", str(file_path))
-                workflow_yaml_substituted = workflow_yaml_substituted.replace("${file_name}", file_path.name)
-                
-                workflow = Workflow(**yaml.safe_load(workflow_yaml_substituted))
-                result = await self.submit_workflow(workflow)
-                results[str(file_path)] = result
-        
-        return results
-    
-    # Chat operations  
-    async def chat(self, message: str, model: str = "llama3.2:latest",
-                  temperature: float = 0.7,
-                  session_id: Optional[str] = None) -> Dict[str, Any]:
-        """Chat natively."""
-        task = Task(
-            method="llm/chat",
-            parameters={"message": message, "model": model, "temperature": temperature}
-        )
-        result = await self.submit_task(task)
-        return result
+        """Get queue details."""
+        return {"queue": queue_name, "size": 0}
     
     # System operations
-    async def get_system_status(self) -> Dict[str, Any]:
-        """Get system status natively."""
-        return {
-            "status": "running",
-            "mode": "native",
-            "persistence": self.persistence.__class__.__name__ if self.persistence else "none"
-        }
     
-    async def health_check(self) -> Dict[str, Any]:
-        """Health check natively."""
+    async def get_system_status(self) -> Dict[str, Any]:
+        """Get system status directly."""
+        if not self.initialized:
+            await self.initialize()
+            
         return {
             "status": "healthy",
-            "components": {
-                "execution_engine": self.execution_engine is not None,
-                "persistence": self.persistence is not None,
-                "registry": self.registry is not None
+            "mode": "native",
+            "persistence": {
+                "type": type(self.persistence).__name__,
+                "connected": True
             }
         }
     
-    async def get_providers(self) -> List[Dict[str, Any]]:
-        """Get providers natively."""
-        if not self.registry:
-            return []
-        
-        providers = []
-        for protocol in self.registry.list_protocols():
-            provider = self.registry.get_provider(protocol)
-            if provider:
-                providers.append({
-                    "protocol": protocol,
-                    "provider": provider.__class__.__name__
-                })
-        
-        return providers
+    async def health_check(self) -> Dict[str, Any]:
+        """Perform health check."""
+        return await self.get_system_status()
     
-    async def get_protocols(self) -> List[Dict[str, Any]]:
-        """Get protocols natively."""
-        if not self.registry:
-            return []
-        
-        return [{"protocol": p} for p in self.registry.list_protocols()]
+    # Auth operations (no-op for native adapter in stateless architecture)
     
-    # Event operations
-    async def get_events(self, workflow_id: Optional[str] = None,
-                        task_id: Optional[str] = None,
-                        event_type: Optional[str] = None,
-                        limit: int = 1000) -> List[Dict[str, Any]]:
-        """Get persisted events."""
-        if not self.event_store:
-            return []
+    async def login(self, username: str, password: str) -> Dict[str, Any]:
+        """Login is handled at API layer, not in native adapter."""
+        return {"success": True, "message": "Native adapter - auth handled at API layer"}
+    
+    async def logout(self) -> Dict[str, Any]:
+        """Logout is handled at API layer, not in native adapter."""
+        return {"success": True, "message": "Native adapter - auth handled at API layer"}
+    
+    async def get_current_user(self) -> Dict[str, Any]:
+        """Get current user (system for native adapter)."""
+        return {"username": "system", "role": "admin", "adapter": "native"}
+    
+    # WorkflowManager access
+    
+    async def get_workflow_manager(self) -> Optional["WorkflowManager"]:
+        """
+        Get WorkflowManager instance from SystemManager or create one.
         
-        return await self.event_store.get_events(
-            workflow_id=workflow_id,
-            task_id=task_id,
-            event_type=event_type,
-            limit=limit
+        This method attempts to:
+        1. Get WorkflowManager from distributed component registry
+        2. Create a stateless instance if not found
+        
+        Returns:
+            WorkflowManager instance or None if unavailable
+        """
+        try:
+            # Try to get from component registry first
+            from gleitzeit.system.distributed_registry import DistributedComponentRegistry
+            from gleitzeit.core.workflow_manager_factory import WorkflowManagerFactory
+            
+            # Try to get existing instance from registry
+            try:
+                registry = DistributedComponentRegistry(self.persistence)
+                components = await registry.list_components(component_type="WorkflowManager")
+                if components:
+                    # Get the component metadata
+                    component = components[0]
+                    logger.info(f"Found WorkflowManager in registry: {component.component_id}")
+                    # For now, we'll create a new instance since we can't serialize the actual object
+                    # In a real implementation, we'd need a way to get the actual instance
+            except Exception as e:
+                logger.debug(f"Could not get WorkflowManager from registry: {e}")
+            
+            # Create stateless instance if not found
+            logger.info("Creating new WorkflowManager instance")
+            workflow_manager = await WorkflowManagerFactory.create(
+                persistence=self.persistence,
+                event_bus=None,  # Event bus would be created if needed
+                execution_engine=None,  # Will be created by factory
+                dependency_resolver=None
+            )
+            return workflow_manager
+            
+        except Exception as e:
+            logger.error(f"Error getting WorkflowManager: {e}")
+            return None
+    
+    async def get_task_logs(self, 
+                          task_id: str,
+                          level: Optional[str] = None,
+                          limit: int = 100,
+                          offset: int = 0) -> List[Dict[str, Any]]:
+        """
+        Get logs for a specific task from the centralized logging system.
+        
+        Args:
+            task_id: Task ID to get logs for
+            level: Optional log level filter
+            limit: Maximum number of logs to return
+            offset: Offset for pagination
+            
+        Returns:
+            List of log entries for the task
+        """
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            # Try to get logs from Redis log adapter first
+            if hasattr(self.persistence, 'redis') and self.persistence.redis:
+                from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
+                log_adapter = LogRedisAdapter(self.persistence.redis)
+                
+                # Get logs for this specific task
+                logs = await log_adapter.get_logs(
+                    task_id=task_id,
+                    level=level,
+                    limit=limit,
+                    offset=offset
+                )
+                
+                # Convert LogEntry objects to dictionaries if needed
+                if logs and hasattr(logs[0], 'to_dict'):
+                    logs = [log.to_dict() for log in logs]
+                    
+                return logs
+                
+        except Exception as e:
+            logger.debug(f"Could not get logs from Redis adapter: {e}")
+        
+        # Fallback: If no centralized logs available yet, return minimal info
+        # This is temporary until full logging integration is complete
+        try:
+            task = await self.persistence.get_task(task_id)
+            if task:
+                return [{
+                    "timestamp": datetime.now().isoformat(),
+                    "level": "INFO",
+                    "message": f"Real-time logs not yet available for task {task_id}. Enable LogCollector for full logging.",
+                    "task_id": task_id,
+                    "source": "native_adapter",
+                    "metadata": {
+                        "task_name": task.name if hasattr(task, 'name') else None,
+                        "task_status": task.status if hasattr(task, 'status') else None,
+                        "migration_notice": "Logs will be available once LogCollector is properly initialized"
+                    }
+                }]
+            else:
+                return [{
+                    "timestamp": datetime.now().isoformat(),
+                    "level": "WARNING",
+                    "message": f"Task {task_id} not found",
+                    "task_id": task_id,
+                    "source": "native_adapter"
+                }]
+                
+        except Exception as e:
+            logger.error(f"Error getting task info: {e}")
+            return [{
+                "timestamp": datetime.now().isoformat(),
+                "level": "ERROR",
+                "message": f"Error retrieving logs for task {task_id}: {str(e)}",
+                "task_id": task_id,
+                "source": "native_adapter"
+            }]
+    
+    async def get_logs(self, 
+                      level: Optional[str] = None,
+                      source: Optional[str] = None,
+                      start_time: Optional[datetime] = None,
+                      end_time: Optional[datetime] = None,
+                      limit: int = 100,
+                      offset: int = 0) -> List[Dict[str, Any]]:
+        """Get logs with optional filtering from centralized system."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            # Try to get logs from Redis log adapter
+            if hasattr(self.persistence, 'redis') and self.persistence.redis:
+                from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
+                log_adapter = LogRedisAdapter(self.persistence.redis)
+                
+                # Get logs with filters
+                logs = await log_adapter.get_logs(
+                    level=level,
+                    source=source,
+                    start_time=start_time,
+                    end_time=end_time,
+                    limit=limit,
+                    offset=offset
+                )
+                
+                # Convert LogEntry objects to dictionaries if needed
+                if logs and hasattr(logs[0], 'to_dict'):
+                    logs = [log.to_dict() for log in logs]
+                    
+                return logs
+                
+        except Exception as e:
+            logger.debug(f"Could not get logs from Redis adapter: {e}")
+        
+        # Fallback message
+        return [{
+            "timestamp": datetime.now().isoformat(),
+            "level": "INFO",
+            "message": "Centralized logging not yet available. Enable LogCollector for full logging.",
+            "source": "native_adapter"
+        }]
+    
+    async def get_log_levels(self) -> List[str]:
+        """Get available log levels."""
+        return ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+    
+    async def query_logs(self, 
+                        query: str,
+                        limit: int = 100,
+                        offset: int = 0) -> List[Dict[str, Any]]:
+        """Query logs using a search string."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            # Try to query logs from Redis log adapter
+            if hasattr(self.persistence, 'redis') and self.persistence.redis:
+                from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
+                log_adapter = LogRedisAdapter(self.persistence.redis)
+                
+                # Search logs - this would need to be implemented in LogRedisAdapter
+                # For now, return empty as query functionality may not be fully implemented
+                return []
+                
+        except Exception as e:
+            logger.debug(f"Could not query logs from Redis adapter: {e}")
+        
+        return []
+    
+    async def tail_logs(self,
+                       lines: int = 100,
+                       follow: bool = False,
+                       source: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Tail logs (get most recent logs)."""
+        # For tail functionality, get recent logs
+        return await self.get_logs(
+            source=source,
+            limit=lines,
+            offset=0
         )
+    
+    async def download_logs(self,
+                          format: str = "json",
+                          start_time: Optional[datetime] = None,
+                          end_time: Optional[datetime] = None) -> bytes:
+        """Download logs in specified format."""
+        logs = await self.get_logs(
+            start_time=start_time,
+            end_time=end_time,
+            limit=10000  # Large limit for download
+        )
+        
+        if format == "json":
+            import json
+            return json.dumps(logs, indent=2).encode('utf-8')
+        elif format == "csv":
+            # Simple CSV conversion
+            if not logs:
+                return b"timestamp,level,message,source\n"
+            
+            csv_lines = ["timestamp,level,message,source"]
+            for log in logs:
+                line = f"{log.get('timestamp','')},{log.get('level','')},{log.get('message','').replace(',',';')},{log.get('source','')}"
+                csv_lines.append(line)
+            return "\n".join(csv_lines).encode('utf-8')
+        else:
+            # Plain text format
+            lines = []
+            for log in logs:
+                line = f"[{log.get('timestamp','')}] {log.get('level','')} {log.get('source','')}: {log.get('message','')}"
+                lines.append(line)
+            return "\n".join(lines).encode('utf-8')
+    
+    async def clear_logs(self,
+                        before: Optional[datetime] = None,
+                        level: Optional[str] = None) -> Dict[str, Any]:
+        """Clear logs with optional filtering."""
+        # This would need to be implemented in the persistence layer
+        return {"success": False, "message": "Log clearing not yet implemented in native adapter"}
+    
+    async def get_log_size(self) -> Dict[str, Any]:
+        """Get log storage size information."""
+        # This would need to be implemented in the persistence layer
+        return {"bytes": 0, "human_readable": "0 B", "message": "Log size calculation not yet implemented"}
+    
+    async def get_workflow_logs(self, workflow_id: str) -> List[Dict[str, Any]]:
+        """Get logs for a specific workflow."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            # Get logs filtered by workflow_id
+            if hasattr(self.persistence, 'redis') and self.persistence.redis:
+                from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
+                log_adapter = LogRedisAdapter(self.persistence.redis)
+                
+                # Get logs for this specific workflow
+                logs = await log_adapter.get_logs(
+                    workflow_id=workflow_id,
+                    limit=1000  # Large limit for workflow logs
+                )
+                
+                # Convert LogEntry objects to dictionaries if needed
+                if logs and hasattr(logs[0], 'to_dict'):
+                    logs = [log.to_dict() for log in logs]
+                    
+                return logs
+                
+        except Exception as e:
+            logger.debug(f"Could not get workflow logs from Redis adapter: {e}")
+        
+        # Fallback: minimal info
+        return [{
+            "timestamp": datetime.now().isoformat(),
+            "level": "INFO",
+            "message": f"Real-time logs not yet available for workflow {workflow_id}. Enable LogCollector for full logging.",
+            "workflow_id": workflow_id,
+            "source": "native_adapter"
+        }]

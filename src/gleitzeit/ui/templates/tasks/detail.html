@@ -65,7 +65,7 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
         let html = `
             <div class="task-detail-card">
                 <div class="detail-header">
-                    <h2>${task.name || task.task_id || task.id}</h2>
+                    <h2>${task.name || task.id}</h2>
                     <span class="task-status ${statusClass}">
                         ${statusIcon} ${task.status || 'pending'}
                     </span>
@@ -136,19 +136,19 @@ document.body.addEventListener('htmx:beforeSwap', function(evt) {
                 <div class="task-actions">
                     ${task.status === 'failed' || task.status === 'cancelled' ? 
                         `<button class="btn btn-warning" 
-                                 hx-post="/api/tasks/${task.task_id || task.id}/retry"
+                                 hx-post="/api/tasks/${task.id}/retry"
                                  hx-confirm="Retry this task?">
                                  <span class="btn-icon">↻</span> Retry Task
                          </button>` : ''}
                     ${task.status === 'running' || task.status === 'pending' ? 
                         `<button class="btn btn-danger" 
-                                 hx-post="/api/tasks/${task.task_id || task.id}/cancel"
+                                 hx-post="/api/tasks/${task.id}/cancel"
                                  hx-confirm="Cancel this task?">
                                  <span class="btn-icon">⊘</span> Cancel Task
                          </button>` : ''}
                     ${task.status === 'completed' || task.status === 'failed' ? 
                         `<button class="btn btn-secondary" 
-                                 hx-delete="/api/tasks/${task.task_id || task.id}"
+                                 hx-delete="/api/tasks/${task.id}"
                                  hx-confirm="Delete this task?">
                                  <span class="btn-icon">🗑</span> Delete Task
                          </button>` : ''}

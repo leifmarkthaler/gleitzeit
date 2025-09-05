@@ -18,7 +18,7 @@ GleitzeitClient = None
 try:
     from gleitzeit.client import GleitzeitClient
     GLEITZEIT_AVAILABLE = True
-    print("✅ Gleitzeit package detected - full functionality enabled")
+    logger.info("✅ Gleitzeit package detected - full functionality enabled")
     # Try to import additional modules if available
     try:
         from gleitzeit.core.execution import ExecutionEngine
@@ -28,8 +28,8 @@ try:
         ExecutionEngine = None
         Registry = None
 except ImportError as e:
-    print(f"⚠️  Could not import gleitzeit: {e}")
-    print("   Running in standalone mode with limited features")
+    logger.warning(f"⚠️  Could not import gleitzeit: {e}")
+    logger.warning("   Running in standalone mode with limited features")
     
     # Create mock classes for standalone mode
     class GleitzeitClient:
@@ -84,11 +84,11 @@ async def lifespan(app: FastAPI):
     # Store API URL for reference
     app.state.api_url = os.getenv('GLEITZEIT_API_URL', 'http://localhost:8000')
     
-    print(f"✅ Gleitzeit UI started - connected to API at {app.state.api_url}")
+    logger.info(f"✅ Gleitzeit UI started - connected to API at {app.state.api_url}")
     
     yield
     
-    print("👋 Gleitzeit UI shutdown complete")
+    logger.info("👋 Gleitzeit UI shutdown complete")
 
 
 # Create FastAPI app

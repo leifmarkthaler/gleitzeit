@@ -6,7 +6,7 @@ import asyncio
 from datetime import datetime
 from unittest.mock import Mock, AsyncMock, MagicMock, patch
 
-from gleitzeit.core.execution_engine import ExecutionEngine, ExecutionMode
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine, ExecutionMode
 from gleitzeit.core.models import Task, TaskStatus, Priority, Workflow, WorkflowStatus, TaskResult
 from gleitzeit.core.errors import TaskError, ErrorCode
 from gleitzeit.core.jsonrpc import JSONRPCRequest, JSONRPCResponse

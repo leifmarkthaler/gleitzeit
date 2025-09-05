@@ -45,6 +45,13 @@ class Priority(str, Enum):
     URGENT = "urgent"
 
 
+class BackoffStrategy(str, Enum):
+    """Retry backoff strategies"""
+    FIXED = "fixed"
+    LINEAR = "linear"
+    EXPONENTIAL = "exponential"
+
+
 class RetryConfig(BaseModel):
     """Configuration for task retry behavior"""
     max_attempts: int = Field(default=3, ge=1, le=10)

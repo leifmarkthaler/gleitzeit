@@ -19,6 +19,14 @@ from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter
 from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
 from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
 
+# OpenTelemetry integration - optional
+try:
+    from opentelemetry import trace
+    OPENTELEMETRY_AVAILABLE = True
+except ImportError:
+    OPENTELEMETRY_AVAILABLE = False
+    trace = None
+
 logger = logging.getLogger(__name__)
 
 # Context variables for log context
@@ -32,43 +40,40 @@ class LogCollector:
         self, 
         event_bus: Optional[EventBus] = None,
         persistence: Optional[UnifiedPersistenceAdapter] = None,
-        redis_adapter: Optional[UnifiedRedisAdapter] = None,
         buffer_size: int = 100,
         flush_interval: float = 1.0,
         enable_persistence: bool = True,
-        enable_streaming: bool = True,
-        prefer_redis: bool = True
+        enable_streaming: bool = True
     ):
         """
         Initialize log collector
         
         Args:
             event_bus: Event bus for real-time streaming
-            persistence: SQL persistence adapter for storage
-            redis_adapter: Redis adapter for high-performance log storage
+            persistence: Unified persistence adapter for storage
             buffer_size: Number of logs to buffer before flush
             flush_interval: Seconds between automatic flushes
             enable_persistence: Whether to persist logs to storage
             enable_streaming: Whether to stream logs via event bus
-            prefer_redis: Prefer Redis over SQL when both are available
         """
         self.event_bus = event_bus
         self.persistence = persistence
-        self.redis_adapter = redis_adapter
         self.buffer_size = buffer_size
         self.flush_interval = flush_interval
-        self.enable_persistence = enable_persistence and (persistence is not None or redis_adapter is not None)
+        self.enable_persistence = enable_persistence and persistence is not None
         self.enable_streaming = enable_streaming and event_bus is not None
-        self.prefer_redis = prefer_redis
         
-        # Initialize Redis log adapter if Redis is available
+        # Initialize log adapter from unified persistence
         self.log_redis: Optional[LogRedisAdapter] = None
-        if redis_adapter:
-            self.log_redis = LogRedisAdapter(redis_adapter)
-            logger.info("LogCollector initialized with Redis backend")
-        elif persistence:
-            logger.info("LogCollector initialized with SQL backend")
-        else:
+        if persistence and hasattr(persistence, 'redis') and persistence.redis:
+            from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
+            if isinstance(persistence, UnifiedRedisAdapter):
+                self.log_redis = LogRedisAdapter(persistence)
+                logger.info("LogCollector initialized with UnifiedRedisAdapter backend")
+        
+        if not self.log_redis and persistence:
+            logger.info("LogCollector initialized with unified persistence (no Redis)")
+        elif not persistence:
             logger.info("LogCollector initialized without persistence")
         
         self.buffer: List[LogEntry] = []
@@ -82,7 +87,7 @@ class LogCollector:
             "total_flushed": 0,
             "flush_errors": 0,
             "stream_errors": 0,
-            "backend": "redis" if (redis_adapter and prefer_redis) else "sql" if persistence else "none"
+            "backend": "redis" if self.log_redis else "unified" if persistence else "none"
         }
     
     async def start(self):
@@ -164,6 +169,44 @@ class LogCollector:
         )
         
         self.stats["total_logged"] += 1
+        
+        # Add to OpenTelemetry span if available
+        if OPENTELEMETRY_AVAILABLE and trace:
+            try:
+                current_span = trace.get_current_span()
+                if current_span and current_span.is_recording():
+                    # Add log entry as span attributes
+                    span_attributes = {
+                        "log.level": level.value,
+                        "log.source": source.value,
+                        "log.message": message[:200],  # Truncate long messages
+                    }
+                    
+                    if task_id:
+                        span_attributes["log.task_id"] = task_id
+                    if workflow_id:
+                        span_attributes["log.workflow_id"] = workflow_id
+                    if provider_id:
+                        span_attributes["log.provider_id"] = provider_id
+                    
+                    # Set attributes on current span
+                    for key, value in span_attributes.items():
+                        current_span.set_attribute(key, value)
+                    
+                    # Record exception for error logs
+                    if level in [LogLevel.ERROR, LogLevel.CRITICAL] and metadata:
+                        error_type = metadata.get('error_type')
+                        error_message = metadata.get('error_message', message)
+                        if error_type:
+                            # Create a fake exception for OpenTelemetry
+                            try:
+                                raise Exception(f"{error_type}: {error_message}")
+                            except Exception as fake_exception:
+                                current_span.record_exception(fake_exception)
+                
+            except Exception as e:
+                # Don't let telemetry errors break logging
+                logger.debug(f"OpenTelemetry integration error: {e}")
         
         # Stream via event bus if enabled
         if self.enable_streaming:
@@ -252,34 +295,22 @@ class LogCollector:
     
     async def _save_logs_batch(self, entries: List[LogEntry]) -> None:
         """Save log entries to persistence"""
-        if not self.enable_persistence:
+        if not self.enable_persistence or not self.persistence:
             return
         
-        # Use Redis if available and preferred
-        if self.log_redis and self.prefer_redis:
+        # Use LogRedisAdapter if available (UnifiedRedisAdapter backend)
+        if self.log_redis:
             try:
                 await self.log_redis.save_logs_batch(entries)
-                logger.debug(f"Saved {len(entries)} logs to Redis")
+                logger.debug(f"Saved {len(entries)} logs via UnifiedRedisAdapter")
                 return
             except Exception as e:
                 logger.error(f"Failed to save logs to Redis: {e}")
-                # Fall back to SQL if available
-                if not self.persistence:
-                    raise
+                raise
         
-        # Use SQL persistence if available
-        if self.persistence:
-            # Convert to dictionaries for storage
-            log_dicts = [entry.to_dict() for entry in entries]
-            
-            # TODO: Add batch save method to SQL persistence adapter
-            # For now, we'll save them individually (not optimal)
-            for entry_dict in log_dicts:
-                # This would be implemented in the persistence adapter
-                # await self.persistence.save_log(entry_dict)
-                pass
-            
-            logger.debug(f"Saved {len(entries)} logs to SQL")
+        # For now, if no Redis adapter, we skip persistence
+        # In the future, we could add log methods to UnifiedPersistenceAdapter interface
+        logger.debug(f"Skipping log persistence - Redis adapter not available")
     
     async def _flush_loop(self) -> None:
         """Background task to periodically flush buffer"""

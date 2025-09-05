@@ -11,8 +11,8 @@ import uuid
 from datetime import datetime
 
 from gleitzeit.core.models import Workflow, Task
-from gleitzeit.core.execution_engine import ExecutionEngine
-from gleitzeit.hub.resource_manager import ResourceManager
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
+# ResourceManager removed - using stateless coordination
 from gleitzeit.hub.agent_hub import AgentHub, AgentConfig, AgentType
 from gleitzeit.registry import ProtocolProviderRegistry
 
@@ -21,9 +21,6 @@ from gleitzeit.registry import ProtocolProviderRegistry
 async def mock_execution_environment():
     """Create a mock execution environment with agent support"""
     
-    # Create resource manager
-    resource_manager = ResourceManager("test-manager")
-    
     # Mock Ollama hub
     ollama_hub = AsyncMock()
     ollama_hub.chat_completion = AsyncMock(return_value={
@@ -31,16 +28,13 @@ async def mock_execution_environment():
     })
     ollama_hub.running = True
     
-    # Add Ollama hub to resource manager
-    await resource_manager.add_hub("ollama", ollama_hub)
-    
-    # Create and add Agent hub
+    # Create Agent hub without ResourceManager (stateless)
     agent_hub = AgentHub(
         hub_id="agent",
-        resource_manager=resource_manager,
         max_agents=3
     )
-    await resource_manager.add_hub("agent", agent_hub)
+    # Directly set the ollama_hub for testing
+    agent_hub.ollama_hub = ollama_hub
     await agent_hub.start()
     
     # Create registry (mock)
@@ -61,7 +55,6 @@ async def mock_execution_environment():
     
     # Cleanup
     await agent_hub.stop()
-    await resource_manager.stop()
 
 
 class TestAgentWorkflowIntegration:

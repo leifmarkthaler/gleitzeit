@@ -7,7 +7,7 @@ from unittest.mock import Mock, AsyncMock, patch
 import yaml
 import json
 
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
 from gleitzeit.hub.mcp_hub import MCPHub
 

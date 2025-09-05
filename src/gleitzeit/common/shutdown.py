@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 async def unified_shutdown(
     execution_engine: Optional[Any] = None,
-    resource_manager: Optional[Any] = None,
+    resource_manager: Optional[Any] = None,  # Deprecated - kept for compatibility
     persistence_backend: Optional[Any] = None,
     registry: Optional[Any] = None,
     verbose: bool = False
@@ -23,12 +23,12 @@ async def unified_shutdown(
     Shutdown order:
     1. Stop execution engine (stops accepting new tasks)
     2. Shutdown all providers (clean up connections)
-    3. Stop resource manager and hubs (release resources)
+    3. Stop hubs (release resources) - ResourceManager deprecated
     4. Shutdown persistence backend (close DB connections)
     
     Args:
         execution_engine: ExecutionEngine instance to stop
-        resource_manager: ResourceManager instance to stop
+        resource_manager: (Deprecated) Legacy parameter, ignored
         persistence_backend: Persistence adapter to shutdown
         registry: Optional registry to get providers from (if not in engine)
         verbose: Whether to log info messages (not just warnings)

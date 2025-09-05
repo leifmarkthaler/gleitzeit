@@ -13,19 +13,13 @@ from typing import Optional, Any, Dict
 from datetime import datetime, timedelta
 from enum import Enum
 
-from gleitzeit.core.models import Task, TaskStatus, RetryConfig
+from gleitzeit.core.models import Task, TaskStatus, RetryConfig, BackoffStrategy
 from gleitzeit.core.events import EventType, GleitzeitEvent, create_custom_event
 from gleitzeit.persistence.base import PersistenceBackend
 from gleitzeit.core.errors import is_retryable_error, TaskError, ErrorCode
 
 logger = logging.getLogger(__name__)
 
-
-class BackoffStrategy(str, Enum):
-    """Retry backoff strategies"""
-    FIXED = "fixed"
-    LINEAR = "linear"
-    EXPONENTIAL = "exponential"
 
 
 class EventDrivenRetryManager:
@@ -43,7 +37,8 @@ class EventDrivenRetryManager:
     def __init__(self, 
                  persistence: PersistenceBackend,
                  scheduler: Optional['EventScheduler'],
-                 event_bus: Any):
+                 event_bus: Any,
+                 max_retries: int = 3):
         """Initialize with required event bus"""
         if not event_bus:
             raise ValueError("EventDrivenRetryManager requires an event bus")
@@ -51,6 +46,7 @@ class EventDrivenRetryManager:
         self.persistence = persistence
         self.scheduler = scheduler
         self.event_bus = event_bus
+        self.max_retries = max_retries  # Add default max_retries
         self._monitoring_task = None
         self._shutdown_event = asyncio.Event()
         
@@ -68,29 +64,59 @@ class EventDrivenRetryManager:
     async def _on_task_failed(self, event: GleitzeitEvent):
         """Handle task failure - decide if task should be retried"""
         task_id = event.data.get('task_id')
-        error_message = event.data.get('error_message', 'Unknown error')
-        error_type = event.data.get('error_type')
-        is_retryable = event.data.get('is_retryable', True)
         is_permanent = event.data.get('is_permanent', False)
-        attempt_number = event.data.get('attempt_number', 1)
-        
-        logger.debug(f"Processing TASK_FAILED event for {task_id}, attempt {attempt_number}, permanent={is_permanent}")
         
         # Ignore permanent failure events (these are emitted by us)
         if is_permanent:
             logger.debug(f"Ignoring permanent failure event for {task_id}")
             return
         
-        # Check if error is retryable
-        if not is_retryable:
-            logger.info(f"Task {task_id} failed with non-retryable error: {error_message}")
-            await self._emit_permanent_failure(task_id, "Non-retryable error")
-            return
-        
-        # Get task from persistence
+        # Get task from persistence - SINGLE SOURCE OF TRUTH
         task = await self.persistence.get_task(task_id)
         if not task:
             logger.warning(f"Task {task_id} not found in persistence")
+            return
+        
+        # Get ALL state from persistence
+        actual_attempt = task.metadata.get('retry_attempt', 0) if task.metadata else 0
+        last_error = task.metadata.get('last_error', 'Unknown error') if task.metadata else 'Unknown error'
+        
+        logger.debug(f"Processing TASK_FAILED event for {task_id}, attempt {actual_attempt} from persistence")
+        
+        # Get the latest task result to check the error
+        task_result = await self.persistence.get_task_result(task_id)
+        if task_result and task_result.error:
+            error_message = task_result.error
+        else:
+            error_message = last_error
+        
+        # Check if error is retryable using central error system patterns
+        # We check the error message since we're stateless and only have the string
+        from gleitzeit.core.errors import ErrorCode
+        retryable_patterns = [
+            "RESOURCE_EXHAUSTED",
+            "TIMEOUT",
+            "CONNECTION",
+            "OVERLOADED",
+            "RATE_LIMIT"
+        ]
+        
+        is_retryable = any(pattern in error_message for pattern in retryable_patterns)
+        
+        # Check for non-retryable patterns
+        non_retryable_patterns = [
+            "INVALID_PARAMS",
+            "Invalid parameter",
+            "METHOD_NOT_FOUND",
+            "NOT_AUTHORIZED"
+        ]
+        
+        if any(pattern in error_message for pattern in non_retryable_patterns):
+            is_retryable = False
+        
+        if not is_retryable:
+            logger.info(f"Task {task_id} failed with non-retryable error: {error_message}")
+            await self._emit_permanent_failure(task_id, "Non-retryable error")
             return
         
         # Check retry configuration
@@ -100,8 +126,8 @@ class EventDrivenRetryManager:
             await self._emit_permanent_failure(task_id, "No retry configuration")
             return
         
-        # Check if we've exceeded max attempts
-        if attempt_number >= retry_config.max_attempts:
+        # Check if we've exceeded max attempts (use actual attempt + 1 for the upcoming retry)
+        if actual_attempt + 1 >= retry_config.max_attempts:
             logger.info(f"Task {task_id} exceeded max retry attempts ({retry_config.max_attempts})")
             
             # Mark task as permanently failed
@@ -111,13 +137,17 @@ class EventDrivenRetryManager:
             task.metadata['final_error'] = error_message
             await self.persistence.save_task(task)
             
+            # Check if workflow is complete after permanent failure
+            if task.workflow_id:
+                await self._check_workflow_completion(task.workflow_id)
+            
             await self._emit_permanent_failure(task_id, "Max retry attempts exceeded")
             return
         
         # Calculate retry delay
         try:
             delay = self._calculate_backoff(
-                attempt_number,
+                actual_attempt + 1,  # Next attempt number for backoff calculation
                 retry_config.backoff_strategy,
                 retry_config.base_delay,
                 retry_config.max_delay,
@@ -131,22 +161,22 @@ class EventDrivenRetryManager:
                 code=ErrorCode.TASK_RETRY_ERROR,
                 task_id=task_id,
                 data={
-                    "attempt_number": attempt_number,
+                    "attempt_number": actual_attempt + 1,
                     "strategy": retry_config.backoff_strategy,
                     "base_delay": retry_config.base_delay,
                     "error": str(e)
                 }
             )
         
-        # Update task for retry
+        # Update task for retry (use actual_attempt from persistence!)
         task.status = TaskStatus.RETRY_PENDING
         task.metadata = task.metadata or {}
-        task.metadata['retry_attempt'] = attempt_number + 1
+        task.metadata['retry_attempt'] = actual_attempt + 1  # Increment from actual count
         task.metadata['retry_at'] = retry_at.isoformat()
         task.metadata['last_error'] = error_message
         await self.persistence.save_task(task)
         
-        logger.info(f"Task {task_id} scheduled for retry #{attempt_number + 1} at {retry_at} (delay: {delay:.1f}s)")
+        logger.info(f"Task {task_id} scheduled for retry #{actual_attempt + 1} at {retry_at} (delay: {delay:.1f}s)")
         
         # Schedule the retry if we have a scheduler
         if self.scheduler and hasattr(self.scheduler, 'schedule_task_retry'):
@@ -155,7 +185,7 @@ class EventDrivenRetryManager:
                 await self.scheduler.schedule_task_retry(
                     task_id=task_id,
                     retry_delay=timedelta(seconds=delay),
-                    attempt_count=attempt_number + 1,
+                    attempt_count=actual_attempt + 1,
                     error_message=task.metadata.get('last_error', 'Unknown error') if task.metadata else 'Unknown error'
                 )
             except Exception as e:
@@ -167,7 +197,7 @@ class EventDrivenRetryManager:
             asyncio.create_task(self._delayed_retry(task_id, delay))
         
         # Emit retry scheduled event
-        await self._emit_retry_scheduled(task_id, retry_at, attempt_number + 1)
+        await self._emit_retry_scheduled(task_id, retry_at, actual_attempt + 1)
     
     def _calculate_backoff(self, 
                           attempt: int, 
@@ -250,6 +280,39 @@ class EventDrivenRetryManager:
             )
             await self.event_bus.emit(event)
             logger.info(f"Emitted TASK_READY_FOR_RETRY event for {task.id}")
+    
+    async def _check_workflow_completion(self, workflow_id: str) -> None:
+        """Check if workflow is complete after a task permanently fails"""
+        from ..core.models import WorkflowStatus
+        
+        workflow = await self.persistence.get_workflow(workflow_id)
+        if not workflow:
+            return
+        
+        # Get all tasks for workflow
+        tasks = await self.persistence.get_tasks_by_workflow(workflow_id)
+        
+        # Check if all tasks are done (completed, failed, or cancelled)
+        all_done = True
+        has_failed = False
+        
+        for task in tasks:
+            if task.status == TaskStatus.FAILED:
+                has_failed = True
+            elif task.status not in [TaskStatus.COMPLETED, TaskStatus.CANCELLED]:
+                all_done = False
+                break
+        
+        # Update workflow status if all tasks are done
+        if all_done:
+            if has_failed:
+                workflow.status = WorkflowStatus.FAILED
+            else:
+                workflow.status = WorkflowStatus.COMPLETED
+            
+            workflow.completed_at = datetime.utcnow()
+            await self.persistence.save_workflow(workflow)
+            logger.info(f"Workflow {workflow_id} marked as {workflow.status} after retry failure")
     
     async def _emit_permanent_failure(self, task_id: str, reason: str):
         """Emit event for permanent task failure"""

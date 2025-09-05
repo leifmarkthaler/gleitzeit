@@ -1,34 +1,18 @@
 """
-Modular Gleitzeit client package.
+Gleitzeit event-driven client package.
 
-The new modular architecture for the Gleitzeit client.
+This package provides the event-driven client implementation
+with real-time WebSocket support and zero polling overhead.
 """
 
-from .base import ModularGleitzeitClient, ClientMode
+from .client import GleitzeitClient, ClientMode, EventMode
 
-
-class GleitzeitClient(ModularGleitzeitClient):
-    """
-    Gleitzeit client using the modular architecture.
-    
-    This client provides a clean, modular design with separate modules
-    for different functionality (tasks, workflows, resources, etc.).
-    """
-    
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize Gleitzeit client.
-        
-        Args:
-            *args, **kwargs: Arguments passed to ModularGleitzeitClient
-        """
-        # Use new modular client
-        super().__init__(*args, **kwargs)
-
+# Legacy alias for compatibility
+EventDrivenClient = GleitzeitClient
 
 # Export main components
 __all__ = [
     'GleitzeitClient',
-    'ModularGleitzeitClient',
-    'ClientMode'
+    'ClientMode',
+    'EventMode'
 ]

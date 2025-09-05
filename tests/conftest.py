@@ -19,7 +19,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from gleitzeit.core.models import Task, Workflow, Priority
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.providers.base import ProtocolProvider
 from gleitzeit.registry import ProtocolProviderRegistry
 from gleitzeit.task_queue import QueueManager, DependencyResolver

@@ -13,7 +13,7 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any
 
-from gleitzeit.core.execution_engine import ExecutionEngine, ExecutionMode
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine, ExecutionMode
 from gleitzeit.core.workflow_loader import load_workflow_from_file, load_workflow_from_dict
 from gleitzeit.core.models import Task, Workflow, TaskStatus, WorkflowStatus
 from gleitzeit.providers.ollama_provider import OllamaProvider

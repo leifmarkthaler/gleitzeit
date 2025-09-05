@@ -5,6 +5,7 @@ Middleware for authentication, error handling, and logging.
 import time
 import logging
 import traceback
+import asyncio
 from typing import Optional, Callable
 from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
@@ -202,54 +203,134 @@ class CORSMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class RequestCleanupMiddleware(BaseHTTPMiddleware):
+    """
+    Middleware that ensures request cleanup tasks are executed.
+    
+    This handles cleanup for any per-request resources like clients
+    that were created during request processing.
+    """
+    
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """Process request and ensure cleanup."""
+        try:
+            # Process the request
+            response = await call_next(request)
+            return response
+        finally:
+            # Run any cleanup tasks registered during the request
+            if hasattr(request.state, 'cleanup_tasks'):
+                for cleanup_task in request.state.cleanup_tasks:
+                    try:
+                        if asyncio.iscoroutinefunction(cleanup_task):
+                            await cleanup_task()
+                        else:
+                            cleanup_task()
+                    except Exception as e:
+                        logger.error(f"Error during request cleanup: {e}")
+
+
 class RateLimitMiddleware(BaseHTTPMiddleware):
     """
     Rate limiting middleware to prevent abuse.
+    
+    Uses persistence layer (Redis or InMemory) for stateless operation across instances.
     """
     
-    def __init__(self, app: ASGIApp, requests_per_minute: int = 60):
+    def __init__(self, app: ASGIApp, requests_per_minute: int = 60, persistence=None):
         super().__init__(app)
         self.requests_per_minute = requests_per_minute
-        self.request_counts = {}  # Simple in-memory store (use Redis in production)
+        self.persistence = persistence
+        self.rate_limit_prefix = "ratelimit"
         
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """Check rate limits."""
+        """Check rate limits using persistence layer."""
+        
+        # Skip rate limiting if no persistence configured
+        if not self.persistence:
+            logger.warning("Rate limiting disabled - no persistence configured")
+            return await call_next(request)
         
         # Get client identifier
         client_id = request.client.host if request.client else "unknown"
         if hasattr(request.state, "user_id"):
             client_id = request.state.user_id
         
-        # Check rate limit
+        # Build rate limit key
         current_minute = int(time.time() / 60)
-        key = f"{client_id}:{current_minute}"
+        key = f"{self.rate_limit_prefix}:{client_id}:{current_minute}"
         
-        # Get current count
-        count = self.request_counts.get(key, 0)
-        
-        # Check if limit exceeded
-        if count >= self.requests_per_minute:
-            return JSONResponse(
-                status_code=429,
-                content={"detail": "Rate limit exceeded"}
-            )
-        
-        # Increment count
-        self.request_counts[key] = count + 1
-        
-        # Clean old entries (simple cleanup)
-        if len(self.request_counts) > 1000:
-            old_minute = current_minute - 2
-            keys_to_delete = [k for k in self.request_counts if int(k.split(":")[1]) < old_minute]
-            for k in keys_to_delete:
-                del self.request_counts[k]
-        
-        # Process request
-        response = await call_next(request)
-        
-        # Add rate limit headers
-        response.headers["X-RateLimit-Limit"] = str(self.requests_per_minute)
-        response.headers["X-RateLimit-Remaining"] = str(self.requests_per_minute - count - 1)
-        response.headers["X-RateLimit-Reset"] = str((current_minute + 1) * 60)
-        
-        return response
+        try:
+            # Get current count from persistence
+            current_count = await self._get_rate_limit_count(key)
+            
+            # Check if limit exceeded
+            if current_count >= self.requests_per_minute:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Rate limit exceeded"},
+                    headers={"X-RateLimit-Limit": str(self.requests_per_minute),
+                            "X-RateLimit-Remaining": "0",
+                            "X-RateLimit-Reset": str((current_minute + 1) * 60)}
+                )
+            
+            # Increment count in persistence
+            new_count = await self._increment_rate_limit(key)
+            
+            # Process request
+            response = await call_next(request)
+            
+            # Add rate limit headers
+            response.headers["X-RateLimit-Limit"] = str(self.requests_per_minute)
+            response.headers["X-RateLimit-Remaining"] = str(max(0, self.requests_per_minute - new_count))
+            response.headers["X-RateLimit-Reset"] = str((current_minute + 1) * 60)
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Rate limiting error: {e}")
+            # On error, allow request but log the issue
+            return await call_next(request)
+    
+    async def _get_rate_limit_count(self, key: str) -> int:
+        """Get current rate limit count from persistence."""
+        try:
+            # Try to get from hash (Redis-like interface)
+            if hasattr(self.persistence, 'hget'):
+                value = await self.persistence.hget(key, "count")
+                return int(value) if value else 0
+            # Fallback to simple get
+            elif hasattr(self.persistence, 'get'):
+                value = await self.persistence.get(key)
+                return int(value) if value else 0
+            else:
+                return 0
+        except Exception:
+            return 0
+    
+    async def _increment_rate_limit(self, key: str) -> int:
+        """Increment rate limit count in persistence."""
+        try:
+            # Try to use atomic increment (Redis INCR)
+            if hasattr(self.persistence, 'incr'):
+                new_count = await self.persistence.incr(key)
+                # Set expiry to 2 minutes (cleanup old entries)
+                if hasattr(self.persistence, 'expire'):
+                    await self.persistence.expire(key, 120)
+                return new_count
+            # Try hash increment
+            elif hasattr(self.persistence, 'hincrby'):
+                new_count = await self.persistence.hincrby(key, "count", 1)
+                if hasattr(self.persistence, 'expire'):
+                    await self.persistence.expire(key, 120)
+                return new_count
+            # Fallback to get/set
+            else:
+                current = await self._get_rate_limit_count(key)
+                new_count = current + 1
+                if hasattr(self.persistence, 'set'):
+                    await self.persistence.set(key, str(new_count))
+                return new_count
+        except Exception as e:
+            logger.error(f"Failed to increment rate limit: {e}")
+            return 0

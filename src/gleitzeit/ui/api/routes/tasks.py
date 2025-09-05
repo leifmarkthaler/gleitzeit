@@ -55,8 +55,9 @@ async def list_tasks(
                     # Transform API response to UI format
                     tasks = []
                     for task in data.get("tasks", []):
+                        task_id = task.get("id") or task.get("task_id")
                         tasks.append({
-                            "id": task.get("task_id"),
+                            "id": task_id,
                             "name": task.get("name", "Unnamed"),
                             "status": task.get("status", "unknown"),
                             "workflow_id": task.get("workflow_id"),
@@ -82,7 +83,7 @@ async def list_tasks(
                         "offset": offset
                     }
         except Exception as e:
-            print(f"Error listing tasks: {e}")
+            logger.error(f"Error listing tasks: {e}")
             return {
                 "tasks": [],
                 "total": 0,
@@ -287,7 +288,7 @@ async def get_queue_status(request: Request) -> Dict[str, Any]:
                     return data
         except Exception as e:
             # Log the error for debugging
-            print(f"Error fetching queue status: {e}")
+            logger.error(f"Error fetching queue status: {e}")
     
     # Fallback to empty data if API is not available
     return {
@@ -318,17 +319,11 @@ async def get_task_result(request: Request, task_id: str) -> Dict[str, Any]:
     """
     async with aiohttp.ClientSession() as session:
         try:
-            # Get task details from API
-            async with session.get(f"{GLEITZEIT_API_URL}/tasks/{task_id}") as resp:
+            # Get task result from API
+            async with session.get(f"{GLEITZEIT_API_URL}/tasks/{task_id}/result") as resp:
                 if resp.status == 200:
-                    data = await resp.json()
-                    return {
-                        "task_id": task_id,
-                        "status": data.get("status"),
-                        "result": data.get("result"),
-                        "error": data.get("error"),
-                        "completed_at": data.get("completed_at")
-                    }
+                    # Return the API response directly
+                    return await resp.json()
                 elif resp.status == 404:
                     # Task might not be in API yet, check local tracking
                     if task_id in _ui_tasks:
@@ -365,8 +360,28 @@ async def get_task_logs(request: Request, task_id: str, tail: int = 50) -> Dict[
                 params={"tail": tail}
             ) as resp:
                 if resp.status == 200:
-                    # Return the logs directly from the API
-                    return await resp.json()
+                    # Get the logs array from the API
+                    logs_data = await resp.json()
+                    # If it's an array, format it properly
+                    if isinstance(logs_data, list):
+                        # Extract messages from log entries
+                        log_messages = []
+                        for log_entry in logs_data:
+                            if isinstance(log_entry, dict):
+                                message = log_entry.get("message", str(log_entry))
+                            else:
+                                message = str(log_entry)
+                            log_messages.append(message)
+                        
+                        return {
+                            "task_id": task_id,
+                            "logs": log_messages if log_messages else ["No logs available"],
+                            "total_lines": len(log_messages),
+                            "tail": tail
+                        }
+                    else:
+                        # Already formatted, return as is
+                        return logs_data
                 elif resp.status == 404:
                     return {
                         "task_id": task_id,

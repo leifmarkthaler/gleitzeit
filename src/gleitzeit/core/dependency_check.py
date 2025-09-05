@@ -141,7 +141,7 @@ def verify_and_report_dependencies(features: List[str], exit_on_error: bool = Fa
             all_ok = False
             logger.error(f"Dependency check failed for {feature}: {error_msg}")
             if exit_on_error:
-                print(f"\nERROR: {error_msg}", file=sys.stderr)
+                logger.error(f"ERROR: {error_msg}")
                 sys.exit(1)
         else:
             logger.debug(f"Dependencies for {feature} are satisfied")

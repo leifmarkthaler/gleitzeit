@@ -7,7 +7,7 @@ Default persistence backend for Gleitzeit with automatic fallback to SQL if Redi
 
 import json
 import logging
-from typing import Dict, List, Optional, Any, Set
+from typing import Dict, List, Optional, Any, Set, Union
 from datetime import datetime, timedelta
 import asyncio
 
@@ -36,6 +36,10 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
     - Automatic expiration for metrics
     - Atomic operations with Lua scripts
     """
+    
+    def supports_atomic_operations(self) -> bool:
+        """Redis supports atomic operations for distributed coordination."""
+        return True
     
     def __init__(
         self,
@@ -312,6 +316,43 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             tags=json.loads(data['tags']) if data.get('tags') else {},
             metadata=json.loads(data['metadata']) if data.get('metadata') else {}
         )
+    
+    async def update_task(self, task_data: Union[Dict[str, Any], Task]) -> None:
+        """Update an existing task - used by reconciliation service"""
+        if not self._initialized:
+            return
+        
+        try:
+            # Handle both dict and Task object inputs
+            if isinstance(task_data, dict):
+                task_id = task_data.get('task_id') or task_data.get('id')
+                if not task_id:
+                    logger.error("No task_id found in task data")
+                    return
+                
+                # Convert dict to Task object if needed
+                task = await self.get_task(task_id)
+                if task:
+                    # Update task fields from dict
+                    if 'status' in task_data:
+                        from gleitzeit.core.models import TaskStatus
+                        task.status = TaskStatus(task_data['status'])
+                    if 'error_message' in task_data:
+                        task.error_message = task_data['error_message']
+                    if 'metadata' in task_data:
+                        task.metadata = task_data['metadata']
+                    if 'attempt_count' in task_data:
+                        task.attempt_count = task_data['attempt_count']
+                    
+                    # Save the updated task
+                    await self.save_task(task)
+            else:
+                # Direct Task object update
+                await self.save_task(task_data)
+                
+        except Exception as e:
+            logger.error(f"Failed to update task: {e}")
+            raise
     
     async def delete_task(self, task_id: str) -> bool:
         """Delete a task"""
@@ -1514,3 +1555,265 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
         except Exception as e:
             logger.error(f"Failed to get tasks for resource {resource_id}: {e}")
             return []
+    
+    # ============================================================================
+    # Simple key-value operations for System Manager stateless components
+    # ============================================================================
+    
+    async def keys(self, pattern: str = "*") -> List[str]:
+        """Get all keys matching pattern (Redis KEYS) for stateless operation"""
+        if not self._initialized:
+            return []
+        
+        try:
+            # Add key prefix to pattern if not already present
+            if not pattern.startswith(self.key_prefix):
+                pattern = f"{self.key_prefix}:{pattern}"
+            
+            # Use SCAN for better performance in production
+            cursor = 0
+            keys = []
+            while True:
+                cursor, batch = await self.redis.scan(cursor, match=pattern, count=100)
+                keys.extend(batch)
+                if cursor == 0:
+                    break
+            
+            # Remove key prefix from results and decode bytes
+            prefix_len = len(self.key_prefix) + 1
+            decoded_keys = []
+            for k in keys:
+                if isinstance(k, bytes):
+                    k = k.decode('utf-8')
+                if k.startswith(f"{self.key_prefix}:"):
+                    decoded_keys.append(k[prefix_len:])
+                else:
+                    decoded_keys.append(k)
+            
+            return decoded_keys
+            
+        except Exception as e:
+            logger.error(f"Failed to get keys for pattern {pattern}: {e}")
+            return []
+    
+    async def get(self, key: str) -> Optional[Any]:
+        """Get value by key (simple key-value) for stateless operation"""
+        if not self._initialized:
+            return None
+        
+        try:
+            # Add key prefix
+            full_key = f"{self.key_prefix}:{key}" if not key.startswith(self.key_prefix) else key
+            
+            # Get value
+            value = await self.redis.get(full_key)
+            
+            if value is None:
+                return None
+            
+            # Decode bytes to string
+            if isinstance(value, bytes):
+                value = value.decode('utf-8')
+            
+            # Try to parse as JSON
+            if value.startswith('{') or value.startswith('['):
+                try:
+                    return json.loads(value)
+                except json.JSONDecodeError:
+                    pass
+            
+            return value
+            
+        except Exception as e:
+            logger.error(f"Failed to get key {key}: {e}")
+            return None
+    
+    async def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
+        """Set key-value pair for stateless operation"""
+        if not self._initialized:
+            return False
+        
+        try:
+            # Add key prefix
+            full_key = f"{self.key_prefix}:{key}" if not key.startswith(self.key_prefix) else key
+            
+            # Serialize value
+            if isinstance(value, dict) or isinstance(value, list):
+                value_str = json.dumps(value, default=str)
+            elif isinstance(value, bytes):
+                value_str = value
+            else:
+                value_str = str(value)
+            
+            # Set with optional expiry
+            if ex:
+                await self.redis.setex(full_key, ex, value_str)
+            else:
+                await self.redis.set(full_key, value_str)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to set key {key}: {e}")
+            return False
+    
+    async def set_nx(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
+        """Set key-value pair only if key doesn't exist (atomic operation for leader election)"""
+        if not self._initialized:
+            return False
+        
+        try:
+            # Add key prefix
+            full_key = f"{self.key_prefix}:{key}" if not key.startswith(self.key_prefix) else key
+            
+            # Serialize value
+            if isinstance(value, dict) or isinstance(value, list):
+                value_str = json.dumps(value)
+            else:
+                value_str = str(value)
+            
+            # Use SET NX (set if not exists) with optional expiration
+            if ex:
+                # SET key value NX EX seconds
+                result = await self.redis.set(full_key, value_str, nx=True, ex=ex)
+            else:
+                # SET key value NX
+                result = await self.redis.set(full_key, value_str, nx=True)
+            
+            return bool(result)
+            
+        except Exception as e:
+            logger.error(f"Failed to set_nx key {key}: {e}")
+            return False
+    
+    async def delete(self, *keys) -> int:
+        """Delete one or more keys for stateless operation"""
+        if not self._initialized or not keys:
+            return 0
+        
+        try:
+            # Add key prefix to all keys
+            full_keys = []
+            for k in keys:
+                if not k.startswith(self.key_prefix):
+                    full_keys.append(f"{self.key_prefix}:{k}")
+                else:
+                    full_keys.append(k)
+            
+            # Delete keys
+            return await self.redis.delete(*full_keys)
+            
+        except Exception as e:
+            logger.error(f"Failed to delete keys: {e}")
+            return 0
+    
+    # Event Persistence Methods
+    async def save_event(self, event_data: Dict[str, Any]) -> None:
+        """Save an event to Redis for persistence and replay."""
+        if not self._initialized:
+            return
+        
+        try:
+            event_id = event_data.get('event_id', f"evt_{datetime.utcnow().timestamp()}")
+            workflow_id = event_data.get('workflow_id')
+            event_type = event_data.get('event_type')
+            timestamp = event_data.get('timestamp', datetime.utcnow().isoformat())
+            
+            # Store event in a sorted set by timestamp for ordering
+            event_key = f"{self.key_prefix}:events:all"
+            score = datetime.fromisoformat(timestamp.replace('Z', '+00:00')).timestamp() if isinstance(timestamp, str) else timestamp
+            await self.redis.zadd(event_key, {json.dumps(event_data): score})
+            
+            # Index by workflow ID if present
+            if workflow_id:
+                workflow_event_key = f"{self.key_prefix}:events:workflow:{workflow_id}"
+                await self.redis.zadd(workflow_event_key, {json.dumps(event_data): score})
+            
+            # Index by event type
+            if event_type:
+                type_event_key = f"{self.key_prefix}:events:type:{event_type}"
+                await self.redis.zadd(type_event_key, {json.dumps(event_data): score})
+            
+            # Set expiration for cleanup (30 days default)
+            await self.redis.expire(event_key, 30 * 24 * 3600)
+            if workflow_id:
+                await self.redis.expire(workflow_event_key, 30 * 24 * 3600)
+            if event_type:
+                await self.redis.expire(type_event_key, 30 * 24 * 3600)
+                
+        except Exception as e:
+            logger.warning(f"Failed to save event: {e}")
+    
+    async def get_events(self, 
+                         workflow_id: Optional[str] = None,
+                         task_id: Optional[str] = None,
+                         event_type: Optional[str] = None,
+                         since: Optional[datetime] = None,
+                         until: Optional[datetime] = None,
+                         limit: int = 1000) -> List[Dict[str, Any]]:
+        """Retrieve events with filters."""
+        if not self._initialized:
+            return []
+        
+        try:
+            # Determine which index to use
+            if workflow_id:
+                event_key = f"{self.key_prefix}:events:workflow:{workflow_id}"
+            elif event_type:
+                event_key = f"{self.key_prefix}:events:type:{event_type}"
+            else:
+                event_key = f"{self.key_prefix}:events:all"
+            
+            # Build score range for time filtering
+            min_score = since.timestamp() if since else '-inf'
+            max_score = until.timestamp() if until else '+inf'
+            
+            # Retrieve events from sorted set
+            events_json = await self.redis.zrangebyscore(
+                event_key, 
+                min_score, 
+                max_score,
+                start=0,
+                num=limit
+            )
+            
+            # Parse JSON events
+            events = []
+            for event_str in events_json:
+                try:
+                    event = json.loads(event_str)
+                    
+                    # Apply task_id filter if specified
+                    if task_id and event.get('task_id') != task_id:
+                        continue
+                    
+                    events.append(event)
+                except json.JSONDecodeError:
+                    continue
+            
+            return events
+            
+        except Exception as e:
+            logger.warning(f"Failed to retrieve events: {e}")
+            return []
+    
+    async def delete_old_events(self, days: int = 30) -> int:
+        """Delete events older than specified days."""
+        if not self._initialized:
+            return 0
+        
+        try:
+            cutoff = (datetime.utcnow() - timedelta(days=days)).timestamp()
+            deleted = 0
+            
+            # Delete from all event indices
+            for pattern in ['events:all', 'events:workflow:*', 'events:type:*']:
+                keys = await self.redis.keys(f"{self.key_prefix}:{pattern}")
+                for key in keys:
+                    deleted += await self.redis.zremrangebyscore(key, '-inf', cutoff)
+            
+            return deleted
+            
+        except Exception as e:
+            logger.warning(f"Failed to delete old events: {e}")
+            return 0

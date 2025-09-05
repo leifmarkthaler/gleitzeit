@@ -21,7 +21,7 @@ from typing import Dict, Any, List
 from unittest.mock import Mock, AsyncMock, patch
 import logging
 
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.core.workflow_loader import load_workflow_from_file, load_workflow_from_dict
 from gleitzeit.core.models import Task, Workflow, TaskStatus, WorkflowStatus
 from gleitzeit.providers.ollama_provider import OllamaProvider
@@ -251,7 +251,7 @@ class TestAllExampleWorkflows:
         )
         
         # Start the engine in event-driven mode as a background task
-        from gleitzeit.core.execution_engine import ExecutionMode
+        from gleitzeit.core.execution_engine_v2 import ExecutionMode
         engine_task = asyncio.create_task(engine.start(ExecutionMode.EVENT_DRIVEN))
         
         # Wait a bit for engine to start
@@ -405,7 +405,7 @@ class TestAllExampleWorkflows:
         )
         
         # Start engine in event-driven mode as background task
-        from gleitzeit.core.execution_engine import ExecutionMode
+        from gleitzeit.core.execution_engine_v2 import ExecutionMode
         engine_task = asyncio.create_task(engine.start(ExecutionMode.EVENT_DRIVEN))
         await asyncio.sleep(0.1)  # Let it start
         

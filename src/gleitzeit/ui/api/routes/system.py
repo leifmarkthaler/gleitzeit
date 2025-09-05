@@ -6,13 +6,16 @@ from fastapi import APIRouter, Request, HTTPException
 from typing import Dict, Any, List
 import os
 import aiohttp
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Try to import psutil, but make it optional
 try:
     import psutil
     PSUTIL_AVAILABLE = True
 except ImportError:
-    print("⚠️  psutil not installed - system metrics will be limited")
+    logger.warning("⚠️  psutil not installed - system metrics will be limited")
     PSUTIL_AVAILABLE = False
 
 router = APIRouter()

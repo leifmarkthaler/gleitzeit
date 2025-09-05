@@ -6,7 +6,7 @@ from pathlib import Path
 from unittest.mock import Mock, AsyncMock
 import yaml
 
-from gleitzeit.core.execution_engine import ExecutionEngine
+from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
 

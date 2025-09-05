@@ -132,7 +132,7 @@ async def websocket_endpoint(websocket: WebSocket):
         manager.disconnect(websocket)
     except Exception as e:
         manager.disconnect(websocket)
-        print(f"WebSocket error: {e}")
+        logger.error(f"WebSocket error: {e}")
 
 async def handle_client_message(websocket: WebSocket, message: Dict[str, Any]):
     """

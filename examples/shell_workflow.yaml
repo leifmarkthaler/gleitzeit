@@ -1,0 +1,80 @@
+# Example workflow using ShellProvider
+# Demonstrates various shell command execution patterns
+
+name: "Shell Command Examples"
+description: "Demonstrates shell command execution in workflows"
+version: "1.0"
+
+# Workflow configuration
+timeout: 120
+wait_for_completion: true
+
+tasks:
+  # Simple command execution
+  - id: "check_system"
+    method: "shell/exec"
+    parameters:
+      command: "uname"
+      args: ["-a"]
+      capture_output: true
+  
+  # Command with environment variables
+  - id: "custom_env"
+    method: "shell/exec"
+    parameters:
+      command: "echo"
+      args: ["Environment: $MY_ENV"]
+      env:
+        MY_ENV: "production"
+  
+  # Piped commands
+  - id: "count_files"
+    method: "shell/pipe"
+    parameters:
+      commands:
+        - "ls -la"
+        - "wc -l"
+      capture_output: true
+  
+  # JSON output that gets parsed automatically
+  - id: "json_output"
+    method: "shell/exec"
+    parameters:
+      command: "echo"
+      args: ['{"status": "ready", "version": "1.0", "timestamp": "2024-01-01"}']
+  
+  # Use JSON data in next task
+  - id: "process_json"
+    method: "shell/exec"
+    dependencies: ["json_output"]
+    parameters:
+      command: "echo"
+      args: ["System status: ${json_output.output.status}"]
+  
+  # Batch execution with multiple commands
+  - id: "setup_environment"
+    method: "shell/batch"
+    parameters:
+      commands:
+        - "echo 'Step 1: Checking environment'"
+        - "pwd"
+        - "echo 'Step 2: Listing files'"
+        - "ls -la"
+        - "echo 'Step 3: Complete'"
+      stop_on_error: true
+  
+  # Conditional execution based on previous results
+  - id: "check_git"
+    method: "shell/exec"
+    parameters:
+      command: "which"
+      args: ["git"]
+  
+  - id: "git_status"
+    method: "shell/exec"
+    dependencies: ["check_git"]
+    # Only runs if git is available (check_git succeeded)
+    parameters:
+      command: "git"
+      args: ["status", "--short"]
+      capture_output: true

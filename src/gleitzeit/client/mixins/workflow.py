@@ -161,6 +161,20 @@ class WorkflowMixin:
             raise RuntimeError("Client not initialized")
         return await self._adapter.get_workflow_tasks(workflow_id)
     
+    async def get_workflow_results(self, workflow_id: str) -> List[Dict[str, Any]]:
+        """
+        Get all task results for a workflow.
+        
+        Args:
+            workflow_id: Workflow ID
+            
+        Returns:
+            List of task results
+        """
+        if not self._adapter:
+            raise RuntimeError("Client not initialized")
+        return await self._adapter.get_workflow_results(workflow_id)
+    
     async def wait_for_workflow(self, workflow_id: str, 
                                timeout: float = 300.0,
                                poll_interval: float = 2.0) -> Dict[str, Any]:

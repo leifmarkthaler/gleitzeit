@@ -16,6 +16,7 @@ from gleitzeit.providers.base import ProtocolProvider, HTTPServiceProvider, WebS
 from gleitzeit.providers.ollama_provider import OllamaProvider
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.mcp_hub_provider import MCPHubProvider
+from gleitzeit.providers.shell_provider import ShellProvider
 # SimpleMCPProvider has been moved to examples/simple_mcp_provider.py as a reference implementation
 
 # New simplified providers
@@ -38,6 +39,7 @@ __all__ = [
     "OllamaProvider",
     "PythonProvider", 
     "MCPHubProvider",
+    "ShellProvider",
     
     # NEW: Simplified providers (95% less code required)
     "SimpleProvider",           # Implement only execute() method

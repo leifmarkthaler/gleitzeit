@@ -13,7 +13,8 @@ from enum import IntEnum
 from dataclasses import dataclass, field
 
 from gleitzeit.core.models import Task, Workflow, TaskStatus, Priority, WorkflowStatus
-from gleitzeit.persistence.base import PersistenceBackend, InMemoryBackend
+from gleitzeit.persistence.base import PersistenceBackend
+from gleitzeit.persistence.unified_persistence import UnifiedInMemoryAdapter
 from gleitzeit.core.logging_mixin import LoggingMixin
 
 logger = logging.getLogger(__name__)
@@ -62,7 +63,7 @@ class TaskQueue(LoggingMixin):
         self._component_name = f"TaskQueue.{name}"
         
         self.name = name
-        self.persistence = persistence or InMemoryBackend()
+        self.persistence = persistence or UnifiedInMemoryAdapter()
         self.event_bus = event_bus
         
         # No more in-memory structures - everything goes through persistence
