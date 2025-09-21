@@ -260,16 +260,19 @@ class HealthMonitorMixin:
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Health monitoring configuration
         self.health_check_interval = kwargs.get('health_check_interval', 30)  # seconds
         self.health_failure_threshold = kwargs.get('health_failure_threshold', 3)
-        
+
         # Health monitoring state
         self.health_check_failures = 0
         self.health_last_check = None
         self.health_status = "healthy"  # healthy, degraded, unhealthy
         self.health_check_history = []
+
+        # Health monitoring statistics (no more background tasks)
+        self._health_checks_performed = 0
         
         # Start background health monitoring
         if hasattr(self, 'logger'):
@@ -279,68 +282,106 @@ class HealthMonitorMixin:
             )
     
     async def start_health_monitoring(self):
-        """Start background health monitoring task"""
-        asyncio.create_task(self._health_monitor_loop())
+        """Start event-driven health monitoring"""
+        # Get scheduler from provider (if available)
+        scheduler = getattr(self, 'scheduler', None)
+        if scheduler:
+            provider_id = getattr(self, 'provider_id', 'unknown')
+            event_name = f"provider_health_check_{provider_id}"
+            await scheduler.register_handler(event_name, self._handle_health_check_event)
+            await scheduler.schedule_event(event_name, self.health_check_interval)
+
+            if hasattr(self, 'logger'):
+                self.logger.info(f"Health monitoring started with event-driven scheduler: {event_name}")
+        else:
+            if hasattr(self, 'logger'):
+                self.logger.warning("No scheduler available, health monitoring disabled")
     
-    async def _health_monitor_loop(self):
-        """Background task that periodically checks health"""
-        while True:
-            try:
-                await asyncio.sleep(self.health_check_interval)
-                
-                # Perform health check
-                is_healthy = await super().health_check()
-                current_time = datetime.utcnow()
-                
-                # Record result
-                self.health_check_history.append({
-                    "timestamp": current_time.isoformat(),
-                    "healthy": is_healthy
-                })
-                
-                # Keep only recent history (last 100 checks)
-                if len(self.health_check_history) > 100:
-                    self.health_check_history = self.health_check_history[-100:]
-                
-                self.health_last_check = current_time
-                
-                if is_healthy:
-                    # Reset failure count on success
-                    if self.health_check_failures > 0:
-                        self.health_check_failures = 0
-                        
-                        # Transition back to healthy if we were degraded
-                        if self.health_status != "healthy":
-                            old_status = self.health_status
-                            self.health_status = "healthy"
-                            
-                            if hasattr(self, 'logger'):
-                                self.logger.info(f"Health status: {old_status} -> healthy")
-                else:
-                    # Increment failure count
-                    self.health_check_failures += 1
-                    
-                    # Update status based on failure count
-                    if self.health_check_failures >= self.health_failure_threshold:
-                        if self.health_status != "unhealthy":
-                            old_status = self.health_status
-                            self.health_status = "unhealthy"
-                            
-                            if hasattr(self, 'logger'):
-                                self.logger.error(
-                                    f"Health status: {old_status} -> unhealthy "
-                                    f"({self.health_check_failures} consecutive failures)"
-                                )
-                    elif self.health_check_failures >= 1:
-                        if self.health_status == "healthy":
-                            self.health_status = "degraded"
-                            
-                            if hasattr(self, 'logger'):
-                                self.logger.warning("Health status: healthy -> degraded")
-                
-            except Exception as e:
-                if hasattr(self, 'logger'):
-                    self.logger.error(f"Error in health monitoring: {e}")
+    async def _handle_health_check_event(self, event_data: Dict) -> Dict[str, Any]:
+        """Handle health check event from scheduler."""
+        try:
+            # Perform health check
+            is_healthy = await super().health_check()
+            current_time = datetime.utcnow()
+
+            # Record result
+            self.health_check_history.append({
+                "timestamp": current_time.isoformat(),
+                "healthy": is_healthy
+            })
+
+            # Keep only recent history (last 100 checks)
+            if len(self.health_check_history) > 100:
+                self.health_check_history = self.health_check_history[-100:]
+
+            self.health_last_check = current_time
+            self._health_checks_performed += 1
+
+            status_changed = False
+            old_status = self.health_status
+
+            if is_healthy:
+                # Reset failure count on success
+                if self.health_check_failures > 0:
+                    self.health_check_failures = 0
+
+                    # Transition back to healthy if we were degraded
+                    if self.health_status != "healthy":
+                        self.health_status = "healthy"
+                        status_changed = True
+
+                        if hasattr(self, 'logger'):
+                            self.logger.info(f"Health status: {old_status} -> healthy")
+            else:
+                # Increment failure count
+                self.health_check_failures += 1
+
+                # Update status based on failure count
+                if self.health_check_failures >= self.health_failure_threshold:
+                    if self.health_status != "unhealthy":
+                        self.health_status = "unhealthy"
+                        status_changed = True
+
+                        if hasattr(self, 'logger'):
+                            self.logger.error(
+                                f"Health status: {old_status} -> unhealthy "
+                                f"({self.health_check_failures} consecutive failures)"
+                            )
+                elif self.health_check_failures >= 1:
+                    if self.health_status == "healthy":
+                        self.health_status = "degraded"
+                        status_changed = True
+
+                        if hasattr(self, 'logger'):
+                            self.logger.warning("Health status: healthy -> degraded")
+
+            # Schedule next health check
+            scheduler = getattr(self, 'scheduler', None)
+            if scheduler:
+                provider_id = getattr(self, 'provider_id', 'unknown')
+                event_name = f"provider_health_check_{provider_id}"
+                await scheduler.schedule_event(event_name, self.health_check_interval)
+
+            return {
+                "healthy": is_healthy,
+                "status": self.health_status,
+                "status_changed": status_changed,
+                "failure_count": self.health_check_failures,
+                "checks_performed": self._health_checks_performed
+            }
+
+        except Exception as e:
+            if hasattr(self, 'logger'):
+                self.logger.error(f"Error in health monitoring: {e}")
+
+            # Still schedule next check
+            scheduler = getattr(self, 'scheduler', None)
+            if scheduler:
+                provider_id = getattr(self, 'provider_id', 'unknown')
+                event_name = f"provider_health_check_{provider_id}"
+                await scheduler.schedule_event(event_name, self.health_check_interval)
+
+            return {"error": str(e)}
     
     def get_health_info(self) -> Dict[str, Any]:
         """Get comprehensive health information"""

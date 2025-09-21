@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: gleitzeit-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - gleitzeit-network
+
+  gleitzeit-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gleitzeit-api
+    ports:
+      - "8000:8000"
+    environment:
+      - GLEITZEIT_REDIS_URL=redis://redis:6379/0
+      - GLEITZEIT_API_HOST=0.0.0.0
+      - GLEITZEIT_API_PORT=8000
+      - GLEITZEIT_LOG_LEVEL=INFO
+      - GLEITZEIT_TIMER_DISTRIBUTED=true
+      - GLEITZEIT_RECONCILIATION_INTERVAL=60
+      - GLEITZEIT_INSTANCE_ID=api-1
+      # WebSocket configuration
+      - GLEITZEIT_WEBSOCKET_ENABLED=true
+      - GLEITZEIT_WEBSOCKET_HEARTBEAT_INTERVAL=30
+      - GLEITZEIT_WEBSOCKET_MAX_CONNECTIONS=1000
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gleitzeit.rule=Host(`gleitzeit.local`)"
+      - "traefik.http.services.gleitzeit.loadbalancer.server.port=8000"
+      # WebSocket support
+      - "traefik.http.middlewares.gleitzeit-ws.headers.customrequestheaders.Connection=keep-alive"
+      - "traefik.http.middlewares.gleitzeit-ws.headers.customrequestheaders.Upgrade=websocket"
+
+  gleitzeit-worker-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gleitzeit-worker-1
+    environment:
+      - GLEITZEIT_REDIS_URL=redis://redis:6379/0
+      - GLEITZEIT_API_HOST=0.0.0.0
+      - GLEITZEIT_API_PORT=8001
+      - GLEITZEIT_LOG_LEVEL=INFO
+      - GLEITZEIT_TIMER_DISTRIBUTED=true
+      - GLEITZEIT_RECONCILIATION_INTERVAL=60
+      - GLEITZEIT_INSTANCE_ID=worker-1
+    command: ["gleitzeit", "serve", "--host", "0.0.0.0", "--port", "8001"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit-network
+    restart: unless-stopped
+
+  gleitzeit-worker-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gleitzeit-worker-2
+    environment:
+      - GLEITZEIT_REDIS_URL=redis://redis:6379/0
+      - GLEITZEIT_API_HOST=0.0.0.0
+      - GLEITZEIT_API_PORT=8002
+      - GLEITZEIT_LOG_LEVEL=INFO
+      - GLEITZEIT_TIMER_DISTRIBUTED=true
+      - GLEITZEIT_RECONCILIATION_INTERVAL=60
+      - GLEITZEIT_INSTANCE_ID=worker-2
+    command: ["gleitzeit", "serve", "--host", "0.0.0.0", "--port", "8002"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit-network
+    restart: unless-stopped
+
+networks:
+  gleitzeit-network:
+    driver: bridge
+
+volumes:
+  redis-data:

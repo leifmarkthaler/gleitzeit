@@ -7,6 +7,8 @@ import asyncio
 import json
 import logging
 
+from gleitzeit.core.errors import SystemError
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +29,7 @@ class StreamingMixin:
             Log entries as they arrive
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         # Check if adapter supports WebSocket
         if not hasattr(self._adapter, 'stream_task_logs'):
@@ -52,7 +54,7 @@ class StreamingMixin:
             Log entries as they arrive
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         if not hasattr(self._adapter, 'stream_workflow_logs'):
             raise NotImplementedError("Adapter does not support WebSocket streaming")
@@ -76,7 +78,7 @@ class StreamingMixin:
             Log entries as they arrive
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         if not hasattr(self._adapter, 'stream_all_logs'):
             raise NotImplementedError("Adapter does not support WebSocket streaming")
@@ -100,7 +102,7 @@ class StreamingMixin:
             Events as they occur
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         if not hasattr(self._adapter, 'stream_events'):
             # Fall back to polling if streaming not available
@@ -131,7 +133,7 @@ class StreamingMixin:
             Workflow events as they occur
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         if not hasattr(self._adapter, 'stream_workflow_events'):
             raise NotImplementedError("Adapter does not support workflow event streaming")
@@ -155,7 +157,7 @@ class StreamingMixin:
             Upload result with workflow details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         import os
         if not os.path.exists(file_path):
@@ -184,7 +186,7 @@ class StreamingMixin:
             Processing results for all files
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         return await self._adapter.bulk_process_directory(
             directory_path,
@@ -201,7 +203,7 @@ class StreamingMixin:
             New token information
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         return await self._adapter.refresh_auth_token()
     
@@ -219,7 +221,7 @@ class StreamingMixin:
             Password change confirmation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         return await self._adapter.change_password(current_password, new_password)
     
@@ -239,7 +241,7 @@ class StreamingMixin:
             Matching log entries
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         return await self._adapter.search_logs(query, advanced_filters, limit)
     
@@ -257,7 +259,7 @@ class StreamingMixin:
             Updated retention policy
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         return await self._adapter.set_log_retention(days, log_level)
     
@@ -277,7 +279,7 @@ class StreamingMixin:
             Cleanup statistics
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         return await self._adapter.cleanup_system(
             older_than_days,
@@ -293,7 +295,7 @@ class StreamingMixin:
             API information including version, endpoints, etc.
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         return await self._adapter.get_api_info()
     
@@ -313,7 +315,7 @@ class StreamingMixin:
             Combined stream of logs and events
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         tasks = []
         

@@ -5,10 +5,11 @@ Uses dependency injection for stateless operation.
 """
 
 from typing import Dict, Any, Optional, List
-from fastapi import APIRouter, Request, Depends
+from fastapi import APIRouter, Request, Depends, HTTPException
 from pydantic import BaseModel
 from gleitzeit.client import GleitzeitClient
 from ..dependencies import get_client
+from ..auth_dependencies import get_current_user_required
 from .base import APIRouteBase
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -42,10 +43,12 @@ admin_routes = APIRouteBase()
 async def create_user(
     request: UserCreateRequest,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Create a new user (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call(
         "create_user", 
         request.username, 
@@ -61,10 +64,12 @@ async def list_users(
     req: Request,
     limit: int = 100,
     offset: int = 0,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """List all users (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("list_users", limit, offset, client=client)
 
 
@@ -72,10 +77,12 @@ async def list_users(
 async def get_user(
     user_id: str,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Get user by ID (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("get_user", user_id, client=client)
 
 
@@ -84,10 +91,12 @@ async def update_user(
     user_id: str,
     updates: Dict[str, Any],
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Update user (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("update_user", user_id, updates, client=client)
 
 
@@ -95,10 +104,12 @@ async def update_user(
 async def delete_user(
     user_id: str,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Delete user (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("delete_user", user_id, client=client)
 
 
@@ -106,10 +117,12 @@ async def delete_user(
 async def activate_user(
     user_id: str,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Activate user account (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("activate_user", user_id, client=client)
 
 
@@ -117,10 +130,12 @@ async def activate_user(
 async def deactivate_user(
     user_id: str,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Deactivate user account (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("deactivate_user", user_id, client=client)
 
 
@@ -129,10 +144,12 @@ async def deactivate_user(
 async def create_api_key(
     request: APIKeyCreateRequest,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Create API key (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call(
         "create_api_key",
         request.name,
@@ -147,10 +164,12 @@ async def list_api_keys(
     req: Request,
     limit: int = 100,
     offset: int = 0,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """List API keys (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("list_api_keys", limit, offset, client=client)
 
 
@@ -158,10 +177,12 @@ async def list_api_keys(
 async def revoke_api_key(
     key_id: str,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Revoke API key (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("revoke_api_key", key_id, client=client)
 
 
@@ -170,10 +191,12 @@ async def revoke_api_key(
 async def create_role(
     request: RoleCreateRequest,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Create role (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call(
         "create_role",
         request.name,
@@ -186,10 +209,12 @@ async def create_role(
 @router.get("/roles", response_model=List[Dict[str, Any]])
 async def list_roles(
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """List roles (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("list_roles", client=client)
 
 
@@ -197,10 +222,12 @@ async def list_roles(
 async def delete_role(
     role_id: str,
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Delete role (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("delete_role", role_id, client=client)
 
 
@@ -212,10 +239,12 @@ async def get_audit_logs(
     offset: int = 0,
     user_id: Optional[str] = None,
     action_type: Optional[str] = None,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Get audit logs (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call(
         "get_audit_logs", 
         limit, 
@@ -229,8 +258,10 @@ async def get_audit_logs(
 @router.get("/system-stats", response_model=Dict[str, Any])
 async def get_system_statistics(
     req: Request,
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Get system statistics (admin only)."""
-    admin_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await admin_routes.handle_client_call("get_system_statistics", client=client)

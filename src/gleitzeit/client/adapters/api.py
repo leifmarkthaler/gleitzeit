@@ -13,6 +13,7 @@ from datetime import datetime
 
 from gleitzeit.core.models import Task, Workflow, TaskResult, TaskStatus
 from gleitzeit.core.events import EventType
+from gleitzeit.core.errors import NetworkError
 from .event_driven import EventDrivenAdapter
 from ..events import ClientEventBus, ClientEvent
 
@@ -121,7 +122,61 @@ class APIAdapter(EventDrivenAdapter):
         ) as response:
             if response.status >= 400:
                 text = await response.text()
-                raise Exception(f"API error {response.status}: {text}")
+                
+                # Parse error detail from JSON response if available
+                try:
+                    import json
+                    error_data = json.loads(text)
+                    detail = error_data.get('detail', text)
+                except:
+                    detail = text
+                
+                # Map HTTP status to appropriate Gleitzeit error
+                if response.status == 401:
+                    from gleitzeit.core.errors import AuthenticationError
+                    raise AuthenticationError(
+                        endpoint=endpoint,
+                        auth_method="bearer_token"
+                    )
+                elif response.status == 403:
+                    from gleitzeit.core.errors import AuthorizationError
+                    # Extract resource info from URL if possible
+                    resource = "unknown"
+                    action = "access"
+                    if url:
+                        parts = url.split('/')
+                        if 'workflows' in parts:
+                            idx = parts.index('workflows')
+                            if idx + 1 < len(parts) and parts[idx + 1]:
+                                resource = f"workflow/{parts[idx + 1]}"
+                        elif 'tasks' in parts:
+                            idx = parts.index('tasks')
+                            if idx + 1 < len(parts) and parts[idx + 1]:
+                                resource = f"task/{parts[idx + 1]}"
+                    raise AuthorizationError(
+                        resource=resource,
+                        action=action,
+                        reason=detail
+                    )
+                elif response.status == 404:
+                    from gleitzeit.core.errors import ResourceNotFoundError
+                    # Try to extract resource info from the error
+                    raise ResourceNotFoundError(
+                        resource_type="resource",
+                        resource_id="unknown",
+                        message=detail
+                    )
+                elif response.status == 429:
+                    from gleitzeit.core.errors import RateLimitError
+                    raise RateLimitError(f"Rate limit exceeded: {detail}")
+                elif response.status >= 500:
+                    from gleitzeit.core.errors import SystemError, ErrorCode
+                    raise SystemError(
+                        message=f"Server error: {detail}",
+                        code=ErrorCode.INTERNAL_ERROR
+                    )
+                else:
+                    raise NetworkError(f"API error {response.status}: {detail}")
                 
             if response.content_type == 'application/json':
                 return await response.json()
@@ -175,12 +230,14 @@ class APIAdapter(EventDrivenAdapter):
         """Submit workflow via API."""
         workflow_dict = workflow.dict() if hasattr(workflow, 'dict') else workflow
         # API expects workflow wrapped in a request object
-        request_data = {'workflow': workflow_dict}
-        response = await self._request('POST', '/workflows', json_data=request_data)
+        response = await self._request('POST', '/workflows', json_data={'workflow': workflow_dict})
         
         # Set up event tracking if available
-        if self._event_mode_available and workflow.id not in self._workflow_futures:
-            self._workflow_futures[workflow.id] = asyncio.Future()
+        if self._event_mode_available:
+            # Get workflow ID from dict or object
+            workflow_id = workflow_dict.get('id') if isinstance(workflow_dict, dict) else workflow.id
+            if workflow_id and workflow_id not in self._workflow_futures:
+                self._workflow_futures[workflow_id] = asyncio.Future()
             
         return response
         
@@ -206,13 +263,31 @@ class APIAdapter(EventDrivenAdapter):
         """Cancel workflow via API."""
         return await self._request('POST', f'/workflows/{workflow_id}/cancel')
         
-    async def pause_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Pause workflow via API."""
-        return await self._request('POST', f'/workflows/{workflow_id}/pause')
+    async def pause_workflow(
+        self, 
+        workflow_id: str,
+        rewind_to_task: Optional[str] = None,
+        rewind_to_step: Optional[int] = None,
+        reason: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Pause workflow via API with optional rewind."""
+        request_data = {}
+        if rewind_to_task:
+            request_data["rewind_to"] = rewind_to_task
+        elif rewind_to_step:
+            request_data["rewind_to_step"] = rewind_to_step
+        if reason:
+            request_data["reason"] = reason
+        
+        return await self._request('POST', f'/workflows/{workflow_id}/pause', json_data=request_data)
         
     async def resume_workflow(self, workflow_id: str) -> Dict[str, Any]:
         """Resume workflow via API."""
         return await self._request('POST', f'/workflows/{workflow_id}/resume')
+    
+    async def get_pause_status(self, workflow_id: str) -> Dict[str, Any]:
+        """Get pause status and metadata via API."""
+        return await self._request('GET', f'/workflows/{workflow_id}/pause-status')
         
     async def delete_workflow(self, workflow_id: str) -> bool:
         """Delete workflow via API."""
@@ -227,19 +302,15 @@ class APIAdapter(EventDrivenAdapter):
         data = await self._request('GET', f'/workflows/{workflow_id}/tasks')
         tasks = data.get('tasks', [])
         return [Task(**t) for t in tasks]
+    
+    async def get_workflow_results(self, workflow_id: str) -> List[Dict[str, Any]]:
+        """Get all task results for a workflow via API."""
+        data = await self._request('GET', f'/workflows/{workflow_id}/results')
+        # API returns {"items": [...]} format
+        return data.get('items', [])
         
     # Task operations
-    
-    async def submit_task(self, task: Task) -> Dict[str, Any]:
-        """Submit task via API."""
-        task_dict = task.dict() if hasattr(task, 'dict') else task
-        response = await self._request('POST', '/tasks', json_data=task_dict)
-        
-        # Set up event tracking if available
-        if self._event_mode_available and task.id not in self._task_futures:
-            self._task_futures[task.id] = asyncio.Future()
-            
-        return response
+    # Note: submit_task removed - all tasks must be submitted as workflows
         
     async def get_task(self, task_id: str) -> Optional[Task]:
         """Get task via API."""
@@ -386,6 +457,107 @@ class APIAdapter(EventDrivenAdapter):
     async def get_current_user(self) -> Dict[str, Any]:
         """Get current authenticated user via API."""
         return await self._request('GET', '/auth/me')
+    
+    # User Management
+    
+    async def create_user(self, username: str, email: str, password: str, 
+                          role: str = "user", metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Create a new user via API."""
+        data = {
+            'username': username,
+            'email': email,
+            'password': password,
+            'role': role,
+            'metadata': metadata or {}
+        }
+        return await self._request('POST', '/users', json_data=data)
+    
+    async def list_users(self, offset: int = 0, limit: int = 100) -> List[Dict[str, Any]]:
+        """List users via API."""
+        params = {'offset': offset, 'limit': limit}
+        return await self._request('GET', '/users', params=params)
+    
+    async def get_user(self, user_id: str) -> Dict[str, Any]:
+        """Get user by ID via API."""
+        return await self._request('GET', f'/users/{user_id}')
+    
+    async def update_user(self, user_id: str, updates: Dict[str, Any]) -> Dict[str, Any]:
+        """Update user via API."""
+        return await self._request('PUT', f'/users/{user_id}', json_data=updates)
+    
+    async def delete_user(self, user_id: str) -> Dict[str, Any]:
+        """Delete user via API."""
+        return await self._request('DELETE', f'/users/{user_id}')
+    
+    async def activate_user(self, user_id: str) -> Dict[str, Any]:
+        """Activate user via API."""
+        return await self._request('POST', f'/users/{user_id}/activate')
+    
+    async def deactivate_user(self, user_id: str, reason: Optional[str] = None) -> Dict[str, Any]:
+        """Deactivate user via API."""
+        data = {'reason': reason} if reason else {}
+        return await self._request('POST', f'/users/{user_id}/deactivate', json_data=data)
+    
+    async def search_users(self, query: str, field: str = "username", limit: int = 10) -> List[Dict[str, Any]]:
+        """Search users via API."""
+        params = {'field': field, 'limit': limit}
+        return await self._request('GET', f'/users/search/{query}', params=params)
+    
+    # Password Management
+    
+    async def change_password(self, old_password: str, new_password: str) -> Dict[str, Any]:
+        """Change password via API."""
+        data = {'old_password': old_password, 'new_password': new_password}
+        return await self._request('POST', '/auth/change-password', json_data=data)
+    
+    async def request_password_reset(self, email: str) -> Dict[str, Any]:
+        """Request password reset via API."""
+        data = {'email': email}
+        return await self._request('POST', '/auth/reset-password/request', json_data=data)
+    
+    async def reset_password(self, token: str, new_password: str) -> Dict[str, Any]:
+        """Reset password with token via API."""
+        data = {'token': token, 'new_password': new_password}
+        return await self._request('POST', '/auth/reset-password/confirm', json_data=data)
+    
+    # Session Management
+    
+    async def get_sessions(self) -> List[Dict[str, Any]]:
+        """Get active sessions via API."""
+        return await self._request('GET', '/sessions')
+    
+    async def revoke_session(self, session_id: str) -> Dict[str, Any]:
+        """Revoke a session via API."""
+        return await self._request('DELETE', f'/sessions/{session_id}')
+    
+    async def revoke_all_sessions(self) -> Dict[str, Any]:
+        """Revoke all sessions via API."""
+        return await self._request('DELETE', '/sessions')
+    
+    async def get_devices(self) -> List[Dict[str, Any]]:
+        """Get user devices via API."""
+        return await self._request('GET', '/sessions/devices')
+    
+    async def trust_device(self, trust_days: int = 30) -> Dict[str, Any]:
+        """Trust current device via API."""
+        params = {'trust_days': trust_days}
+        return await self._request('POST', '/sessions/devices/trust', params=params)
+    
+    async def get_auth_history(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get authentication history via API."""
+        params = {'limit': limit}
+        return await self._request('GET', '/sessions/history', params=params)
+    
+    # Email Verification
+    
+    async def send_verification_email(self, user_id: str) -> Dict[str, Any]:
+        """Send verification email via API."""
+        return await self._request('POST', f'/users/{user_id}/send-verification')
+    
+    async def verify_email(self, token: str) -> Dict[str, Any]:
+        """Verify email with token via API."""
+        data = {'token': token}
+        return await self._request('POST', '/auth/verify-email', json_data=data)
         
     # System operations
     
@@ -406,6 +578,17 @@ class APIAdapter(EventDrivenAdapter):
         """Get protocols via API."""
         data = await self._request('GET', '/protocols')
         return data.get('protocols', [])
+
+    async def get_provider_instance(self, provider_id: str) -> Any:
+        """
+        Get provider instance for error discovery.
+        Note: This returns a dict representation, not actual instance.
+        """
+        providers = await self.get_providers()
+        for provider in providers:
+            if provider.get("provider_id") == provider_id:
+                return provider
+        return None
         
     async def get_task_logs(self, 
                           task_id: str,

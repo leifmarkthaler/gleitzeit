@@ -1,0 +1,16 @@
+name: simple_shell_test
+description: Simple shell command test
+
+tasks:
+  - name: hello_world
+    protocol: shell/v1
+    method: shell/execute
+    params:
+      command: echo "Hello from Gleitzeit!"
+  
+  - name: list_files
+    protocol: shell/v1
+    method: shell/execute
+    dependencies: [hello_world]
+    params:
+      command: ls -la | head -5

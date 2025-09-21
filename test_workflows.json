@@ -1,0 +1,41 @@
+[
+  {
+    "name": "workflow-1",
+    "tasks": [
+      {
+        "name": "task-1",
+        "protocol": "python/v1",
+        "method": "python/execute",
+        "params": {
+          "file": "test_tasks/bulk_task1.py"
+        }
+      }
+    ]
+  },
+  {
+    "name": "workflow-2",
+    "tasks": [
+      {
+        "name": "task-2",
+        "protocol": "python/v1",
+        "method": "python/execute",
+        "params": {
+          "file": "test_tasks/bulk_task2.py"
+        }
+      }
+    ]
+  },
+  {
+    "name": "workflow-3",
+    "tasks": [
+      {
+        "name": "task-3",
+        "protocol": "python/v1",
+        "method": "python/execute",
+        "params": {
+          "file": "test_tasks/bulk_task3.py"
+        }
+      }
+    ]
+  }
+]

@@ -6,7 +6,7 @@ from typing import Dict, List, Any, Optional
 
 from gleitzeit.providers.base import ProtocolProvider
 from gleitzeit.hub.mcp_hub import MCPHub
-from gleitzeit.core.errors import MethodNotSupportedError, ProviderError, TaskExecutionError
+from gleitzeit.core.errors import MethodNotSupportedError, ProviderError, TaskExecutionError, ProviderNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +214,7 @@ class MCPHubProvider(ProtocolProvider):
         
         instance = self.hub.instances.get(instance_id)
         if not instance:
-            raise ValueError(f"Server not found: {instance_id}")
+            raise ProviderNotFoundError(instance_id)
         
         return {
             "id": instance.instance_id,

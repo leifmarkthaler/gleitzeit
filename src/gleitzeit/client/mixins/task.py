@@ -6,32 +6,18 @@ from typing import Any, Dict, List, Optional, Union
 import asyncio
 import time
 from gleitzeit.core.models import Task, TaskResult, TaskStatus
+from gleitzeit.core.errors import SystemError, InvalidParameterError, TaskError
 
 
 class TaskMixin:
     """Mixin providing task-related operations."""
     
-    async def submit_task(self, task: Union[Task, Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Submit a task for execution.
-        
-        Args:
-            task: Task object or dictionary
-            
-        Returns:
-            Task submission result
-        """
-        if not self._adapter:
-            raise RuntimeError("Client not initialized")
-            
-        if isinstance(task, dict):
-            task = Task(**task)
-            
-        return await self._adapter.submit_task(task)
+    # Task submission removed - tasks must be submitted as workflows
+    # Use submit_workflow() with a single-task workflow instead
     
     async def execute_task(self, task: Union[Task, Dict[str, Any]]) -> TaskResult:
         """
-        Execute a task and wait for completion.
+        Execute a task by creating a single-task workflow.
         
         Args:
             task: Task to execute
@@ -39,13 +25,34 @@ class TaskMixin:
         Returns:
             TaskResult object
         """
-        result = await self.submit_task(task)
-        task_id = result.get('task_id') or result.get('id')
+        # Create a single-task workflow
+        if isinstance(task, dict):
+            task_dict = task
+        else:
+            task_dict = task.model_dump() if hasattr(task, 'model_dump') else task.__dict__
         
-        if not task_id:
-            raise ValueError("No task ID in submission result")
+        workflow = {
+            "name": f"Single task: {task_dict.get('name', 'unnamed')}",
+            "tasks": [task_dict]
+        }
         
-        return await self.wait_for_task(task_id)
+        # Submit as workflow
+        result = await self.submit_workflow(workflow)
+        workflow_id = result.get('workflow_id') or result.get('id')
+        
+        if not workflow_id:
+            raise InvalidParameterError("No workflow ID in submission result")
+        
+        # Wait for workflow completion
+        await self.wait_for_workflow(workflow_id)
+        
+        # Get the task result from the workflow
+        workflow_obj = await self.get_workflow(workflow_id)
+        if workflow_obj and workflow_obj.tasks:
+            task_id = workflow_obj.tasks[0].id
+            return await self.get_task_result(task_id)
+        
+        raise TaskError("Failed to get task result from workflow")
     
     async def get_task(self, task_id: str) -> Optional[Task]:
         """
@@ -58,7 +65,7 @@ class TaskMixin:
             Task object or None
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_task(task_id)
     
     async def get_task_result(self, task_id: str) -> Optional[TaskResult]:
@@ -72,7 +79,7 @@ class TaskMixin:
             TaskResult or None
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_task_result(task_id)
     
     async def get_task_status(self, task_id: str) -> Optional[str]:
@@ -106,7 +113,7 @@ class TaskMixin:
             Dictionary with tasks list
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.list_tasks(status, workflow_id, limit, offset)
     
     async def cancel_task(self, task_id: str) -> bool:
@@ -120,7 +127,7 @@ class TaskMixin:
             True if cancelled successfully
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.cancel_task(task_id)
     
     async def delete_task(self, task_id: str) -> bool:
@@ -134,7 +141,7 @@ class TaskMixin:
             True if deleted successfully
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.delete_task(task_id)
     
     async def wait_for_task(self, task_id: str,
@@ -152,7 +159,7 @@ class TaskMixin:
             TaskResult when complete
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.wait_for_task(task_id, timeout, poll_interval)
     
     async def retry_task(self, task_id: str) -> Dict[str, Any]:
@@ -168,7 +175,7 @@ class TaskMixin:
         # Get the original task
         task = await self.get_task(task_id)
         if not task:
-            raise ValueError(f"Task {task_id} not found")
+            raise TaskError(f"Task {task_id} not found")
         
         # Create a copy for retry
         task_dict = task.dict() if hasattr(task, 'dict') else task
@@ -264,7 +271,7 @@ class TaskMixin:
             Queue status with counts and processing rates
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_queue_status()
     
     async def bulk_cancel_tasks(self, task_ids: List[str]) -> Dict[str, Any]:
@@ -278,7 +285,7 @@ class TaskMixin:
             Results of bulk cancellation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.bulk_cancel_tasks(task_ids)
     
     async def bulk_retry_tasks(self, task_ids: List[str]) -> Dict[str, Any]:
@@ -292,7 +299,7 @@ class TaskMixin:
             Results of bulk retry with new task IDs
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.bulk_retry_tasks(task_ids)
     
     async def get_bulk_task_status(self, task_ids: List[str]) -> Dict[str, Any]:
@@ -306,5 +313,5 @@ class TaskMixin:
             Dictionary mapping task IDs to their status
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_bulk_task_status(task_ids)

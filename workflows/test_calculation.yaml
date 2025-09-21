@@ -1,0 +1,42 @@
+name: test_calculation_workflow
+description: A simple workflow that performs calculations using a Python file
+
+tasks:
+  - id: calculate_sum
+    name: Calculate Sum
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: tasks/simple_calculation.py
+      env:
+        TASK_PARAMS: '{"a": 10, "b": 20, "operation": "sum"}'
+    dependencies: []
+
+  - id: calculate_product
+    name: Calculate Product
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: tasks/simple_calculation.py
+      env:
+        TASK_PARAMS: '{"a": 10, "b": 20, "operation": "product"}'
+    dependencies:
+      - calculate_sum
+
+  - id: final_report
+    name: Generate Final Report
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: tasks/simple_calculation.py
+      env:
+        TASK_PARAMS: '{"a": 30, "b": 200, "operation": "sum"}'
+    dependencies:
+      - calculate_product
+
+metadata:
+  author: Test System
+  version: "1.0"
+  tags:
+    - calculation
+    - test

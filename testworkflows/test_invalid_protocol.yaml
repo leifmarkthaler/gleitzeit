@@ -1,0 +1,10 @@
+name: "Invalid Protocol Test"
+description: "Test that invalid protocols fail validation"
+timeout: 30
+
+tasks:
+  - name: "invalid_task"
+    protocol: "invalid/v1"
+    method: "invalid/execute"
+    params:
+      test: "This should fail validation"

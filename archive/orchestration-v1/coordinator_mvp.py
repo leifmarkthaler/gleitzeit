@@ -203,7 +203,7 @@ class WorkflowCoordinatorMVP:
             return
             
         state = self.workflow_states[workflow_id]
-        state.task_states[task_id] = TaskStatus.RUNNING
+        state.task_states[task_id] = TaskStatus.EXECUTING
         
         logger.debug(f"Task {task_id} started in workflow {workflow_id}")
     

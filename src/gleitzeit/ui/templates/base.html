@@ -85,73 +85,74 @@
     <script src="/static/js/websocket.js"></script>
     
     <script>
-    // Check authentication mode
-    let authMode = 'basic';
-    let requiresLogin = false;
+    // Authentication with auto-login support
+    let currentUser = null;
     
-    async function checkAuthConfig() {
+    async function checkCurrentUser() {
         try {
-            // Check auth mode
-            const response = await fetch('/api/auth/status', { method: 'GET' });
+            // Get current user - API will auto-login as basic if needed
+            const response = await fetch('/api/auth/me', {
+                method: 'GET',
+                credentials: 'include'  // Include session cookie
+            });
+            
             if (response.ok) {
-                const data = await response.json();
-                authMode = data.mode || 'basic';
-                requiresLogin = data.requires_login || false;
+                currentUser = await response.json();
+                updateUserDisplay(currentUser);
+            } else if (response.status === 503) {
+                // Service unavailable
+                console.error('Authentication service unavailable');
             }
         } catch (error) {
-            authMode = 'basic';
-            requiresLogin = false;
+            console.error('Error checking current user:', error);
         }
+    }
+    
+    function updateUserDisplay(user) {
+        if (!user) return;
         
-        // Show/hide auth UI elements based on mode
         const authElements = document.querySelector('.nav-auth');
         if (authElements) {
-            // Only show login/logout in admin mode
-            authElements.style.display = requiresLogin ? 'block' : 'none';
+            // Always show auth UI
+            authElements.style.display = 'flex';
+            authElements.style.alignItems = 'center';
+            authElements.style.gap = '10px';
         }
         
-        if (authMode === 'basic') {
-            // In basic mode, auto-create token if needed
-            autoLoginBasicMode();
-        } else if (requiresLogin) {
-            // In admin mode, check for existing auth
-            checkAuth();
+        const userInfo = document.getElementById('user-info');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        
+        if (userInfo) {
+            userInfo.style.display = 'inline-block';
+            userInfo.textContent = `User: ${user.username || user.email}`;
+            if (user.role) {
+                userInfo.textContent += ` (${user.role})`;
+            }
         }
-    }
-    
-    async function autoLoginBasicMode() {
-        // In basic mode, we don't need a token, but we can create one for consistency
-        if (!localStorage.getItem('access_token')) {
-            // The API will automatically use the basic user
-            console.log('Basic auth mode - no login required');
-        }
-    }
-    
-    // Authentication handling (only if auth is enabled)
-    function checkAuth() {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            // User is logged in
-            document.getElementById('login-btn').style.display = 'none';
-            document.getElementById('logout-btn').style.display = 'inline-block';
-            
-            // Optionally show user info
-            const userInfo = document.getElementById('user-info');
-            if (userInfo) {
-                userInfo.style.display = 'inline-block';
-                userInfo.textContent = 'Logged in';
+        
+        // Check if this is the basic user
+        if (user.username === 'basic' || user.is_basic_user) {
+            // Basic user - show option to login as admin
+            if (loginBtn) {
+                loginBtn.style.display = 'inline-block';
+                loginBtn.textContent = 'Login as Admin';
+            }
+            if (logoutBtn) {
+                logoutBtn.style.display = 'none';
             }
         } else {
-            // User is not logged in
-            const loginBtn = document.getElementById('login-btn');
-            const logoutBtn = document.getElementById('logout-btn');
-            const userInfo = document.getElementById('user-info');
-            
-            if (loginBtn) loginBtn.style.display = 'inline-block';
-            if (logoutBtn) logoutBtn.style.display = 'none';
-            if (userInfo) userInfo.style.display = 'none';
+            // Real user - show option to switch user
+            if (loginBtn) {
+                loginBtn.style.display = 'none';
+            }
+            if (logoutBtn) {
+                logoutBtn.style.display = 'inline-block';
+                logoutBtn.textContent = 'Switch User';
+            }
         }
     }
+    
     
     async function logout() {
         try {
@@ -161,36 +162,45 @@
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`
-                    }
+                    },
+                    credentials: 'include'
                 });
             }
         } catch (error) {
             console.error('Logout error:', error);
         } finally {
-            // Clear tokens
+            // Clear tokens and session
             localStorage.removeItem('access_token');
             localStorage.removeItem('refresh_token');
             
-            // Redirect to login
+            // Clear session cookie
+            document.cookie = 'session_id=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            
+            // Redirect to login page (to switch users)
             window.location.href = '/login';
         }
     }
     
-    // Conditionally add auth headers to API requests
+    // Add auth headers and credentials to API requests
     const originalFetch = window.fetch;
     window.fetch = function(...args) {
-        // Only add auth headers if we have a token
-        const token = localStorage.getItem('access_token');
-        if (token && authEnabled && args[0].startsWith('/api/')) {
+        // Add credentials for session cookies on API requests
+        if (args[0] && typeof args[0] === 'string' && args[0].startsWith('/api/')) {
             if (!args[1]) args[1] = {};
-            if (!args[1].headers) args[1].headers = {};
-            args[1].headers['Authorization'] = `Bearer ${token}`;
+            args[1].credentials = 'include';  // Always include cookies
+            
+            // Add auth headers if we have a token (for real user login)
+            const token = localStorage.getItem('access_token');
+            if (token) {
+                if (!args[1].headers) args[1].headers = {};
+                args[1].headers['Authorization'] = `Bearer ${token}`;
+            }
         }
         return originalFetch.apply(this, args);
     };
     
-    // Check auth config on page load
-    document.addEventListener('DOMContentLoaded', checkAuthConfig);
+    // Check current user on page load
+    document.addEventListener('DOMContentLoaded', checkCurrentUser);
     </script>
     
     {% block scripts %}{% endblock %}

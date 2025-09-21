@@ -2,11 +2,14 @@
 WebSocket endpoint for real-time updates
 """
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
-from typing import List, Dict, Any, Set
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
+from typing import List, Dict, Any, Set, Optional
 import asyncio
 import json
+import logging
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -104,30 +107,91 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 @router.websocket("/ws/updates")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(
+    websocket: WebSocket,
+    token: Optional[str] = Query(None)  # Optional auth token for WebSocket
+):
     """
     WebSocket endpoint for real-time updates
     
     Protocol:
     - Client sends: {"type": "subscribe", "channels": ["workflows", "tasks"]}
     - Server sends: {"type": "workflow_update", "data": {...}}
+    
+    Query Parameters:
+        token: Optional authentication token (uses basic user if not provided)
     """
+    # Authenticate before accepting connection
+    user = None
+    auth_error = None
+    
+    # Get SystemManager using the same dependency as REST endpoints
+    from gleitzeit.api.dependencies import get_system_manager
+    try:
+        system_manager = await get_system_manager()
+        
+        if token and system_manager and system_manager.auth_manager:
+            # Validate provided token
+            try:
+                user = await system_manager.auth_manager.validate_session(token)
+                logger.info(f"UI WebSocket authenticated as {user.get('username')}")
+            except Exception as e:
+                auth_error = f"Invalid token: {str(e)}"
+                logger.warning(f"UI WebSocket token validation failed: {e}")
+        
+        # If no token or validation failed, try auto-login as basic user
+        if not user and system_manager and system_manager.auth_manager:
+            try:
+                _, user = await system_manager.auth_manager.get_or_create_basic_session()
+                logger.info(f"UI WebSocket auto-logged in as basic user")
+            except Exception as e:
+                auth_error = f"Authentication required: {str(e)}"
+                logger.error(f"UI WebSocket basic session creation failed: {e}")
+                
+    except Exception as e:
+        auth_error = f"Authentication service unavailable: {str(e)}"
+        logger.error(f"UI WebSocket auth setup failed: {e}")
+    
+    # If authentication failed completely, reject connection
+    if not user:
+        await websocket.accept()
+        await websocket.send_json({
+            "type": "error",
+            "message": auth_error or "Authentication required",
+            "code": 1008
+        })
+        await websocket.close(code=1008, reason="Authentication required")
+        return
+    
     await manager.connect(websocket)
     
+    # Send user info if authenticated
+    if user:
+        await websocket.send_json({
+            "type": "auth",
+            "user": {
+                "id": user.get('id'),
+                "username": user.get('username'),
+                "role": user.get('role')
+            }
+        })
+    
     try:
-        while True:
-            # Receive messages from client
-            data = await websocket.receive_text()
-            
+        # Handle incoming messages from client
+        # NOTE: Changed from while loop to event-driven message handling
+        async for message_data in websocket.iter_text():
             try:
-                message = json.loads(data)
+                message = json.loads(message_data)
                 await handle_client_message(websocket, message)
             except json.JSONDecodeError:
                 await websocket.send_json({
                     "type": "error",
                     "message": "Invalid JSON"
                 })
-            
+            except Exception as e:
+                logger.error(f"Error handling message: {e}")
+                break
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
@@ -194,27 +258,26 @@ async def send_status_update(websocket: WebSocket):
     
     await manager.send_personal_message(status, websocket)
 
-# Background task to send periodic updates
-async def periodic_updates():
-    """Send periodic status updates to all connected clients"""
-    while True:
-        await asyncio.sleep(5)  # Send updates every 5 seconds
-        
-        # Get current stats
-        from .tasks import _ui_tasks
-        from .workflows import _ui_workflows
-        
-        # Send metrics update
-        metrics_update = {
-            "type": "metrics_update",
-            "data": {
-                "active_workflows": len([w for w in _ui_workflows.values() if w.get("status") == "running"]),
-                "running_tasks": len([t for t in _ui_tasks.values() if t.get("status") == "running"]),
-                "queue_size": len([t for t in _ui_tasks.values() if t.get("status") == "pending"])
-            }
+# NOTE: Periodic updates now handled by Redis event scheduler
+# No more background tasks with while loops - event-driven only
+
+async def send_metrics_update():
+    """Send metrics update to all connected clients (called by scheduler)"""
+    # Get current stats
+    from .tasks import _ui_tasks
+    from .workflows import _ui_workflows
+
+    # Send metrics update
+    metrics_update = {
+        "type": "metrics_update",
+        "data": {
+            "active_workflows": len([w for w in _ui_workflows.values() if w.get("status") == "running"]),
+            "running_tasks": len([t for t in _ui_tasks.values() if t.get("status") == "running"]),
+            "queue_size": len([t for t in _ui_tasks.values() if t.get("status") == "pending"])
         }
-        
-        await manager.broadcast(metrics_update, "metrics")
+    }
+
+    await manager.broadcast(metrics_update, "metrics")
 
 # Helper functions for other routes to send updates
 async def notify_workflow_update(workflow_id: str, status: str, data: Dict[str, Any] = None):
@@ -249,3 +312,25 @@ async def notify_system_event(event_type: str, data: Dict[str, Any]):
         "data": data
     }
     await manager.broadcast(update, "system")
+
+async def notify_log_event(log_entry: Dict[str, Any]):
+    """Send log event notification"""
+    update = {
+        "type": "log_event", 
+        "data": log_entry
+    }
+    await manager.broadcast(update, "logs")
+
+async def notify_real_time_log(log_data: Dict[str, Any]):
+    """Send real-time log update"""
+    update = {
+        "type": "real_time_log",
+        "data": {
+            "timestamp": log_data.get("timestamp", datetime.now().isoformat()),
+            "level": log_data.get("level", "INFO"),
+            "source": log_data.get("source", "system"),
+            "message": log_data.get("message", ""),
+            "context": log_data.get("context", {})
+        }
+    }
+    await manager.broadcast(update, "logs")

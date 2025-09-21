@@ -12,8 +12,9 @@ from pathlib import Path
 from .workflow_manager import WorkflowManager
 from .stateless_dependency_manager import StatelessDependencyManager
 from .execution_engine_v2 import ExecutionEngineV2
-from ..events.stateless_bus import StatelessEventBus
+from ..events import StatelessEventBus
 from ..persistence.unified_persistence import UnifiedPersistenceAdapter
+from .errors import SystemError
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +59,7 @@ class WorkflowManagerFactory:
             from ..providers.pooling_adapter import PoolingAdapter
             from ..providers.python_provider import PythonProvider
             
-            queue_manager = QueueManager()
+            queue_manager = QueueManager(persistence=persistence, event_bus=event_bus)
             
             # Create a minimal pooling adapter for standalone operation
             pooling_adapter = PoolingAdapter(
@@ -110,7 +111,7 @@ class WorkflowManagerFactory:
             Configured WorkflowManager instance
         """
         if not system_manager._initialized:
-            raise RuntimeError("SystemManager must be initialized first")
+            raise SystemError("SystemManager must be initialized first")
         
         return await WorkflowManagerFactory.create(
             persistence=system_manager.persistence,

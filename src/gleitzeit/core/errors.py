@@ -40,6 +40,13 @@ class ErrorCode(IntEnum):
     CONFIGURATION_ERROR = -31003
     RESOURCE_EXHAUSTED = -31004
     RATE_LIMIT_EXCEEDED = -31005
+    RESOURCE_NOT_FOUND = -31006
+    NOT_FOUND = -31006
+    ALREADY_EXISTS = -31007
+    FORBIDDEN = -31008
+    ACCOUNT_LOCKED = -31009
+    EMAIL_NOT_VERIFIED = -31010
+    SESSION_LIMIT_EXCEEDED = -31011
     
     # Provider and Protocol Errors (-30999 to -30000)
     PROTOCOL_NOT_FOUND = -30001
@@ -592,6 +599,25 @@ class AuthenticationError(NetworkError):
             f"Authentication failed for {endpoint} using {auth_method}",
             ErrorCode.AUTHENTICATION_FAILED,
             endpoint=endpoint,
+            data=data,
+            **kwargs
+        )
+
+
+class AuthorizationError(NetworkError):
+    """Authorization failed error"""
+    
+    def __init__(self, resource: str, action: str, reason: Optional[str] = None, **kwargs):
+        data = kwargs.pop("data", {})
+        data["resource"] = resource
+        data["action"] = action
+        message = f"Authorization failed: {action} on {resource}"
+        if reason:
+            message += f" - {reason}"
+            data["reason"] = reason
+        super().__init__(
+            message,
+            ErrorCode.AUTHORIZATION_FAILED,
             data=data,
             **kwargs
         )

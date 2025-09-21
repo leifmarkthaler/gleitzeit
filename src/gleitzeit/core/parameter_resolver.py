@@ -60,6 +60,28 @@ class ParameterResolver:
         Returns:
             Resolved parameters with all references substituted
         """
+        # For stateless operation, build task name mapping from persistence
+        if not task_name_mapping and task.workflow_id:
+            # Fetch all tasks for the workflow to build name mapping
+            workflow_tasks = await self.persistence.get_tasks_by_workflow(task.workflow_id)
+            if workflow_tasks:
+                # Build mapping from original user-defined IDs to generated task IDs
+                task_name_mapping = {}
+                for wf_task in workflow_tasks:
+                    # Map by task name (e.g., "Summarize Text" -> "task-abc123")
+                    if hasattr(wf_task, 'name') and wf_task.name:
+                        task_name_mapping[wf_task.name] = wf_task.id
+                    
+                    # Check for original user-defined ID in metadata
+                    if hasattr(wf_task, 'metadata') and isinstance(wf_task.metadata, dict):
+                        original_id = wf_task.metadata.get('original_id')
+                        if original_id:
+                            # This is the key mapping: user's ID -> generated ID
+                            task_name_mapping[original_id] = wf_task.id
+                            logger.debug(f"Mapped original ID '{original_id}' to '{wf_task.id}'")
+                        
+                logger.debug(f"Built task name mapping from persistence: {task_name_mapping}")
+        
         if task_name_mapping:
             self.set_task_name_mapping(task_name_mapping)
             

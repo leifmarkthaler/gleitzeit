@@ -11,9 +11,11 @@ from typing import AsyncGenerator, Optional, TYPE_CHECKING
 from contextlib import asynccontextmanager
 
 from fastapi import Request, Depends
+from fastapi.security import HTTPAuthorizationCredentials
 from gleitzeit.client import GleitzeitClient, ClientMode
 from gleitzeit.persistence.base import PersistenceBackend
 from gleitzeit.persistence.factory import PersistenceFactory
+from gleitzeit.core.errors import SystemError, ErrorCode
 
 if TYPE_CHECKING:
     from gleitzeit.core.workflow_manager import WorkflowManager
@@ -28,40 +30,59 @@ _shared_system_manager = None
 
 async def _get_or_create_system_manager(persistence):
     """
-    Create a SystemManager for this API instance.
-    
-    Each API instance creates its own SystemManager that coordinates
-    with others via the shared persistence backend.
-    
+    Get or create a StreamSystemManager for this API instance.
+
+    Uses the StreamSystemManager.get_or_create() which provides
+    enterprise-scale stream-based processing capabilities.
+
     Args:
         persistence: The persistence backend to use
-        
+
     Returns:
-        SystemManager instance or None
+        StreamSystemManager instance or None
     """
     global _shared_system_manager
-    
+
     if _shared_system_manager is not None:
         return _shared_system_manager
-    
-    try:
-        from gleitzeit.system.system_manager import SystemManager
-        
-        # Always create a new SystemManager for this API instance
-        # Multiple SystemManagers can coexist and coordinate via persistence
-        logger.info("Creating SystemManager for API instance")
-        system_manager = SystemManager(persistence=persistence)
-        await system_manager.initialize()
+
+    from gleitzeit.system.modular_stream_system_manager import ModularStreamSystemManager
+    from gleitzeit.system.models import SystemConfig, DeploymentMode
+
+    # Use the new modular stream-based system manager
+    logger.info("Getting or creating ModularStreamSystemManager for API instance")
+
+    # Create system config
+    config = SystemConfig()
+    config.deployment_mode = DeploymentMode.PRODUCTION
+
+    system_manager = await ModularStreamSystemManager.create(
+        config=config,
+        persistence=persistence,
+        stream_config={
+            "total_shards": 64,
+            "consumer_group": "gleitzeit-api-processors",
+            "monitoring_interval": 30
+        },
+        create_if_missing=True,
+        start_system=False  # Don't auto-start to avoid blocking
+    )
+
+    # Start system after creation
+    if system_manager:
         await system_manager.start_system()
-        logger.info("SystemManager initialized and started for API")
-        
+
+    if system_manager:
+        logger.info("ModularStreamSystemManager ready for API")
         _shared_system_manager = system_manager
-        return system_manager
-        
-    except Exception as e:
-        logger.warning(f"Could not initialize SystemManager: {e}")
-        # Continue without system manager - workflows will be stored but not executed
-        return None
+    else:
+        logger.error("Could not get or create ModularStreamSystemManager")
+        raise SystemError(
+            message="Failed to initialize ModularStreamSystemManager",
+            code=ErrorCode.SYSTEM_NOT_INITIALIZED
+        )
+
+    return system_manager
 
 
 async def get_shared_client_pool(request: Optional[Request] = None):
@@ -94,16 +115,12 @@ async def get_shared_client_pool(request: Optional[Request] = None):
         # Create connection to shared pool
         instance_id = f"api_{socket.gethostname()}_{os.getpid()}"
         
-        # Get service token from GleitzeitClient class (set by API startup)
-        service_token = GleitzeitClient._SERVICE_TOKEN
-        
         _shared_client_pool = SharedClientPool(
             persistence=persistence,
             instance_id=instance_id,
             max_size=20,  # Total across all API instances
             mode=ClientMode.NATIVE,  # Use NATIVE mode to avoid circular deps
-            service_token=service_token,  # Pass service token for NATIVE mode auth
-            system_manager=system_manager  # Pass system manager for workflow execution
+            system_manager=system_manager  # Pass system manager for direct access
         )
         await _shared_client_pool.initialize()
     
@@ -157,14 +174,13 @@ async def get_request_client(request: Request) -> GleitzeitClient:
         return request.state.gleitzeit_client
     
     # Create a new client for this request
-    # Get service token from GleitzeitClient class
-    from gleitzeit.client import GleitzeitClient as ClientClass
-    service_token = ClientClass._SERVICE_TOKEN
+    # Get system manager for NATIVE mode
+    system_manager = get_system_manager()
     
     client = GleitzeitClient(
         mode=ClientMode.NATIVE,  # Use NATIVE mode for direct access
         event_mode='direct',
-        service_token=service_token  # Pass service token for NATIVE mode auth
+        system_manager=system_manager  # Pass system manager for direct access
     )
     await client.initialize()
     
@@ -178,8 +194,40 @@ async def get_request_client(request: Request) -> GleitzeitClient:
     return client
 
 
+# Original pooled client dependency (without user context)
+get_client_without_auth = get_pooled_client
+
+async def get_client_with_auth(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = None,
+    client: GleitzeitClient = Depends(get_pooled_client)
+) -> GleitzeitClient:
+    """
+    Get a pooled client with user context set for authorization.
+    
+    This dependency:
+    1. Gets a pooled client
+    2. Gets the current user context
+    3. Sets the user context on the client (for Native adapter auth)
+    4. Returns the configured client
+    """
+    # Import here to avoid circular dependency
+    from .routes.auth import get_current_user_helper
+    
+    # Get system manager
+    system_manager = await get_system_manager()
+    
+    # Get current user context
+    user_context = await get_current_user_helper(request, credentials, system_manager)
+    
+    # Set user context on the client for authorization
+    if hasattr(client, 'set_user_context'):
+        client.set_user_context(user_context)
+    
+    return client
+
 # Convenience alias for the preferred dependency
-get_client = get_pooled_client  # Use pooled clients by default
+get_client = get_client_with_auth  # Use auth-aware clients by default
 
 
 @asynccontextmanager
@@ -232,42 +280,72 @@ async def shutdown_client_pool():
         _shared_system_manager = None
 
 
+async def get_system_manager():
+    """
+    Get the shared SystemManager instance.
+    
+    Returns:
+        SystemManager instance or None if unavailable
+    """
+    global _shared_system_manager
+    
+    if _shared_system_manager is None:
+        # Initialize the shared client pool which creates the SystemManager
+        await get_shared_client_pool()
+    
+    return _shared_system_manager
+
+
 async def get_workflow_manager(
     client: GleitzeitClient = Depends(get_pooled_client)
 ) -> Optional["WorkflowManager"]:
     """
-    Get WorkflowManager instance via client's adapter.
-    
+    Get WorkflowManager instance via StreamSystemManager.
+
     This dependency provides access to the WorkflowManager for advanced
     workflow operations like templates, scheduling, and execution policies.
-    
+    Uses StreamSystemManager for pure stream-based event flow.
+
     Args:
         client: Pooled client instance
-        
+
     Returns:
         WorkflowManager instance or None if unavailable
     """
     try:
-        # Check if adapter has get_workflow_manager method
-        if hasattr(client._adapter, 'get_workflow_manager'):
-            workflow_manager = await client._adapter.get_workflow_manager()
+        # Get StreamSystemManager as primary coordinator
+        system_manager = await get_system_manager()
+        if system_manager:
+            # Use the system manager's workflow manager which has the correct execution engine
+            workflow_manager = system_manager.workflow_manager
             if workflow_manager:
-                logger.debug("Got WorkflowManager via client adapter")
+                logger.debug("Got WorkflowManager from StreamSystemManager")
                 return workflow_manager
-        
-        # Fallback: create local instance
+
+            # If no workflow manager exists, create one from system manager using streams
+            from gleitzeit.core.workflow_manager_factory import WorkflowManagerFactory
+            workflow_manager = await WorkflowManagerFactory.create_from_system_manager(system_manager)
+            logger.info("Created WorkflowManager from StreamSystemManager")
+            return workflow_manager
+
+        # Fallback: create with direct stream integration (no EventBus wrapper)
         from gleitzeit.core.workflow_manager_factory import WorkflowManagerFactory
         persistence = await PersistenceFactory.create()
-        
+
+        # Get StreamSystemManager for direct stream integration
+        stream_manager = await _get_or_create_system_manager(persistence)
+
         workflow_manager = await WorkflowManagerFactory.create(
             persistence=persistence,
-            event_bus=None,
+            event_bus=stream_manager,  # Use StreamSystemManager directly
             execution_engine=None,
             dependency_resolver=None
         )
-        logger.info("Created local WorkflowManager instance")
+        logger.info("Created WorkflowManager with direct StreamSystemManager integration")
         return workflow_manager
-        
+
     except Exception as e:
         logger.error(f"Error getting WorkflowManager: {e}")
         return None
+
+

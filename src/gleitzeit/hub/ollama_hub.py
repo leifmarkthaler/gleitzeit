@@ -11,6 +11,7 @@ import subprocess
 
 from .base import ResourceHub, ResourceInstance, ResourceStatus, ResourceMetrics, ResourceType
 from .configs import OllamaConfig
+from gleitzeit.core.errors import ProviderError, ProviderNotFoundError, ProviderNotAvailableError
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +216,7 @@ class OllamaHub(ResourceHub[OllamaConfig]):
                 else:
                     logger.error(f"Failed to start Ollama at {endpoint}")
                     process.terminate()
-                    raise RuntimeError(f"Ollama failed to start at {endpoint}")
+                    raise ProviderError(f"Ollama failed to start at {endpoint}", provider_id="ollama")
                     
             except FileNotFoundError:
                 logger.error("Ollama binary not found. Please install Ollama first.")
@@ -385,7 +386,7 @@ class OllamaHub(ResourceHub[OllamaConfig]):
             logger.info(f"Pulling model {model_name} on {instance_id}")
             
             if not self.session:
-                raise RuntimeError("Session not initialized")
+                raise ProviderError("Session not initialized", provider_id=instance.instance_id)
             
             url = f"{instance.endpoint}/api/pull"
             data = {"name": model_name}
@@ -506,17 +507,17 @@ class OllamaHub(ResourceHub[OllamaConfig]):
         """Execute a request on a specific instance"""
         instance = await self.get_instance(instance_id)
         if not instance:
-            raise ValueError(f"Instance {instance_id} not found")
+            raise ProviderNotFoundError(instance_id)
         
         if not instance.is_available():
-            raise RuntimeError(f"Instance {instance_id} is not available")
+            raise ProviderNotAvailableError(instance_id)
         
         # Track metrics
         start_time = datetime.utcnow()
         
         try:
             if not self.session:
-                raise RuntimeError("Session not initialized")
+                raise ProviderError("Session not initialized", provider_id=instance_id)
             
             # Map method to Ollama API endpoint
             endpoint_map = {
@@ -544,7 +545,7 @@ class OllamaHub(ResourceHub[OllamaConfig]):
                     
                     if resp.status != 200:
                         instance.metrics.error_count += 1
-                        raise RuntimeError(f"Ollama API error: {result}")
+                        raise ProviderError(f"Ollama API error: {result}", provider_id=instance_id)
                     
                     return result
                     

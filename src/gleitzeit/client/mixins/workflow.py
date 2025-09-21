@@ -7,6 +7,7 @@ import yaml
 import json
 from pathlib import Path
 from gleitzeit.core.models import Workflow, Task
+from gleitzeit.core.errors import SystemError, WorkflowError
 
 
 class WorkflowMixin:
@@ -23,7 +24,7 @@ class WorkflowMixin:
             Dictionary with workflow submission result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.submit_workflow(workflow)
     
     async def run_workflow(self, workflow_file: str, watch: bool = False) -> Dict[str, Any]:
@@ -71,7 +72,7 @@ class WorkflowMixin:
             Workflow object or None if not found
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_workflow(workflow_id)
     
     async def list_workflows(self, status: Optional[str] = None,
@@ -88,7 +89,7 @@ class WorkflowMixin:
             Dictionary with workflows list and pagination info
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.list_workflows(status, limit, offset)
     
     async def cancel_workflow(self, workflow_id: str) -> Dict[str, Any]:
@@ -102,7 +103,7 @@ class WorkflowMixin:
             Cancellation result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.cancel_workflow(workflow_id)
     
     async def pause_workflow(self, workflow_id: str) -> Dict[str, Any]:
@@ -116,7 +117,7 @@ class WorkflowMixin:
             Pause result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.pause_workflow(workflow_id)
     
     async def resume_workflow(self, workflow_id: str) -> Dict[str, Any]:
@@ -130,7 +131,7 @@ class WorkflowMixin:
             Resume result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.resume_workflow(workflow_id)
     
     async def delete_workflow(self, workflow_id: str) -> bool:
@@ -144,7 +145,7 @@ class WorkflowMixin:
             True if deleted successfully
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.delete_workflow(workflow_id)
     
     async def get_workflow_tasks(self, workflow_id: str) -> List[Task]:
@@ -158,7 +159,7 @@ class WorkflowMixin:
             List of Task objects
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_workflow_tasks(workflow_id)
     
     async def get_workflow_results(self, workflow_id: str) -> List[Dict[str, Any]]:
@@ -172,7 +173,7 @@ class WorkflowMixin:
             List of task results
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_workflow_results(workflow_id)
     
     async def wait_for_workflow(self, workflow_id: str, 
@@ -198,7 +199,7 @@ class WorkflowMixin:
             workflow = await self.get_workflow(workflow_id)
             
             if not workflow:
-                raise ValueError(f"Workflow {workflow_id} not found")
+                raise WorkflowError(f"Workflow {workflow_id} not found")
             
             if workflow.status in ['completed', 'failed', 'cancelled']:
                 return workflow.dict() if hasattr(workflow, 'dict') else workflow
@@ -222,7 +223,7 @@ class WorkflowMixin:
         """
         workflow = await self.get_workflow(workflow_id)
         if not workflow:
-            raise ValueError(f"Workflow {workflow_id} not found")
+            raise WorkflowError(f"Workflow {workflow_id} not found")
         
         # Modify workflow for cloning
         workflow_dict = workflow.dict() if hasattr(workflow, 'dict') else workflow
@@ -275,7 +276,7 @@ class WorkflowMixin:
             Timeline with task execution times and dependencies
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_workflow_timeline(workflow_id)
     
     async def get_workflow_dependencies(self, workflow_id: str) -> Dict[str, Any]:
@@ -289,7 +290,7 @@ class WorkflowMixin:
             Dependency graph showing task relationships
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_workflow_dependencies(workflow_id)
     
     async def get_workflow_critical_path(self, workflow_id: str) -> Dict[str, Any]:
@@ -303,7 +304,7 @@ class WorkflowMixin:
             Critical path showing longest execution chain
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_workflow_critical_path(workflow_id)
     
     async def export_workflow(self, workflow_id: str, format: str = "yaml") -> str:
@@ -318,7 +319,7 @@ class WorkflowMixin:
             Exported workflow definition as string
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.export_workflow(workflow_id, format)
     
     async def retry_workflow(self, workflow_id: str, from_task: Optional[str] = None) -> Dict[str, Any]:
@@ -333,7 +334,7 @@ class WorkflowMixin:
             New workflow execution result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.retry_workflow(workflow_id, from_task)
     
     async def bulk_cancel_workflows(self, workflow_ids: List[str]) -> Dict[str, Any]:
@@ -347,7 +348,7 @@ class WorkflowMixin:
             Results of bulk cancellation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.bulk_cancel_workflows(workflow_ids)
     
     async def bulk_delete_workflows(self, workflow_ids: List[str]) -> Dict[str, Any]:
@@ -361,7 +362,7 @@ class WorkflowMixin:
             Results of bulk deletion
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.bulk_delete_workflows(workflow_ids)
     
     async def get_workflow_templates(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
@@ -375,5 +376,58 @@ class WorkflowMixin:
             List of workflow templates
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_workflow_templates(category)
+    
+    async def pause_workflow(
+        self,
+        workflow_id: str,
+        rewind_to_task: Optional[str] = None,
+        rewind_to_step: Optional[int] = None,
+        reason: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """
+        Pause workflow with optional rewind.
+        
+        Args:
+            workflow_id: ID of workflow to pause
+            rewind_to_task: Optional task ID to rewind to
+            rewind_to_step: Optional step number to rewind to (1-based)
+            reason: Optional reason for pausing
+            
+        Returns:
+            Dictionary with pause results
+        """
+        if not self._adapter:
+            raise SystemError("Client not initialized")
+        return await self._adapter.pause_workflow(
+            workflow_id, rewind_to_task, rewind_to_step, reason
+        )
+    
+    async def resume_workflow(self, workflow_id: str) -> Dict[str, Any]:
+        """
+        Resume a paused workflow.
+        
+        Args:
+            workflow_id: ID of workflow to resume
+            
+        Returns:
+            Dictionary with resume results
+        """
+        if not self._adapter:
+            raise SystemError("Client not initialized")
+        return await self._adapter.resume_workflow(workflow_id)
+    
+    async def get_pause_status(self, workflow_id: str) -> Dict[str, Any]:
+        """
+        Get pause status and rewind information.
+        
+        Args:
+            workflow_id: ID of workflow
+            
+        Returns:
+            Dictionary with pause metadata
+        """
+        if not self._adapter:
+            raise SystemError("Client not initialized")
+        return await self._adapter.get_pause_status(workflow_id)

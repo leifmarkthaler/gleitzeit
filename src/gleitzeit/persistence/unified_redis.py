@@ -21,6 +21,7 @@ except ImportError:
 from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter
 from gleitzeit.core.models import Task, Workflow, TaskResult, WorkflowExecution, TaskStatus, WorkflowStatus
 from gleitzeit.hub.base import ResourceInstance, ResourceMetrics, ResourceStatus, ResourceType
+from gleitzeit.core.errors import ConfigurationError, PersistenceError, PersistenceConnectionError, InvalidParameterError
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +69,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             health_check_interval: Health check interval in seconds
         """
         if not REDIS_AVAILABLE:
-            raise ImportError(
+            raise ConfigurationError(
                 "redis not installed. Install with: pip install redis[hiredis]"
             )
         
@@ -181,7 +182,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
     async def _execute(self, *args, **kwargs):
         """Execute Redis command (for testing compatibility)"""
         if not self.redis:
-            raise RuntimeError("Redis not connected")
+            raise PersistenceConnectionError("redis", self.redis_url)
         return await self.redis.execute_command(*args, **kwargs)
     
     @property
@@ -203,10 +204,10 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
             )
             logger.error(error_msg)
-            raise ValueError(error_msg)
+            raise InvalidParameterError("workflow_id", "Task must have a workflow_id", task_id=task.id)
         
         if not self._initialized:
-            raise RuntimeError("Redis adapter not initialized")
+            raise PersistenceConnectionError("redis", "Redis adapter not initialized")
         
         try:
             # Check if task exists to track index changes
@@ -225,7 +226,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 'dependencies': json.dumps(task.dependencies) if task.dependencies else '[]',
                 'timeout': task.timeout or 0,
                 'retry_config': json.dumps(task.retry_config.model_dump()) if task.retry_config else '{}',
-                'status': task.status,
+                'status': task.status.value if hasattr(task.status, 'value') else str(task.status),
                 'attempt_count': task.attempt_count,
                 'workflow_id': task.workflow_id or '',
                 'created_at': task.created_at.isoformat() if task.created_at else datetime.utcnow().isoformat(),
@@ -264,7 +265,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             if self.enable_pubsub:
                 await self.redis.publish(
                     self._key("events", "task", "saved"),
-                    json.dumps({'task_id': task.id, 'status': task.status})
+                    json.dumps({'task_id': task.id, 'status': task.status.value if hasattr(task.status, 'value') else str(task.status)})
                 )
             
             logger.debug(f"Saved task {task.id} to Redis")
@@ -529,7 +530,8 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 tasks_data.append(task_dict)
             
             # Get workflow status - handle enum values
-            status = 'pending'
+            from gleitzeit.core.models import WorkflowStatus
+            status = WorkflowStatus.PENDING.value
             if hasattr(workflow, 'status'):
                 if hasattr(workflow.status, 'value'):
                     status = workflow.status.value
@@ -542,9 +544,9 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             if hasattr(workflow, 'tasks'):
                 for task in workflow.tasks:
                     if hasattr(task, 'status'):
-                        if str(task.status) == 'completed' or (hasattr(task.status, 'value') and task.status.value == 'completed'):
+                        if str(task.status) == TaskStatus.COMPLETED.value or (hasattr(task.status, 'value') and task.status.value == TaskStatus.COMPLETED.value):
                             tasks_completed += 1
-                        elif str(task.status) == 'failed' or (hasattr(task.status, 'value') and task.status.value == 'failed'):
+                        elif str(task.status) == TaskStatus.FAILED.value or (hasattr(task.status, 'value') and task.status.value == TaskStatus.FAILED.value):
                             tasks_failed += 1
             
             workflow_data = {
@@ -559,7 +561,9 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 'completed_at': workflow.completed_at.isoformat() if hasattr(workflow, 'completed_at') and workflow.completed_at else '',
                 'tasks_total': len(workflow.tasks),
                 'tasks_completed': tasks_completed,
-                'tasks_failed': tasks_failed
+                'tasks_failed': tasks_failed,
+                'user_id': workflow.user_id or '',  # Add user_id field
+                'is_public': str(workflow.is_public) if hasattr(workflow, 'is_public') else 'False'  # Add is_public field
             }
             
             await self.redis.hset(
@@ -584,6 +588,16 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             tasks_data = json.loads(workflow_data['tasks'])
             tasks = []
             for task_data in tasks_data:
+                # Try to get the current task state from Redis
+                task_id = task_data.get('id')
+                if task_id:
+                    current_task = await self.get_task(task_id)
+                    if current_task:
+                        # Use the current task state from Redis
+                        tasks.append(current_task)
+                        continue
+                
+                # Fallback to stored task data if not found in Redis
                 # Convert ISO format strings back to datetime objects
                 for field in ['created_at', 'started_at', 'completed_at']:
                     if task_data.get(field):
@@ -596,7 +610,9 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 description=workflow_data.get('description') or None,
                 tasks=tasks,
                 metadata=json.loads(workflow_data['metadata']) if workflow_data.get('metadata') else {},
-                created_at=datetime.fromisoformat(workflow_data['created_at']) if workflow_data.get('created_at') else None
+                created_at=datetime.fromisoformat(workflow_data['created_at']) if workflow_data.get('created_at') else None,
+                user_id=workflow_data.get('user_id') or None,  # Restore user_id
+                is_public=workflow_data.get('is_public', 'False').lower() == 'true'  # Restore is_public
             )
             
             # Set additional workflow status fields
@@ -833,7 +849,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                     "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
                 )
                 logger.error(error_msg)
-                raise ValueError(error_msg)
+                raise InvalidParameterError("workflow_id", "Task must have a workflow_id", task_id=task.id)
         
         if not self._initialized:
             return
@@ -852,7 +868,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                         'dependencies': json.dumps(task.dependencies) if task.dependencies else '[]',
                         'timeout': task.timeout or 0,
                         'retry_config': json.dumps(task.retry_config.model_dump()) if task.retry_config else '{}',
-                        'status': task.status,
+                        'status': task.status.value if hasattr(task.status, 'value') else str(task.status),
                         'attempt_count': task.attempt_count,
                         'workflow_id': task.workflow_id or '',
                         'created_at': task.created_at.isoformat() if task.created_at else datetime.utcnow().isoformat(),
@@ -1547,7 +1563,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             tasks = []
             for task_id in task_ids:
                 task = await self.get_task(task_id)
-                if task and task.status == "executing":
+                if task and task.status == TaskStatus.EXECUTING:
                     tasks.append(task)
             
             return tasks
@@ -1564,12 +1580,12 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
         """Get all keys matching pattern (Redis KEYS) for stateless operation"""
         if not self._initialized:
             return []
-        
+
         try:
             # Add key prefix to pattern if not already present
             if not pattern.startswith(self.key_prefix):
                 pattern = f"{self.key_prefix}:{pattern}"
-            
+
             # Use SCAN for better performance in production
             cursor = 0
             keys = []
@@ -1578,7 +1594,7 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                 keys.extend(batch)
                 if cursor == 0:
                     break
-            
+
             # Remove key prefix from results and decode bytes
             prefix_len = len(self.key_prefix) + 1
             decoded_keys = []
@@ -1589,12 +1605,73 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
                     decoded_keys.append(k[prefix_len:])
                 else:
                     decoded_keys.append(k)
-            
+
             return decoded_keys
-            
+
         except Exception as e:
             logger.error(f"Failed to get keys for pattern {pattern}: {e}")
             return []
+
+    async def scan_iter(self, pattern: str = "*", count: int = 100):
+        """
+        Async generator that yields keys matching pattern using Redis SCAN.
+
+        This method is used by signal monitoring and other services that need
+        to iterate over keys without loading them all into memory at once.
+
+        Args:
+            pattern: Pattern to match keys against (supports Redis glob-style patterns)
+            count: Number of keys to fetch per scan iteration (hint to Redis)
+
+        Yields:
+            Decoded key strings without the key prefix
+        """
+        if not self._initialized:
+            logger.warning("scan_iter called but Redis not initialized")
+            return  # This will create an empty async generator
+
+        try:
+            # Add key prefix to pattern if not already present
+            if not pattern.startswith(self.key_prefix):
+                # Handle patterns that might not need the full prefix path
+                if ":" in pattern:
+                    # Pattern already has structure, just ensure prefix
+                    pattern = f"{self.key_prefix}:{pattern}"
+                else:
+                    # Simple pattern, add full prefix
+                    pattern = f"{self.key_prefix}:{pattern}"
+
+            logger.info(f"scan_iter: scanning with pattern='{pattern}', count={count}")
+            cursor = 0
+            prefix_len = len(self.key_prefix) + 1
+            total_yielded = 0
+
+            while True:
+                cursor, batch = await self.redis.scan(cursor, match=pattern, count=count)
+                logger.info(f"scan_iter: got {len(batch)} keys from scan (cursor={cursor})")
+
+                # Process and yield each key in the batch
+                for key in batch:
+                    if isinstance(key, bytes):
+                        key = key.decode('utf-8')
+
+                    # Remove key prefix if present
+                    if key.startswith(f"{self.key_prefix}:"):
+                        total_yielded += 1
+                        yield key[prefix_len:]
+                    else:
+                        total_yielded += 1
+                        yield key
+
+                # Stop when cursor returns to 0
+                if cursor == 0:
+                    logger.debug(f"scan_iter: completed, yielded {total_yielded} total keys")
+                    break
+
+        except Exception as e:
+            logger.error(f"Failed during scan iteration for pattern {pattern}: {e}")
+            # Don't raise, just stop iteration
+            return
     
     async def get(self, key: str) -> Optional[Any]:
         """Get value by key (simple key-value) for stateless operation"""
@@ -1628,8 +1705,8 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             logger.error(f"Failed to get key {key}: {e}")
             return None
     
-    async def set(self, key: str, value: Any, ex: Optional[int] = None) -> bool:
-        """Set key-value pair for stateless operation"""
+    async def set(self, key: str, value: Any, ex: Optional[int] = None, nx: bool = False) -> bool:
+        """Set key-value pair for stateless operation with optional NX flag"""
         if not self._initialized:
             return False
         
@@ -1645,8 +1722,12 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
             else:
                 value_str = str(value)
             
-            # Set with optional expiry
-            if ex:
+            # Set with optional expiry and NX flag
+            if nx:
+                # Use SET with NX flag (only set if not exists)
+                result = await self.redis.set(full_key, value_str, nx=True, ex=ex)
+                return result is not None  # Redis returns None if key exists with NX
+            elif ex:
                 await self.redis.setex(full_key, ex, value_str)
             else:
                 await self.redis.set(full_key, value_str)
@@ -1817,3 +1898,438 @@ class UnifiedRedisAdapter(UnifiedPersistenceAdapter):
         except Exception as e:
             logger.warning(f"Failed to delete old events: {e}")
             return 0
+    
+    # =========================================================================
+    # Timer and Scheduler Operations
+    # =========================================================================
+    
+    async def schedule_timer(
+        self,
+        workflow_id: str,
+        task_id: str,
+        wake_at: float,
+        timer_type: str = "sleep",
+        metadata: Dict = None
+    ) -> bool:
+        """Schedule a timer for a task."""
+        if not self._initialized:
+            return False
+        
+        try:
+            timer_id = f"{workflow_id}:{task_id}"
+            timer_key = self._key("timers", "scheduled")
+            
+            pipe = self.redis.pipeline()
+            
+            # Add to sorted set
+            pipe.zadd(timer_key, {timer_id: wake_at})
+            
+            # Store metadata
+            timer_data = {
+                "workflow_id": workflow_id,
+                "task_id": task_id,
+                "type": timer_type,
+                "wake_at": str(wake_at),
+                "created_at": str(datetime.utcnow().timestamp()),
+                **(metadata or {})
+            }
+            pipe.hset(
+                self._key("timer", timer_id),
+                mapping={
+                    k: json.dumps(v) if isinstance(v, (dict, list)) else str(v)
+                    for k, v in timer_data.items()
+                }
+            )
+            
+            await pipe.execute()
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to schedule timer: {e}")
+            return False
+    
+    async def cancel_timer(self, workflow_id: str, timer_id: str) -> bool:
+        """Cancel a scheduled timer."""
+        if not self._initialized:
+            return False
+        
+        try:
+            full_timer_id = f"{workflow_id}:{timer_id}"
+            timer_key = self._key("timers", "scheduled")
+            
+            pipe = self.redis.pipeline()
+            pipe.zrem(timer_key, full_timer_id)
+            pipe.delete(self._key("timer", full_timer_id))
+            
+            results = await pipe.execute()
+            return results[0] > 0
+            
+        except Exception as e:
+            logger.error(f"Failed to cancel timer: {e}")
+            return False
+    
+    async def register_signal_waiter(
+        self,
+        workflow_id: str,
+        signal: str,
+        task_id: str
+    ) -> bool:
+        """Register a task as waiting for a signal."""
+        if not self._initialized:
+            return False
+        
+        try:
+            signal_key = self._key("signal", "waiters", workflow_id, signal)
+            await self.redis.sadd(signal_key, task_id)
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to register signal waiter: {e}")
+            return False
+    
+    async def store_scheduled_task(
+        self,
+        scheduled_id: str,
+        workflow_id: str,
+        task: str,
+        protocol: str,
+        params: Dict,
+        run_at: float
+    ) -> bool:
+        """Store a scheduled task."""
+        if not self._initialized:
+            return False
+        
+        try:
+            scheduled_key = self._key("scheduled", scheduled_id)
+            
+            await self.redis.hset(
+                scheduled_key,
+                mapping={
+                    "workflow_id": workflow_id,
+                    "task": task,
+                    "protocol": protocol,
+                    "params": json.dumps(params),
+                    "run_at": str(run_at),
+                    "created_at": str(datetime.utcnow().timestamp())
+                }
+            )
+            
+            # Set expiration for cleanup (7 days after run time)
+            expire_at = int(run_at + 7 * 24 * 3600)
+            await self.redis.expireat(scheduled_key, expire_at)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to store scheduled task: {e}")
+            return False
+    
+    async def cancel_scheduled_task(
+        self,
+        workflow_id: str,
+        scheduled_id: str
+    ) -> bool:
+        """Cancel a scheduled task."""
+        if not self._initialized:
+            return False
+        
+        try:
+            # Remove from timer queue
+            timer_key = self._key("timers", "scheduled")
+            removed = await self.redis.zrem(timer_key, scheduled_id)
+            
+            # Delete scheduled task data
+            await self.redis.delete(self._key("scheduled", scheduled_id))
+            
+            return removed > 0
+            
+        except Exception as e:
+            logger.error(f"Failed to cancel scheduled task: {e}")
+            return False
+    
+    async def store_cron_job(
+        self,
+        cron_id: str,
+        workflow_id: str,
+        cron: str,
+        task: str,
+        protocol: str,
+        params: Dict,
+        next_run: float
+    ) -> bool:
+        """Store a cron job."""
+        if not self._initialized:
+            return False
+        
+        try:
+            cron_key = self._key("cron", cron_id)
+            
+            await self.redis.hset(
+                cron_key,
+                mapping={
+                    "workflow_id": workflow_id,
+                    "cron": cron,
+                    "task": task,
+                    "protocol": protocol,
+                    "params": json.dumps(params),
+                    "next_run": str(next_run),
+                    "created_at": str(datetime.utcnow().timestamp()),
+                    "enabled": "true"
+                }
+            )
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to store cron job: {e}")
+            return False
+    
+    async def get_cron_job(self, cron_id: str) -> Optional[Dict]:
+        """Get cron job details."""
+        if not self._initialized:
+            return None
+        
+        try:
+            cron_key = self._key("cron", cron_id)
+            data = await self.redis.hgetall(cron_key)
+            
+            if not data:
+                return None
+            
+            result = {}
+            for key, value in data.items():
+                key_str = key.decode() if isinstance(key, bytes) else key
+                val_str = value.decode() if isinstance(value, bytes) else value
+                
+                if key_str == "params":
+                    result[key_str] = json.loads(val_str)
+                else:
+                    result[key_str] = val_str
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"Failed to get cron job: {e}")
+            return None
+    
+    async def update_cron_job(self, cron_id: str, next_run: float) -> bool:
+        """Update cron job next run time."""
+        if not self._initialized:
+            return False
+        
+        try:
+            cron_key = self._key("cron", cron_id)
+            await self.redis.hset(cron_key, "next_run", str(next_run))
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to update cron job: {e}")
+            return False
+    
+    async def cancel_cron_job(
+        self,
+        workflow_id: str,
+        cron_id: str
+    ) -> bool:
+        """Cancel a cron job."""
+        if not self._initialized:
+            return False
+        
+        try:
+            cron_key = self._key("cron", cron_id)
+            
+            # Mark as disabled
+            await self.redis.hset(cron_key, "enabled", "false")
+            
+            # Delete after some time
+            await self.redis.expire(cron_key, 86400)  # 24 hours
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to cancel cron job: {e}")
+            return False
+    
+    # Redis proxy methods for compatibility
+    async def hgetall(self, key: str) -> dict:
+        """Get all fields and values of a hash (proxy to Redis)."""
+        if not self._initialized:
+            return {}
+        return await self.redis.hgetall(f"{self.key_prefix}:{key}")
+    
+    async def hset(self, key: str, field: str = None, value: str = None, mapping: dict = None) -> int:
+        """Set fields in a hash (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        full_key = f"{self.key_prefix}:{key}"
+        if mapping:
+            return await self.redis.hset(full_key, mapping=mapping)
+        elif field is not None and value is not None:
+            return await self.redis.hset(full_key, field, value)
+        else:
+            raise ValueError("Either provide field and value, or mapping parameter")
+    
+    async def expire(self, key: str, seconds: int) -> bool:
+        """Set expiry time for a key (proxy to Redis)."""
+        if not self._initialized:
+            return False
+        return await self.redis.expire(f"{self.key_prefix}:{key}", seconds)
+    
+    async def zadd(self, key: str, mapping: dict) -> int:
+        """Add members to a sorted set (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        return await self.redis.zadd(f"{self.key_prefix}:{key}", mapping)
+    
+    async def zrem(self, key: str, *members) -> int:
+        """Remove members from a sorted set (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        return await self.redis.zrem(f"{self.key_prefix}:{key}", *members)
+    
+    async def zrange(self, key: str, start: int, stop: int, withscores: bool = False) -> list:
+        """Get range of members from sorted set (proxy to Redis)."""
+        if not self._initialized:
+            return []
+        return await self.redis.zrange(f"{self.key_prefix}:{key}", start, stop, withscores=withscores)
+    
+    async def zcard(self, key: str) -> int:
+        """Get cardinality of sorted set (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        return await self.redis.zcard(f"{self.key_prefix}:{key}")
+    
+    async def zremrangebyscore(self, key: str, min_score: float, max_score: float) -> int:
+        """Remove members from sorted set by score range (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        return await self.redis.zremrangebyscore(f"{self.key_prefix}:{key}", min_score, max_score)
+    
+    async def zrangebyscore(self, key: str, min: float, max: float, start: int = 0, num: int = -1, withscores: bool = False) -> list:
+        """Get sorted set members by score range (proxy to Redis)."""
+        if not self._initialized:
+            return []
+        full_key = f"{self.key_prefix}:{key}"
+        return await self.redis.zrangebyscore(full_key, min, max, start, num, withscores=withscores)
+    
+    async def smembers(self, key: str) -> set:
+        """Get all members of a set (proxy to Redis)."""
+        if not self._initialized:
+            return set()
+        return await self.redis.smembers(f"{self.key_prefix}:{key}")
+    
+    async def sadd(self, key: str, *members) -> int:
+        """Add members to a set (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        return await self.redis.sadd(f"{self.key_prefix}:{key}", *members)
+    
+    async def srem(self, key: str, *members) -> int:
+        """Remove members from a set (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        return await self.redis.srem(f"{self.key_prefix}:{key}", *members)
+    
+    async def xadd(self, key: str, data: dict, max_len: int = None) -> str:
+        """Add entry to a stream (proxy to Redis)."""
+        if not self._initialized:
+            return ""
+        full_key = f"{self.key_prefix}:{key}"
+        if max_len:
+            return await self.redis.xadd(full_key, data, maxlen=max_len)
+        else:
+            return await self.redis.xadd(full_key, data)
+
+    async def hget(self, key: str, field: str) -> Optional[str]:
+        """Get a field value from a hash (proxy to Redis)."""
+        if not self._initialized:
+            return None
+        full_key = f"{self.key_prefix}:{key}"
+        value = await self.redis.hget(full_key, field)
+        if value and isinstance(value, bytes):
+            return value.decode('utf-8')
+        return value
+
+    async def hincrby(self, key: str, field: str, amount: int = 1) -> int:
+        """Increment a hash field by amount (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        full_key = f"{self.key_prefix}:{key}"
+        return await self.redis.hincrby(full_key, field, amount)
+
+    async def xgroup_create(self, key: str, group: str, id: str = '0') -> bool:
+        """Create a consumer group for a stream (proxy to Redis)."""
+        if not self._initialized:
+            return False
+        full_key = f"{self.key_prefix}:{key}"
+        try:
+            await self.redis.xgroup_create(full_key, group, id=id)
+            return True
+        except Exception:
+            # Group might already exist
+            return False
+
+    async def xreadgroup(self, group: str, consumer: str, streams: dict, count: int = None, block: int = None) -> dict:
+        """Read from streams as part of a consumer group (proxy to Redis)."""
+        if not self._initialized:
+            return {}
+        # Add prefix to stream keys
+        prefixed_streams = {}
+        for stream_key, msg_id in streams.items():
+            full_key = f"{self.key_prefix}:{stream_key}"
+            prefixed_streams[full_key] = msg_id
+
+        result = await self.redis.xreadgroup(group, consumer, prefixed_streams, count=count, block=block)
+        logger.debug(f"xreadgroup raw result: {result}")
+
+        # Handle None or empty result
+        if not result:
+            return {}
+
+        # Convert list to dict if needed (Redis returns list format: [[stream_key, messages], ...])
+        if isinstance(result, list):
+            result = dict(result)
+
+        # Remove prefix from result keys
+        unprefixed_result = {}
+        prefix_len = len(self.key_prefix) + 1
+        for full_key, messages in result.items():
+            if isinstance(full_key, bytes):
+                full_key = full_key.decode('utf-8')
+            if full_key.startswith(f"{self.key_prefix}:"):
+                key = full_key[prefix_len:]
+            else:
+                key = full_key
+            unprefixed_result[key] = messages
+
+        return unprefixed_result
+
+    async def xack(self, key: str, group: str, *ids) -> int:
+        """Acknowledge messages in a stream (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        full_key = f"{self.key_prefix}:{key}"
+        return await self.redis.xack(full_key, group, *ids)
+
+    async def scard(self, key: str) -> int:
+        """Get the cardinality of a set (proxy to Redis)."""
+        if not self._initialized:
+            return 0
+        full_key = f"{self.key_prefix}:{key}"
+        return await self.redis.scard(full_key)
+
+    async def update_workflow(self, workflow_id: str, **updates) -> bool:
+        """Update workflow fields."""
+        if not self._initialized:
+            return False
+
+        workflow_key = f"workflow:{workflow_id}"
+        if updates:
+            # Convert status enum to string if needed
+            if 'status' in updates and hasattr(updates['status'], 'value'):
+                updates['status'] = updates['status'].value
+
+            await self.hset(workflow_key, mapping=updates)
+            return True
+        return False

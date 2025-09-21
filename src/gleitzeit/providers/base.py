@@ -173,7 +173,7 @@ class ProtocolProvider(ABC, LoggingMixin):
                 # Add centralized success logging
                 await self.log_success(
                     "provider_handle_request_success",
-                    f"Provider method {method} completed successfully",
+                    message=f"Provider method {method} completed successfully",
                     request_id=request_id,
                     method=method,
                     duration_ms=duration * 1000,
@@ -208,7 +208,7 @@ class ProtocolProvider(ABC, LoggingMixin):
                 if is_final_attempt:
                     await self.log_error(
                         "provider_handle_request_failed",
-                        f"Provider method {method} failed after {attempt + 1} attempts: {str(e)}",
+                        e,
                         request_id=request_id,
                         method=method,
                         error_type=e.__class__.__name__,
@@ -371,7 +371,7 @@ class ProtocolProvider(ABC, LoggingMixin):
             
             await self.log_success(
                 "provider_started",
-                "Provider started successfully",
+                message="Provider started successfully",
                 provider_id=self.provider_id
             )
             
@@ -380,7 +380,7 @@ class ProtocolProvider(ABC, LoggingMixin):
         except Exception as e:
             await self.log_error(
                 "provider_start_failed",
-                f"Failed to start provider: {str(e)}",
+                e,
                 provider_id=self.provider_id,
                 error=str(e),
                 error_type=type(e).__name__
@@ -416,7 +416,7 @@ class ProtocolProvider(ABC, LoggingMixin):
             
             await self.log_success(
                 "provider_stopped",
-                "Provider stopped successfully",
+                message="Provider stopped successfully",
                 provider_id=self.provider_id
             )
             
@@ -425,7 +425,7 @@ class ProtocolProvider(ABC, LoggingMixin):
         except Exception as e:
             await self.log_error(
                 "provider_stop_failed",
-                f"Error stopping provider: {str(e)}",
+                e,
                 provider_id=self.provider_id,
                 error=str(e),
                 error_type=type(e).__name__

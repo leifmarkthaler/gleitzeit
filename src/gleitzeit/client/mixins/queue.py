@@ -4,6 +4,9 @@ Queue management mixin for Gleitzeit client.
 
 from typing import Any, Dict, Optional
 
+from gleitzeit.core.errors import SystemError
+from gleitzeit.core.models import WorkflowStatus
+
 
 class QueueMixin:
     """Mixin providing queue management operations."""
@@ -16,7 +19,7 @@ class QueueMixin:
             Dictionary with queue information
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_queues()
     
     async def get_queue_details(self, queue_name: str) -> Dict[str, Any]:
@@ -30,7 +33,7 @@ class QueueMixin:
             Queue details including size, status, configuration
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_queue_details(queue_name)
     
     async def pause_queue(self, queue_name: str) -> Dict[str, Any]:
@@ -44,7 +47,7 @@ class QueueMixin:
             Pause operation result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.pause_queue(queue_name)
     
     async def resume_queue(self, queue_name: str) -> Dict[str, Any]:
@@ -58,7 +61,7 @@ class QueueMixin:
             Resume operation result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.resume_queue(queue_name)
     
     async def clear_queue(self, queue_name: str) -> Dict[str, Any]:
@@ -72,7 +75,7 @@ class QueueMixin:
             Clear operation result with number of items removed
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.clear_queue(queue_name)
     
     async def configure_queue(self, queue_name: str, 
@@ -92,7 +95,7 @@ class QueueMixin:
             Configuration result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         # Validate config if method exists
         if hasattr(self._adapter, 'configure_queue'):
@@ -205,7 +208,7 @@ class QueueMixin:
             status = queue_info.get('status', 'unknown')
             
             # Determine health based on queue metrics
-            if status == 'paused':
+            if status == WorkflowStatus.PAUSED.value:
                 health_status = 'warning'
                 health_message = 'Queue is paused'
             elif size > 1000:

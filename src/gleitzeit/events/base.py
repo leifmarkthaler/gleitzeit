@@ -53,9 +53,9 @@ class EventBus:
         """
         self.event_store = event_store
         
-        # Always use stateless backend
-        from .stateless_bus import StatelessEventBus
-        self._stateless_bus = StatelessEventBus(persistence=persistence)
+        # Always use streamlined backend
+        from .streamlined_event_bus import StreamlinedEventBus
+        self._stateless_bus = StreamlinedEventBus(redis_client=persistence)
         logger.info("EventBus initialized (always stateless)")
     
     async def register_handler(self, event_type: str, handler, priority: int = 2, 

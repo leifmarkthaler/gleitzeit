@@ -1,0 +1,35 @@
+name: test_stream_workflow
+version: "1.0"
+description: Test workflow for Redis Streams and enum serialization
+
+tasks:
+  - id: task1
+    name: First Task
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        print("Task 1 executing with Redis Streams")
+        return {"status": "success", "message": "Task 1 completed"}
+
+  - id: task2  
+    name: Second Task
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        print("Task 2 executing")
+        return {"status": "success", "value": 42}
+    dependencies:
+      - task1
+
+  - id: task3
+    name: Final Task
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        print("Final task processing results")
+        return {"final": "completed", "total": 100}
+    dependencies:
+      - task2

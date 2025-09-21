@@ -1,17 +1,21 @@
 """
 Event system for Gleitzeit.
 
-The event system is now always stateless, using Redis or other backends for persistence.
-This enables true horizontal scaling and crash recovery.
+The event system uses ONLY the StreamlinedEventBus with Redis Streams.
+This is the ONE true event pathway - no duplicates, no alternatives.
 """
 
-from .base import EventBus, EventHandler, HandlerError
-from .stateless_bus import StatelessEventBus, HandlerConfig
+from .streamlined_event_bus import StreamlinedEventBus
+from .base import EventHandler, HandlerError
+
+# Compatibility aliases
+EventBus = StreamlinedEventBus
+StatelessEventBus = StreamlinedEventBus
 
 __all__ = [
-    "EventBus",
-    "EventHandler", 
-    "HandlerError",
-    "StatelessEventBus",
-    "HandlerConfig"
+    "StreamlinedEventBus",
+    "EventBus",  # Alias for compatibility
+    "StatelessEventBus",  # Alias for compatibility
+    "EventHandler",
+    "HandlerError"
 ]

@@ -174,13 +174,29 @@ class PythonProvider(ProtocolProvider, LoggingMixin):
         workflow_id = params.get('workflow_id')
         
         file_path = params.get('file') or params.get('file_path')
+        code = params.get('code')
+        
+        # If we have inline code, create a temporary file
+        is_temp = False
+        if not file_path and code:
+            # Create temporary file with the code
+            temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False)
+            temp_file.write(code)
+            temp_file.close()
+            file_path = temp_file.name
+            is_temp = True
+            
+            await self.log_debug(
+                "temp_file_created", 
+                f"Created temporary file for inline code: {file_path}", 
+                task_id=task_id, 
+                workflow_id=workflow_id
+            )
         
         if not file_path:
-            error = InvalidParameterError(param_name='file', reason="Missing 'file' or 'file_path' parameter")
+            error = InvalidParameterError(param_name='file', reason="Missing 'file', 'file_path', or 'code' parameter")
             await self.log_error("file_validation_failed", error, task_id=task_id, workflow_id=workflow_id)
             raise error
-        
-        is_temp = False
         
         args = params.get('args', [])
         env = params.get('env', {})
@@ -301,7 +317,8 @@ class PythonProvider(ProtocolProvider, LoggingMixin):
         # Build command
         cmd = [sys.executable, str(file_path)]
         if args:
-            cmd.extend(args)
+            # Ensure all args are strings for subprocess
+            cmd.extend([str(arg) for arg in args])
         
         # Prepare environment
         process_env = os.environ.copy()

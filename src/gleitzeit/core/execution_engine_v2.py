@@ -3,7 +3,7 @@ Simplified Execution Engine V2 for Gleitzeit
 
 Refactored to delegate to specialized components for clean separation of concerns.
 This is a lightweight coordinator that uses:
-- TaskOrchestrator for task execution coordination
+- StatelessTaskOrchestrator for task execution coordination (no loops!)
 - TaskExecutor for actual task execution
 - UnifiedDependencyManager for dependency resolution
 - RetryManager for retry logic
@@ -18,16 +18,17 @@ from dataclasses import dataclass
 
 from gleitzeit.core.models import Task, Workflow, TaskStatus, TaskResult, WorkflowStatus
 from gleitzeit.core.task_executor import TaskExecutor
-from gleitzeit.core.task_orchestrator import TaskOrchestrator
+from gleitzeit.core.stateless_task_orchestrator import StatelessTaskOrchestrator
 from gleitzeit.core.dependency_manager import UnifiedDependencyManager
 from gleitzeit.core.parameter_resolver import ParameterResolver
-from gleitzeit.core.retry_manager import RetryManager
 from gleitzeit.core.event_driven_retry_manager import EventDrivenRetryManager
 from gleitzeit.core.events import EventType, GleitzeitEvent
 from gleitzeit.core.logging_mixin import LoggingMixin
 from gleitzeit.task_queue import QueueManager
 from gleitzeit.persistence.base import PersistenceBackend
-from gleitzeit.events.base import EventBus
+from gleitzeit.events import EventBus
+from gleitzeit.core.errors import ConfigurationError
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class ExecutionEngineV2(LoggingMixin):
     - Coordinates between specialized managers
     
     All heavy lifting is done by:
-    - TaskOrchestrator: Task scheduling and coordination
+    - StatelessTaskOrchestrator: Task scheduling and coordination (no loops!)
     - TaskExecutor: Actual task execution
     - UnifiedDependencyManager: Dependency resolution
     - RetryManager: Retry handling
@@ -75,7 +76,8 @@ class ExecutionEngineV2(LoggingMixin):
         persistence: Optional[PersistenceBackend] = None,
         max_concurrent_tasks: int = 10,
         event_bus: Optional[EventBus] = None,
-        task_timeout: int = 300
+        task_timeout: int = 300,
+        instance_id: Optional[str] = None
     ):
         """
         Initialize ExecutionEngineV2 with required components.
@@ -90,7 +92,7 @@ class ExecutionEngineV2(LoggingMixin):
             task_timeout: Default task timeout in seconds
         """
         if not pooling_adapter:
-            raise ValueError("ExecutionEngineV2 requires a pooling_adapter")
+            raise ConfigurationError("ExecutionEngineV2 requires a pooling_adapter")
             
         # Initialize LoggingMixin
         super().__init__()
@@ -101,6 +103,7 @@ class ExecutionEngineV2(LoggingMixin):
         self.event_bus = event_bus
         self.max_concurrent_tasks = max_concurrent_tasks
         self.task_timeout = task_timeout
+        self.instance_id = instance_id
         
         # Initialize specialized components
         self._init_components(pooling_adapter, dependency_resolver)
@@ -115,12 +118,26 @@ class ExecutionEngineV2(LoggingMixin):
         
         # Note: Initial setup logging will be done on first async operation
         logger.info(f"Initialized ExecutionEngineV2 with max_concurrent_tasks={max_concurrent_tasks}")
+
+    def register_with_stream_manager(self, stream_manager):
+        """
+        Register handlers with StreamSystemManager.
+
+        This allows the orchestrator's handlers to be invoked
+        by the MultiplexedStreamConsumer for stream-based events.
+
+        Args:
+            stream_manager: StreamSystemManager instance
+        """
+        if hasattr(self.task_orchestrator, 'register_with_stream_manager'):
+            self.task_orchestrator.register_with_stream_manager(stream_manager)
+            logger.info("ExecutionEngineV2 registered handlers with StreamSystemManager")
         
     def _init_components(self, pooling_adapter: Optional[Any], legacy_resolver: Any):
         """Initialize specialized components."""
         # Pooling adapter is required for clean architecture
         if not pooling_adapter:
-            raise ValueError("ExecutionEngineV2 requires a pooling_adapter for provider access")
+            raise ConfigurationError("ExecutionEngineV2 requires a pooling_adapter for provider access")
         
         # Create unified dependency manager
         self.dependency_manager = UnifiedDependencyManager(
@@ -141,15 +158,20 @@ class ExecutionEngineV2(LoggingMixin):
             task_timeout=self.task_timeout
         )
         
-        # Create task orchestrator
-        self.task_orchestrator = TaskOrchestrator(
+        # Create stateless task orchestrator (no persistent loops!)
+        # Stream transport is handled at the QueueManager level
+        self.task_orchestrator = StatelessTaskOrchestrator(
             queue_manager=self.queue_manager,
             dependency_manager=self.dependency_manager,
             task_executor=self.task_executor,
             persistence=self.persistence,
             event_bus=self.event_bus,
-            max_concurrent_tasks=self.max_concurrent_tasks
+            max_concurrent_tasks=self.max_concurrent_tasks,
+            instance_id=self.instance_id
         )
+        
+        # Always using Redis Streams for unified transport
+        logger.info("Using Redis Streams for reliable event transport")
         
         # Initialize retry manager (reuse existing)
         if self.event_bus:
@@ -344,13 +366,16 @@ class ExecutionEngineV2(LoggingMixin):
             
         logger.info(f"Task {task.id} submitted to queue {queue_name or 'default'}")
         
-    async def submit_workflow(self, workflow: Workflow, queue_name: Optional[str] = None) -> None:
+    async def submit_workflow(self, workflow: Workflow, queue_name: Optional[str] = None) -> str:
         """
         Submit a workflow for execution.
         
         Args:
             workflow: Workflow to submit
             queue_name: Optional queue name
+            
+        Returns:
+            The workflow ID
         """
         await self.log_operation(
             "workflow_submit",
@@ -371,6 +396,9 @@ class ExecutionEngineV2(LoggingMixin):
         )
         
         logger.info(f"Workflow {workflow.id} submitted with {len(workflow.tasks)} tasks")
+        
+        # Return the workflow ID
+        return workflow.id
         
     async def execute_task(self, task: Task) -> TaskResult:
         """

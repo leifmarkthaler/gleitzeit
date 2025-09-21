@@ -1,0 +1,19 @@
+# Gleitzeit Configuration File
+# This file shows how to configure streaming and other options
+
+# Event Transport Configuration - Always uses Redis Streams
+stream_consumer_group: "my-workers"  # Custom consumer group name
+
+# Basic Configuration
+max_retries: 3
+retry_base_delay: 10
+retry_max_delay: 300
+
+# Worker Configuration  
+worker_batch_size: 5
+worker_idle_timeout_ms: 60000
+dlq_max_size: 10000
+
+# Redis Configuration
+redis_url: "redis://localhost:6379"
+hostname: "localhost"

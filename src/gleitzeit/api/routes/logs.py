@@ -6,9 +6,10 @@ Uses dependency injection for stateless operation.
 
 from typing import Dict, Any, List, Optional
 from datetime import datetime
-from fastapi import APIRouter, Request, Query, Depends
+from fastapi import APIRouter, Request, Query, Depends, HTTPException
 from gleitzeit.client import GleitzeitClient
 from ..dependencies import get_client
+from ..auth_dependencies import get_current_user_auto, get_current_user_required
 from .base import APIRouteBase
 
 router = APIRouter(prefix="/logs", tags=["logs"])
@@ -26,7 +27,8 @@ async def get_logs(
     end_time: Optional[datetime] = Query(None, description="End time for log range"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """Get logs with optional filtering."""
     return await log_routes.handle_client_call(
@@ -43,7 +45,8 @@ async def get_logs(
 
 @router.get("/levels", response_model=List[str])
 async def get_log_levels(
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """Get available log levels."""
     return await log_routes.handle_client_call("get_log_levels", client=client)
@@ -51,7 +54,8 @@ async def get_log_levels(
 
 @router.get("/sources", response_model=List[str])
 async def get_log_sources(
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """Get available log sources."""
     return await log_routes.handle_client_call("get_log_sources", client=client)
@@ -63,7 +67,8 @@ async def get_task_logs(
     level: Optional[str] = Query(None, description="Log level filter"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """Get logs for a specific task."""
     return await log_routes.handle_client_call(
@@ -82,7 +87,8 @@ async def get_workflow_logs(
     level: Optional[str] = Query(None, description="Log level filter"),
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """Get logs for a specific workflow."""
     return await log_routes.handle_client_call(
@@ -101,10 +107,12 @@ async def clear_logs(
     before: Optional[datetime] = Query(None, description="Clear logs before this time"),
     level: Optional[str] = Query(None, description="Only clear logs of this level"),
     source: Optional[str] = Query(None, description="Only clear logs from this source"),
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_required)
 ):
     """Clear logs with optional filters (admin only)."""
-    log_routes.require_admin(req)
+    if current_user.get('role') != 'admin':
+        raise HTTPException(status_code=403, detail="Admin access required")
     return await log_routes.handle_client_call(
         "clear_logs",
         before=before,
@@ -118,7 +126,8 @@ async def clear_logs(
 async def get_log_statistics(
     start_time: Optional[datetime] = Query(None, description="Start time for stats"),
     end_time: Optional[datetime] = Query(None, description="End time for stats"),
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """Get log statistics."""
     return await log_routes.handle_client_call(
@@ -136,7 +145,8 @@ async def export_logs(
     source: Optional[str] = Query(None, description="Source filter"),
     start_time: Optional[datetime] = Query(None, description="Start time"),
     end_time: Optional[datetime] = Query(None, description="End time"),
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """Export logs in specified format."""
     return await log_routes.handle_client_call(
@@ -155,7 +165,8 @@ async def stream_logs(
     level: Optional[str] = Query(None, description="Log level filter"),
     source: Optional[str] = Query(None, description="Source filter"),
     tail: int = Query(100, description="Number of recent logs to return"),
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """Stream recent logs with optional filtering."""
     return await log_routes.handle_client_call(

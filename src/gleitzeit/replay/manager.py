@@ -9,6 +9,7 @@ import logging
 import os
 
 from gleitzeit.core.models import TaskStatus
+from gleitzeit.core.errors import WorkflowError, InvalidParameterError
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +167,7 @@ class ReplayManager:
         # Load workflow from persistence
         workflow = await self.persistence.get_workflow(workflow_id)
         if not workflow:
-            raise ValueError(f"Workflow {workflow_id} not found in persistence")
+            raise WorkflowError(f"Workflow {workflow_id} not found in persistence", workflow_id=workflow_id)
         
         # Execute based on mode
         if options.mode == ReplayMode.RE_EXECUTE:
@@ -180,7 +181,7 @@ class ReplayManager:
         elif options.mode == ReplayMode.DEBUG:
             return await self._replay_debug(workflow, options, user_context)
         else:
-            raise ValueError(f"Unknown replay mode: {options.mode}")
+            raise InvalidParameterError("mode", f"Unknown replay mode: {options.mode}")
     
     def _add_owner_metadata(self, workflow, user_context: Optional[Dict]):
         """Add owner metadata to workflow if user context provided"""
@@ -361,9 +362,9 @@ class ReplayManager:
         pending_ids = set()
         
         for task in tasks:
-            if task.status in ["completed", "skipped"]:
+            if task.status in [TaskStatus.COMPLETED, TaskStatus.SKIPPED]:
                 completed_ids.add(task.id)
-            elif task.status == "failed":
+            elif task.status == TaskStatus.FAILED:
                 failed_ids.add(task.id)
             else:
                 pending_ids.add(task.id)

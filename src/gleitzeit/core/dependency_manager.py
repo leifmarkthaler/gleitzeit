@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 from gleitzeit.core.models import Task, Workflow, TaskStatus
 from gleitzeit.persistence.base import PersistenceBackend
+from .errors import TaskValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -114,7 +115,7 @@ class UnifiedDependencyManager:
         for node in graph.values():
             for dep_id in node.dependencies:
                 if dep_id not in graph:
-                    raise ValueError(f"Task {node.task_id} depends on non-existent task {dep_id}")
+                    raise TaskValidationError(node.task_id, [f"depends on non-existent task {dep_id}"])
                     
         # Cache the validated workflow and graph
         self._workflow_cache[workflow.id] = workflow
@@ -122,7 +123,28 @@ class UnifiedDependencyManager:
         
         logger.info(f"Workflow {workflow.id} validated successfully")
         return True
-        
+
+    async def check_dependencies(self, task: Task) -> bool:
+        """
+        Check if all task dependencies are satisfied.
+
+        Args:
+            task: Task to check dependencies for
+
+        Returns:
+            True if all dependencies are satisfied, False otherwise
+        """
+        if not task.dependencies:
+            return True
+
+        # Check each dependency
+        for dep_task_id in task.dependencies:
+            dep_task = await self.persistence.get_task(dep_task_id)
+            if not dep_task or dep_task.status != TaskStatus.COMPLETED:
+                return False
+
+        return True
+
     async def resolve_dependencies(self, task: Task, workflow_id: str) -> List[str]:
         """
         Resolve dependencies for a task.
@@ -146,33 +168,122 @@ class UnifiedDependencyManager:
     async def get_ready_tasks(self, workflow_id: str, completed_tasks: Set[str] = None) -> List[Task]:
         """
         Get tasks that are ready to execute (all dependencies met).
-        
+
         Args:
             workflow_id: Workflow to check
             completed_tasks: Set of completed task IDs
-            
+
         Returns:
             List of tasks ready for execution
         """
         completed_tasks = completed_tasks or set()
         graph = await self._get_or_load_graph(workflow_id)
-        
+
         if not graph:
             return []
-            
+
         ready_tasks = []
-        
+
         for node in graph.values():
             # Skip if already completed or in progress
             if node.task_id in completed_tasks:
                 continue
-                
+
             # Check if all dependencies are completed
             if node.dependencies.issubset(completed_tasks):
                 ready_tasks.append(node.task)
-                
+
         return ready_tasks
-        
+
+    async def get_dependent_tasks(self, completed_task_id: str) -> List[str]:
+        """
+        Get tasks that depend on the completed task and check if they're now ready to run.
+
+        Args:
+            completed_task_id: ID of the task that just completed
+
+        Returns:
+            List of task IDs that are now ready to execute
+        """
+        # Find the workflow containing this task
+        workflow_id = None
+        for wf_id, graph in self._dependency_graphs.items():
+            if completed_task_id in graph:
+                workflow_id = wf_id
+                break
+
+        if not workflow_id:
+            # Task not in any cached graph, try to find it from persistence
+            task = await self.persistence.get_task(completed_task_id)
+            if task and task.workflow_id:
+                workflow_id = task.workflow_id
+                graph = await self._get_or_load_graph(workflow_id)
+            else:
+                logger.debug(f"Task {completed_task_id} not found in any workflow")
+                return []
+        else:
+            graph = self._dependency_graphs[workflow_id]
+
+        if not graph or completed_task_id not in graph:
+            return []
+
+        completed_node = graph[completed_task_id]
+        newly_ready = []
+
+        # Check each dependent task
+        for dependent_id in completed_node.dependents:
+            if dependent_id not in graph:
+                continue
+
+            dependent_node = graph[dependent_id]
+
+            # Check if all dependencies of this dependent are now satisfied
+            all_deps_complete = True
+            for dep_id in dependent_node.dependencies:
+                if dep_id == completed_task_id:
+                    # The just-completed task is satisfied
+                    continue
+
+                # Check if other dependencies are completed
+                dep_task = await self.persistence.get_task(dep_id)
+                if not dep_task or dep_task.status != TaskStatus.COMPLETED:
+                    all_deps_complete = False
+                    break
+
+            if all_deps_complete:
+                # This dependent task is now ready to run
+                newly_ready.append(dependent_id)
+                logger.debug(f"Task {dependent_id} is now ready after {completed_task_id} completed")
+
+        return newly_ready
+
+    async def get_dependent_tasks(self, task_id: str) -> List[str]:
+        """
+        Get all tasks that depend on the given task.
+
+        Args:
+            task_id: The completed task ID
+
+        Returns:
+            List of task IDs that depend on this task
+        """
+        # First get the workflow ID for this task
+        task = await self.persistence.get_task(task_id)
+        if not task or not task.workflow_id:
+            return []
+
+        workflow = await self.persistence.get_workflow(task.workflow_id)
+        if not workflow:
+            return []
+
+        dependent_tasks = []
+        for other_task in workflow.tasks:
+            if other_task.id != task_id and task_id in other_task.dependencies:
+                dependent_tasks.append(other_task.id)
+
+        logger.debug(f"Found {len(dependent_tasks)} tasks depending on {task_id}")
+        return dependent_tasks
+
     async def track_submission(self, task_id: str, workflow_id: str) -> bool:
         """
         Track task submission for idempotency.

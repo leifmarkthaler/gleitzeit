@@ -8,6 +8,7 @@ from typing import Dict, Any, Optional, Callable, List, AsyncIterator
 from datetime import datetime
 
 from gleitzeit.core.models import Task, TaskResult, TaskStatus
+from gleitzeit.core.errors import SystemError
 from ..events import ClientEvent, EventType
 
 logger = logging.getLogger(__name__)
@@ -46,7 +47,7 @@ class EventTaskMixin:
             Submission response with tracking info
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         # Check if adapter supports events
         if not hasattr(self._adapter, 'event_bus') or not self._adapter.event_bus:
@@ -200,10 +201,10 @@ class EventTaskMixin:
             Stream of monitoring data
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         if not hasattr(self._adapter, 'event_bus') or not self._adapter.event_bus:
-            raise RuntimeError("Event monitoring not available")
+            raise SystemError("Event monitoring not available")
             
         event_bus = self._adapter.event_bus
         
@@ -342,7 +343,7 @@ class EventTaskMixin:
             List of events in chronological order
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         # Get events from adapter if it supports it
         if hasattr(self._adapter, 'get_events'):
@@ -475,7 +476,7 @@ class EventTaskMixin:
             Retry information including attempts and schedule
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         # Get task
         task = await self.get_task(task_id)

@@ -11,6 +11,8 @@ from fastapi import Request, Response, HTTPException
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
+from gleitzeit.core.errors import SystemError, ErrorCode, GleitzeitError
+from .error_handler import gleitzeit_error_to_http
 
 logger = logging.getLogger(__name__)
 
@@ -18,53 +20,84 @@ logger = logging.getLogger(__name__)
 class AuthenticationMiddleware(BaseHTTPMiddleware):
     """
     Authentication middleware that validates tokens and sets user context.
+    Uses SystemManager's stateless AuthManager for authentication.
     """
     
-    def __init__(self, app: ASGIApp, auth_mode: str = "basic"):
+    def __init__(self, app: ASGIApp, auth_mode: str = "basic", system_manager=None):
         super().__init__(app)
         self.auth_mode = auth_mode
+        self.system_manager = system_manager
+        self.auth_manager = system_manager.auth_manager if system_manager else None
         
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        """Process authentication for each request."""
+        """Process authentication for each request using stateless AuthManager."""
+        
+        # Skip middleware for WebSocket connections
+        # WebSocket auth is handled in the WebSocket endpoints themselves
+        if request.scope.get("type") == "websocket":
+            return await call_next(request)
         
         # Skip auth for public endpoints
         public_paths = ["/", "/health", "/docs", "/openapi.json", "/auth/login", "/auth/register"]
         if any(request.url.path.startswith(path) for path in public_paths):
             return await call_next(request)
         
-        # In basic mode, assign default user if no headers
-        if self.auth_mode == "basic":
-            if not request.headers.get("X-User-ID"):
-                # Add basic user headers
-                request.state.user_id = "basic_user"
-                request.state.user_role = "user"
-                # Modify headers (create new scope for request)
-                headers = dict(request.headers)
-                headers["x-user-id"] = "basic_user"
-                headers["x-user-role"] = "user"
-                request._headers = headers
+        # Try to get user from session cookie or bearer token
+        user = None
         
-        # In strict mode, require authentication
-        elif self.auth_mode == "strict":
+        # Check for session cookie first (stateless session)
+        session_id = request.cookies.get("session_id")
+        if session_id and self.auth_manager:
+            try:
+                # Get user from stateless session store
+                user = await self.auth_manager.get_current_user(session_id)
+            except SystemError:
+                # Session invalid or expired
+                pass
+        
+        # Check for Bearer token if no session
+        if not user:
             auth_header = request.headers.get("Authorization")
-            if not auth_header or not auth_header.startswith("Bearer "):
+            if auth_header and auth_header.startswith("Bearer ") and self.auth_manager:
+                token = auth_header.replace("Bearer ", "")
+                try:
+                    # Validate token using stateless AuthManager
+                    user = await self.auth_manager.validate_session(token)
+                except SystemError:
+                    # Token invalid or expired
+                    pass
+        
+        # Handle based on auth mode
+        if self.auth_mode == "basic":
+            # In basic mode, use basic user if no auth provided
+            if not user:
+                if self.auth_manager:
+                    user = self.auth_manager.basic_user
+                else:
+                    # Fallback basic user
+                    user = {
+                        "id": "basic-user",
+                        "username": "basic",
+                        "role": "user"
+                    }
+            
+            # Set user context
+            request.state.user = user
+            request.state.user_id = user.get("id")
+            request.state.user_role = user.get("role", "user")
+            
+        elif self.auth_mode in ["strict", "advanced", "admin"]:
+            # In strict mode, require valid authentication
+            if not user:
                 return JSONResponse(
                     status_code=401,
-                    content={"detail": "Not authenticated"}
+                    content={"detail": "Authentication required"}
                 )
             
-            # TODO: Validate JWT token and set user context
-            # For now, just check if token exists
-            token = auth_header.replace("Bearer ", "")
-            if not token:
-                return JSONResponse(
-                    status_code=401,
-                    content={"detail": "Invalid authentication credentials"}
-                )
-            
-            # Set user context (would normally decode JWT)
-            request.state.user_id = "authenticated_user"
-            request.state.user_role = "user"
+            # Set user context
+            request.state.user = user
+            request.state.user_id = user.get("id")
+            request.state.user_role = user.get("role", "user")
         
         response = await call_next(request)
         return response
@@ -77,9 +110,21 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Catch and handle errors."""
+        # Skip for WebSocket connections
+        if request.scope.get("type") == "websocket":
+            return await call_next(request)
+            
         try:
             response = await call_next(request)
             return response
+            
+        except GleitzeitError as exc:
+            # Handle Gleitzeit errors with proper mapping
+            http_exc = gleitzeit_error_to_http(exc)
+            return JSONResponse(
+                status_code=http_exc.status_code,
+                content={"detail": http_exc.detail}
+            )
             
         except HTTPException as exc:
             # Let HTTPExceptions pass through (they're already formatted)
@@ -136,6 +181,10 @@ class LoggingMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Log request and response details."""
+        
+        # Skip for WebSocket connections
+        if request.scope.get("type") == "websocket":
+            return await call_next(request)
         
         # Start timing
         start_time = time.time()
@@ -213,6 +262,10 @@ class RequestCleanupMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """Process request and ensure cleanup."""
+        # Skip for WebSocket connections
+        if request.scope.get("type") == "websocket":
+            return await call_next(request)
+            
         try:
             # Process the request
             response = await call_next(request)

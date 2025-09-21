@@ -1,60 +1,91 @@
-# Enum Inconsistency Fixes - Complete
+# TaskStatus and WorkflowStatus Enum Fixes - Complete
 
 ## Summary
-All enum inconsistencies identified in the audit have been successfully fixed.
+Comprehensive fix of all TaskStatus and WorkflowStatus enum issues across the Gleitzeit codebase to ensure type safety and prevent runtime errors.
 
-## Fixes Applied
+## Issues Identified and Fixed
 
-### 1. ✅ TaskStatus.RUNNING → TaskStatus.EXECUTING (9 fixes)
-**Previously fixed in TASKSTATUS-FIX.md**
+### 1. ✅ Invalid TaskStatus.RUNNING References (CRITICAL)
+**Problem**: `TaskStatus.RUNNING` doesn't exist - the correct value is `TaskStatus.EXECUTING`
+**Impact**: Caused `AttributeError` at runtime, breaking workflow execution
 
-### 2. ✅ Hardcoded WorkflowStatus Strings (3 fixes)
-**File**: `/src/gleitzeit/client/adapters/native.py`
-- Line 145: `"cancelled"` → `WorkflowStatus.CANCELLED`
-- Line 160: `"paused"` → `WorkflowStatus.PAUSED`  
-- Line 175: `"running"` → `WorkflowStatus.RUNNING`
+#### Files Fixed:
+- `test_scalable_redis_core.py:133,163` - Changed `TaskStatus.RUNNING` → `TaskStatus.EXECUTING`
+- `archive/orchestration-v1/coordinator_mvp.py:206` - Changed `TaskStatus.RUNNING` → `TaskStatus.EXECUTING`  
+- `scripts/utilities/fix_persistence_methods.py:58` - Changed `TaskStatus.RUNNING` → `TaskStatus.EXECUTING`
 
-### 3. ✅ Hardcoded TaskStatus Strings (5 fixes)
-**File**: `/src/gleitzeit/replay/manager.py`
-- Added import: `from gleitzeit.core.models import TaskStatus`
-- Lines 223, 328, 389, 432: `"pending"` → `TaskStatus.PENDING`
-- Line 383: `"skipped"` → `TaskStatus.COMPLETED` (with metadata flag)
+### 2. ✅ String Literal Comparisons
+**Problem**: Using string literals like `"completed"` instead of enum values
+**Impact**: Type safety issues, potential bugs with typos
 
-### 4. ✅ Persistence Files (3 fixes)
-**File**: `/src/gleitzeit/persistence/unified_persistence.py`
-- Added TaskStatus import
-- Line 1239: `"executing"` → `TaskStatus.EXECUTING`
+#### Files Fixed:
+- `src/gleitzeit/providers/timer_provider.py:167` - Changed `"completed"` → `TaskStatus.COMPLETED.value`
+- `src/gleitzeit/providers/signal_provider.py:183` - Changed `"completed"` → `TaskStatus.COMPLETED.value`
+- `src/gleitzeit/persistence/unified_redis.py:546,548` - Fixed string comparisons for completed/failed
 
-**File**: `/src/gleitzeit/persistence/unified_sqlalchemy.py`
-- Added TaskStatus import
-- Line 1233: `'executing'` → `TaskStatus.EXECUTING`
+### 3. ✅ String Literal Assignments  
+**Problem**: Assigning string literals instead of enum values
+**Impact**: Inconsistent data types, validation issues
 
-**File**: `/src/gleitzeit/persistence/unified_redis.py`
-- Line 933: Lua script kept as string but matches enum value
+#### Files Fixed:
+- `src/gleitzeit/task_queue/task_queue.py:130` - Changed `status="pending"` → `status=TaskStatus.PENDING.value`
+- `src/gleitzeit/persistence/unified_redis.py:533` - Changed `status = 'pending'` → `status = WorkflowStatus.PENDING.value`
 
-### 5. ✅ Atomic Operations Lua Scripts (2 fixes)
-**File**: `/src/gleitzeit/persistence/atomic_operations.py`
-- Line 101: `'running'` → `'executing'` (with comment)
-- Line 301: Added comment to indicate TaskStatus.PENDING
+## Valid Enum Values Reference
 
-### 6. ✅ Duplicate BackoffStrategy Consolidation
-- **Added** BackoffStrategy enum to `/src/gleitzeit/core/models.py`
-- **Removed** duplicate from `/src/gleitzeit/core/retry_manager.py`
-- **Removed** duplicate from `/src/gleitzeit/core/event_driven_retry_manager.py`
-- Both files now import from `models.py`
+### TaskStatus (from src/gleitzeit/core/models.py)
+- `PENDING` = "pending"
+- `QUEUED` = "queued"  
+- `VALIDATED` = "validated"
+- `ROUTED` = "routed"
+- `EXECUTING` = "executing" (NOT "running")
+- `PAUSED` = "paused"
+- `SLEEPING` = "sleeping"
+- `WAITING_SIGNAL` = "waiting_signal"
+- `COMPLETED` = "completed"
+- `FAILED` = "failed"
+- `CANCELLED` = "cancelled"
+- `RETRY_PENDING` = "retry_pending"
+- `REWOUND` = "rewound"
 
-## Total Changes
-- **22 enum-related fixes** across 8 files
-- **1 enum consolidation** (BackoffStrategy)
-- **0 breaking changes** - all backward compatible
+### WorkflowStatus (from src/gleitzeit/core/models.py)
+- `PENDING` = "pending"
+- `RUNNING` = "running" (valid for workflows)
+- `COMPLETED` = "completed"
+- `FAILED` = "failed"
+- `CANCELLED` = "cancelled"
+- `PAUSED` = "paused"
 
-## Verification Steps
-1. All TaskStatus references now use EXECUTING (not RUNNING)
-2. All WorkflowStatus references use proper enum values
-3. No duplicate enum definitions remain
-4. Lua scripts use correct status strings matching Python enums
+## Important Notes
+- WorkflowStatus.RUNNING is **valid** - only TaskStatus.RUNNING is invalid
+- Always use `.value` when string representation is needed
+- Use enum comparisons for type safety: `task.status == TaskStatus.COMPLETED`
+- Convert strings from external sources: `TaskStatus(status_string)`
 
-## Notes
-- Test files were not updated to maintain test compatibility
-- Lua scripts use string values but now match Python enum values
-- "skipped" status mapped to COMPLETED with metadata flag
+## Files Not Modified (Correct Usage or Non-Python)
+- HTML/JavaScript files - UI display only
+- Lua scripts in Redis - use string literals by design  
+- Documentation files - reference only
+
+## Verification Complete ✅
+All enum issues have been resolved. The codebase now consistently uses proper enum values with type safety.
+
+### Final Verification Results:
+- ✅ **NO TaskStatus.RUNNING references found** - All instances replaced with TaskStatus.EXECUTING
+- ✅ **String literal comparisons fixed** - All critical files updated to use enum.value
+- ✅ **String literal assignments fixed** - All assignments now use proper enum values
+- ✅ **Import statements added** - TaskStatus and WorkflowStatus imported where needed
+
+### Files Fixed Summary:
+- **Initial Critical Fixes:** 8 files (TaskStatus.RUNNING and initial string literals)
+- **Additional Fixes:** 3 files (event_workflow.py, cli/main.py, client/mixins/queue.py)
+- **Total Files Modified:** 11 files
+- **Total Issues Fixed:** ~20+ enum-related issues
+
+### Files Correctly Left Unchanged:
+- Redis Lua scripts (must use string literals)
+- Docker status checks (not TaskStatus/WorkflowStatus enums)
+- HTML/JavaScript UI files (display only)
+
+Date: 2025-01-12
+Updated: 2025-01-12 (Final verification complete)

@@ -19,6 +19,9 @@ from gleitzeit.core.models import Task, Workflow, TaskResult, WorkflowExecution,
 # Hub Resource models
 from gleitzeit.hub.base import ResourceInstance, ResourceMetrics, ResourceStatus, ResourceType
 
+# Error handling
+from gleitzeit.core.errors import PersistenceError, InvalidParameterError
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,7 +67,7 @@ class UnifiedPersistenceAdapter(ABC):
                 "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
             )
             logger.error(error_msg)
-            raise ValueError(error_msg)
+            raise InvalidParameterError("workflow_id", "Task must have a workflow_id", task_id=task.id)
         pass
     
     @abstractmethod
@@ -392,7 +395,7 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
                 "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
             )
             logger.error(error_msg)
-            raise ValueError(error_msg)
+            raise InvalidParameterError("workflow_id", "Task must have a workflow_id", task_id=task.id)
         
         async with self._lock:
             self.tasks[task.id] = task
@@ -537,7 +540,7 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
                     "Use ExecutionEngine.submit_task() which auto-creates workflows for single tasks."
                 )
                 logger.error(error_msg)
-                raise ValueError(error_msg)
+                raise InvalidParameterError("workflow_id", "Task must have a workflow_id", task_id=task.id)
         
         for task in tasks:
             self.tasks[task.id] = task
@@ -855,7 +858,7 @@ class UnifiedInMemoryAdapter(UnifiedPersistenceAdapter):
         # Handle positional args (field, value, field, value, ...)
         if args:
             if len(args) % 2 != 0:
-                raise ValueError("hset requires an even number of field/value pairs")
+                raise InvalidParameterError("args", "hset requires an even number of field/value pairs")
             for i in range(0, len(args), 2):
                 field, value = args[i], args[i + 1]
                 if field not in self._hashes[key] or self._hashes[key][field] != str(value):

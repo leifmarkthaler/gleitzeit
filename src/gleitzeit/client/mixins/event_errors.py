@@ -5,6 +5,8 @@ Event error management mixin for Gleitzeit client.
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
+from gleitzeit.core.errors import SystemError
+
 
 class EventErrorMixin:
     """Mixin providing event error management operations."""
@@ -31,7 +33,7 @@ class EventErrorMixin:
             List of event errors
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_event_errors(
             status=status,
             severity=severity,
@@ -52,7 +54,7 @@ class EventErrorMixin:
             Event error details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_event_error(error_id)
     
     async def retry_event_error(self, error_id: str) -> Dict[str, Any]:
@@ -66,7 +68,7 @@ class EventErrorMixin:
             Result of retry attempt
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.retry_event_error(error_id)
     
     async def acknowledge_event_error(self, 
@@ -83,7 +85,7 @@ class EventErrorMixin:
             Updated error status
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.acknowledge_event_error(error_id, notes)
     
     async def resolve_event_error(self,
@@ -102,7 +104,7 @@ class EventErrorMixin:
             Updated error status
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.resolve_event_error(error_id, resolution, notes)
     
     async def ignore_event_error(self,
@@ -119,7 +121,7 @@ class EventErrorMixin:
             Updated error status
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.ignore_event_error(error_id, reason)
     
     async def delete_event_error(self, error_id: str) -> Dict[str, Any]:
@@ -133,7 +135,7 @@ class EventErrorMixin:
             Deletion confirmation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.delete_event_error(error_id)
     
     async def get_event_error_statistics(self,
@@ -150,7 +152,7 @@ class EventErrorMixin:
             Dictionary with error statistics
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_event_error_statistics(start_time, end_time)
     
     async def bulk_acknowledge_errors(self, 
@@ -167,7 +169,7 @@ class EventErrorMixin:
             Results of bulk operation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.bulk_acknowledge_errors(error_ids, notes)
     
     async def bulk_retry_errors(self, error_ids: List[str]) -> Dict[str, Any]:
@@ -181,5 +183,5 @@ class EventErrorMixin:
             Results of bulk retry operation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.bulk_retry_errors(error_ids)

@@ -11,6 +11,10 @@ import aiohttp
 
 from .base import ResourceHub, ResourceInstance, ResourceStatus, ResourceMetrics, ResourceType
 from .configs import MCPConfig
+from gleitzeit.core.errors import (
+    ConfigurationError, ProviderError, ProviderNotFoundError,
+    ConnectionTimeoutError, InvalidParameterError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +59,7 @@ class MCPInstance(ResourceInstance[MCPConfig]):
         elif self.config.connection_type == "http":
             return await self._send_http_request(request, timeout)
         else:
-            raise ValueError(f"Unsupported connection type: {self.config.connection_type}")
+            raise ConfigurationError(f"Unsupported connection type: {self.config.connection_type}")
     
     async def _send_stdio_request(self, request: Dict[str, Any], timeout: float) -> Any:
         """Send request via stdio"""
@@ -128,7 +132,7 @@ class MCPInstance(ResourceInstance[MCPConfig]):
                 result = await response.json()
                 
                 if "error" in result:
-                    raise Exception(f"MCP error: {result['error']}")
+                    raise ProviderError(f"MCP error: {result['error']}")
                 
                 return result.get("result")
                 
@@ -250,7 +254,8 @@ class MCPHub(ResourceHub[MCPConfig]):
         enable_metrics: bool = True,
         max_instances: int = 20,
         config_data: Optional[Dict[str, Any]] = None,
-        persistence: Optional[Any] = None
+        persistence: Optional[Any] = None,
+        scheduler: Optional[Any] = None
     ):
         super().__init__(
             hub_id=hub_id,
@@ -262,15 +267,17 @@ class MCPHub(ResourceHub[MCPConfig]):
         self.max_instances = max_instances
         self.auto_discover = auto_discover
         self.config_data = config_data or {}
-        
+        self.scheduler = scheduler
+
         # Tool registry: tool_name -> List[instance_id]
         self.tool_registry: Dict[str, List[str]] = {}
-        
+
         # HTTP session for HTTP-based MCP servers
         self.http_session: Optional[aiohttp.ClientSession] = None
-        
-        # Health check task
-        self._health_check_task: Optional[asyncio.Task] = None
+
+        # Health monitoring statistics (no more background tasks)
+        self._health_checks = 0
+        self._instances_restarted = 0
         
         logger.info(f"Initialized MCPHub {hub_id} with auto_discover={auto_discover}")
     
@@ -283,9 +290,10 @@ class MCPHub(ResourceHub[MCPConfig]):
         if self.auto_discover:
             await self.discover_instances()
         
-        # Start health monitoring
-        if self.enable_metrics:
-            self._health_check_task = asyncio.create_task(self._monitor_health())
+        # Register health monitoring with scheduler if available
+        if self.enable_metrics and self.scheduler:
+            await self.scheduler.register_handler("mcp_health_check", self._handle_health_check_event)
+            await self.scheduler.schedule_event("mcp_health_check", 30)
     
     async def discover_instances(self) -> List[MCPInstance]:
         """Discover and register MCP servers"""
@@ -363,7 +371,7 @@ class MCPHub(ResourceHub[MCPConfig]):
     async def _start_server(self, instance: MCPInstance) -> None:
         """Start an MCP server subprocess"""
         if not instance.config.command:
-            raise ValueError(f"No command specified for stdio server {instance.instance_id}")
+            raise ConfigurationError(f"No command specified for stdio server {instance.instance_id}")
         
         # Prepare environment
         env = dict(os.environ)
@@ -402,7 +410,7 @@ class MCPHub(ResourceHub[MCPConfig]):
                 instance.connected = True
                 
             except ImportError:
-                raise ImportError("websockets package required for WebSocket connections")
+                raise ConfigurationError("websockets package required for WebSocket connections")
                 
         elif instance.config.connection_type == "http":
             # Use shared HTTP session
@@ -499,12 +507,12 @@ class MCPHub(ResourceHub[MCPConfig]):
             instance = await self.get_instance_for_tool(tool_name)
         
         if not instance:
-            raise ValueError(f"No MCP server available for tool: {tool_name}")
+            raise ProviderNotFoundError(f"mcp-{tool_name}")
         
         # Get original tool name
         tool_info = instance.available_tools.get(tool_name)
         if not tool_info:
-            raise ValueError(f"Tool {tool_name} not found on instance {instance.instance_id}")
+            raise InvalidParameterError("tool_name", f"Tool {tool_name} not found on instance {instance.instance_id}")
         
         original_name = tool_info["original_name"]
         
@@ -540,27 +548,48 @@ class MCPHub(ResourceHub[MCPConfig]):
             
             raise
     
-    async def _monitor_health(self) -> None:
-        """Monitor health of all MCP instances"""
-        while True:
-            try:
-                await asyncio.sleep(30)  # Check every 30 seconds
-                
-                for instance in list(self.instances.values()):
-                    if instance.status == ResourceStatus.READY:
-                        healthy = await instance.health_check()
-                        
-                        if not healthy:
-                            logger.warning(f"MCP instance {instance.instance_id} is unhealthy")
-                            instance.status = ResourceStatus.ERROR
-                            
-                            # Try to restart if configured
-                            if instance.config.restart_on_failure and instance.restart_count < instance.config.max_retries:
-                                logger.info(f"Attempting to restart {instance.instance_id}")
-                                await self._restart_instance(instance)
-                                
-            except Exception as e:
-                logger.error(f"Health monitoring error: {e}")
+    async def _handle_health_check_event(self, event_data: Dict) -> Dict[str, int]:
+        """Handle health check event from scheduler."""
+        try:
+            logger.debug("Processing MCP health check event")
+
+            unhealthy_count = 0
+            restart_count = 0
+
+            for instance in list(self.instances.values()):
+                if instance.status == ResourceStatus.READY:
+                    healthy = await instance.health_check()
+
+                    if not healthy:
+                        logger.warning(f"MCP instance {instance.instance_id} is unhealthy")
+                        instance.status = ResourceStatus.ERROR
+                        unhealthy_count += 1
+
+                        # Try to restart if configured
+                        if instance.config.restart_on_failure and instance.restart_count < instance.config.max_retries:
+                            logger.info(f"Attempting to restart {instance.instance_id}")
+                            await self._restart_instance(instance)
+                            restart_count += 1
+
+            self._health_checks += 1
+            self._instances_restarted += restart_count
+
+            # Schedule next health check
+            if self.scheduler:
+                await self.scheduler.schedule_event("mcp_health_check", 30)
+
+            return {
+                "instances_checked": len(self.instances),
+                "unhealthy_instances": unhealthy_count,
+                "instances_restarted": restart_count
+            }
+
+        except Exception as e:
+            logger.error(f"Health monitoring error: {e}")
+            # Still schedule next check
+            if self.scheduler:
+                await self.scheduler.schedule_event("mcp_health_check", 30)
+            return {"error": str(e)}
     
     async def _restart_instance(self, instance: MCPInstance) -> None:
         """Restart an MCP instance"""
@@ -626,7 +655,7 @@ class MCPHub(ResourceHub[MCPConfig]):
         """Start a specific MCP instance"""
         instance = self.instances.get(instance_id)
         if not instance:
-            raise ValueError(f"Instance not found: {instance_id}")
+            raise ProviderNotFoundError(instance_id)
         
         if instance.config.connection_type == "stdio" and instance.config.auto_start:
             await self._start_server(instance)
@@ -638,7 +667,7 @@ class MCPHub(ResourceHub[MCPConfig]):
         """Stop a specific MCP instance"""
         instance = self.instances.get(instance_id)
         if not instance:
-            raise ValueError(f"Instance not found: {instance_id}")
+            raise ProviderNotFoundError(instance_id)
         
         await instance.cleanup()
         instance.status = ResourceStatus.STOPPED
@@ -647,19 +676,13 @@ class MCPHub(ResourceHub[MCPConfig]):
         """Restart a specific MCP instance"""
         instance = self.instances.get(instance_id)
         if not instance:
-            raise ValueError(f"Instance not found: {instance_id}")
+            raise ProviderNotFoundError(instance_id)
         
         await self._restart_instance(instance)
     
     async def cleanup(self) -> None:
         """Clean up all resources"""
-        # Cancel health check task
-        if self._health_check_task:
-            self._health_check_task.cancel()
-            try:
-                await self._health_check_task
-            except asyncio.CancelledError:
-                pass
+        # No more health check tasks to cancel in stateless mode
         
         # Cleanup all instances
         for instance in self.instances.values():

@@ -6,6 +6,8 @@ from typing import Any, Dict, List, Optional
 import os
 from pathlib import Path
 
+from gleitzeit.core.errors import SystemError
+
 
 class BatchProcessingMixin:
     """Mixin providing batch processing operations."""
@@ -34,7 +36,7 @@ class BatchProcessingMixin:
             Batch processing results
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         return await self._adapter.batch_process(
             directory=directory,
@@ -66,7 +68,7 @@ class BatchProcessingMixin:
             Dictionary with processing results
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         return await self._adapter.process_directory(
             directory=directory,

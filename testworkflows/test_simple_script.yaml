@@ -1,0 +1,12 @@
+name: "Test Simple Script Execution"
+description: "Execute existing Python script"
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - name: "count_words"
+    protocol: "python/v1"
+    method: "python/execute"
+    params:
+      file: "examples/scripts/count_words.py"
+      timeout: 10

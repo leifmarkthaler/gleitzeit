@@ -5,6 +5,8 @@ Log management mixin for Gleitzeit client.
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
+from gleitzeit.core.errors import SystemError
+
 
 class LogMixin:
     """Mixin providing log management operations."""
@@ -31,7 +33,7 @@ class LogMixin:
             List of log entries
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_logs(
             level=level,
             source=source, 
@@ -49,7 +51,7 @@ class LogMixin:
             List of available log levels
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_log_levels()
     
     async def query_logs(self, 
@@ -68,7 +70,7 @@ class LogMixin:
             List of matching log entries
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.query_logs(query, limit, offset)
     
     async def tail_logs(self,
@@ -87,7 +89,7 @@ class LogMixin:
             List of recent log entries
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.tail_logs(lines, follow, source)
     
     async def download_logs(self,
@@ -106,7 +108,7 @@ class LogMixin:
             Log data as bytes
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.download_logs(format, start_time, end_time)
     
     async def clear_logs(self,
@@ -123,7 +125,7 @@ class LogMixin:
             Result with number of logs cleared
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.clear_logs(before, level)
     
     async def get_log_size(self) -> Dict[str, Any]:
@@ -134,7 +136,7 @@ class LogMixin:
             Dictionary with size information (bytes, human_readable, etc.)
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_log_size()
     
     async def get_task_logs(self, 
@@ -155,7 +157,7 @@ class LogMixin:
             List of log entries for the task
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_task_logs(
             task_id,
             level=level,
@@ -174,5 +176,5 @@ class LogMixin:
             List of log entries for the workflow
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_workflow_logs(workflow_id)

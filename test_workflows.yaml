@@ -1,0 +1,24 @@
+---
+name: workflow-yaml-1
+tasks:
+  - name: task-yaml-1
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: test_tasks/bulk_task1.py
+---
+name: workflow-yaml-2
+tasks:
+  - name: task-yaml-2
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: test_tasks/bulk_task2.py
+---
+name: workflow-yaml-3
+tasks:
+  - name: task-yaml-3
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: test_tasks/bulk_task3.py

@@ -1,0 +1,26 @@
+name: test_timer_workflow
+description: Test workflow with timer/sleep functionality
+version: 1.0.0
+
+tasks:
+  - name: start_task
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: timer_start_task.py
+
+  - name: sleep_task
+    protocol: timer/v1
+    method: timer/sleep
+    params:
+      seconds: 3
+    dependencies:
+      - start_task
+
+  - name: end_task
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: timer_end_task.py
+    dependencies:
+      - sleep_task

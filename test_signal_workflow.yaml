@@ -1,0 +1,47 @@
+name: test_signal_workflow
+description: Test workflow demonstrating signal functionality
+version: 1.0.0
+
+tasks:
+  - name: start_task
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: signal_start_task.py
+
+  - name: wait_for_approval
+    protocol: signal/v1
+    method: signal/wait
+    params:
+      signal: manager_approval
+      timeout: 300  # 5 minutes timeout
+    dependencies:
+      - start_task
+
+  - name: process_approval
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: signal_process_approval.py
+    dependencies:
+      - wait_for_approval
+
+  - name: multi_signal_test
+    protocol: signal/v1
+    method: signal/wait_any
+    params:
+      signals:
+        - urgent_signal
+        - normal_signal
+        - low_priority_signal
+      timeout: 60
+    dependencies:
+      - start_task
+
+  - name: process_multi_signal
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: signal_process_multi.py
+    dependencies:
+      - multi_signal_test

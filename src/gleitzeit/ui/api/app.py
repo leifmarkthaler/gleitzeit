@@ -10,6 +10,10 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 import sys
 import os
+import logging
+
+# Set up logger
+logger = logging.getLogger(__name__)
 
 # Import gleitzeit - with fallback to mock if not available
 GLEITZEIT_AVAILABLE = False
@@ -54,12 +58,19 @@ except ImportError as e:
         pass
 
 # Import routers
-from .routes import workflows, tasks, system, websocket, config
+from .routes import workflows, tasks, system, websocket, config, logs
 try:
     from .routes import templates as templates_router
     TEMPLATES_AVAILABLE = True
 except ImportError:
     TEMPLATES_AVAILABLE = False
+
+# Import stream monitoring routes
+try:
+    from .routes import stream_monitoring
+    STREAM_MONITORING_AVAILABLE = True
+except ImportError:
+    STREAM_MONITORING_AVAILABLE = False
 
 # Import new page routes
 try:
@@ -108,10 +119,22 @@ templates = Jinja2Templates(directory=str(ui_dir / "templates"))
 app.include_router(workflows.router, prefix="/api/workflows", tags=["workflows"])
 app.include_router(tasks.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(system.router, prefix="/api/system", tags=["system"])
+app.include_router(logs.router, prefix="/api/logs", tags=["logs"])
 app.include_router(config.router, prefix="/api", tags=["config"])  # Config at /api level for auth/status
 if TEMPLATES_AVAILABLE:
     app.include_router(templates_router.router, prefix="/api/templates", tags=["templates"])
-app.include_router(websocket.router, tags=["websocket"])
+if STREAM_MONITORING_AVAILABLE:
+    app.include_router(stream_monitoring.router, prefix="/api/stream", tags=["stream-monitoring"])
+
+# Use unified WebSocket that integrates with Redis Streams
+try:
+    from .routes.websocket_unified import router as unified_websocket_router
+    app.include_router(unified_websocket_router, tags=["websocket"])
+    logger.info("Using unified WebSocket with Redis Streams integration")
+except ImportError:
+    # Fallback to old WebSocket if unified not available
+    app.include_router(websocket.router, tags=["websocket"])
+    logger.warning("Using legacy WebSocket implementation")
 
 # Include new page routes
 if PAGES_AVAILABLE:
@@ -172,6 +195,24 @@ async def task_detail_page(request: Request, task_id: str):
         {"request": request, "task_id": task_id}
     )
 
+# Logs page
+@app.get("/logs", response_class=HTMLResponse)
+async def logs_page(request: Request):
+    """Render logs page"""
+    return templates.TemplateResponse(
+        "logs.html",
+        {"request": request}
+    )
+
+# Stream monitoring page
+@app.get("/streams", response_class=HTMLResponse)
+async def streams_page(request: Request):
+    """Render stream monitoring page"""
+    return templates.TemplateResponse(
+        "streams/monitoring.html",
+        {"request": request}
+    )
+
 # Health check
 @app.get("/health")
 async def health_check():
@@ -189,21 +230,8 @@ async def proxy_api(request: Request, path: str):
     import aiohttp
     import json
     
-    # Special handling for auth endpoints when auth is not enabled
-    if path.startswith("auth/") and path != "auth/status":
-        # Check if auth is enabled first
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.get(f"{request.app.state.api_url}/auth/status") as resp:
-                    if resp.status == 404:
-                        # Auth not enabled, return 404
-                        from fastapi.responses import JSONResponse
-                        return JSONResponse(
-                            content={"detail": "Authentication not configured"},
-                            status_code=404
-                        )
-            except:
-                pass
+    # Auth endpoints are always available with auto-login
+    # No special handling needed
     
     api_url = request.app.state.api_url
     
@@ -258,17 +286,8 @@ async def proxy_api(request: Request, path: str):
                 )
                 
         except aiohttp.ClientError as e:
-            # API not reachable - might be normal for optional endpoints
+            # API not reachable
             from fastapi.responses import JSONResponse
-            
-            # For auth endpoints, return 404 if API doesn't have them
-            if path.startswith("auth/"):
-                return JSONResponse(
-                    content={"detail": "Authentication not configured"},
-                    status_code=404
-                )
-            
-            # For other endpoints, return service unavailable
             return JSONResponse(
                 content={"error": f"Cannot connect to Gleitzeit API: {str(e)}"},
                 status_code=503

@@ -7,6 +7,7 @@ that can be managed by the hub system.
 
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Any
+from gleitzeit.core.errors import ConfigurationError
 
 
 @dataclass
@@ -142,12 +143,12 @@ class MCPConfig:
         """Validate configuration"""
         if self.connection_type == "stdio":
             if not self.command:
-                raise ValueError("stdio connection requires 'command' to be specified")
+                raise ConfigurationError("stdio connection requires 'command' to be specified")
         elif self.connection_type in ["websocket", "http"]:
             if not self.url:
-                raise ValueError(f"{self.connection_type} connection requires 'url' to be specified")
+                raise ConfigurationError(f"{self.connection_type} connection requires 'url' to be specified")
         else:
-            raise ValueError(f"Unknown connection type: {self.connection_type}")
+            raise ConfigurationError(f"Unknown connection type: {self.connection_type}")
 
 
 # Future configurations can be added here

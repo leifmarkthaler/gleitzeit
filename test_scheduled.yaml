@@ -1,0 +1,73 @@
+name: scheduled-workflow-test
+tasks:
+  - id: init_task
+    name: init_task
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: scheduled_init.py
+
+  - id: timer_2s
+    name: timer_2s
+    protocol: timer/v1
+    method: timer/sleep
+    params:
+      duration: "2"
+    dependencies:
+      - init_task
+
+  - id: task_after_2s
+    name: task_after_2s
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: scheduled_task1.py
+    dependencies:
+      - timer_2s
+
+  - id: timer_5s
+    name: timer_5s
+    protocol: timer/v1
+    method: timer/sleep
+    params:
+      duration: "5"
+    dependencies:
+      - init_task
+
+  - id: task_after_5s
+    name: task_after_5s
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: scheduled_task2.py
+    dependencies:
+      - timer_5s
+
+  - id: timer_8s
+    name: timer_8s
+    protocol: timer/v1
+    method: timer/sleep
+    params:
+      duration: "8"
+    dependencies:
+      - init_task
+
+  - id: task_after_8s
+    name: task_after_8s
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: scheduled_task3.py
+    dependencies:
+      - timer_8s
+
+  - id: final_task
+    name: final_task
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: scheduled_final.py
+    dependencies:
+      - task_after_2s
+      - task_after_5s
+      - task_after_8s

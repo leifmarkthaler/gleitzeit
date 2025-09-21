@@ -22,16 +22,25 @@ class TaskStatus(str, Enum):
     VALIDATED = "validated" 
     ROUTED = "routed"
     EXECUTING = "executing"
+    PAUSED = "paused"  # Task is paused (reserved for pause functionality)
+    SLEEPING = "sleeping"  # Deprecated - use PAUSED
+    WAITING = "waiting"  # Task is waiting for signal
+    SCHEDULED = "scheduled"  # Task is scheduled (timer)
+    WAITING_SIGNAL = "waiting_signal"  # Deprecated - use WAITING
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
     RETRY_PENDING = "retry_pending"
+    REWOUND = "rewound"
 
 
 class WorkflowStatus(str, Enum):
     """Workflow execution status"""
     PENDING = "pending"
     RUNNING = "running"
+    WAITING = "waiting"  # Workflow has tasks waiting for signals
+    SCHEDULED = "scheduled"  # Workflow has scheduled tasks
+    PAUSED = "paused"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
@@ -78,8 +87,8 @@ class Task(BaseModel):
     description: Optional[str] = Field(None, max_length=1000)
     
     # Protocol specification
-    protocol: str = Field(..., pattern=r"^[a-z][a-z0-9_-]*(/[a-z0-9_-]+|/v\d+)?$", 
-                         description="Protocol identifier (e.g., 'llm/v1', 'mcp/v1', 'python/v1')")
+    protocol: Optional[str] = Field(None, pattern=r"^[a-z][a-z0-9_-]*(/[a-z0-9_-]+|/v\d+)?$",
+                         description="Protocol identifier (e.g., 'llm/v1', 'mcp/v1', 'python/v1') - optional, will be extracted from method if not provided")
     method: str = Field(..., description="JSON-RPC method name")
     params: Dict[str, Any] = Field(default_factory=dict,
                                   description="JSON-RPC parameters")
@@ -243,6 +252,10 @@ class Workflow(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid4()))
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
+    
+    # Ownership and access control
+    user_id: Optional[str] = Field(None, description="User who submitted the workflow")
+    is_public: bool = Field(default=False, description="Whether workflow is publicly visible")
     
     # Workflow structure
     tasks: List[Task] = Field(default_factory=list)
@@ -433,6 +446,26 @@ class TaskResult(BaseModel):
         """Calculate duration if both timestamps are available"""
         if self.started_at and self.completed_at and not self.duration_seconds:
             self.duration_seconds = (self.completed_at - self.started_at).total_seconds()
+
+
+class PauseMetadata(BaseModel):
+    """Metadata for paused workflows"""
+    paused_at: datetime
+    paused_by: str
+    pause_reason: Optional[str] = None
+    rewind_point: Optional[int] = None
+    rewind_task_id: Optional[str] = None
+    cancelled_tasks: List[str] = Field(default_factory=list)
+    reset_tasks: List[str] = Field(default_factory=list)
+    preserved_results: Dict[str, Any] = Field(default_factory=dict)
+    
+    model_config = ConfigDict(
+        use_enum_values=True
+    )
+    
+    @field_serializer('paused_at')
+    def serialize_datetime(self, dt: datetime) -> str:
+        return dt.isoformat()
 
 
 class WorkflowExecution(BaseModel):

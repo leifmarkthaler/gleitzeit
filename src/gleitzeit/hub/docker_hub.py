@@ -17,6 +17,7 @@ except ImportError:
 
 from .base import ResourceHub, ResourceInstance, ResourceStatus, ResourceMetrics, ResourceType
 from .configs import DockerConfig
+from gleitzeit.core.errors import ProviderNotFoundError, ProviderError
 
 logger = logging.getLogger(__name__)
 
@@ -397,10 +398,10 @@ class DockerHub(ResourceHub[DockerConfig]):
         """Execute a command in a running container"""
         instance = await self.get_instance(instance_id)
         if not instance or not instance.config.container_id:
-            raise ValueError(f"Instance {instance_id} not found")
+            raise ProviderNotFoundError(instance_id)
         
         if not self.docker_client:
-            raise RuntimeError("Docker client not available")
+            raise ProviderError("Docker client not available", provider_id=instance_id)
         
         try:
             container = self.docker_client.containers.get(instance.config.container_id)

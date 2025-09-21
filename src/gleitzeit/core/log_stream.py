@@ -15,29 +15,32 @@ from fastapi.websockets import WebSocketState
 
 from gleitzeit.core.events import GleitzeitEvent, EventType
 from gleitzeit.core.logs import LogEntry, LogLevel, LogSource
-from gleitzeit.events.base import EventBus
+from gleitzeit.events import EventBus
 
 logger = logging.getLogger(__name__)
 
 
 class LogStreamManager:
     """Manages real-time log streaming to WebSocket clients"""
-    
+
     def __init__(
         self,
         event_bus: EventBus,
+        scheduler = None,
         buffer_size: int = 1000,
         buffer_ttl: int = 3600  # seconds
     ):
         """
         Initialize log stream manager
-        
+
         Args:
             event_bus: Event bus for receiving log events
+            scheduler: Event scheduler for cleanup operations
             buffer_size: Number of logs to keep in buffer per stream
             buffer_ttl: Time to keep buffers after last activity (seconds)
         """
         self.event_bus = event_bus
+        self.scheduler = scheduler
         self.buffer_size = buffer_size
         self.buffer_ttl = buffer_ttl
         
@@ -52,17 +55,16 @@ class LogStreamManager:
         
         # Subscribe lock for thread safety
         self.subscribe_lock = asyncio.Lock()
-        
-        # Cleanup task
-        self.cleanup_task: Optional[asyncio.Task] = None
-        
-        # Statistics
+
+        # Statistics (no more background tasks)
         self.stats = {
             "messages_sent": 0,
             "messages_buffered": 0,
             "send_errors": 0,
             "active_streams": 0,
-            "total_subscribers": 0
+            "total_subscribers": 0,
+            "cleanup_operations": 0,
+            "buffers_cleaned": 0
         }
         
         # Register event handlers
@@ -72,19 +74,16 @@ class LogStreamManager:
             event_bus.register(EventType.LOG_STREAM_END, self._handle_stream_end)
     
     async def start(self):
-        """Start the stream manager"""
-        self.cleanup_task = asyncio.create_task(self._cleanup_loop())
-        logger.info("LogStreamManager started")
+        """Start the stream manager with event-driven cleanup"""
+        if self.scheduler:
+            await self.scheduler.register_handler("log_stream_cleanup", self._handle_cleanup_event)
+            await self.scheduler.schedule_event("log_stream_cleanup", 60)
+            logger.info("LogStreamManager started with event-driven cleanup")
+        else:
+            logger.warning("LogStreamManager started without scheduler - cleanup disabled")
     
     async def stop(self):
         """Stop the stream manager"""
-        if self.cleanup_task:
-            self.cleanup_task.cancel()
-            try:
-                await self.cleanup_task
-            except asyncio.CancelledError:
-                pass
-        
         # Close all WebSocket connections
         for subscribers in self.subscribers.values():
             for websocket in subscribers:
@@ -92,10 +91,10 @@ class LogStreamManager:
                     await websocket.close()
                 except:
                     pass
-        
+
         self.subscribers.clear()
         self.buffers.clear()
-        
+
         logger.info(f"LogStreamManager stopped. Stats: {self.stats}")
     
     async def subscribe(
@@ -315,31 +314,45 @@ class LogStreamManager:
         }
         return level_values.get(level, 0)
     
-    async def _cleanup_loop(self) -> None:
-        """Periodically clean up old buffers"""
-        while True:
-            try:
-                await asyncio.sleep(60)  # Check every minute
-                
-                now = datetime.utcnow()
-                keys_to_remove = []
-                
-                for stream_key, timestamp in self.buffer_timestamps.items():
-                    # Remove buffers inactive for TTL seconds
-                    if (now - timestamp).total_seconds() > self.buffer_ttl:
-                        # Only remove if no active subscribers
-                        if not self.subscribers.get(stream_key):
-                            keys_to_remove.append(stream_key)
-                
-                for key in keys_to_remove:
-                    del self.buffers[key]
-                    del self.buffer_timestamps[key]
-                    logger.debug(f"Cleaned up buffer for stream: {key}")
-                
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in cleanup loop: {e}")
+    async def _handle_cleanup_event(self, event_data: Dict) -> Dict[str, int]:
+        """Handle cleanup event from scheduler."""
+        try:
+            logger.debug("Processing log stream cleanup event")
+
+            now = datetime.utcnow()
+            keys_to_remove = []
+
+            for stream_key, timestamp in self.buffer_timestamps.items():
+                # Remove buffers inactive for TTL seconds
+                if (now - timestamp).total_seconds() > self.buffer_ttl:
+                    # Only remove if no active subscribers
+                    if not self.subscribers.get(stream_key):
+                        keys_to_remove.append(stream_key)
+
+            for key in keys_to_remove:
+                del self.buffers[key]
+                del self.buffer_timestamps[key]
+                logger.debug(f"Cleaned up buffer for stream: {key}")
+
+            self.stats["cleanup_operations"] += 1
+            self.stats["buffers_cleaned"] += len(keys_to_remove)
+
+            # Schedule next cleanup event
+            if self.scheduler:
+                await self.scheduler.schedule_event("log_stream_cleanup", 60)
+
+            return {
+                "buffers_cleaned": len(keys_to_remove),
+                "total_buffers": len(self.buffers),
+                "active_streams": len([s for s in self.subscribers.values() if s])
+            }
+
+        except Exception as e:
+            logger.error(f"Error in cleanup event handler: {e}")
+            # Still schedule next cleanup
+            if self.scheduler:
+                await self.scheduler.schedule_event("log_stream_cleanup", 60)
+            return {"error": str(e)}
     
     def get_stats(self) -> Dict[str, Any]:
         """Get stream manager statistics"""

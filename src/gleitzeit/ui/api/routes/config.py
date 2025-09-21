@@ -56,22 +56,19 @@ async def get_enabled_features(request: Request) -> Dict[str, Any]:
 @router.get("/auth/status")
 async def check_auth_status(request: Request) -> Dict[str, Any]:
     """
-    Check authentication mode and configuration
+    Check authentication status
     
     Returns:
-        Auth mode and configuration
+        Auth status - always enabled with auto-login
     """
-    auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
-    
-    # Auth is always enabled now, but mode determines behavior
+    # Auth is always enabled with auto-login as basic user
     return {
-        "enabled": True,  # Always true for data isolation
-        "mode": auth_mode,
-        "requires_login": auth_mode != "basic",
-        "message": "Basic mode - no login required" if auth_mode == "basic" else "Admin mode - login required",
+        "enabled": True,
+        "auto_login": True,
+        "message": "Authentication enabled with auto-login",
         "config": {
-            "mode": auth_mode,
-            "basic_user": "basic@localhost" if auth_mode == "basic" else None
+            "basic_user": "basic",
+            "supports_real_users": True
         }
     }
 
@@ -83,8 +80,8 @@ async def get_ui_config(request: Request) -> Dict[str, Any]:
     Returns:
         UI configuration
     """
-    # Check environment variables for configuration
-    auth_enabled = os.getenv('GLEITZEIT_AUTH_ENABLED', 'false').lower() == 'true'
+    # Auth is always enabled with auto-login
+    auth_enabled = True
     
     # Get features
     features = await get_enabled_features(request)

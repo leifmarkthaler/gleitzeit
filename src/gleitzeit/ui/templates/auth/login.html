@@ -7,6 +7,7 @@
     <div class="auth-card">
         <h1 class="auth-title">Login to Gleitzeit</h1>
         
+        <div id="current-user-info" class="info-message" style="display: none;"></div>
         <div id="login-error" class="error-message" style="display: none;"></div>
         
         <form id="login-form" class="auth-form">
@@ -135,6 +136,14 @@
     margin-bottom: 1rem;
 }
 
+.info-message {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+}
+
 .auth-links {
     text-align: center;
     font-size: 0.9rem;
@@ -156,31 +165,49 @@
 </style>
 
 <script>
-// Check if auth is actually enabled
-async function checkAuthEnabled() {
+// Check current user and show appropriate message
+async function checkCurrentUser() {
     try {
-        const response = await fetch('/api/auth/status');
-        if (response.status === 404) {
-            // Auth not enabled, redirect to dashboard
-            document.getElementById('login-error').innerHTML = 
-                'Authentication is not enabled. Redirecting to dashboard...';
-            document.getElementById('login-error').style.display = 'block';
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 2000);
-            return false;
+        // Get current user - API will auto-login as basic if needed
+        const response = await fetch('/api/auth/me', {
+            method: 'GET',
+            credentials: 'include'
+        });
+        
+        if (response.ok) {
+            const user = await response.json();
+            const infoDiv = document.getElementById('current-user-info');
+            
+            if (user.username === 'basic' || user.is_basic_user) {
+                // Currently basic user
+                infoDiv.innerHTML = `
+                    <strong>Currently logged in as: Basic User</strong><br>
+                    <small>Login with admin credentials to access administrative functions</small>
+                `;
+                infoDiv.style.display = 'block';
+                
+                // Update form placeholder
+                document.getElementById('email').placeholder = 'admin@example.com';
+            } else {
+                // Already logged in as real user
+                infoDiv.innerHTML = `
+                    <strong>Currently logged in as: ${user.username}</strong><br>
+                    <small>You can switch to another user by logging in below</small>
+                `;
+                infoDiv.style.display = 'block';
+            }
         }
-        return true;
     } catch (error) {
-        return true; // Assume auth is enabled if we can't check
+        console.error('Error checking current user:', error);
     }
 }
 
 document.getElementById('login-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // Note: Using email field for username since API expects username
     const formData = {
-        email: document.getElementById('email').value,
+        username: document.getElementById('email').value,
         password: document.getElementById('password').value
     };
     
@@ -193,29 +220,32 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(formData)
+            body: JSON.stringify(formData),
+            credentials: 'include'  // Include cookies
         });
-        
-        if (response.status === 404) {
-            // Auth endpoint doesn't exist
-            errorDiv.innerHTML = 'Authentication is not configured. <a href="/">Go to Dashboard</a>';
-            errorDiv.style.display = 'block';
-            return;
-        }
         
         const data = await response.json();
         
         if (response.ok) {
-            // Store token
-            localStorage.setItem('access_token', data.access_token);
+            // Store tokens if returned (for real user)
+            if (data.access_token) {
+                localStorage.setItem('access_token', data.access_token);
+            }
             if (data.refresh_token) {
                 localStorage.setItem('refresh_token', data.refresh_token);
             }
             
+            // Show success message
+            const infoDiv = document.getElementById('current-user-info');
+            infoDiv.innerHTML = `<strong>Login successful!</strong> Redirecting...`;
+            infoDiv.style.display = 'block';
+            
             // Redirect to dashboard
-            window.location.href = '/';
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 1000);
         } else {
-            errorDiv.textContent = data.detail || 'Login failed';
+            errorDiv.textContent = data.detail || 'Invalid credentials. Please try again.';
             errorDiv.style.display = 'block';
         }
     } catch (error) {
@@ -224,7 +254,25 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     }
 });
 
-// Check on page load
-document.addEventListener('DOMContentLoaded', checkAuthEnabled);
+// Check current user on page load
+document.addEventListener('DOMContentLoaded', () => {
+    checkCurrentUser();
+    
+    // Add a "Continue as Basic User" option
+    const authLinks = document.querySelector('.auth-links');
+    if (authLinks) {
+        const continueLink = document.createElement('a');
+        continueLink.href = '/';
+        continueLink.textContent = 'Continue as Basic User';
+        continueLink.style.fontWeight = 'bold';
+        
+        const separator = document.createElement('span');
+        separator.className = 'separator';
+        separator.textContent = '|';
+        
+        authLinks.appendChild(separator);
+        authLinks.appendChild(continueLink);
+    }
+});
 </script>
 {% endblock %}

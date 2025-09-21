@@ -11,7 +11,8 @@ from datetime import datetime
 
 from gleitzeit.core.models import Task, Workflow, TaskResult, TaskStatus, WorkflowStatus
 from gleitzeit.persistence.factory import PersistenceFactory
-from gleitzeit.core.events import EventType
+from gleitzeit.core.events import EventType, GleitzeitEvent
+from gleitzeit.core.errors import SystemError, ErrorCode, AuthorizationError, AuthenticationError
 
 if TYPE_CHECKING:
     from gleitzeit.core.workflow_manager import WorkflowManager
@@ -27,65 +28,186 @@ class NativeAdapter:
     particularly for the API server to avoid circular dependencies.
     """
     
-    def __init__(self):
-        """Initialize the native adapter."""
+    def __init__(self, user_context: Optional[Dict[str, Any]] = None, system_manager=None):
+        """Initialize the native adapter.
+
+        Args:
+            user_context: Current user context for authorization.
+                         Should include id, role, permissions, etc.
+                         If None, authorization checks are skipped (backward compat).
+            system_manager: Optional SystemManager instance to use directly.
+        """
         self.persistence = None
         self.workflow_manager = None
-        self.system_manager = None
+        self.system_manager = system_manager  # Can be provided directly
+        self.event_bus = None  # Event bus for task submission events
         self.initialized = False
+        self.user_context = user_context  # User context for authorization
+        self.session_id = None  # Session ID from AuthManager
+
+        # Stream integration
+        self._is_stream_enabled = False
+        self._stream_manager = None
         
     async def initialize(self):
-        """Initialize the adapter with persistence backend and workflow manager."""
+        """Initialize the adapter with StreamSystemManager."""
         if self.initialized:
             return
-            
-        # Get persistence backend (shared with SystemManager)
-        self.persistence = await PersistenceFactory.create()
-        
-        # Get SystemManager instance to access workflow manager
-        from gleitzeit.system.system_manager import SystemManager
-        
-        # Check if SystemManager is already initialized (e.g., by API)
-        # If not, we only use persistence directly (backward compatibility)
-        # The API should provide the system_manager via set_system_manager
-        
+
+        # If SystemManager not provided, get or create ModularStreamSystemManager
+        if not self.system_manager:
+            from gleitzeit.system.modular_stream_system_manager import ModularStreamSystemManager
+            from gleitzeit.system.models import SystemConfig, DeploymentMode
+
+            # Create system config
+            config = SystemConfig()
+            config.deployment_mode = DeploymentMode.PRODUCTION
+
+            # Always use modular stream-based system manager
+            self.system_manager = await ModularStreamSystemManager.create(
+                config=config,
+                create_if_missing=True,  # Create if none exists
+                start_system=False  # Don't auto-start to avoid blocking
+            )
+
+            # Start system if created new
+            if self.system_manager and not self.system_manager._running:
+                await self.system_manager.start_system()
+
+            if not self.system_manager:
+                raise SystemError(
+                    message="Could not get or create ModularStreamSystemManager",
+                    code=ErrorCode.SYSTEM_NOT_INITIALIZED
+                )
+
+        # Enable stream integration
+        self._is_stream_enabled = True
+        self._stream_manager = self.system_manager
+
+        # Get persistence from StreamSystemManager (already initialized)
+        self.persistence = self.system_manager.persistence
+
+        # Get workflow_manager from StreamSystemManager
+        self.workflow_manager = self.system_manager.workflow_manager
+
+        # Get event_bus from StreamSystemManager for task submission events
+        self.event_bus = self.system_manager.event_bus
+
         self.initialized = True
-        logger.info("NativeAdapter initialized with direct persistence access")
+        logger.info("NativeAdapter initialized with StreamSystemManager")
+    
+    def set_user_context(self, user_context: Dict[str, Any]) -> None:
+        """Set or update the user context for authorization."""
+        self.user_context = user_context
+    
+    def set_session_id(self, session_id: str) -> None:
+        """Set the session ID for authentication through AuthManager."""
+        self.session_id = session_id
+    
+    async def _get_or_create_session(self) -> str:
+        """Get or create session for authenticated operations."""
+        if self.session_id:
+            return self.session_id
+        elif self.system_manager and self.system_manager.auth_manager:
+            try:
+                session_id, _ = await self.system_manager.auth_manager.get_or_create_basic_session()
+                self.session_id = session_id
+                return session_id
+            except Exception:
+                raise AuthorizationError("No session available for log access")
+        else:
+            return "basic-user-default"
+    
+    async def _check_workflow_access(self, workflow: Workflow, action: str) -> bool:
+        """Check if current user has access to a workflow.
         
-    def set_system_manager(self, system_manager):
-        """Set the system manager to access workflow manager.
-        
-        Args:
-            system_manager: SystemManager instance with workflow_manager
+        Returns True if authorized, False otherwise.
         """
-        self.system_manager = system_manager
-        if system_manager and hasattr(system_manager, 'workflow_manager'):
-            self.workflow_manager = system_manager.workflow_manager
-            logger.info("NativeAdapter configured with WorkflowManager from SystemManager")
+        if not self.user_context:
+            # No user context = skip authorization (backward compat)
+            logger.warning("No user context for authorization - skipping checks")
+            return True
+        
+        # Admin/superuser always has access
+        if self.user_context.get("is_superuser") or self.user_context.get("role") == "admin":
+            return True
+        
+        # Check ownership
+        workflow_user_id = getattr(workflow, 'user_id', None)
+        user_id = self.user_context.get('id')
+        
+        # Owner has access
+        if workflow_user_id and workflow_user_id == user_id:
+            return True
+        
+        # Public workflows allow read access
+        is_public = getattr(workflow, 'is_public', False)
+        if is_public and action in ["read", "access"]:
+            return True
+        
+        return False
+        
+    # REMOVED set_system_manager - violates stateless architecture
+    # Each NativeAdapter discovers SystemManager through persistence
         
     async def shutdown(self):
         """Cleanup adapter resources."""
         # Persistence is shared, don't close it
         self.initialized = False
+        self._is_stream_enabled = False
+        self._stream_manager = None
         logger.info("NativeAdapter shutdown")
+
+    def is_stream_enabled(self) -> bool:
+        """Check if stream integration is enabled."""
+        return self._is_stream_enabled
+
+    async def get_stream_health(self) -> Dict[str, Any]:
+        """Get stream system health if available."""
+        if not self._is_stream_enabled or not self._stream_manager:
+            return {"error": "Stream integration not available"}
+
+        try:
+            return await self._stream_manager.get_system_health()
+        except Exception as e:
+            logger.error(f"Error getting stream health: {e}")
+            return {"error": str(e)}
+
+    async def get_stream_statistics(self) -> Dict[str, Any]:
+        """Get stream processing statistics if available."""
+        if not self._is_stream_enabled or not self._stream_manager:
+            return {"error": "Stream integration not available"}
+
+        try:
+            return await self._stream_manager.get_stream_statistics()
+        except Exception as e:
+            logger.error(f"Error getting stream statistics: {e}")
+            return {"error": str(e)}
         
     # Workflow operations
     
     async def list_workflows(self, status: Optional[str] = None,
                            limit: int = 100, offset: int = 0) -> List[Workflow]:
-        """List workflows directly from persistence."""
+        """List workflows through SystemManager."""
         if not self.initialized:
             await self.initialize()
             
         try:
-            result = await self.persistence.list_workflows(
+            # UNIFIED PATHWAY: Always go through SystemManager's persistence
+            if not self.system_manager:
+                raise SystemError(
+                    message="SystemManager is required for workflow listing",
+                    code=ErrorCode.SYSTEM_NOT_INITIALIZED
+                )
+            
+            # List through persistence directly (SystemManager controls access)
+            workflows = await self.system_manager.persistence.list_workflows(
                 status=status, limit=limit, offset=offset
             )
-            # Handle dict response from persistence layer
-            if isinstance(result, dict):
-                workflows = result.get("workflows", [])
-            else:
-                workflows = result
+            
+            # Handle dict response
+            if isinstance(workflows, dict):
+                workflows = workflows.get("workflows", [])
                 
             # Convert to Workflow objects if needed
             if workflows and len(workflows) > 0 and isinstance(workflows[0], dict):
@@ -96,70 +218,184 @@ class NativeAdapter:
             return []
     
     async def get_workflow(self, workflow_id: str) -> Optional[Workflow]:
-        """Get workflow directly from persistence."""
+        """Get workflow through SystemManager with authorization check."""
         if not self.initialized:
             await self.initialize()
             
         try:
-            workflow = await self.persistence.get_workflow(workflow_id)
-            if workflow and isinstance(workflow, dict):
-                workflow = Workflow(**workflow)
+            # UNIFIED PATHWAY: Always go through SystemManager
+            if not self.system_manager:
+                raise SystemError(
+                    message="SystemManager is required for workflow access",
+                    code=ErrorCode.SYSTEM_NOT_INITIALIZED
+                )
+            
+            # Get session ID - same logic as submit_workflow
+            session_id = None
+            if self.session_id:
+                # Use cached session
+                session_id = self.session_id
+            elif self.system_manager.auth_manager:
+                # Try to get or create basic session
+                try:
+                    session_id, _ = await self.system_manager.auth_manager.get_or_create_basic_session()
+                    self.session_id = session_id  # Cache for future use
+                except Exception:
+                    raise AuthenticationError("No session available for workflow access")
+            else:
+                session_id = "basic-user-default"
+            
+            # Get through SystemManager's authenticated method
+            # This ensures proper authorization checks
+            workflow = await self.system_manager.get_workflow_authenticated(workflow_id, session_id)
             return workflow
+            
+        except AuthorizationError:
+            # Re-raise authorization errors
+            raise
         except Exception as e:
             logger.error(f"Error getting workflow {workflow_id}: {e}")
             return None
     
     async def submit_workflow(self, workflow: Workflow) -> Dict[str, Any]:
-        """Submit workflow for execution."""
+        """Submit workflow through SystemManager with authentication."""
         if not self.initialized:
             await self.initialize()
             
         try:
-            workflow_dict = workflow.dict() if hasattr(workflow, 'dict') else workflow
+            # UNIFIED PATHWAY: Always go through SystemManager
+            if not self.system_manager:
+                raise SystemError(
+                    message="SystemManager is required for workflow submission",
+                    code=ErrorCode.SYSTEM_NOT_INITIALIZED
+                )
             
-            # Store in persistence first
-            await self.persistence.save_workflow(workflow)
-            
-            # If we have a workflow manager, use it to execute
-            if self.workflow_manager:
-                logger.info(f"Executing workflow {workflow.id} via WorkflowManager")
-                result = await self.workflow_manager.execute_workflow(workflow)
-                return {"success": True, "workflow_id": workflow.id, "execution": result}
+            # Get session ID - either cached or create basic session
+            session_id = None
+            if self.session_id:
+                # Use cached session
+                session_id = self.session_id
+            elif self.system_manager.auth_manager:
+                # Try to get or create basic session
+                try:
+                    session_id, _ = await self.system_manager.auth_manager.get_or_create_basic_session()
+                    self.session_id = session_id  # Cache for future use
+                except Exception:
+                    # If basic session not available, authentication required
+                    raise AuthenticationError("No session available for workflow submission")
             else:
-                # Backward compatibility: just store in persistence
-                # The execution engine should pick it up via events
-                logger.warning(f"No WorkflowManager available, workflow {workflow.id} stored but not executed")
-                return {"success": True, "workflow_id": workflow_dict.get("id")}
+                # No auth manager - use default
+                session_id = "basic-user-default"
+            
+            # Submit through SystemManager's authenticated method
+            # This ensures proper user_id is set on the workflow
+            workflow_id_for_log = workflow.id if hasattr(workflow, 'id') else workflow.get('id', 'unknown') if isinstance(workflow, dict) else 'unknown'
+            logger.info(f"Submitting workflow {workflow_id_for_log} via SystemManager.submit_workflow_authenticated")
+            workflow_id = await self.system_manager.submit_workflow_authenticated(workflow, session_id)
+            
+            return {"success": True, "workflow_id": workflow_id}
+            
         except Exception as e:
             logger.error(f"Error submitting workflow: {e}")
             return {"success": False, "error": str(e)}
     
     async def cancel_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Cancel workflow directly via persistence."""
+        """Cancel workflow with authorization check."""
         if not self.initialized:
             await self.initialize()
             
         try:
+            # First get the workflow properly (with auth check)
+            workflow = await self.get_workflow(workflow_id)
+            if not workflow:
+                return {"success": False, "error": "Workflow not found"}
+            
+            # Check authorization for cancel action
+            if self.user_context and not await self._check_workflow_access(workflow, "cancel"):
+                raise AuthorizationError(
+                    resource=f"workflow/{workflow_id}",
+                    action="cancel",
+                    reason="You don't have permission to cancel this workflow"
+                )
+            
+            # Now proceed with the original logic
             workflow = await self.persistence.get_workflow(workflow_id)
             if workflow:
+                # Cancel all tasks in the workflow that aren't already terminal
+                cancelled_tasks = 0
+                for task in workflow.tasks:
+                    if task.status not in [TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED]:
+                        task.status = TaskStatus.CANCELLED
+                        await self.persistence.save_task(task)
+                        cancelled_tasks += 1
+                
+                # Cancel the workflow itself
                 workflow.status = WorkflowStatus.CANCELLED
                 await self.persistence.save_workflow(workflow)
+                
+                return {
+                    "success": True, 
+                    "workflow_id": workflow_id,
+                    "cancelled_tasks": cancelled_tasks
+                }
             return {"success": True, "workflow_id": workflow_id}
         except Exception as e:
             logger.error(f"Error cancelling workflow {workflow_id}: {e}")
             return {"success": False, "error": str(e)}
     
-    async def pause_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Pause workflow directly via persistence."""
+    async def pause_workflow(
+        self, 
+        workflow_id: str,
+        rewind_to_task: Optional[str] = None,
+        rewind_to_step: Optional[int] = None,
+        reason: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Pause workflow with optional rewind directly via persistence."""
         if not self.initialized:
             await self.initialize()
             
         try:
+            # Check authorization first
             workflow = await self.persistence.get_workflow(workflow_id)
-            if workflow:
-                workflow.status = WorkflowStatus.PAUSED
+            if not workflow:
+                return {"success": False, "error": "Workflow not found"}
+            
+            if self.user_context and not await self._check_workflow_access(workflow, "pause"):
+                raise AuthorizationError(
+                    resource=f"workflow/{workflow_id}",
+                    action="pause",
+                    reason="You don't have permission to pause this workflow"
+                )
+            
+            # Get user ID for tracking
+            user_id = self.user_context.get("id") if self.user_context else None
+            
+            # Use the new pause methods from ScalableRedisAdapter
+            if hasattr(self.persistence, 'pause_workflow_with_rewind'):
+                # Determine if we need rewind
+                rewind_to = rewind_to_task or rewind_to_step
+                
+                if rewind_to:
+                    result = await self.persistence.pause_workflow_with_rewind(
+                        workflow_id=workflow_id,
+                        user_id=user_id,
+                        rewind_to=rewind_to,
+                        reason=reason
+                    )
+                else:
+                    result = await self.persistence.pause_workflow(
+                        workflow_id=workflow_id,
+                        user_id=user_id
+                    )
+                return result
+            else:
+                # Fallback to simple status change for backward compatibility
+                workflow.status = WorkflowStatus.PAUSED if hasattr(WorkflowStatus, 'PAUSED') else WorkflowStatus.CANCELLED
                 await self.persistence.save_workflow(workflow)
-            return {"success": True, "workflow_id": workflow_id}
+                return {"success": True, "workflow_id": workflow_id, "status": "paused"}
+                
+        except AuthorizationError:
+            raise
         except Exception as e:
             logger.error(f"Error pausing workflow {workflow_id}: {e}")
             return {"success": False, "error": str(e)}
@@ -170,23 +406,113 @@ class NativeAdapter:
             await self.initialize()
             
         try:
+            # Check authorization first
             workflow = await self.persistence.get_workflow(workflow_id)
-            if workflow:
+            if not workflow:
+                return {"success": False, "error": "Workflow not found"}
+            
+            if self.user_context and not await self._check_workflow_access(workflow, "resume"):
+                raise AuthorizationError(
+                    resource=f"workflow/{workflow_id}",
+                    action="resume",
+                    reason="You don't have permission to resume this workflow"
+                )
+            
+            # Use the new resume method from ScalableRedisAdapter
+            if hasattr(self.persistence, 'resume_workflow'):
+                result = await self.persistence.resume_workflow(workflow_id)
+                return result
+            else:
+                # Fallback to simple status change for backward compatibility
                 workflow.status = WorkflowStatus.RUNNING
                 await self.persistence.save_workflow(workflow)
-            return {"success": True, "workflow_id": workflow_id}
+                return {"success": True, "workflow_id": workflow_id, "status": "resumed"}
+                
+        except AuthorizationError:
+            raise
         except Exception as e:
             logger.error(f"Error resuming workflow {workflow_id}: {e}")
             return {"success": False, "error": str(e)}
     
-    async def delete_workflow(self, workflow_id: str) -> bool:
-        """Delete workflow directly from persistence."""
+    async def get_pause_status(self, workflow_id: str) -> Dict[str, Any]:
+        """Get pause status and metadata for a workflow."""
         if not self.initialized:
             await self.initialize()
             
         try:
+            # Check authorization first
+            workflow = await self.persistence.get_workflow(workflow_id)
+            if not workflow:
+                return {"paused": False, "error": "Workflow not found"}
+            
+            if self.user_context and not await self._check_workflow_access(workflow, "read"):
+                raise AuthorizationError(
+                    resource=f"workflow/{workflow_id}",
+                    action="read",
+                    reason="You don't have permission to view this workflow"
+                )
+            
+            # Get pause metadata from persistence
+            if hasattr(self.persistence, '_key') and hasattr(self.persistence, '_execute'):
+                pause_key = self.persistence._key(f"workflow:pause:{workflow_id}")
+                pause_data = await self.persistence._execute("hgetall", pause_key)
+                
+                if not pause_data:
+                    return {"paused": False}
+                
+                # Decode pause data
+                if isinstance(pause_data, dict):
+                    if any(isinstance(k, bytes) for k in pause_data.keys()):
+                        pause_data = {
+                            k.decode() if isinstance(k, bytes) else k: 
+                            v.decode() if isinstance(v, bytes) else v
+                            for k, v in pause_data.items()
+                        }
+                
+                # Parse JSON fields
+                import json
+                for field in ["cancelled_tasks", "queued_tasks", "reset_tasks", "preserved_results"]:
+                    if field in pause_data:
+                        try:
+                            pause_data[field] = json.loads(pause_data[field])
+                        except:
+                            pass
+                
+                pause_data["paused"] = True
+                return pause_data
+            else:
+                # Simple check based on status
+                return {"paused": workflow.status == WorkflowStatus.PAUSED if hasattr(WorkflowStatus, 'PAUSED') else False}
+                
+        except AuthorizationError:
+            raise
+        except Exception as e:
+            logger.error(f"Error getting pause status for {workflow_id}: {e}")
+            return {"paused": False, "error": str(e)}
+    
+    async def delete_workflow(self, workflow_id: str) -> bool:
+        """Delete workflow with authorization check."""
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            # First get the workflow to check authorization
+            workflow = await self.get_workflow(workflow_id)
+            if not workflow:
+                return False
+            
+            # Check authorization
+            if self.user_context and not await self._check_workflow_access(workflow, "delete"):
+                raise AuthorizationError(
+                    resource=f"workflow/{workflow_id}",
+                    action="delete",
+                    reason="You don't have permission to delete this workflow"
+                )
+            
             await self.persistence.delete_workflow(workflow_id)
             return True
+        except AuthorizationError:
+            raise
         except Exception as e:
             logger.error(f"Error deleting workflow {workflow_id}: {e}")
             return False
@@ -204,6 +530,39 @@ class NativeAdapter:
         except Exception as e:
             logger.error(f"Error getting workflow tasks: {e}")
             return []
+    
+    async def get_workflow_results(self, workflow_id: str) -> List[Dict[str, Any]]:
+        """Get all task results for a workflow.
+        
+        Uses the system manager's execution engine for unified access.
+        """
+        if not self.initialized:
+            await self.initialize()
+            
+        try:
+            # Ensure SystemManager and execution engine are available
+            if not self.system_manager:
+                raise SystemError(
+                    message="SystemManager not configured - cannot retrieve workflow results",
+                    code=ErrorCode.SYSTEM_NOT_INITIALIZED
+                )
+            
+            if not hasattr(self.system_manager, 'execution_engine') or not self.system_manager.execution_engine:
+                raise SystemError(
+                    message="ExecutionEngine not available in SystemManager",
+                    code=ErrorCode.SYSTEM_NOT_INITIALIZED
+                )
+            
+            # Use execution engine for unified result retrieval
+            execution_engine = self.system_manager.execution_engine
+            results = await execution_engine.get_workflow_results(workflow_id)
+            
+            # Convert TaskResult objects to dicts for API compatibility
+            return [r.dict() if hasattr(r, 'dict') else r for r in results]
+            
+        except Exception as e:
+            logger.error(f"Error getting workflow results: {e}")
+            raise  # Re-raise to ensure proper error handling
     
     # Task operations
     
@@ -260,26 +619,57 @@ class NativeAdapter:
             logger.error(f"Error getting task result {task_id}: {e}")
             return None
     
-    async def submit_task(self, task: Task) -> Dict[str, Any]:
-        """Submit task directly to persistence."""
-        if not self.initialized:
-            await self.initialize()
-            
-        try:
-            task_dict = task.dict() if hasattr(task, 'dict') else task
-            await self.persistence.create_task(task_dict)
-            return {"success": True, "task_id": task_dict.get("id")}
-        except Exception as e:
-            logger.error(f"Error submitting task: {e}")
-            return {"success": False, "error": str(e)}
+    # Task submission removed - all tasks must be submitted as workflows
+    # This ensures proper validation through the workflow loader
+    async def submit_task_as_workflow(self, task: Task) -> Dict[str, Any]:
+        """
+        Helper to submit a single task as a workflow.
+        DEPRECATED: Use submit_workflow directly.
+        """
+        # Convert task to dict if needed
+        if hasattr(task, 'dict'):
+            task_dict = task.dict()
+        elif isinstance(task, dict):
+            task_dict = task
+        else:
+            task_dict = task.__dict__
+        
+        # Create a single-task workflow
+        workflow_dict = {
+            "name": f"Single task: {task_dict.get('name', 'unnamed')}",
+            "tasks": [task_dict]
+        }
+        
+        # Convert to Workflow object
+        from gleitzeit.core.models import Workflow
+        workflow = Workflow(**workflow_dict)
+        
+        # Submit as workflow
+        return await self.submit_workflow(workflow)
     
     async def cancel_task(self, task_id: str) -> bool:
-        """Cancel task directly via persistence."""
+        """Cancel task and cascade to workflow and remaining tasks."""
         if not self.initialized:
             await self.initialize()
             
         try:
+            # Get the task to find its workflow
+            task = await self.persistence.get_task(task_id)
+            if not task:
+                logger.error(f"Task {task_id} not found")
+                return False
+            
+            # Cancel the specific task
             await self.persistence.update_task_status(task_id, TaskStatus.CANCELLED)
+            
+            # If task belongs to a workflow, cancel the entire workflow
+            if task.workflow_id:
+                result = await self.cancel_workflow(task.workflow_id)
+                # Check if workflow cancellation was successful
+                if not result.get("success", False):
+                    logger.error(f"Failed to cancel workflow {task.workflow_id} for task {task_id}")
+                    return False
+            
             return True
         except Exception as e:
             logger.error(f"Error cancelling task {task_id}: {e}")
@@ -349,19 +739,303 @@ class NativeAdapter:
         """Perform health check."""
         return await self.get_system_status()
     
-    # Auth operations (no-op for native adapter in stateless architecture)
+    # Auth operations - Direct access via SystemManager's AuthManager
     
     async def login(self, username: str, password: str) -> Dict[str, Any]:
-        """Login is handled at API layer, not in native adapter."""
-        return {"success": True, "message": "Native adapter - auth handled at API layer"}
+        """Login through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return {"success": True, "message": "Native adapter - auth not configured"}
+        
+        try:
+            result = await self.system_manager.auth_manager.login(username, password)
+            return result
+        except Exception as e:
+            logger.error(f"Login error: {e}")
+            return {"success": False, "error": str(e)}
     
     async def logout(self) -> Dict[str, Any]:
-        """Logout is handled at API layer, not in native adapter."""
-        return {"success": True, "message": "Native adapter - auth handled at API layer"}
+        """Logout through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return {"success": True, "message": "Native adapter - auth not configured"}
+        
+        # Native adapter doesn't have session context, so this is a no-op
+        return {"success": True, "message": "Logged out"}
     
     async def get_current_user(self) -> Dict[str, Any]:
-        """Get current user (system for native adapter)."""
-        return {"username": "system", "role": "admin", "adapter": "native"}
+        """Get current user from session or auto-login as basic user."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return {"username": "system", "role": "admin", "adapter": "native"}
+        
+        # Try to get or create basic session for immediate use
+        try:
+            session_id, user = await self.system_manager.auth_manager.get_or_create_basic_session()
+            return user
+        except Exception as e:
+            # If no session available, return system user
+            logger.debug(f"Could not get session: {e}")
+            return {"username": "system", "role": "admin", "adapter": "native"}
+    
+    # Extended auth operations
+    
+    async def create_user(self, username: str, email: str, password: str, 
+                          role: str = "user", metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Create a new user through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            raise SystemError(
+                message="AuthManager not configured",
+                code=ErrorCode.SYSTEM_NOT_INITIALIZED
+            )
+        
+        try:
+            user = await self.system_manager.auth_manager.create_user(
+                username=username,
+                email=email,
+                password=password,
+                role=role,
+                metadata=metadata or {}
+            )
+            return user
+        except Exception as e:
+            logger.error(f"Create user error: {e}")
+            raise
+    
+    async def list_users(self, limit: int = 100, offset: int = 0) -> List[Dict[str, Any]]:
+        """List users through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return []
+        
+        try:
+            users = await self.system_manager.auth_manager.list_users(limit=limit, offset=offset)
+            return users
+        except Exception as e:
+            logger.error(f"List users error: {e}")
+            return []
+    
+    async def get_user(self, user_id: str) -> Optional[Dict[str, Any]]:
+        """Get user by ID through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return None
+        
+        try:
+            user = await self.system_manager.auth_manager.get_user(user_id)
+            return user
+        except Exception as e:
+            logger.error(f"Get user error: {e}")
+            return None
+    
+    async def update_user(self, user_id: str, **kwargs) -> Dict[str, Any]:
+        """Update user through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            raise SystemError(
+                message="AuthManager not configured",
+                code=ErrorCode.SYSTEM_NOT_INITIALIZED
+            )
+        
+        try:
+            user = await self.system_manager.auth_manager.update_user(user_id, **kwargs)
+            return user
+        except Exception as e:
+            logger.error(f"Update user error: {e}")
+            raise
+    
+    async def delete_user(self, user_id: str) -> bool:
+        """Delete user through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return False
+        
+        try:
+            success = await self.system_manager.auth_manager.delete_user(user_id)
+            return success
+        except Exception as e:
+            logger.error(f"Delete user error: {e}")
+            return False
+    
+    async def activate_user(self, user_id: str) -> Dict[str, Any]:
+        """Activate user through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            raise SystemError(
+                message="AuthManager not configured",
+                code=ErrorCode.SYSTEM_NOT_INITIALIZED
+            )
+        
+        try:
+            user = await self.system_manager.auth_manager.activate_user(user_id)
+            return user
+        except Exception as e:
+            logger.error(f"Activate user error: {e}")
+            raise
+    
+    async def deactivate_user(self, user_id: str) -> Dict[str, Any]:
+        """Deactivate user through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            raise SystemError(
+                message="AuthManager not configured",
+                code=ErrorCode.SYSTEM_NOT_INITIALIZED
+            )
+        
+        try:
+            user = await self.system_manager.auth_manager.deactivate_user(user_id)
+            return user
+        except Exception as e:
+            logger.error(f"Deactivate user error: {e}")
+            raise
+    
+    async def search_users(self, query: str, field: str = "username") -> List[Dict[str, Any]]:
+        """Search users through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return []
+        
+        try:
+            users = await self.system_manager.auth_manager.search_users(query, field)
+            return users
+        except Exception as e:
+            logger.error(f"Search users error: {e}")
+            return []
+    
+    async def change_password(self, user_id: str, old_password: str, new_password: str) -> bool:
+        """Change password through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return False
+        
+        try:
+            success = await self.system_manager.auth_manager.change_password(
+                user_id, old_password, new_password
+            )
+            return success
+        except Exception as e:
+            logger.error(f"Change password error: {e}")
+            return False
+    
+    async def request_password_reset(self, email: str) -> Dict[str, Any]:
+        """Request password reset through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            raise SystemError(
+                message="AuthManager not configured",
+                code=ErrorCode.SYSTEM_NOT_INITIALIZED
+            )
+        
+        try:
+            result = await self.system_manager.auth_manager.request_password_reset(email)
+            return result
+        except Exception as e:
+            logger.error(f"Request password reset error: {e}")
+            raise
+    
+    async def reset_password(self, token: str, new_password: str) -> bool:
+        """Reset password through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return False
+        
+        try:
+            success = await self.system_manager.auth_manager.reset_password(token, new_password)
+            return success
+        except Exception as e:
+            logger.error(f"Reset password error: {e}")
+            return False
+    
+    async def get_sessions(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get active sessions through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return []
+        
+        try:
+            sessions = await self.system_manager.auth_manager.get_active_sessions(user_id)
+            return sessions
+        except Exception as e:
+            logger.error(f"Get sessions error: {e}")
+            return []
+    
+    async def revoke_session(self, user_id: str, session_id: str) -> bool:
+        """Revoke session through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return False
+        
+        try:
+            success = await self.system_manager.auth_manager.revoke_session(user_id, session_id)
+            return success
+        except Exception as e:
+            logger.error(f"Revoke session error: {e}")
+            return False
+    
+    async def revoke_all_sessions(self, user_id: str) -> int:
+        """Revoke all sessions through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return 0
+        
+        try:
+            count = await self.system_manager.auth_manager.revoke_all_user_sessions(user_id)
+            return count
+        except Exception as e:
+            logger.error(f"Revoke all sessions error: {e}")
+            return 0
+    
+    async def get_devices(self, user_id: str) -> List[Dict[str, Any]]:
+        """Get user devices through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return []
+        
+        try:
+            devices = await self.system_manager.auth_manager.get_user_devices(user_id)
+            return devices
+        except Exception as e:
+            logger.error(f"Get devices error: {e}")
+            return []
+    
+    async def trust_device(self, user_id: str, fingerprint: str, trust_days: int = 30) -> Dict[str, Any]:
+        """Trust device through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            raise SystemError(
+                message="AuthManager not configured",
+                code=ErrorCode.SYSTEM_NOT_INITIALIZED
+            )
+        
+        try:
+            result = await self.system_manager.auth_manager.trust_device(
+                user_id, fingerprint, trust_days
+            )
+            return result
+        except Exception as e:
+            logger.error(f"Trust device error: {e}")
+            raise
+    
+    async def get_auth_history(self, user_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        """Get auth history through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return []
+        
+        try:
+            history = await self.system_manager.auth_manager.get_auth_history(user_id, limit)
+            return history
+        except Exception as e:
+            logger.error(f"Get auth history error: {e}")
+            return []
+    
+    async def send_verification_email(self, user_id: str) -> Dict[str, Any]:
+        """Send verification email through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            raise SystemError(
+                message="AuthManager not configured",
+                code=ErrorCode.SYSTEM_NOT_INITIALIZED
+            )
+        
+        try:
+            result = await self.system_manager.auth_manager.send_verification_email(user_id)
+            return result
+        except Exception as e:
+            logger.error(f"Send verification error: {e}")
+            raise
+    
+    async def verify_email(self, token: str) -> bool:
+        """Verify email through SystemManager's AuthManager."""
+        if not self.system_manager or not self.system_manager.auth_manager:
+            return False
+        
+        try:
+            success = await self.system_manager.auth_manager.verify_email(token)
+            return success
+        except Exception as e:
+            logger.error(f"Verify email error: {e}")
+            return False
     
     # WorkflowManager access
     
@@ -427,29 +1101,38 @@ class NativeAdapter:
         """
         if not self.initialized:
             await self.initialize()
-            
+        
         try:
-            # Try to get logs from Redis log adapter first
-            if hasattr(self.persistence, 'redis') and self.persistence.redis:
-                from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
-                log_adapter = LogRedisAdapter(self.persistence.redis)
-                
-                # Get logs for this specific task
-                logs = await log_adapter.get_logs(
-                    task_id=task_id,
-                    level=level,
-                    limit=limit,
-                    offset=offset
-                )
-                
-                # Convert LogEntry objects to dictionaries if needed
-                if logs and hasattr(logs[0], 'to_dict'):
-                    logs = [log.to_dict() for log in logs]
+            # Get session for authorization
+            session_id = await self._get_or_create_session()
+            
+            # First get the task to verify ownership/access
+            task = await self.persistence.get_task(task_id)
+            if not task:
+                raise AuthorizationError(f"Task {task_id} not found")
+            
+            # Verify user has access to the task's workflow
+            workflow = await self.system_manager.get_workflow_authenticated(task.workflow_id, session_id)
+            if not workflow:
+                raise AuthorizationError(f"Access denied to workflow {task.workflow_id}")
+            
+            # Use LogCollector from SystemManager if available
+            if self.system_manager and hasattr(self.system_manager, 'log_collector') and self.system_manager.log_collector:
+                try:
+                    logs = await self.system_manager.log_collector.get_logs(
+                        task_id=task_id,
+                        limit=limit
+                    )
+                    return logs
+                except Exception as e:
+                    logger.debug(f"Could not get logs from LogCollector: {e}")
                     
-                return logs
-                
+        except AuthorizationError:
+            # Re-raise authorization errors
+            raise
         except Exception as e:
-            logger.debug(f"Could not get logs from Redis adapter: {e}")
+            logger.error(f"Error getting task logs: {e}")
+            raise AuthorizationError("Failed to access task logs")
         
         # Fallback: If no centralized logs available yet, return minimal info
         # This is temporary until full logging integration is complete
@@ -499,29 +1182,63 @@ class NativeAdapter:
             await self.initialize()
             
         try:
-            # Try to get logs from Redis log adapter
-            if hasattr(self.persistence, 'redis') and self.persistence.redis:
-                from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
-                log_adapter = LogRedisAdapter(self.persistence.redis)
+            # Get session for authorization
+            session_id = await self._get_or_create_session()
+            
+            # For global logs, require admin privileges or return user's workflow logs only
+            if self.user_context and self.user_context.get("role") != "admin" and not self.user_context.get("is_superuser"):
+                # Non-admin users can only see logs from their own workflows
+                # Get user's workflows first
+                user_workflows = await self.list_workflows()
+                if not user_workflows:
+                    return []
                 
-                # Get logs with filters
-                logs = await log_adapter.get_logs(
-                    level=level,
-                    source=source,
-                    start_time=start_time,
-                    end_time=end_time,
-                    limit=limit,
-                    offset=offset
-                )
+                # Collect logs from all user's workflows
+                all_logs = []
+                for workflow in user_workflows[:10]:  # Limit to prevent abuse
+                    try:
+                        workflow_logs = await self.system_manager.log_collector.get_logs(
+                            workflow_id=workflow.get('id'),
+                            limit=min(limit // len(user_workflows), 50),
+                            since=start_time
+                        )
+                        all_logs.extend(workflow_logs)
+                    except Exception:
+                        continue
                 
-                # Convert LogEntry objects to dictionaries if needed
-                if logs and hasattr(logs[0], 'to_dict'):
-                    logs = [log.to_dict() for log in logs]
-                    
-                return logs
+                logs = sorted(all_logs, key=lambda x: x.get('timestamp', ''), reverse=True)[:limit]
+            else:
+                # Admin users can see global logs
+                if self.system_manager and hasattr(self.system_manager, 'log_collector') and self.system_manager.log_collector:
+                    try:
+                        logs = await self.system_manager.log_collector.get_logs(
+                            limit=limit,
+                            since=start_time
+                        )
+                    except Exception as e:
+                        logger.debug(f"Could not get logs from LogCollector: {e}")
+                        logs = []
+                else:
+                    logs = []
+            
+            # Client-side filtering for level and source
+            if level:
+                logs = [log for log in logs if log.get('level') == level]
+            if source:
+                logs = [log for log in logs if log.get('source') == source]
                 
+            # Apply offset if needed
+            if offset:
+                logs = logs[offset:]
+                
+            return logs
+            
+        except AuthorizationError:
+            # Re-raise authorization errors
+            raise
         except Exception as e:
-            logger.debug(f"Could not get logs from Redis adapter: {e}")
+            logger.error(f"Error getting logs: {e}")
+            return []
         
         # Fallback message
         return [{
@@ -544,17 +1261,58 @@ class NativeAdapter:
             await self.initialize()
             
         try:
-            # Try to query logs from Redis log adapter
-            if hasattr(self.persistence, 'redis') and self.persistence.redis:
-                from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
-                log_adapter = LogRedisAdapter(self.persistence.redis)
+            # Get session for authorization
+            session_id = await self._get_or_create_session()
+            
+            # For log search, apply same authorization as get_logs
+            if self.user_context and self.user_context.get("role") != "admin" and not self.user_context.get("is_superuser"):
+                # Non-admin users can only search logs from their own workflows
+                user_workflows = await self.list_workflows()
+                if not user_workflows:
+                    return []
                 
-                # Search logs - this would need to be implemented in LogRedisAdapter
-                # For now, return empty as query functionality may not be fully implemented
-                return []
+                all_logs = []
+                for workflow in user_workflows[:5]:  # Limit for search
+                    try:
+                        workflow_logs = await self.system_manager.log_collector.get_logs(
+                            workflow_id=workflow.get('id'),
+                            limit=min(limit // len(user_workflows), 20)
+                        )
+                        all_logs.extend(workflow_logs)
+                    except Exception:
+                        continue
                 
+                logs = all_logs
+            else:
+                # Admin users can search all logs
+                if self.system_manager and hasattr(self.system_manager, 'log_collector') and self.system_manager.log_collector:
+                    try:
+                        logs = await self.system_manager.log_collector.get_logs(
+                            limit=limit
+                        )
+                    except Exception as e:
+                        logger.debug(f"Could not query logs from LogCollector: {e}")
+                        logs = []
+                else:
+                    logs = []
+            
+            # Client-side filtering by query string
+            if query:
+                query_lower = query.lower()
+                logs = [log for log in logs if query_lower in log.get('message', '').lower()]
+                
+            # Apply offset if needed
+            if offset:
+                logs = logs[offset:]
+                
+            return logs
+            
+        except AuthorizationError:
+            # Re-raise authorization errors
+            raise
         except Exception as e:
-            logger.debug(f"Could not query logs from Redis adapter: {e}")
+            logger.error(f"Error querying logs: {e}")
+            return []
         
         return []
     
@@ -620,20 +1378,12 @@ class NativeAdapter:
             await self.initialize()
             
         try:
-            # Get logs filtered by workflow_id
-            if hasattr(self.persistence, 'redis') and self.persistence.redis:
-                from gleitzeit.persistence.log_redis_adapter import LogRedisAdapter
-                log_adapter = LogRedisAdapter(self.persistence.redis)
-                
-                # Get logs for this specific workflow
-                logs = await log_adapter.get_logs(
+            # Use LogCollector from SystemManager if available
+            if self.system_manager and hasattr(self.system_manager, 'log_collector') and self.system_manager.log_collector:
+                logs = await self.system_manager.log_collector.get_logs(
                     workflow_id=workflow_id,
                     limit=1000  # Large limit for workflow logs
                 )
-                
-                # Convert LogEntry objects to dictionaries if needed
-                if logs and hasattr(logs[0], 'to_dict'):
-                    logs = [log.to_dict() for log in logs]
                     
                 return logs
                 

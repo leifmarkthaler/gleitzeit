@@ -35,16 +35,18 @@ class PoolingAdapter:
         persistence: PersistenceBackend,
         min_pool_size: int = 1,
         max_pool_size: int = 10,
-        provider_hub=None
+        provider_hub=None,
+        stateless_registry=None
     ):
         """
         Initialize pooling adapter.
-        
+
         Args:
             persistence: Backend for provider state
             min_pool_size: Default minimum pool size (for pooled providers)
             max_pool_size: Default maximum pool size (for pooled providers)
             provider_hub: ProviderHub that manages actual providers
+            stateless_registry: StatelessProtocolRegistry for stream-based protocols
         """
         self.persistence = persistence
         self.pool_manager = ProviderPoolManager(
@@ -58,7 +60,8 @@ class PoolingAdapter:
         
         # Reference to the single source of truth for providers
         self.provider_hub = provider_hub
-        
+        self.stateless_registry = stateless_registry
+
         logger.info(f"Created PoolingAdapter (pools: {min_pool_size}-{max_pool_size})")
     
     async def initialize(self):
@@ -69,14 +72,15 @@ class PoolingAdapter:
     def is_protocol_available(self, protocol: str) -> bool:
         """
         Check if a protocol has registered providers.
-        
-        Checks both:
+
+        Checks:
         1. Hub-managed providers (from ProviderHub)
         2. Pooled providers (registered directly)
-        
+        3. Stateless/stream-based providers (from StatelessProtocolRegistry)
+
         Args:
             protocol: Protocol identifier
-            
+
         Returns:
             True if protocol has providers
         """
@@ -84,29 +88,63 @@ class PoolingAdapter:
         if self.provider_hub and hasattr(self.provider_hub, 'providers'):
             if protocol in self.provider_hub.providers:
                 return True
-        
+
         # Check if registered as pooled provider
-        return protocol in self._registered_protocols
+        if protocol in self._registered_protocols:
+            return True
+
+        # Check if available in StatelessProtocolRegistry (for stream-based protocols like signals)
+        if self.stateless_registry:
+            if self.stateless_registry.is_protocol_registered(protocol):
+                return True
+
+        return False
     
-    async def validate_provider_availability(self, protocol: str) -> tuple[bool, str]:
+    async def validate_provider_availability(self, protocol: str, method: str = None) -> tuple[bool, str]:
         """
-        Validate if a provider can actually be allocated for the protocol.
-        This checks not just registration but actual resource availability.
+        Validate if a provider can actually be allocated for the protocol and method.
+        This checks not just registration but actual resource availability and method support.
         
         Args:
             protocol: Protocol identifier
+            method: Method name (optional for backward compatibility)
             
         Returns:
             Tuple of (is_available, error_message)
         """
+        logger.info(f"🔍 VALIDATION: Validating protocol='{protocol}', method='{method}'")
+        
         # First check if protocol is available at all
         if not self.is_protocol_available(protocol):
+            logger.warning(f"❌ VALIDATION: Protocol '{protocol}' is not registered")
             return False, f"Protocol '{protocol}' is not registered"
         
         # Check hub-managed providers first
         if self.provider_hub and hasattr(self.provider_hub, 'providers'):
+            logger.info(f"🔍 VALIDATION: Checking hub-managed providers. Available protocols: {list(self.provider_hub.providers.keys())}")
             if protocol in self.provider_hub.providers:
                 provider = self.provider_hub.providers[protocol]
+                logger.info(f"🔍 VALIDATION: Found provider for protocol '{protocol}': {type(provider).__name__}")
+                
+                # Validate method if provided
+                if method and hasattr(provider, 'get_supported_methods'):
+                    logger.info(f"🔍 VALIDATION: Provider has get_supported_methods, checking method '{method}'")
+                    try:
+                        supported_methods = provider.get_supported_methods()
+                        logger.info(f"🔍 VALIDATION: Supported methods for '{protocol}': {supported_methods}")
+                        if method not in supported_methods:
+                            error_msg = f"Method '{method}' not supported by protocol '{protocol}'. Supported methods: {', '.join(supported_methods)}"
+                            logger.error(f"❌ VALIDATION: {error_msg}")
+                            return False, error_msg
+                        else:
+                            logger.info(f"✅ VALIDATION: Method '{method}' is supported by protocol '{protocol}'")
+                    except Exception as e:
+                        # If we can't get supported methods, log but don't fail (backward compatibility)
+                        logger.warning(f"Could not get supported methods for protocol '{protocol}': {e}")
+                        # Still attempt validation without method check
+                else:
+                    logger.info(f"🔍 VALIDATION: No method provided or provider doesn't have get_supported_methods")
+                
                 # Validate if the provider is actually available
                 if hasattr(provider, 'validate_availability'):
                     try:
@@ -285,9 +323,15 @@ class PoolingAdapter:
         
         try:
             # Convert task to JSONRPC request
+            # For timer and signal tasks, include workflow and task context
+            params = task.params or {}
+            if task.protocol in ["timer/v1", "signal/v1"]:
+                params["_workflow_id"] = task.workflow_id
+                params["_task_id"] = task.id
+            
             request = JSONRPCRequest(
                 method=task.method,
-                params=task.params or {},
+                params=params,
                 id=task.id
             )
             
@@ -307,6 +351,11 @@ class PoolingAdapter:
                     duration_seconds=(completed_at - started_at).total_seconds()
                 )
             else:
+                # Check if result is already a TaskResult (from providers like TimerProvider, SignalProvider)
+                if isinstance(response.result, TaskResult):
+                    return response.result
+                
+                # Provider returned raw result - wrap in TaskResult
                 return TaskResult(
                     task_id=task.id,
                     status=TaskStatus.COMPLETED,

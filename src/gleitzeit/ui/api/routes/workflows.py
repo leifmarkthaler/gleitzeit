@@ -12,8 +12,10 @@ import tempfile
 import os
 import uuid
 import aiohttp
+import logging
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Get Gleitzeit API URL from environment or use default
 GLEITZEIT_API_URL = os.getenv('GLEITZEIT_API_URL', 'http://localhost:8000')

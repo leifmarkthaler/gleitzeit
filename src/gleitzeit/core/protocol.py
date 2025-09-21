@@ -11,6 +11,8 @@ from enum import Enum
 import jsonschema
 from jsonschema import validate, ValidationError
 
+from .errors import InvalidParameterError, ProtocolError
+
 
 class ParameterType(str, Enum):
     """Supported parameter types for protocol methods"""
@@ -111,23 +113,23 @@ class MethodSpec(BaseModel):
         - URI-style: supports colons for resource URIs like 'resource.file://path'
         """
         if not v:
-            raise ValueError("Method name cannot be empty")
+            raise InvalidParameterError("name", "Method name cannot be empty")
         
         # Must start with a letter
         if not v[0].isalpha():
-            raise ValueError("Method name must start with a letter")
+            raise InvalidParameterError("name", "Method name must start with a letter")
         
         # Check for valid characters: letters, numbers, dots, underscores, slashes, colons, hyphens
         import re
         if not re.match(r'^[a-zA-Z][a-zA-Z0-9_./:/-]*$', v):
-            raise ValueError(f"Method name '{v}' contains invalid characters. Allowed: letters, numbers, dots, underscores, slashes, colons, hyphens")
+            raise InvalidParameterError("name", f"Method name '{v}' contains invalid characters. Allowed: letters, numbers, dots, underscores, slashes, colons, hyphens")
         
         # Additional checks for common patterns
         if '..' in v:
-            raise ValueError("Method name cannot contain consecutive dots")
+            raise InvalidParameterError("name", "Method name cannot contain consecutive dots")
         
         if v.endswith('.'):
-            raise ValueError("Method name cannot end with a dot")
+            raise InvalidParameterError("name", "Method name cannot end with a dot")
             
         return v
     
@@ -219,7 +221,7 @@ class ProtocolSpec(BaseModel):
         """
         method_spec = self.get_method(method_name)
         if not method_spec:
-            raise ValueError(f"Method '{method_name}' not found in protocol '{self.protocol_id}'")
+            raise ProtocolError(f"Method '{method_name}' not found in protocol '{self.protocol_id}'")
         
         method_spec.validate_params(params)
     
@@ -356,7 +358,7 @@ class ProtocolRegistry:
         """
         protocol = self.get(protocol_id)
         if not protocol:
-            raise ValueError(f"Protocol not found: {protocol_id}")
+            raise ProtocolError(f"Protocol not found: {protocol_id}")
         
         protocol.validate_method_call(method, params)
 

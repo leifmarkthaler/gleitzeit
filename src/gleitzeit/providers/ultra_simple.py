@@ -10,6 +10,7 @@ import inspect
 
 from .base import ProtocolProvider
 from .http_provider import HTTPProvider
+from gleitzeit.core.errors import InvalidParameterError
 
 
 class UltraSimpleProvider(ProtocolProvider):
@@ -309,7 +310,7 @@ def create_rest_provider(
                 elif http_method == "PATCH":
                     return await self.patch(path, data=body_params)
                 else:
-                    raise ValueError(f"Unsupported HTTP method: {http_method}")
+                    raise InvalidParameterError("http_method", f"Unsupported HTTP method: {http_method}")
             
             # Mark as a method handler
             endpoint_handler._method_names = [method_name]

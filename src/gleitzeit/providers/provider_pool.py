@@ -15,6 +15,7 @@ import uuid
 
 from gleitzeit.core.protocol import ProtocolSpec
 from gleitzeit.persistence.base import PersistenceBackend
+from gleitzeit.core.errors import SystemError, ResourceExhaustedError
 
 logger = logging.getLogger(__name__)
 
@@ -74,11 +75,12 @@ class ProviderPool:
         max_size: int = 10,
         max_idle_time: int = 300,
         health_check_interval: int = 60,
-        persistence: Optional[PersistenceBackend] = None
+        persistence: Optional[PersistenceBackend] = None,
+        protocol_id: Optional[str] = None
     ):
         """
         Initialize provider pool.
-        
+
         Args:
             provider_type: Type identifier for the provider
             provider_class: Class to instantiate for new providers
@@ -87,9 +89,11 @@ class ProviderPool:
             max_idle_time: Maximum idle time before provider cleanup (seconds)
             health_check_interval: Interval between health checks (seconds)
             persistence: Optional persistence backend for state
+            protocol_id: Protocol ID for the provider (e.g. "python/v1")
         """
         self.provider_type = provider_type
         self.provider_class = provider_class
+        self.protocol_id = protocol_id or f"{provider_type}/v1"  # Fallback for compatibility
         self.min_size = min_size
         self.max_size = max_size
         self.max_idle_time = max_idle_time
@@ -108,7 +112,7 @@ class ProviderPool:
         self._shutdown = False
         
         # Monitoring
-        self._health_check_task: Optional[asyncio.Task] = None
+        # No health check task - stateless operation
         
         logger.info(f"Created provider pool for {provider_type} "
                    f"(min={min_size}, max={max_size})")
@@ -135,8 +139,7 @@ class ProviderPool:
                     else:
                         logger.error(f"Failed to create provider: {provider}")
             
-            # Start health check task
-            self._health_check_task = asyncio.create_task(self._health_check_loop())
+            # Health checks will be triggered externally (stateless)
             
             self._initialized = True
             logger.info(f"Initialized pool with {len(self.available)} providers")
@@ -156,7 +159,7 @@ class ProviderPool:
             RuntimeError: If pool is shutdown
         """
         if self._shutdown:
-            raise RuntimeError("Provider pool is shutdown")
+            raise SystemError("Provider pool is shutdown")
         
         if not self._initialized:
             await self.initialize()
@@ -187,13 +190,21 @@ class ProviderPool:
                 # No available providers, create new one if under limit
                 current_total = len(self.available) + len(self.in_use)
                 if current_total < self.max_size:
-                    provider = await self._create_provider()
-                    provider.state = ProviderState.IN_USE
-                    provider.use_count = 1
-                    self.in_use[provider.id] = provider
-                    
-                    logger.debug(f"Created new provider {provider.id}")
-                    return provider
+                    logger.info(f"Pool exhausted, creating new provider (current: {current_total}/{self.max_size})")
+                    try:
+                        provider = await self._create_provider()
+                        provider.state = ProviderState.IN_USE
+                        provider.use_count = 1
+                        self.in_use[provider.id] = provider
+                        
+                        logger.info(f"Successfully created and acquired new provider {provider.id}")
+                        return provider
+                    except Exception as e:
+                        logger.error(f"Failed to create new provider: {e}")
+                        # Let the exception propagate - semaphore will be released in outer except block
+                        raise
+                else:
+                    logger.warning(f"Pool at maximum capacity ({current_total}/{self.max_size}), cannot create more providers")
         
         except Exception:
             # Release semaphore if we fail to provide a provider
@@ -202,7 +213,7 @@ class ProviderPool:
         
         # Should not reach here
         self._acquire_semaphore.release()
-        raise RuntimeError("Failed to acquire provider from pool")
+        raise ResourceExhaustedError("Failed to acquire provider from pool", "provider_pool")
     
     async def release(self, provider: PooledProvider):
         """
@@ -238,7 +249,28 @@ class ProviderPool:
         await self._ensure_min_size()
     
     async def _create_provider(self) -> PooledProvider:
-        """Create a new provider instance using ProviderFactory"""
+        """Create a new provider instance using ProviderFactory with timeout protection"""
+        try:
+            # Wrap entire provider creation in timeout to prevent hanging
+            return await asyncio.wait_for(
+                self._create_provider_impl(),
+                timeout=30.0  # 30s timeout for provider creation
+            )
+        except asyncio.TimeoutError:
+            logger.error(f"Provider creation timed out after 30s for type {self.provider_type}")
+            raise ResourceExhaustedError(
+                f"Provider creation timed out after 30 seconds", 
+                "provider_creation_timeout"
+            )
+        except Exception as e:
+            logger.error(f"Failed to create provider: {e}")
+            raise
+    
+    async def _create_provider_impl(self) -> PooledProvider:
+        """Internal implementation of provider creation without timeout"""
+        start_time = datetime.utcnow()
+        logger.info(f"Creating new provider of type {self.provider_type}")
+        
         try:
             # Use ProviderFactory for proper validation and creation
             from gleitzeit.providers.factory import ProviderFactory
@@ -255,7 +287,7 @@ class ProviderPool:
             instance = factory.create_provider(
                 self.provider_class,
                 provider_id=self.provider_type,
-                protocol_id=f"{self.provider_type}/v1",  # Default protocol
+                protocol_id=self.protocol_id,  # Use the protocol from config
                 validate=True
             )
             
@@ -270,11 +302,13 @@ class ProviderPool:
                 state=ProviderState.AVAILABLE
             )
             
-            logger.debug(f"Created provider {provider.id} of type {self.provider_type} using factory")
+            creation_time = (datetime.utcnow() - start_time).total_seconds()
+            logger.info(f"Created provider {provider.id} of type {self.provider_type} in {creation_time:.2f}s")
             return provider
             
         except Exception as e:
-            logger.error(f"Failed to create provider with factory: {e}")
+            creation_time = (datetime.utcnow() - start_time).total_seconds()
+            logger.error(f"Failed to create provider with factory after {creation_time:.2f}s: {e}")
             raise
     
     async def _destroy_provider(self, provider: PooledProvider):
@@ -307,14 +341,9 @@ class ProviderPool:
                     except Exception as e:
                         logger.error(f"Failed to create provider: {e}")
     
-    async def _health_check_loop(self):
-        """Background task to check provider health and cleanup idle providers"""
-        while not self._shutdown:
-            try:
-                await asyncio.sleep(self.health_check_interval)
-                await self._perform_health_check()
-            except Exception as e:
-                logger.error(f"Error in health check loop: {e}")
+    async def trigger_health_check(self):
+        """Trigger health check externally (stateless)"""
+        await self._perform_health_check()
     
     async def _perform_health_check(self):
         """Perform health check and cleanup"""
@@ -343,13 +372,7 @@ class ProviderPool:
         """Shutdown the pool and cleanup all providers"""
         self._shutdown = True
         
-        # Cancel health check task
-        if self._health_check_task:
-            self._health_check_task.cancel()
-            try:
-                await self._health_check_task
-            except asyncio.CancelledError:
-                pass
+        # No health check task to cancel (stateless)
         
         # Destroy all providers
         async with self._lock:
@@ -379,3 +402,132 @@ class ProviderPool:
             "max_size": self.max_size,
             "utilization": len(self.in_use) / self.max_size * 100 if self.max_size > 0 else 0
         }
+
+
+class StreamEnabledProviderPool(ProviderPool):
+    """
+    Enhanced provider pool with stream integration support.
+
+    Extends ProviderPool to automatically enable stream integration
+    for providers when a StreamSystemManager is available.
+    """
+
+    def __init__(
+        self,
+        provider_type: str,
+        provider_class: Type[Any],
+        min_size: int = 1,
+        max_size: int = 10,
+        max_idle_time: int = 300,
+        health_check_interval: int = 60,
+        persistence: Optional[PersistenceBackend] = None,
+        stream_manager=None,
+        enable_stream_integration: bool = True,
+        protocol_id: Optional[str] = None
+    ):
+        """
+        Initialize stream-enabled provider pool.
+
+        Args:
+            provider_type: Type identifier for the provider
+            provider_class: Class to instantiate for new providers
+            min_size: Minimum number of providers to maintain
+            max_size: Maximum number of providers allowed
+            max_idle_time: Maximum idle time before provider cleanup (seconds)
+            health_check_interval: Interval between health checks (seconds)
+            persistence: Optional persistence backend for state
+            stream_manager: Optional StreamSystemManager for stream integration
+            enable_stream_integration: Whether to enable stream integration
+            protocol_id: Protocol ID for the provider (e.g. "python/v1")
+        """
+        super().__init__(
+            provider_type, provider_class, min_size, max_size,
+            max_idle_time, health_check_interval, persistence, protocol_id
+        )
+
+        self.stream_manager = stream_manager
+        self.enable_stream_integration = enable_stream_integration
+
+        logger.info(f"Created stream-enabled pool for {provider_type} "
+                   f"(streams={'enabled' if stream_manager and enable_stream_integration else 'disabled'})")
+
+    async def _create_provider_impl(self) -> PooledProvider:
+        """Enhanced provider creation with stream integration"""
+        # Call parent implementation
+        provider = await super()._create_provider_impl()
+
+        # Enable stream integration if available
+        if (self.stream_manager and
+            self.enable_stream_integration and
+            provider.instance):
+
+            try:
+                from gleitzeit.providers.stream_integration import enable_stream_integration_for_provider
+
+                # Enable stream integration for the provider instance
+                await enable_stream_integration_for_provider(
+                    provider.instance,
+                    self.stream_manager,
+                    enable_health_reporting=True
+                )
+
+                logger.debug(f"Enabled stream integration for provider {provider.id}")
+
+            except Exception as e:
+                logger.warning(f"Failed to enable stream integration for provider {provider.id}: {e}")
+                # Continue without stream integration
+
+        return provider
+
+    async def _destroy_provider(self, provider: PooledProvider):
+        """Enhanced provider destruction with stream cleanup"""
+        try:
+            # Shutdown stream integration if enabled
+            if (provider.instance and
+                hasattr(provider.instance, 'shutdown_stream_integration')):
+
+                try:
+                    await provider.instance.shutdown_stream_integration()
+                except Exception as e:
+                    logger.debug(f"Error shutting down stream integration for {provider.id}: {e}")
+
+            # Call parent implementation
+            await super()._destroy_provider(provider)
+
+        except Exception as e:
+            logger.error(f"Error in enhanced provider destruction for {provider.id}: {e}")
+
+    def get_stats(self) -> Dict[str, Any]:
+        """Enhanced statistics including stream integration status"""
+        base_stats = super().get_stats()
+
+        # Add stream-specific stats
+        base_stats.update({
+            "stream_integration": {
+                "enabled": self.enable_stream_integration,
+                "stream_manager_available": self.stream_manager is not None,
+                "stream_enabled_providers": self._count_stream_enabled_providers()
+            }
+        })
+
+        return base_stats
+
+    def _count_stream_enabled_providers(self) -> int:
+        """Count how many providers have stream integration enabled"""
+        count = 0
+
+        # Check available providers
+        for provider in self.available:
+            if (provider.instance and
+                hasattr(provider.instance, '_stream_enabled') and
+                provider.instance._stream_enabled):
+                count += 1
+
+        # Check in-use providers
+        for provider in self.in_use.values():
+            if (provider.instance and
+                hasattr(provider.instance, '_stream_enabled') and
+                provider.instance._stream_enabled):
+                count += 1
+
+        return count

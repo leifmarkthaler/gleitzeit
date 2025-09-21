@@ -63,8 +63,8 @@ def load_workflow_from_dict(data: Dict[str, Any]) -> Workflow:
     if data.get('type') == 'batch' or 'batch' in data:
         return create_batch_workflow_from_dict(data)
     
-    # ALWAYS generate workflow ID internally - never use ID from file
-    workflow_id = f"workflow-{uuid4().hex[:8]}"
+    # ALWAYS generate workflow ID internally with full UUID to prevent collisions
+    workflow_id = f"workflow-{uuid4().hex}"
     
     # Determine workflow name based on what's provided in the file
     file_id = data.get('id')
@@ -143,8 +143,8 @@ def create_task_from_dict(data: Dict[str, Any], workflow_id: str,
     - If only 'id' is provided in YAML, use it as the task name
     - The 'id' field in YAML is for user reference, not the internal ID
     """
-    # Always generate a UUID for the internal task ID
-    task_id = f"task-{uuid4().hex[:8]}"
+    # Always generate a full UUID for the internal task ID to prevent collisions
+    task_id = f"task-{uuid4().hex}"
     
     # Determine the task name
     # If 'name' is provided, use it. Otherwise, use 'id' as the name, or generate one

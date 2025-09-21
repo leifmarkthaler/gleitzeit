@@ -316,8 +316,8 @@ class WorkflowLoaderV2(LoggingMixin):
     
     def _create_standard_workflow(self, data: Dict[str, Any]) -> Workflow:
         """Create standard workflow with improved ID generation."""
-        # Generate internal ID with namespace
-        workflow_id = f"workflow-{uuid4().hex[:8]}"
+        # Generate internal ID with full UUID to prevent collisions
+        workflow_id = f"workflow-{uuid4().hex}"
         
         # Handle name/ID logic
         file_id = data.get('id')
@@ -383,7 +383,11 @@ class WorkflowLoaderV2(LoggingMixin):
                     task_data, workflow_id, resolve_dependencies=False
                 )
                 tasks.append(task)
+                # Map both the task name and the original user-defined ID
                 name_to_id_map[task.name] = task.id
+                # Also map the original user-defined ID if present
+                if 'id' in task_data:
+                    name_to_id_map[task_data['id']] = task.id
             except Exception as e:
                 asyncio.create_task(
                     self.log_error(
@@ -571,7 +575,7 @@ class WorkflowLoaderV2(LoggingMixin):
     ) -> Task:
         """Create a single batch task."""
         file_name = Path(file_path).name
-        task_id = f"task-{uuid4().hex[:8]}"  # Use UUID for better distribution
+        task_id = f"task-{uuid4().hex}"  # Use full UUID to prevent collisions
         
         # Detect file type
         is_image = Path(file_path).suffix.lower() in [
@@ -610,13 +614,40 @@ class WorkflowLoaderV2(LoggingMixin):
     def _validate_protocol_and_method(self, protocol: str, method: str, task_id: str) -> tuple[str, str]:
         """
         Validate protocol and method using the registry.
-        
+        If protocol is not specified, extract it from the method.
+
         Returns:
             Tuple of (validated_protocol, validated_method)
-        
+
         Raises:
             TaskValidationError if protocol/method is invalid or provider unavailable
         """
+        # Validate method is required
+        if not method:
+            raise TaskValidationError(
+                task_id,
+                ["Method is required but not specified"]
+            )
+
+        # If protocol not specified, extract from method
+        if not protocol:
+            if '/' in method:
+                # Extract protocol from method (e.g., "signal/wait" -> "signal/v1")
+                method_namespace = method.split('/')[0]
+                protocol = method_namespace + '/v1'
+                asyncio.create_task(
+                    self.log_debug(
+                        "protocol_extraction",
+                        f"Extracted protocol '{protocol}' from method '{method}'",
+                        task_id=task_id
+                    )
+                )
+            else:
+                raise TaskValidationError(
+                    task_id,
+                    [f"Method '{method}' must be in format 'namespace/action' (e.g., 'signal/wait', 'python/execute', 'llm/chat')"]
+                )
+
         # If we have a registry, use it for validation
         if self.registry:
             # Try to normalize the protocol using registry
@@ -624,8 +655,8 @@ class WorkflowLoaderV2(LoggingMixin):
                 # Check if protocol is registered and available
                 provider = self.registry.get_provider(protocol)
                 if not provider:
-                    # Try to infer protocol from method
-                    if '/' in method:
+                    # Try to infer protocol from method if we haven't already
+                    if '/' in method and not protocol.endswith('/v1'):
                         inferred_protocol = method.split('/')[0] + '/v1'
                         provider = self.registry.get_provider(inferred_protocol)
                         if provider:
@@ -647,31 +678,45 @@ class WorkflowLoaderV2(LoggingMixin):
                             task_id,
                             [f"Unknown protocol '{protocol}' and cannot infer from method '{method}'"]
                         )
+
+                # Validate protocol and method format only - no hardcoded lists
+                # The actual method support is checked at runtime by the provider
+
+                # Basic format validation
+                if '/' not in method:
+                    raise TaskValidationError(
+                        task_id,
+                        [f"Method '{method}' must be in format 'namespace/action' (e.g., 'python/execute', 'llm/chat')"]
+                    )
+
+                # Check method namespace matches protocol namespace
+                method_namespace = method.split('/')[0]
+                protocol_namespace = protocol.split('/')[0] if '/' in protocol else protocol
+
+                if method_namespace != protocol_namespace:
+                    raise TaskValidationError(
+                        task_id,
+                        [f"Method namespace '{method_namespace}' does not match protocol namespace '{protocol_namespace}'"]
+                    )
                 
-                
-                # Validate method is supported by the protocol
-                # Note: This is a basic check - providers should validate methods themselves
                 asyncio.create_task(
                     self.log_debug(
                         "protocol_validation",
-                        f"Validated protocol '{protocol}' with provider {provider.__class__.__name__}",
+                        f"Validated protocol '{protocol}' and method '{method}' with provider {provider.__class__.__name__}",
                         task_id=task_id,
                         method=method
                     )
                 )
                 
+            except TaskValidationError:
+                # Re-raise validation errors
+                raise
             except Exception as e:
-                # Log warning but continue - provider might be registered in pooling adapter
-                asyncio.create_task(
-                    self.log_warning(
-                        "protocol_validation",
-                        f"Could not validate protocol '{protocol}' in registry: {e}",
-                        task_id=task_id,
-                        protocol=protocol,
-                        method=method
-                    )
+                # Convert other errors to proper validation errors
+                raise TaskValidationError(
+                    task_id,
+                    [f"Protocol validation failed for '{protocol}': {e}"]
                 )
-                # Don't fail here - pooling adapter may have the provider
         else:
             # No registry available - use basic inference
             if not protocol and method:
@@ -690,7 +735,7 @@ class WorkflowLoaderV2(LoggingMixin):
     ) -> Task:
         """Create task with enhanced validation."""
         # Generate internal task ID
-        task_id = f"task-{uuid4().hex[:8]}"
+        task_id = f"task-{uuid4().hex}"
         
         # Log task creation at debug level
         asyncio.create_task(
@@ -746,6 +791,14 @@ class WorkflowLoaderV2(LoggingMixin):
         method = data.get('method', '')
         protocol = data.get('protocol', '')
         
+        # TODO: Implement whitelabeling for methods/attributes in workflow files
+        # This should integrate with the provider factory to check/create mappings
+        # from user-friendly names to actual protocol methods. For example:
+        # - User writes: method: "summarize" 
+        # - System maps to: protocol: "llm/v1", method: "llm/chat" with summarization prompt
+        # - Should use provider factory to validate and create these mappings dynamically
+        # - Needs to be implemented at a later stage
+        
         # Use registry-based validation
         protocol, method = self._validate_protocol_and_method(protocol, method, task_id)
         
@@ -755,11 +808,32 @@ class WorkflowLoaderV2(LoggingMixin):
         # Enhanced metadata
         metadata = data.get('metadata', {})
         metadata['created_by_loader'] = 'v2'
+        # Store the original user-defined ID if present
+        if 'id' in data:
+            metadata['original_id'] = data['id']
+        
+        # Check for unsupported fields
+        unsupported_fields = []
+        if 'depends_on' in data:
+            unsupported_fields.append("'depends_on' (use 'dependencies' instead)")
+        
+        # Check for other common mistakes
+        known_fields = {'id', 'name', 'protocol', 'method', 'params', 'parameters', 
+                       'dependencies', 'priority', 'timeout', 'retry', 'retry_config', 'metadata'}
+        unknown_fields = set(data.keys()) - known_fields
+        if unknown_fields:
+            unsupported_fields.extend(f"'{field}'" for field in unknown_fields)
+        
+        if unsupported_fields:
+            raise WorkflowValidationError(
+                f"Task '{data.get('name', task_id)}'",
+                [f"Unsupported fields: {', '.join(unsupported_fields)}"]
+            )
         
         return Task(
             id=task_id,
             name=data.get('name', task_id),
-            protocol=protocol,
+            protocol=protocol,  # Now can be extracted from method
             method=method,
             params=params,
             dependencies=data.get('dependencies', []) if resolve_dependencies else [],
@@ -881,6 +955,8 @@ class WorkflowLoaderV2(LoggingMixin):
     def validate_workflow_enhanced(self, workflow: Workflow) -> List[str]:
         """
         Enhanced workflow validation with detailed error reporting.
+        Returns list of validation errors, empty if valid.
+        Raises WorkflowValidationError only when explicitly asked to fail fast.
         """
         errors = []
         
@@ -908,11 +984,25 @@ class WorkflowLoaderV2(LoggingMixin):
             task_ids.add(task.id)
             
             # Validate required fields
-            if not task.protocol:
-                errors.append(f"Task {idx} ({task.name}): protocol is required")
-            
+            # Protocol is now optional - will be extracted from method if not provided
+
             if not task.method:
                 errors.append(f"Task {idx} ({task.name}): method is required")
+            
+            # Validate protocol/provider availability
+            if task.protocol and self.registry:
+                try:
+                    provider = self.registry.get_provider(task.protocol)
+                    if not provider:
+                        errors.append(
+                            f"Task {idx} ({task.name}): "
+                            f"No provider registered for protocol '{task.protocol}'"
+                        )
+                except Exception as e:
+                    errors.append(
+                        f"Task {idx} ({task.name}): "
+                        f"Error validating protocol '{task.protocol}': {e}"
+                    )
             
             # Validate dependencies
             if task.dependencies:
@@ -1021,9 +1111,9 @@ class WorkflowLoaderV2(LoggingMixin):
         
         for i, file_path in enumerate(files):
             file_name = Path(file_path).name
-            workflow_id = f"batch-{file_name.replace('.', '-')}-{uuid4().hex[:8]}"
+            workflow_id = f"batch-{file_name.replace('.', '-')}-{uuid4().hex}"
             workflow_name = (name + f" - {file_name}") if name else f"Process {file_name}"
-            task_id = f"task-{uuid4().hex[:8]}"
+            task_id = f"task-{uuid4().hex}"
             
             # Determine if this is a vision task
             is_image = Path(file_path).suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']

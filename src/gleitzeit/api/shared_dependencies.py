@@ -12,7 +12,7 @@ from typing import Optional, AsyncGenerator, Dict, Any
 from datetime import datetime, timedelta
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, Request
+from fastapi import Depends, Request, HTTPException
 from gleitzeit.client import GleitzeitClient, ClientMode
 from gleitzeit.persistence.base import PersistenceBackend
 from gleitzeit.persistence.factory import PersistenceFactory
@@ -39,26 +39,30 @@ class SharedClientPool:
         max_size: int = 20,
         mode: ClientMode = ClientMode.NATIVE,
         idle_timeout: int = 300,
-        service_token: Optional[str] = None,
         system_manager: Optional[Any] = None
     ):
         """
-        Initialize shared client pool.
-        
+        Initialize shared client pool with stream integration.
+
         Args:
             persistence: Backend for pool coordination
             instance_id: Unique API instance identifier
             max_size: Maximum total clients across all instances
             mode: Client mode for all pooled clients
             idle_timeout: Seconds before idle client cleanup
+            system_manager: System manager (preferably StreamSystemManager)
         """
         self.persistence = persistence
         self.instance_id = instance_id
         self.max_size = max_size
         self.mode = mode
         self.idle_timeout = idle_timeout
-        self.service_token = service_token
-        self.system_manager = system_manager  # Optional system manager for workflow execution
+        self.system_manager = system_manager  # System manager for Native mode
+
+        # Stream integration
+        self._is_stream_enabled = False
+        if system_manager and hasattr(system_manager, '__class__'):
+            self._is_stream_enabled = 'Stream' in system_manager.__class__.__name__
         
         self._prefix = "api:client_pool:"
         self._local_clients: Dict[str, GleitzeitClient] = {}
@@ -81,12 +85,13 @@ class SharedClientPool:
             
             # Register this instance
             await self._register_instance()
-            
+
             # Start cleanup task
             self._cleanup_task = asyncio.create_task(self._cleanup_loop())
-            
+
             self._initialized = True
-            logger.info(f"SharedClientPool initialized for instance {self.instance_id}")
+            stream_status = "stream-enabled" if self._is_stream_enabled else "standard"
+            logger.info(f"SharedClientPool initialized for instance {self.instance_id} ({stream_status})")
     
     async def _register_instance(self):
         """Register this API instance in the pool registry."""
@@ -95,7 +100,9 @@ class SharedClientPool:
             "instance_id": self.instance_id,
             "registered_at": datetime.utcnow().isoformat(),
             "last_heartbeat": datetime.utcnow().isoformat(),
-            "max_local_clients": self.max_size // 4  # Each instance gets a portion
+            "max_local_clients": self.max_size // 4,  # Each instance gets a portion
+            "stream_enabled": self._is_stream_enabled,
+            "system_manager_type": self.system_manager.__class__.__name__ if self.system_manager else "none"
         }
         await self.persistence.set(instance_key, json.dumps(instance_info))
         
@@ -197,19 +204,18 @@ class SharedClientPool:
             await self.persistence.set(total_key, str((int(count) if count else 0) + 1))
         
         # Create actual client
-        # Pass service_token if using NATIVE mode
+        # Pass system_manager if using NATIVE mode
         client_kwargs = {'mode': self.mode, 'event_mode': 'direct'}
-        if self.mode == ClientMode.NATIVE and self.service_token:
-            client_kwargs['service_token'] = self.service_token
+        if self.mode == ClientMode.NATIVE and self.system_manager:
+            client_kwargs['system_manager'] = self.system_manager
         
+        # STATELESS: Each client will discover SystemManager through persistence
+        # We don't pass instances - that violates stateless architecture
         client = GleitzeitClient(**client_kwargs)
         await client.initialize()
         
-        # If we have a SystemManager, connect the client to it
-        if self.system_manager:
-            if hasattr(client, '_adapter') and hasattr(client._adapter, 'set_system_manager'):
-                client._adapter.set_system_manager(self.system_manager)
-                logger.info(f"Connected client {client_id} to SystemManager")
+        # The NativeAdapter will connect to the distributed system via persistence
+        logger.debug(f"Created stateless client {client_id}")
         
         self._local_clients[client_id] = client
         logger.debug(f"Created new client {client_id}")
@@ -330,10 +336,10 @@ class SharedClientPool:
             return self._local_clients[client_id]
         
         # Create new client instance
-        # Pass service_token if using NATIVE mode
+        # Pass system_manager if using NATIVE mode
         client_kwargs = {'mode': self.mode, 'event_mode': 'direct'}
-        if self.mode == ClientMode.NATIVE and self.service_token:
-            client_kwargs['service_token'] = self.service_token
+        if self.mode == ClientMode.NATIVE and self.system_manager:
+            client_kwargs['system_manager'] = self.system_manager
         
         client = GleitzeitClient(**client_kwargs)
         try:
@@ -482,6 +488,52 @@ class SharedClientPool:
         self._initialized = False
         logger.info("SharedClientPool shutdown complete")
 
+    def is_stream_enabled(self) -> bool:
+        """Check if this pool uses stream-enabled system manager."""
+        return self._is_stream_enabled
+
+    async def get_stream_health(self) -> Dict[str, Any]:
+        """Get stream system health if available."""
+        if not self._is_stream_enabled or not self.system_manager:
+            return {"error": "Stream integration not available"}
+
+        try:
+            if hasattr(self.system_manager, 'get_system_health'):
+                return await self.system_manager.get_system_health()
+            else:
+                return {"error": "System manager does not support stream health"}
+        except Exception as e:
+            logger.error(f"Error getting stream health from SharedClientPool: {e}")
+            return {"error": str(e)}
+
+    async def get_pool_statistics(self) -> Dict[str, Any]:
+        """Get pool statistics including stream integration status."""
+        try:
+            # Get basic pool stats
+            stats = {
+                "instance_id": self.instance_id,
+                "max_size": self.max_size,
+                "mode": self.mode.value,
+                "local_clients": len(self._local_clients),
+                "stream_enabled": self._is_stream_enabled,
+                "system_manager_type": self.system_manager.__class__.__name__ if self.system_manager else None
+            }
+
+            # Add stream-specific stats if available
+            if self._is_stream_enabled and self.system_manager:
+                try:
+                    if hasattr(self.system_manager, 'get_stream_statistics'):
+                        stream_stats = await self.system_manager.get_stream_statistics()
+                        stats["stream_statistics"] = stream_stats
+                except Exception as e:
+                    logger.debug(f"Could not get stream statistics: {e}")
+
+            return stats
+
+        except Exception as e:
+            logger.error(f"Error getting pool statistics: {e}")
+            return {"error": str(e)}
+
 
 # Global shared pool instance
 _shared_pool: Optional[SharedClientPool] = None
@@ -558,3 +610,60 @@ async def shared_client_lifespan():
 
 # Export for use in routes
 get_client = get_shared_client  # Use shared pool by default
+
+
+# System Manager dependency - gets from shared pool client
+async def get_system_manager():
+    """
+    Get SystemManager instance from shared client pool.
+
+    This dependency extracts the SystemManager from a pooled client
+    for use in API routes that need direct system access.
+
+    Returns:
+        SystemManager instance
+    """
+    pool = await get_shared_pool()
+    client = await pool.acquire()
+
+    try:
+        # Get system manager from the client's adapter
+        if hasattr(client, '_adapter') and hasattr(client._adapter, 'system_manager'):
+            return client._adapter.system_manager
+        elif hasattr(client, '_adapter') and hasattr(client._adapter, 'execution_engine'):
+            # For API clients, get via execution engine
+            return client._adapter.execution_engine.system_manager
+        else:
+            # Fallback - try to get the system manager from the shared pool
+            if hasattr(pool, 'system_manager'):
+                return pool.system_manager
+            else:
+                raise HTTPException(
+                    status_code=503,
+                    detail="SystemManager not available in current configuration"
+                )
+    finally:
+        await pool.release(client)
+
+
+# Auth dependencies placeholders
+async def get_current_user_optional():
+    """
+    Optional authentication dependency.
+
+    Returns None if no user is authenticated, or user info if authenticated.
+    This is a placeholder implementation.
+    """
+    # TODO: Implement proper authentication
+    return None
+
+
+async def require_admin():
+    """
+    Require admin authentication dependency.
+
+    This is a placeholder implementation that allows all access.
+    In production, this should validate admin credentials.
+    """
+    # TODO: Implement proper admin authentication
+    return {"username": "admin", "role": "admin"}

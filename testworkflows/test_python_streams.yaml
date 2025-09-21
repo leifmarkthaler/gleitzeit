@@ -1,0 +1,37 @@
+name: "Test Python with Streams"
+description: "Simple workflow to test Redis Streams implementation"
+timeout: 30
+wait_for_completion: true
+
+tasks:
+  - name: "add_numbers"
+    protocol: "python/v1"
+    method: "python/execute_code"
+    params:
+      code: |
+        result = 5 + 3
+        print(f"5 + 3 = {result}")
+        result
+    retry_config:
+      max_attempts: 2
+      
+  - name: "multiply_numbers"
+    protocol: "python/v1"
+    method: "python/execute_code"
+    params:
+      code: |
+        result = 4 * 7
+        print(f"4 * 7 = {result}")
+        result
+        
+  - name: "combine_results"
+    protocol: "python/v1"
+    method: "python/execute_code"
+    dependencies: ["add_numbers", "multiply_numbers"]
+    params:
+      code: |
+        # This would normally use ${add_numbers.result} and ${multiply_numbers.result}
+        # For now, just do a simple calculation
+        total = 8 + 28  # Results from previous tasks
+        print(f"Combined result: {total}")
+        total

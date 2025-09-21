@@ -8,6 +8,7 @@ import logging
 import asyncio
 
 from .manager import ReplayManager, ReplayMode, ReplayOptions
+from gleitzeit.core.errors import SystemError, InvalidParameterError
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class ReplayService:
                 event_store = client._adapter.event_store
         
         if not persistence:
-            raise RuntimeError("Replay service requires persistence backend")
+            raise SystemError("Replay service requires persistence backend")
         
         self.replay_manager = ReplayManager(
             persistence=persistence,
@@ -95,7 +96,7 @@ class ReplayService:
         try:
             replay_mode = ReplayMode(mode)
         except ValueError:
-            raise ValueError(f"Invalid replay mode: {mode}. "
+            raise InvalidParameterError("mode", f"Invalid replay mode: {mode}. "
                            f"Valid modes: {[m.value for m in ReplayMode]}")
         
         # Get user context if not provided

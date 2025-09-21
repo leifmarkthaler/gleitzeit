@@ -11,6 +11,7 @@ from gleitzeit.core.jsonrpc import JSONRPCRequest, JSONRPCResponse, JSONRPCError
 from gleitzeit.core.errors import ErrorCode
 from gleitzeit.providers.python_provider import PythonProvider
 from gleitzeit.providers.ollama_provider import OllamaProvider
+from gleitzeit.providers.timer_provider import TimerProvider
 from gleitzeit.hub.ollama_hub import OllamaHub
 
 logger = logging.getLogger(__name__)
@@ -24,10 +25,11 @@ class SimpleProviderHub:
     clients to connect to a central hub.
     """
     
-    def __init__(self):
+    def __init__(self, persistence=None):
         self.providers = {}
+        self.persistence = persistence
         self._initialized = False
-        logger.info("Created SimpleProviderHub")
+        logger.info(f"Created SimpleProviderHub (persistence={'available' if persistence else 'not available'})")
     
     async def initialize(self):
         """Initialize the hub and create providers using factory"""
@@ -82,6 +84,42 @@ class SimpleProviderHub:
         except Exception as e:
             logger.warning(f"Failed to initialize Ollama provider: {e}")
             # Continue without Ollama if it fails (might not be installed)
+        
+        # Create Timer provider
+        try:
+            # Use the hub's persistence if available
+            timer_provider = factory.create_provider(
+                TimerProvider,
+                provider_id="timer",
+                protocol_id="timer/v1",
+                persistence=self.persistence,
+                validate=True
+            )
+            await timer_provider.initialize()
+            self.providers["timer/v1"] = timer_provider
+            logger.info("Timer provider initialized successfully")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Timer provider: {e}")
+            # Continue without Timer if it fails
+
+        # Create Signal provider
+        try:
+            from gleitzeit.providers.signal_provider import SignalProvider
+            signal_provider = factory.create_provider(
+                SignalProvider,
+                provider_id="signal",
+                protocol_id="signal/v1",
+                persistence=self.persistence,
+                validate=True
+            )
+            await signal_provider.initialize()
+            self.providers["signal/v1"] = signal_provider
+            logger.info("Signal provider initialized successfully")
+            # Note: SignalWorker handles the actual signal processing
+            logger.info("Signal functionality: SignalProvider handles wait tasks, SignalWorker processes signals")
+        except Exception as e:
+            logger.warning(f"Failed to initialize Signal provider: {e}")
+            # Continue without Signal if it fails
         
         self._initialized = True
         logger.info(f"SimpleProviderHub initialized with {len(self.providers)} providers")

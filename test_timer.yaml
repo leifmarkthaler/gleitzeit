@@ -1,0 +1,7 @@
+id: timer-wake-test
+tasks:
+  - id: quick-timer
+    protocol: timer/v1
+    method: timer/sleep
+    params:
+      seconds: 1

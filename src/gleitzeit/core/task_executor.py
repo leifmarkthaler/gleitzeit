@@ -15,7 +15,7 @@ from gleitzeit.persistence.base import PersistenceBackend
 from gleitzeit.core.parameter_resolver import ParameterResolver
 from gleitzeit.core.errors import (
     TaskError, ErrorCode, TaskTimeoutError, 
-    TaskExecutionError, error_to_jsonrpc
+    TaskExecutionError, TaskValidationError, error_to_jsonrpc
 )
 from gleitzeit.core.events import (
     EventType, GleitzeitEvent,
@@ -64,7 +64,7 @@ class TaskExecutor:
             task_timeout: Default timeout for task execution in seconds
         """
         if not pooling_adapter:
-            raise ValueError("TaskExecutor requires a pooling_adapter")
+            raise TaskValidationError("task_executor", ["TaskExecutor requires a pooling_adapter"])
             
         self.pooling_adapter = pooling_adapter
         self.persistence = persistence
@@ -104,7 +104,7 @@ class TaskExecutor:
                 logger.info(f"Resolving parameters for task {task.id}")
                 params = await self.parameter_resolver.resolve_parameters(task)
                 
-            # Route to provider and execute
+            # Route to provider and execute (timer tasks go through providers now)
             logger.info(f"Executing task {task.id} ({task.protocol}/{task.method})")
             result = await self._route_and_execute(task, params)
             
@@ -115,7 +115,7 @@ class TaskExecutor:
                 if not task_result.started_at:
                     task_result.started_at = task_start_time
                     
-                # Check if the task failed
+                # Check task status and handle accordingly
                 if task_result.status == TaskStatus.FAILED:
                     # Update task status to FAILED
                     await self._update_task_status(task, TaskStatus.FAILED, completed_at=task_result.completed_at)
@@ -128,6 +128,24 @@ class TaskExecutor:
                     await self._emit_task_failed(task, task_result.error or "Task execution failed")
                     
                     logger.info(f"Task {task.id} failed: {task_result.error}")
+                    return task_result
+                    
+                elif task_result.status in [TaskStatus.PAUSED, TaskStatus.SLEEPING, TaskStatus.WAITING, TaskStatus.SCHEDULED]:
+                    # Update task status to the appropriate waiting state
+                    await self._update_task_status(task, task_result.status, started_at=task_result.started_at)
+                    
+                    # Store result in persistence
+                    if self.persistence:
+                        await self.persistence.save_task_result(task_result)
+                    
+                    # Task is in a waiting state - don't emit completed event
+                    status_desc = {
+                        TaskStatus.PAUSED: "paused",
+                        TaskStatus.SLEEPING: "paused",  # Deprecated - mapped to paused
+                        TaskStatus.WAITING: "waiting for signal",
+                        TaskStatus.SCHEDULED: "scheduled"
+                    }.get(task_result.status, "in waiting state")
+                    logger.info(f"Task {task.id} is {status_desc}")
                     return task_result
             else:
                 # Create successful task result from raw result
@@ -233,7 +251,7 @@ class TaskExecutor:
                 task_id=task.id,
                 timeout=self.task_timeout
             )
-                
+    
     async def _update_task_status(
         self, 
         task: Task, 
@@ -308,7 +326,7 @@ class TaskExecutor:
         event = create_task_completed_event(
             task_id=task.id,
             workflow_id=task.workflow_id,
-            duration=(result.completed_at - result.started_at).total_seconds() if result.started_at else 0,
+            duration=(result.completed_at - result.started_at).total_seconds() if result.started_at and result.completed_at else 0,
             source="task_executor"
         )
         await self.event_bus.emit(event)
@@ -342,17 +360,17 @@ class TaskExecutor:
             ValueError: If task is invalid
         """
         if not task.protocol:
-            raise ValueError(f"Task {task.id} has no protocol specified")
+            raise TaskValidationError(task.id, ["Task has no protocol specified"])
             
         if not task.method:
-            raise ValueError(f"Task {task.id} has no method specified")
+            raise TaskValidationError(task.id, ["Task has no method specified"])
             
         # Check if protocol is supported
-        if not self.registry.is_protocol_available(task.protocol):
+        if hasattr(self, 'registry') and not self.registry.is_protocol_available(task.protocol):
             if self.pooling_adapter:
                 if not self.pooling_adapter.is_protocol_available(task.protocol):
-                    raise ValueError(f"Protocol {task.protocol} not available")
+                    raise TaskValidationError(task.id, [f"Protocol {task.protocol} not available"])
             else:
-                raise ValueError(f"Protocol {task.protocol} not available")
+                raise TaskValidationError(task.id, [f"Protocol {task.protocol} not available"])
                 
         return True

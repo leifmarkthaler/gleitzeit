@@ -62,11 +62,13 @@ class BaseAdapter(ABC):
         """Get all tasks for a workflow."""
         pass
     
-    # Task operations
     @abstractmethod
-    async def submit_task(self, task: Task) -> Dict[str, Any]:
-        """Submit a task for execution."""
+    async def get_workflow_results(self, workflow_id: str) -> List[Dict[str, Any]]:
+        """Get all task results for a workflow."""
         pass
+    
+    # Task operations
+    # Note: submit_task removed - all tasks must be submitted as workflows
     
     @abstractmethod
     async def get_task(self, task_id: str) -> Optional[Task]:

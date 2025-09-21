@@ -1,0 +1,34 @@
+name: example_calculation
+description: Simple workflow demonstrating task dependencies
+
+tasks:
+  - name: generate_numbers
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: trypython/tasks.py
+      function: generate_numbers
+  
+  - name: calculate_sum
+    protocol: python/v1
+    method: python/execute
+    dependencies: [generate_numbers]
+    params:
+      file: trypython/tasks.py
+      function: calculate_sum
+  
+  - name: calculate_average
+    protocol: python/v1
+    method: python/execute
+    dependencies: [generate_numbers]
+    params:
+      file: trypython/tasks.py
+      function: calculate_average
+  
+  - name: final_report
+    protocol: python/v1
+    method: python/execute
+    dependencies: [calculate_sum, calculate_average]
+    params:
+      file: trypython/tasks.py
+      function: final_report

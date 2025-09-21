@@ -14,6 +14,7 @@ from gleitzeit.providers.pooling_adapter import PoolingAdapter
 from gleitzeit.persistence.unified_persistence import UnifiedPersistence
 from gleitzeit.core.jsonrpc import JSONRPCRequest, JSONRPCResponse
 from gleitzeit.providers.python_provider import PythonProvider
+from gleitzeit.core.errors import ConfigurationError, ProviderError
 try:
     from gleitzeit.providers.shell_provider import ShellProvider
 except ImportError:
@@ -115,6 +116,26 @@ class ProviderHub(ResourceHub):
             )
             self._registered_protocols.add("shell/v1")
         
+        # Register Timer provider
+        try:
+            from gleitzeit.providers.timer_provider import TimerProvider
+
+            await self.pooling_adapter.register_provider(
+                provider_id="timer",
+                protocol_id="timer/v1",
+                provider_instance=TimerProvider,  # Pass class, not instance
+                supported_methods={"sleep", "wait_until", "wait_or_signal", "start_sla", "cancel_timer"}
+            )
+            self._registered_protocols.add("timer/v1")
+
+            logger.info("Registered timer provider")
+        except ImportError as e:
+            logger.warning(f"Timer providers not available: {e}")
+
+        # NOTE: Signal functionality is handled by SignalProvider + SignalWorker
+        # SignalProvider registers wait tasks, SignalWorker processes signals from Redis Streams
+        logger.info("Signal functionality handled by SignalProvider + SignalWorker")
+
         logger.info(f"Registered default providers: {self._registered_protocols}")
     
     async def execute_request(
@@ -128,7 +149,7 @@ class ProviderHub(ResourceHub):
         This is the main entry point for clients to execute tasks.
         """
         if not self.pooling_adapter:
-            raise RuntimeError("Pooling not enabled")
+            raise ConfigurationError("Pooling not enabled")
         
         return await self.pooling_adapter.execute_request(protocol_id, request)
     
@@ -199,7 +220,7 @@ async def start_provider_hub_server(
         from aiohttp import web
     except ImportError:
         logger.error("aiohttp not installed - required for hub server")
-        raise ImportError("Please install aiohttp: pip install aiohttp")
+        raise ConfigurationError("Please install aiohttp: pip install aiohttp")
     
     # Create hub
     hub = ProviderHub(config=config)

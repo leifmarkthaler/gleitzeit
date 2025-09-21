@@ -1,11 +1,10 @@
 """
-Persistence Factory with automatic fallback chain
+Persistence Factory for Redis-only persistence
 
-Provides a factory for creating persistence adapters with automatic fallback:
-1. Redis (default) - High performance distributed persistence
-2. In-Memory (fallback) - If Redis is not available or for testing
+Provides a factory for creating Redis persistence adapters.
+Redis is required - no fallbacks to in-memory or other backends.
 
-This ensures the system always has a working persistence layer.
+This ensures consistent distributed state management across all instances.
 """
 
 import os
@@ -13,12 +12,14 @@ import logging
 from typing import Optional, Dict, Any
 from enum import Enum
 
-from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter, UnifiedInMemoryAdapter
+from gleitzeit.persistence.unified_persistence import UnifiedPersistenceAdapter
 from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
-# UnifiedRedisAdapter is imported in _create_scaling method when needed
-from gleitzeit.core.models import TaskStatus, WorkflowStatus
-# Event-driven adapters are no longer used - centralized event architecture
-# Events are emitted only by ExecutionEngine
+from gleitzeit.core.errors import (
+    PersistenceError,
+    ConfigurationError,
+    ErrorCode,
+    PersistenceConnectionError
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,30 +27,23 @@ logger = logging.getLogger(__name__)
 class PersistenceType(Enum):
     """Available persistence types"""
     REDIS = "redis"
-    MEMORY = "memory"
-    AUTO = "auto"  # Use automatic fallback chain
-    SCALING = "scaling"  # Redis-only for horizontal scaling
+    AUTO = "auto"  # Default to Redis
 
 
 class PersistenceFactory:
     """
-    Factory for creating persistence adapters with automatic fallback
+    Factory for creating Redis persistence adapters
     
-    The factory attempts to create adapters in the following order:
-    1. Redis - Fast, distributed, production-ready
-    2. In-Memory - Always works, useful for testing
+    Redis is required for Gleitzeit to ensure distributed state consistency.
+    No fallback to in-memory or other backends is provided.
     
     Usage:
-        # Automatic fallback (Redis -> Memory)
+        # Create Redis adapter (default)
         adapter = await PersistenceFactory.create()
         
-        # Force specific type
-        adapter = await PersistenceFactory.create(persistence_type=PersistenceType.SQL)
-        
-        # Custom configuration
+        # Custom Redis configuration
         adapter = await PersistenceFactory.create(
-            redis_url="redis://localhost:6379/1",
-            sql_connection="postgresql://user:pass@localhost/db"
+            redis_url="redis://localhost:6379/1"
         )
     """
     
@@ -64,21 +58,22 @@ class PersistenceFactory:
         event_bus: Optional[Any] = None
     ) -> UnifiedPersistenceAdapter:
         """
-        Create a persistence adapter with automatic fallback
+        Create a Redis persistence adapter
         
         Args:
-            persistence_type: Force a specific persistence type (default: AUTO)
+            persistence_type: Must be REDIS or AUTO (both use Redis)
             redis_url: Redis connection URL (default: from env or localhost)
-            sql_connection: SQL connection string (default: from env or SQLite)
-            sql_db_path: SQLite database path (default: from env or gleitzeit.db)
+            sql_connection: Deprecated - not used
+            sql_db_path: Deprecated - not used
             config: Additional configuration dictionary
-            event_bus: Optional EventBus for event-driven architecture
+            event_bus: Deprecated - not used
             
         Returns:
-            Initialized UnifiedPersistenceAdapter (event-driven if event_bus provided)
+            Initialized UnifiedRedisAdapter
             
         Raises:
-            RuntimeError: If no persistence adapter could be created (should never happen)
+            PersistenceConnectionError: If Redis connection fails
+            ConfigurationError: If configuration is invalid
         """
         # Get persistence type from environment or use AUTO
         if persistence_type is None:
@@ -102,74 +97,41 @@ class PersistenceFactory:
         # Merge config with defaults
         final_config = config or {}
         
-        # Handle specific persistence types
-        if persistence_type == PersistenceType.REDIS:
-            return await cls._create_redis(redis_url, final_config, event_bus)
-        
-        elif persistence_type == PersistenceType.MEMORY:
-            return await cls._create_memory(final_config, event_bus)
-        
-        elif persistence_type == PersistenceType.SCALING:
-            return await cls._create_scaling(redis_url, final_config, event_bus)
-        
-        elif persistence_type == PersistenceType.AUTO:
-            # Try Redis first
-            adapter = await cls._try_redis(redis_url, final_config, event_bus)
-            if adapter:
-                return adapter
-            
-            # Skip SQL - directly fallback to in-memory
-            logger.warning("Redis not available, using in-memory persistence")
-            return await cls._create_memory(final_config, event_bus)
+        # Always use Redis - no other backends supported
+        if persistence_type in [PersistenceType.REDIS, PersistenceType.AUTO]:
+            return await cls._create_redis(redis_url, final_config)
         
         # Should never reach here
-        raise RuntimeError(f"Unknown persistence type: {persistence_type}")
+        raise ConfigurationError(
+            f"Unknown persistence type: {persistence_type}. Only Redis is supported.",
+            code=ErrorCode.CONFIGURATION_ERROR
+        )
     
     @classmethod
-    async def _try_redis(
+    async def _create_redis(
         cls,
         redis_url: str,
-        config: Dict[str, Any],
-        event_bus: Optional[Any] = None
-    ) -> Optional[UnifiedRedisAdapter]:
-        """Try to create Redis adapter, return None if fails"""
+        config: Dict[str, Any]
+    ) -> UnifiedRedisAdapter:
+        """Create Redis adapter or raise exception"""
         try:
-            logger.info(f"Attempting to connect to Redis at {redis_url}")
+            logger.info(f"Connecting to Redis at {redis_url}")
             
-            # Check if event-aware adapter is requested
-            use_event_aware = config.get("enable_distributed_events", False) or event_bus is not None
+            # Always use UnifiedRedisAdapter - the only supported implementation
+            adapter = UnifiedRedisAdapter(
+                redis_url=redis_url,
+                key_prefix=config.get("redis_key_prefix", "gleitzeit"),
+                max_connections=config.get("redis_max_connections", 50),
+                socket_timeout=config.get("redis_socket_timeout", 5),
+                socket_connect_timeout=config.get("redis_connect_timeout", 5),
+                retry_on_timeout=config.get("redis_retry_on_timeout", True),
+                health_check_interval=config.get("redis_health_check_interval", 30)
+            )
             
-            if use_event_aware and event_bus:
-                # Use event-aware adapter for distributed event handling
-                logger.info("Creating Redis adapter with distributed event support (Redis pub/sub)")
-                from gleitzeit.persistence.unified_redis_events import UnifiedRedisEventsAdapter
-                adapter = UnifiedRedisEventsAdapter(
-                    redis_url=redis_url,
-                    event_bus=event_bus,
-                    key_prefix=config.get("redis_key_prefix", "gleitzeit"),
-                    max_connections=config.get("redis_max_connections", 50),
-                    socket_timeout=config.get("redis_socket_timeout", 5),
-                    socket_connect_timeout=config.get("redis_connect_timeout", 5),
-                    retry_on_timeout=config.get("redis_retry_on_timeout", True),
-                    health_check_interval=config.get("redis_health_check_interval", 30)
-                )
-            else:
-                # Use base adapter (centralized event architecture)
-                logger.info("Creating Redis adapter (centralized event architecture)")
-                adapter = UnifiedRedisAdapter(
-                    redis_url=redis_url,
-                    key_prefix=config.get("redis_key_prefix", "gleitzeit"),
-                    max_connections=config.get("redis_max_connections", 50),
-                    socket_timeout=config.get("redis_socket_timeout", 5),
-                    socket_connect_timeout=config.get("redis_connect_timeout", 5),
-                    retry_on_timeout=config.get("redis_retry_on_timeout", True),
-                    health_check_interval=config.get("redis_health_check_interval", 30)
-                )
-            
-            # Test connection
+            # Initialize and test connection
             await adapter.initialize()
             
-            # Verify it's working with a simple operation
+            # Verify Redis is working with a simple operation
             test_key = f"{adapter.key_prefix}:connection_test"
             await adapter._execute("SET", test_key, "test", "EX", 1)
             result = await adapter._execute("GET", test_key)
@@ -178,91 +140,45 @@ class PersistenceFactory:
                 logger.info("Successfully connected to Redis persistence")
                 return adapter
             else:
-                logger.warning("Redis connection test failed")
-                await adapter.shutdown()
-                return None
+                raise PersistenceConnectionError(
+                    "Redis connection test failed",
+                    code=ErrorCode.PERSISTENCE_CONNECTION_FAILED,
+                    backend="redis"
+                )
                 
+        except PersistenceConnectionError:
+            raise
         except Exception as e:
-            logger.warning(f"Failed to create Redis adapter: {e}")
-            return None
+            logger.error(f"Failed to create Redis adapter: {e}")
+            raise PersistenceConnectionError(
+                f"Redis connection failed: {e}",
+                code=ErrorCode.PERSISTENCE_CONNECTION_FAILED,
+                backend="redis",
+                cause=e
+            )
     
-    
-    @classmethod
-    async def _create_redis(
-        cls,
-        redis_url: str,
-        config: Dict[str, Any],
-        event_bus: Optional[Any] = None
-    ) -> UnifiedRedisAdapter:
-        """Create Redis adapter or raise exception"""
-        adapter = await cls._try_redis(redis_url, config, event_bus)
-        if adapter:
-            return adapter
-        raise RuntimeError("Failed to create Redis adapter")
     
     
     @classmethod
-    async def _create_memory(
-        cls,
-        config: Dict[str, Any],
-        event_bus: Optional[Any] = None
-    ) -> UnifiedInMemoryAdapter:
-        """Create in-memory adapter (always succeeds)"""
-        # Check if event-aware adapter is requested
-        use_event_aware = config.get("enable_distributed_events", False) or event_bus is not None
+    async def create_for_testing(cls) -> UnifiedRedisAdapter:
+        """
+        Create a Redis adapter for testing
         
-        if use_event_aware and event_bus:
-            # Use event-aware adapter for local event handling
-            logger.info("Using in-memory persistence with event support")
-            from gleitzeit.persistence.unified_memory_events import UnifiedMemoryEventsAdapter
-            adapter = UnifiedMemoryEventsAdapter(event_bus=event_bus)
-        else:
-            # Use base adapter (centralized event architecture)
-            logger.info("Using in-memory persistence (centralized event architecture)")
-            adapter = UnifiedInMemoryAdapter()
+        Tests should use a separate Redis database or key prefix
+        to avoid conflicts with production data.
         
-        await adapter.initialize()
-        return adapter
-    
-    @classmethod
-    async def _create_scaling(
-        cls,
-        redis_url: str,
-        config: Dict[str, Any],
-        event_bus: Optional[Any] = None
-    ) -> UnifiedPersistenceAdapter:
-        """Create Redis-only scaling adapter for horizontal scaling using existing UnifiedRedisAdapter"""
-        logger.info(f"Creating Redis scaling adapter using UnifiedRedisAdapter: {redis_url}")
-        
-        # Use the existing UnifiedRedisAdapter which is already fully implemented
-        from gleitzeit.persistence.unified_redis import UnifiedRedisAdapter
-        
-        adapter = UnifiedRedisAdapter(
-            redis_url=redis_url,
-            key_prefix=config.get('key_prefix', 'gleitzeit'),
-            metrics_retention_hours=config.get('metrics_retention_hours', 24),
-            enable_pubsub=config.get('enable_pub_sub', True),
-            max_connections=config.get('max_connections', 50),
-            socket_timeout=config.get('socket_timeout', 5),
-            socket_connect_timeout=config.get('socket_connect_timeout', 5),
-            retry_on_timeout=config.get('retry_on_timeout', True),
-            health_check_interval=config.get('health_check_interval', 30)
+        Returns:
+            Redis adapter configured for testing
+            
+        Raises:
+            PersistenceConnectionError: If Redis is not available
+        """
+        # Use test database (db 15) or test prefix
+        test_redis_url = os.environ.get("GLEITZEIT_TEST_REDIS_URL", "redis://localhost:6379/15")
+        return await cls._create_redis(
+            redis_url=test_redis_url,
+            config={"redis_key_prefix": "gleitzeit_test"}
         )
-        
-        await adapter.initialize()
-        logger.info("✓ Redis adapter (UnifiedRedisAdapter) initialized for horizontal scaling")
-        return adapter
-    
-    
-    @classmethod
-    async def create_for_testing(cls) -> UnifiedInMemoryAdapter:
-        """
-        Create an in-memory adapter for testing
-        
-        This is a convenience method that always returns an in-memory adapter,
-        useful for unit tests and development.
-        """
-        return await cls._create_memory({})
 
 
 class PersistenceManager:
@@ -305,7 +221,7 @@ class PersistenceManager:
             RuntimeError: If already initialized
         """
         if cls._initialized:
-            raise RuntimeError("PersistenceManager already initialized")
+            raise PersistenceError("PersistenceManager already initialized")
         
         cls._adapter = await PersistenceFactory.create(
             persistence_type=persistence_type,
@@ -328,7 +244,7 @@ class PersistenceManager:
             RuntimeError: If not initialized
         """
         if not cls._initialized or not cls._adapter:
-            raise RuntimeError("PersistenceManager not initialized. Call initialize() first.")
+            raise PersistenceError("PersistenceManager not initialized. Call initialize() first.")
         return cls._adapter
     
     @classmethod
@@ -377,11 +293,14 @@ async def create_persistence(
     return await PersistenceFactory.create(persistence_type=ptype, **kwargs)
 
 
-async def get_default_persistence() -> UnifiedPersistenceAdapter:
+async def get_default_persistence() -> UnifiedRedisAdapter:
     """
-    Get the default persistence adapter with automatic fallback
+    Get the default Redis persistence adapter
     
     Returns:
-        Initialized persistence adapter (Redis -> SQL -> Memory)
+        Initialized Redis adapter
+        
+    Raises:
+        PersistenceConnectionError: If Redis is not available
     """
     return await PersistenceFactory.create()

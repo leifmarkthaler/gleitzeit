@@ -7,7 +7,8 @@ import logging
 from typing import Dict, Any, Optional, Callable, List, AsyncIterator
 from datetime import datetime
 
-from gleitzeit.core.models import Workflow, TaskResult, WorkflowStatus
+from gleitzeit.core.models import Workflow, TaskResult, WorkflowStatus, TaskStatus
+from gleitzeit.core.errors import SystemError
 from ..events import ClientEvent, EventType
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,7 @@ class EventWorkflowMixin:
             Submission response with tracking info
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         # Check if adapter supports events
         if not hasattr(self._adapter, 'event_bus') or not self._adapter.event_bus:
@@ -90,7 +91,7 @@ class EventWorkflowMixin:
             # Store result
             result = TaskResult(
                 task_id=task_id,
-                status=event.data.get('status', 'completed'),
+                status=event.data.get('status', TaskStatus.COMPLETED.value),
                 result=event.data.get('result'),
                 error=event.data.get('error'),
                 completed_at=datetime.utcnow()
@@ -172,10 +173,10 @@ class EventWorkflowMixin:
             Stream of monitoring data
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         if not hasattr(self._adapter, 'event_bus') or not self._adapter.event_bus:
-            raise RuntimeError("Event monitoring not available")
+            raise SystemError("Event monitoring not available")
             
         event_bus = self._adapter.event_bus
         
@@ -233,7 +234,7 @@ class EventWorkflowMixin:
                 except asyncio.TimeoutError:
                     # Check if workflow is complete
                     workflow = await self.get_workflow(workflow_id)
-                    if workflow and workflow.status in ['completed', 'failed', 'cancelled']:
+                    if workflow and workflow.status in [WorkflowStatus.COMPLETED.value, WorkflowStatus.FAILED.value, WorkflowStatus.CANCELLED.value]:
                         break
                         
         finally:
@@ -286,7 +287,7 @@ class EventWorkflowMixin:
             Progress information
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
             
         # Get workflow
         workflow = await self.get_workflow(workflow_id)
@@ -301,7 +302,7 @@ class EventWorkflowMixin:
         
         for task in workflow.tasks:
             if hasattr(task, 'status'):
-                if task.status == 'completed':
+                if task.status == TaskStatus.COMPLETED.value:
                     completed_tasks += 1
                 elif task.status == 'failed':
                     failed_tasks += 1

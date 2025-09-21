@@ -1,0 +1,39 @@
+name: test-dependency-fix
+version: "1.0"
+description: Simple workflow to test dependency resolution fix
+
+tasks:
+  - id: task1
+    name: First Task
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        print("Task 1: Starting")
+        result = "task1_complete"
+        print(f"Task 1: Completed with result={result}")
+        return result
+
+  - id: task2
+    name: Second Task
+    protocol: python/v1
+    method: python/execute
+    dependencies: [task1]
+    params:
+      code: |
+        print("Task 2: Starting (depends on task1)")
+        result = "task2_complete"
+        print(f"Task 2: Completed with result={result}")
+        return result
+
+  - id: task3
+    name: Third Task
+    protocol: python/v1
+    method: python/execute
+    dependencies: [task2]
+    params:
+      code: |
+        print("Task 3: Starting (depends on task2)")
+        result = "task3_complete"
+        print(f"Task 3: Completed with result={result}")
+        return result

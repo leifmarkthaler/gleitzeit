@@ -6,7 +6,7 @@ core EventBus to connected clients, enabling real-time updates without polling.
 Uses dependency injection for stateless operation.
 """
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, Depends, HTTPException
 from typing import List, Dict, Any, Optional, Set
 import asyncio
 import json
@@ -15,226 +15,48 @@ from datetime import datetime
 from uuid import uuid4
 
 from gleitzeit.core.events import EventType, GleitzeitEvent
-from gleitzeit.client.events import ClientEvent
 from gleitzeit.client import GleitzeitClient
-from ..dependencies import get_client
+from ..dependencies import get_client, get_system_manager
+from ..auth_dependencies import get_current_user_auto
+from ..websocket_manager import ScalableWebSocketManager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/events", tags=["events"])
 
 
-class EventConnectionManager:
-    """
-    Manages WebSocket connections for event streaming.
-    
-    This manager bridges the server EventBus to WebSocket clients,
-    providing real-time event delivery with subscription management.
-    """
-    
-    def __init__(self):
-        self.active_connections: Dict[str, WebSocket] = {}
-        self.subscriptions: Dict[str, Set[str]] = {}
-        self.connection_handlers: Dict[str, List[str]] = {}  # connection_id -> handler_ids
-        self.connection_clients: Dict[str, GleitzeitClient] = {}  # connection_id -> client
-        
-    async def connect(
-        self, 
-        websocket: WebSocket, 
-        connection_id: str,
-        client: GleitzeitClient
-    ) -> str:
-        """
-        Accept and track a new WebSocket connection.
-        
-        Args:
-            websocket: WebSocket connection
-            connection_id: Unique connection identifier
-            client: GleitzeitClient instance for this connection
-            
-        Returns:
-            Connection ID
-        """
+@router.websocket("/test")
+async def test_websocket(websocket: WebSocket):
+    """Minimal WebSocket endpoint for testing."""
+    try:
         await websocket.accept()
-        self.active_connections[connection_id] = websocket
-        self.subscriptions[connection_id] = set()
-        self.connection_handlers[connection_id] = []
-        self.connection_clients[connection_id] = client
+        await websocket.send_text("Hello from WebSocket!")
         
-        # Send initial connection confirmation
-        await websocket.send_json({
-            "type": "connection",
-            "status": "connected",
-            "connection_id": connection_id,
-            "timestamp": datetime.utcnow().isoformat()
-        })
-        
-        logger.info(f"Event WebSocket connected: {connection_id}")
-        return connection_id
-        
-    def disconnect(self, connection_id: str):
-        """
-        Remove a WebSocket connection and clean up handlers.
-        
-        Args:
-            connection_id: Connection to remove
-        """
-        if connection_id in self.active_connections:
-            del self.active_connections[connection_id]
-            
-        if connection_id in self.subscriptions:
-            del self.subscriptions[connection_id]
-            
-        # Clean up event handlers
-        if connection_id in self.connection_handlers:
-            client = self.connection_clients.get(connection_id)
-            if client and client.event_bus:
-                for handler_id in self.connection_handlers[connection_id]:
-                    try:
-                        client.event_bus.unregister(handler_id)
-                    except:
-                        pass  # Handler might already be gone
-            del self.connection_handlers[connection_id]
-            
-        # Remove client reference
-        if connection_id in self.connection_clients:
-            del self.connection_clients[connection_id]
-            
-        logger.info(f"Event WebSocket disconnected: {connection_id}")
-        
-    async def subscribe_to_events(self, 
-                                 connection_id: str,
-                                 event_types: List[str]) -> Dict[str, Any]:
-        """
-        Subscribe a connection to specific event types.
-        
-        Args:
-            connection_id: Connection ID
-            event_types: List of event type strings or patterns
-            
-        Returns:
-            Subscription confirmation
-        """
-        if connection_id not in self.active_connections:
-            return {"error": "Connection not found"}
-            
-        websocket = self.active_connections[connection_id]
-        client = self.connection_clients.get(connection_id)
-        
-        if not client or not client.event_bus:
-            return {"error": "Event system not available"}
-            
-        # Update subscription set
-        self.subscriptions[connection_id].update(event_types)
-        
-        # Create handler for this connection
-        async def forward_event(event: ClientEvent):
-            """Forward event to WebSocket connection."""
-            try:
-                # Check if this event type matches subscriptions
-                event_type_str = str(event.event_type.value if hasattr(event.event_type, 'value') else event.event_type)
+        # Echo messages back
+        while True:
+            data = await websocket.receive_text()
+            await websocket.send_text(f"Echo: {data}")
+            if data == "close":
+                break
                 
-                # Check for exact match or wildcard
-                if '*' in self.subscriptions[connection_id] or \
-                   event_type_str in self.subscriptions[connection_id] or \
-                   any(event_type_str.startswith(pattern.rstrip('*')) 
-                       for pattern in self.subscriptions[connection_id] if pattern.endswith('*')):
-                    
-                    # Send event to WebSocket
-                    await websocket.send_json({
-                        "type": "event",
-                        "event": {
-                            "event_type": event_type_str,
-                            "data": event.data,
-                            "timestamp": event.timestamp.isoformat() if hasattr(event, 'timestamp') else datetime.utcnow().isoformat(),
-                            "source": getattr(event, 'source', None),
-                            "correlation_id": getattr(event, 'correlation_id', None)
-                        }
-                    })
-                    
-            except Exception as e:
-                logger.error(f"Error forwarding event to {connection_id}: {e}")
-                
-        # Register handlers for each event type
-        for event_type_str in event_types:
-            if event_type_str == '*':
-                # Subscribe to all events
-                handler_id = client.event_bus.register('*', forward_event)
-            else:
-                # Try to convert to EventType enum
-                try:
-                    event_type = EventType(event_type_str)
-                    handler_id = client.event_bus.register(event_type, forward_event)
-                except ValueError:
-                    # Use as custom event type
-                    handler_id = client.event_bus.register(event_type_str, forward_event)
-                    
-            self.connection_handlers[connection_id].append(handler_id)
-            
-        return {
-            "type": "subscription",
-            "subscribed": list(self.subscriptions[connection_id]),
-            "status": "subscribed"
-        }
-        
-    async def unsubscribe_from_events(self,
-                                     connection_id: str,
-                                     event_types: List[str]) -> Dict[str, Any]:
-        """
-        Unsubscribe a connection from specific event types.
-        
-        Args:
-            connection_id: Connection ID
-            event_types: Event types to unsubscribe from
-            
-        Returns:
-            Unsubscription confirmation
-        """
-        if connection_id not in self.subscriptions:
-            return {"error": "Connection not found"}
-            
-        # Remove from subscriptions
-        for event_type in event_types:
-            self.subscriptions[connection_id].discard(event_type)
-            
-        # Note: We don't remove handlers here as it's complex to track
-        # which handler corresponds to which event type. They'll be
-        # cleaned up on disconnect.
-        
-        return {
-            "type": "subscription",
-            "subscribed": list(self.subscriptions[connection_id]),
-            "status": "unsubscribed"
-        }
-        
-    async def send_to_connection(self,
-                                connection_id: str,
-                                message: Dict[str, Any]):
-        """
-        Send a message to a specific connection.
-        
-        Args:
-            connection_id: Target connection
-            message: Message to send
-        """
-        if connection_id in self.active_connections:
-            websocket = self.active_connections[connection_id]
-            try:
-                await websocket.send_json(message)
-            except Exception as e:
-                logger.error(f"Error sending to {connection_id}: {e}")
-                self.disconnect(connection_id)
+    except WebSocketDisconnect:
+        logger.info("Test WebSocket disconnected")
+    except Exception as e:
+        logger.error(f"Test WebSocket error: {e}")
+        await websocket.close(code=1011)
 
 
-# Create singleton manager
-event_manager = EventConnectionManager()
+# Note: EventConnectionManager class has been removed in favor of ScalableWebSocketManager
+# The old class provided basic WebSocket management without security features.
+# All WebSocket connections now use the secure ScalableWebSocketManager integrated with SystemManager.
 
 
 @router.websocket("/stream")
 async def event_stream_endpoint(
     websocket: WebSocket,
     client_id: Optional[str] = Query(None),
-    auto_subscribe: Optional[str] = Query(None)  # Comma-separated event types
+    auto_subscribe: Optional[str] = Query(None),  # Comma-separated event types
+    token: Optional[str] = Query(None)  # Optional auth token for WebSocket
 ):
     """
     WebSocket endpoint for streaming events.
@@ -250,29 +72,145 @@ async def event_stream_endpoint(
     Query Parameters:
         client_id: Optional client identifier
         auto_subscribe: Comma-separated event types to auto-subscribe
+        token: Optional authentication token
     
-    Note: Each WebSocket connection gets its own client from the pool
+    Note: Uses direct event bus connection for scalability
     """
     # Generate connection ID
     connection_id = client_id or str(uuid4())
     
-    # Get a client from the pool for this connection
-    client = None
-    async for pooled_client in get_client():
-        client = pooled_client
-        break
+    # Authenticate before accepting connection
+    user = None
+    auth_error = None
     
-    if not client:
-        await websocket.close(code=1011, reason="No client available")
+    # Get SystemManager for auth
+    from ..dependencies import get_system_manager
+    try:
+        system_manager = await get_system_manager()
+        
+        if token and system_manager and system_manager.auth_manager:
+            # Validate provided token
+            try:
+                user = await system_manager.auth_manager.validate_session(token)
+                logger.info(f"WebSocket {connection_id} authenticated as {user.get('username')}")
+            except Exception as e:
+                auth_error = f"Invalid token: {str(e)}"
+                logger.warning(f"WebSocket {connection_id} token validation failed: {e}")
+        
+        # If no token or validation failed, try auto-login as basic user
+        if not user and system_manager and system_manager.auth_manager:
+            try:
+                _, user = await system_manager.auth_manager.get_or_create_basic_session()
+                logger.info(f"WebSocket {connection_id} auto-logged in as basic user")
+            except Exception as e:
+                auth_error = f"Authentication required: {str(e)}"
+                logger.error(f"WebSocket {connection_id} basic session creation failed: {e}")
+                
+    except Exception as e:
+        auth_error = f"Authentication service unavailable: {str(e)}"
+        logger.error(f"WebSocket {connection_id} auth setup failed: {e}")
+    
+    # If authentication failed completely, reject connection
+    if not user:
+        await websocket.accept()
+        await websocket.send_json({
+            "type": "error",
+            "message": auth_error or "Authentication required",
+            "code": 1008
+        })
+        await websocket.close(code=1008, reason="Authentication required")
         return
     
-    # Accept connection
-    await event_manager.connect(websocket, connection_id, client)
+    # Get WebSocket manager from SystemManager (required)
+    client_ip = websocket.client.host if websocket.client else "unknown"
+    
+    if not system_manager or not hasattr(system_manager, 'websocket_manager'):
+        await websocket.accept()
+        await websocket.send_json({
+            "type": "error",
+            "message": "WebSocket service unavailable",
+            "code": 1011
+        })
+        await websocket.close(code=1011, reason="Service unavailable")
+        return
+    
+    ws_manager: ScalableWebSocketManager = system_manager.websocket_manager
+    
+    # Use scalable manager for connection management
+    connected = await ws_manager.connect(websocket, connection_id, client_ip, user)
+    if not connected:
+        return  # Connection rejected by manager
+    
+    # Track subscriptions for this connection
+    subscriptions: Set[str] = set()
+    handler_ids: List[str] = []
+    
+    # Get SystemManager for event bus access from dependency
+    from ..dependencies import get_system_manager
+    try:
+        system_manager = await get_system_manager()
+        event_bus = system_manager.event_bus if system_manager else None
+    except Exception as e:
+        logger.error(f"Failed to get event bus: {e}")
+        event_bus = None
+    
+    # Helper function to subscribe to events
+    async def subscribe_to_events(event_types: List[str]):
+        """Subscribe this WebSocket to event types."""
+        if not event_bus:
+            return {"type": "error", "message": "Event system not available"}
+        
+        # Update subscription set
+        subscriptions.update(event_types)
+        
+        # Create handler for this connection
+        async def forward_event(event):
+            """Forward event to WebSocket connection."""
+            try:
+                # Convert event to dict
+                event_data = {
+                    "event_type": str(getattr(event, 'event_type', 'unknown')),
+                    "data": getattr(event, 'data', {}),
+                    "timestamp": datetime.utcnow().isoformat()
+                }
+                
+                message = {
+                    "type": "event",
+                    "event": event_data
+                }
+                
+                # Broadcast via manager (includes Redis PubSub for cross-instance)
+                await ws_manager.send_to_connection(connection_id, message)
+                # Also broadcast to other instances via Redis
+                event_channel = str(getattr(event, 'event_type', 'unknown'))
+                await ws_manager.broadcast(message, channel=event_channel)
+            except Exception as e:
+                logger.error(f"Error forwarding event: {e}")
+        
+        # Register handlers for each event type
+        for event_type_str in event_types:
+            try:
+                if event_type_str == '*':
+                    # Subscribe to all events
+                    handler_id = event_bus.register('*', forward_event)
+                else:
+                    # Subscribe to specific event type
+                    handler_id = event_bus.register(event_type_str, forward_event)
+                
+                handler_ids.append(handler_id)
+            except Exception as e:
+                logger.error(f"Failed to subscribe to {event_type_str}: {e}")
+        
+        return {
+            "type": "subscription",
+            "subscribed": list(subscriptions),
+            "status": "subscribed"
+        }
     
     # Auto-subscribe if requested
     if auto_subscribe:
         event_types = [et.strip() for et in auto_subscribe.split(',')]
-        result = await event_manager.subscribe_to_events(connection_id, event_types)
+        result = await subscribe_to_events(event_types)
         await websocket.send_json(result)
     
     try:
@@ -280,10 +218,41 @@ async def event_stream_endpoint(
             # Receive messages from client
             data = await websocket.receive_text()
             
+            # Check rate limit
+            if not ws_manager.check_rate_limit(connection_id):
+                await websocket.send_json({
+                    "type": "error",
+                    "message": "Rate limit exceeded. Please slow down.",
+                    "code": 1008
+                })
+                continue
+            
             try:
                 message = json.loads(data)
-                await handle_event_message(connection_id, websocket, message)
+                msg_type = message.get("type")
                 
+                if msg_type == "subscribe":
+                    # Subscribe to event types
+                    event_types = message.get("event_types", [])
+                    result = await subscribe_to_events(event_types)
+                    await websocket.send_json(result)
+                    
+                elif msg_type == "ping":
+                    # Update heartbeat
+                    ws_manager.update_heartbeat(connection_id)
+                    
+                    # Respond with pong
+                    await websocket.send_json({
+                        "type": "pong",
+                        "timestamp": datetime.utcnow().isoformat()
+                    })
+                    
+                else:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": f"Unknown message type: {msg_type}"
+                    })
+                    
             except json.JSONDecodeError:
                 await websocket.send_json({
                     "type": "error",
@@ -291,79 +260,32 @@ async def event_stream_endpoint(
                 })
                 
     except WebSocketDisconnect:
-        event_manager.disconnect(connection_id)
+        logger.info(f"WebSocket {connection_id} disconnected")
     except Exception as e:
         logger.error(f"WebSocket error for {connection_id}: {e}")
-        event_manager.disconnect(connection_id)
-
-
-async def handle_event_message(
-    connection_id: str,
-    websocket: WebSocket,
-    message: Dict[str, Any]
-):
-    """
-    Handle incoming messages from event WebSocket clients.
-    
-    Args:
-        connection_id: Connection identifier
-        websocket: WebSocket connection
-        message: Parsed message from client
-    """
-    msg_type = message.get("type")
-    
-    if msg_type == "subscribe":
-        # Subscribe to event types
-        event_types = message.get("event_types", [])
-        result = await event_manager.subscribe_to_events(connection_id, event_types)
-        await websocket.send_json(result)
+    finally:
+        # Clean up WebSocket manager connection
+        ws_manager.disconnect(connection_id)
         
-    elif msg_type == "unsubscribe":
-        # Unsubscribe from event types
-        event_types = message.get("event_types", [])
-        result = await event_manager.unsubscribe_from_events(connection_id, event_types)
-        await websocket.send_json(result)
+        # Clean up event handlers
+        if event_bus:
+            for handler_id in handler_ids:
+                try:
+                    event_bus.unregister(handler_id)
+                except:
+                    pass  # Handler might already be gone
         
-    elif msg_type == "ping":
-        # Respond with pong
-        await websocket.send_json({
-            "type": "pong",
-            "timestamp": datetime.utcnow().isoformat()
-        })
-        
-    elif msg_type == "emit":
-        # Allow clients to emit events (if authorized)
-        event_data = message.get("event", {})
-        client = event_manager.connection_clients.get(connection_id)
-        
-        if client and client.event_bus:
-            # Create and emit event
-            event = ClientEvent(
-                event_type=event_data.get("event_type", "custom"),
-                data=event_data.get("data", {}),
-                client_id=connection_id
-            )
-            await client.emit_event(event)
-            
-            await websocket.send_json({
-                "type": "emit_confirmation",
-                "status": "emitted"
-            })
-        else:
-            await websocket.send_json({
-                "type": "error",
-                "message": "Event system not available"
-            })
-            
-    else:
-        await websocket.send_json({
-            "type": "error",
-            "message": f"Unknown message type: {msg_type}"
-        })
+        # Close WebSocket if still open
+        try:
+            await websocket.close()
+        except:
+            pass
 
 
 @router.get("/types")
-async def get_event_types():
+async def get_event_types(
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
+):
     """
     Get list of available event types.
     
@@ -388,7 +310,8 @@ async def get_event_types():
 
 @router.get("/stats")
 async def get_event_statistics(
-    client: GleitzeitClient = Depends(get_client)
+    client: GleitzeitClient = Depends(get_client),
+    current_user: Dict[str, Any] = Depends(get_current_user_auto)
 ):
     """
     Get event system statistics.
@@ -396,15 +319,23 @@ async def get_event_statistics(
     Returns:
         Event statistics and connection info
     """
+    # Get WebSocket manager from SystemManager
+    system_manager = await get_system_manager()
+    ws_manager = system_manager.websocket_manager if system_manager else None
+    
     stats = {
-        "connections": {
-            "active": len(event_manager.active_connections),
-            "connection_ids": list(event_manager.active_connections.keys())
+        "websocket_manager": {
+            "active_connections": len(ws_manager.active_connections) if ws_manager else 0,
+            "connections_per_ip": {ip: len(conns) for ip, conns in ws_manager.ip_connections.items()} if ws_manager else {},
+            "max_connections": ws_manager.max_connections if ws_manager else 0,
+            "max_connections_per_ip": ws_manager.max_connections_per_ip if ws_manager else 0,
+            "heartbeat_interval": ws_manager.heartbeat_interval if ws_manager else 0,
+            "redis_connected": ws_manager.redis_client is not None if ws_manager else False
         },
         "subscriptions": {
             conn_id: list(subs) 
-            for conn_id, subs in event_manager.subscriptions.items()
-        }
+            for conn_id, subs in ws_manager.subscriptions.items()
+        } if ws_manager else {}
     }
     
     # Add client event statistics if available

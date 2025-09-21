@@ -11,12 +11,13 @@ from typing import Dict, Optional, Any, Type, List
 from dataclasses import dataclass
 import json
 
-from gleitzeit.providers.provider_pool import ProviderPool, PooledProvider
+from gleitzeit.providers.provider_pool import ProviderPool, PooledProvider, StreamEnabledProviderPool
+from gleitzeit.providers.stream_integration import enable_stream_integration_for_provider
 from gleitzeit.persistence.base import PersistenceBackend
 from gleitzeit.core.models import Task
 from gleitzeit.core.protocol import ProtocolSpec
 from gleitzeit.core.jsonrpc import JSONRPCRequest, JSONRPCResponse, JSONRPCError
-from gleitzeit.core.errors import ProviderNotFoundError, ErrorCode
+from gleitzeit.core.errors import ProviderNotFoundError, ErrorCode, SystemError, MethodNotSupportedError
 
 logger = logging.getLogger(__name__)
 
@@ -163,41 +164,50 @@ class ProviderPoolManager:
     """
     Manages pools of provider instances for stateless operation.
     Each provider type has its own pool with configurable sizing.
+    Now includes stream integration for enhanced monitoring and event emission.
     """
-    
+
     def __init__(
         self,
         persistence: PersistenceBackend,
         default_min_size: int = 1,
-        default_max_size: int = 10
+        default_max_size: int = 10,
+        stream_manager=None,
+        enable_stream_integration: bool = True
     ):
         """
         Initialize provider pool manager.
-        
+
         Args:
             persistence: Backend for provider registry and state
             default_min_size: Default minimum pool size
             default_max_size: Default maximum pool size
+            stream_manager: Optional StreamSystemManager for stream integration
+            enable_stream_integration: Whether to enable stream integration for providers
         """
         self.persistence = persistence
         self.registry = ProviderRegistry(persistence)
         self.default_min_size = default_min_size
         self.default_max_size = default_max_size
-        
+
+        # Stream integration
+        self.stream_manager = stream_manager
+        self.enable_stream_integration = enable_stream_integration
+
         # Provider pools by type
         self.provider_pools: Dict[str, ProviderPool] = {}
-        
+
         # Protocol to provider mapping cache
         self._protocol_cache: Dict[str, List[str]] = {}
-        
+
         # Lock for pool creation
         self._pool_lock = asyncio.Lock()
-        
+
         self._initialized = False
         self._shutdown = False
-        
+
         logger.info(f"Created ProviderPoolManager with defaults "
-                   f"(min={default_min_size}, max={default_max_size})")
+                   f"(min={default_min_size}, max={default_max_size}, streams={enable_stream_integration})")
     
     async def initialize(self):
         """Initialize the pool manager"""
@@ -248,25 +258,29 @@ class ProviderPoolManager:
         self._protocol_cache.clear()
     
     async def _create_pool(self, provider_type: str, config: ProviderConfig):
-        """Create a provider pool"""
+        """Create a provider pool with stream integration"""
         async with self._pool_lock:
             if provider_type in self.provider_pools:
                 return
-            
-            pool = ProviderPool(
+
+            # Create stream-enabled pool if stream manager is available
+            pool = StreamEnabledProviderPool(
                 provider_type=provider_type,
                 provider_class=config.provider_class,
                 min_size=config.min_pool_size,
                 max_size=config.max_pool_size,
                 max_idle_time=config.max_idle_time,
                 health_check_interval=config.health_check_interval,
-                persistence=self.persistence
+                persistence=self.persistence,
+                stream_manager=self.stream_manager,
+                enable_stream_integration=self.enable_stream_integration,
+                protocol_id=config.protocol  # Pass the correct protocol from config
             )
-            
+
             await pool.initialize()
             self.provider_pools[provider_type] = pool
-            
-            logger.info(f"Created pool for provider type: {provider_type}")
+
+            logger.info(f"Created stream-enabled pool for provider type: {provider_type}")
     
     async def get_provider(
         self,
@@ -290,7 +304,7 @@ class ProviderPoolManager:
             TimeoutError: If acquisition times out
         """
         if self._shutdown:
-            raise RuntimeError("ProviderPoolManager is shutdown")
+            raise SystemError("ProviderPoolManager is shutdown")
         
         # If specific provider type requested
         if provider_type:
@@ -385,7 +399,7 @@ class ProviderPoolManager:
                 if method:
                     result = await method(**task.params)
                 else:
-                    raise AttributeError(f"Provider has no method: {task.method} or handle_request")
+                    raise MethodNotSupportedError(task.method, provider_type)
             
             return result
             

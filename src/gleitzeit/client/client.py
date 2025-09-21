@@ -13,6 +13,7 @@ from pathlib import Path
 
 from gleitzeit.core.events import EventType, GleitzeitEvent
 from gleitzeit.core.models import Task, Workflow, TaskResult
+from gleitzeit.core.errors import SystemError, InvalidParameterError
 
 from .events import ClientEventBus, ClientEvent, ConnectionState
 from .adapters.api import APIAdapter
@@ -25,6 +26,7 @@ from .mixins.admin import AdminMixin
 from .mixins.monitoring import MonitoringMixin
 from .mixins.auth import AuthMixin
 from .mixins.logs import LogMixin
+from .mixins.error_discovery import ErrorDiscoveryMixin
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,8 @@ class GleitzeitClient(
     AdminMixin,
     MonitoringMixin,
     AuthMixin,
-    LogMixin
+    LogMixin,
+    ErrorDiscoveryMixin
 ):
     """
     Event-driven Gleitzeit client with WebSocket and real-time capabilities.
@@ -64,9 +67,12 @@ class GleitzeitClient(
     
     Usage:
         ```python
-        # Create client
-        client = GleitzeitClient()
-        await client.initialize()
+        # Create client with auto-detection
+        client = await GleitzeitClient.create(mode="auto")
+        
+        # Or explicitly choose mode
+        client = await GleitzeitClient.create(mode="native")  # In-process
+        client = await GleitzeitClient.create(mode="api")     # Remote HTTP
         
         # Register event handlers
         @client.on_event(EventType.TASK_COMPLETED)
@@ -82,35 +88,102 @@ class GleitzeitClient(
         ```
     """
     
-    # Class-level service token for NATIVE mode (set by API at startup)
-    _SERVICE_TOKEN: Optional[str] = None
+    # Native mode uses SystemManager's AuthManager directly
+    # No separate service token needed
     
     @classmethod
-    def set_service_token(cls, token: str) -> None:
-        """Set the service token for NATIVE mode (API startup only).
-        
-        Args:
-            token: Secure service token for authenticating NATIVE mode access
+    async def create(cls, mode: str = "auto", **kwargs) -> 'GleitzeitClient':
         """
-        cls._SERVICE_TOKEN = token
-        logger.info("Service token configured for NATIVE mode authentication")
-    
-    def _validate_service_token(self, token: str) -> bool:
-        """Validate a service token for NATIVE mode access.
+        Factory method to create appropriate client with auto-detection.
         
         Args:
-            token: Token to validate
+            mode: "native" | "api" | "auto" (auto-detect best mode)
+            **kwargs: Additional arguments for client initialization
             
         Returns:
-            True if token is valid, False otherwise
-        """
-        import hmac
-        
-        # Use constant-time comparison to prevent timing attacks
-        if not self._SERVICE_TOKEN:
-            return False
+            Initialized GleitzeitClient with appropriate adapter
             
-        return hmac.compare_digest(token, self._SERVICE_TOKEN)
+        Examples:
+            # Auto-detect: uses native if SystemManager available, else API
+            client = await GleitzeitClient.create()
+            
+            # Force native mode (in-process, requires SystemManager)
+            client = await GleitzeitClient.create(mode="native")
+            
+            # Force API mode (remote HTTP)
+            client = await GleitzeitClient.create(
+                mode="api",
+                api_host="gleitzeit-server",
+                api_port=8080
+            )
+        """
+        import os
+        
+        # Auto-detect mode if requested
+        if mode == "auto":
+            # Try to detect if SystemManager is available
+            try:
+                from gleitzeit.system import get_system_manager
+                system_manager = get_system_manager()
+                if system_manager and hasattr(system_manager, 'workflow_manager'):
+                    mode = "native"
+                    logger.info("Auto-detected: Using native mode (SystemManager available)")
+                else:
+                    mode = "api"
+                    logger.info("Auto-detected: Using API mode (SystemManager not available)")
+            except ImportError:
+                mode = "api"
+                logger.info("Auto-detected: Using API mode (SystemManager module not found)")
+        
+        # Set defaults based on mode
+        if mode == "native":
+            # Native mode - ensure we have system_manager
+            if 'system_manager' not in kwargs:
+                from gleitzeit.system import get_system_manager
+                kwargs['system_manager'] = get_system_manager()
+                if not kwargs['system_manager']:
+                    raise SystemError(
+                        "Native mode requires SystemManager to be initialized. "
+                        "Use 'api' mode or ensure SystemManager is running."
+                    )
+        elif mode == "api":
+            # API mode - set default URL if not provided
+            if 'api_host' not in kwargs:
+                kwargs['api_host'] = os.getenv('GLEITZEIT_API_HOST', 'localhost')
+            if 'api_port' not in kwargs:
+                kwargs['api_port'] = int(os.getenv('GLEITZEIT_API_PORT', '8080'))
+        else:
+            raise InvalidParameterError("mode", f"Unknown mode: {mode}. Use 'native', 'api', or 'auto'")
+        
+        # Create client with detected/specified mode
+        client = cls(mode=mode, **kwargs)
+        
+        # Initialize the client
+        await client.initialize()
+        
+        return client
+    
+    async def _ensure_native_auth(self, system_manager) -> Optional[str]:
+        """Ensure Native mode has proper authentication through AuthManager.
+        
+        Args:
+            system_manager: SystemManager instance
+            
+        Returns:
+            Session ID for Native mode operations
+        """
+        if not system_manager or not system_manager.auth_manager:
+            logger.warning("Native mode without AuthManager - using unauthenticated access")
+            return None
+            
+        # Try to get or create a basic session for immediate use
+        try:
+            session_id, _ = await system_manager.auth_manager.get_or_create_basic_session()
+            return session_id
+        except Exception as e:
+            # If basic session not available, authentication required
+            logger.debug(f"Could not get basic session: {e}")
+            return None
     
     def __init__(self,
                  mode: Union[str, ClientMode] = ClientMode.API,
@@ -140,21 +213,21 @@ class GleitzeitClient(
         if isinstance(mode, str):
             mode = ClientMode(mode)
             
-        # SECURITY: NATIVE mode requires service token authentication
+        # NATIVE mode uses SystemManager and AuthManager directly
         if mode == ClientMode.NATIVE:
-            service_token = kwargs.get('service_token')
-            if not service_token:
-                raise ValueError(
-                    "NATIVE mode requires service_token parameter. "
-                    "This mode is restricted to internal API use."
+            system_manager = kwargs.get('system_manager')
+            if not system_manager:
+                raise InvalidParameterError(
+                    "system_manager",
+                    "NATIVE mode requires system_manager parameter. "
+                    "This mode is for in-process access."
                 )
             
-            # Validate service token
-            if not self._validate_service_token(service_token):
-                logger.error("SECURITY: Invalid service token for NATIVE mode!")
-                raise PermissionError(
-                    "Invalid service token. NATIVE mode is restricted to internal API use."
-                )
+            # Store system_manager for NativeAdapter
+            self._system_manager = system_manager
+            
+            # Session will be created through AuthManager when needed
+            self._native_session_id = None
             
         # Configuration
         self.mode = mode
@@ -168,11 +241,27 @@ class GleitzeitClient(
         self.event_bus = event_bus or (ClientEventBus() if self.enable_events else None)
         self._adapter = None  # Will be APIAdapter or NativeAdapter based on mode
         self._initialized = False
+        self._user_context = None  # User context for authorization in NATIVE mode
         
         # Event handler storage
         self._user_handlers: Dict[EventType, List[Callable]] = {}
             
         logger.info(f"GleitzeitClient configured with SystemManager at {api_host}:{api_port}")
+    
+    def set_user_context(self, user_context: Dict[str, Any]) -> None:
+        """
+        Set user context for authorization in NATIVE mode.
+        
+        This should be called by the API layer to set the current user
+        context when a pooled client is acquired for a request.
+        
+        Args:
+            user_context: User information including id, role, permissions
+        """
+        self._user_context = user_context
+        # Update adapter if already initialized
+        if self._adapter and hasattr(self._adapter, 'set_user_context'):
+            self._adapter.set_user_context(user_context)
         
             
     async def initialize(self) -> None:
@@ -190,10 +279,24 @@ class GleitzeitClient(
         
         # Create appropriate adapter based on mode
         if self.mode == ClientMode.NATIVE:
-            # Native mode - direct access to persistence
+            # Native mode - direct access via SystemManager
             from .adapters.native import NativeAdapter
-            self._adapter = NativeAdapter()
-            logger.info("Using NativeAdapter for direct persistence access")
+            # Pass user context if provided (for authorization)
+            user_context = getattr(self, '_user_context', None)
+            # Pass system_manager for direct access
+            system_manager = getattr(self, '_system_manager', None)
+            self._adapter = NativeAdapter(
+                user_context=user_context, 
+                system_manager=system_manager
+            )
+            
+            # Ensure authentication through AuthManager
+            if system_manager:
+                self._native_session_id = await self._ensure_native_auth(system_manager)
+                if self._native_session_id:
+                    self._adapter.set_session_id(self._native_session_id)
+            
+            logger.info("Using NativeAdapter with SystemManager/AuthManager")
         else:
             # API mode - use SystemManager via HTTP
             self._adapter = APIAdapter(
@@ -202,9 +305,9 @@ class GleitzeitClient(
                 enable_events=self.enable_events,
                 enable_websocket=(self.event_mode == EventMode.WEBSOCKET),
                 event_bus=self.event_bus
-        )
+            )
             
-        # Initialize adapter
+        # Initialize adapter (NativeAdapter will discover SystemManager via persistence)
         await self._adapter.initialize()
         
         # Register default event handlers
@@ -227,7 +330,10 @@ class GleitzeitClient(
         import aiohttp
         import subprocess
         import asyncio
-        
+        import shutil
+        import sys
+        import platform
+
         # Check if server is already running
         try:
             async with aiohttp.ClientSession() as session:
@@ -236,18 +342,79 @@ class GleitzeitClient(
                     if resp.status == 200:
                         logger.info(f"SystemManager already running at {self.api_host}:{self.api_port}")
                         return
-        except:
-            pass
-        
+        except (aiohttp.ClientConnectorError, asyncio.TimeoutError) as e:
+            # Server not running - this is expected, proceed to start it
+            logger.debug(f"Server not reachable at {self.api_host}:{self.api_port}, will start it: {e}")
+        except Exception as e:
+            # Log unexpected errors using central error library but still try to start
+            from gleitzeit.core.errors import log_error
+            log_error(logger, e, "Unexpected error checking server health",
+                     context={"host": self.api_host, "port": self.api_port})
+
         # Start SystemManager server
         logger.info(f"Starting SystemManager server at {self.api_host}:{self.api_port}...")
-        process = subprocess.Popen(
-            ["python", "-m", "uvicorn", "gleitzeit.api.main:app",
-             "--host", self.api_host, "--port", str(self.api_port)],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL
-        )
-        
+
+        # Prepare environment with config from gleitzeit.yaml if exists
+        import os
+        import yaml
+        env = os.environ.copy()
+
+        # Load project-level configuration if available
+        config_file = "gleitzeit.yaml"
+        if os.path.exists(config_file):
+            try:
+                with open(config_file) as f:
+                    config = yaml.safe_load(f)
+                    if config:
+                        logger.debug(f"Loading configuration from {config_file}")
+                        for key, value in config.items():
+                            # Convert key to environment variable format
+                            env_key = f"GLEITZEIT_{key.upper()}"
+                            # Only set if not already in environment (env vars take precedence)
+                            if env_key not in env:
+                                env[env_key] = str(value)
+                                logger.debug(f"Set {env_key} from config file")
+            except Exception as e:
+                logger.warning(f"Could not load {config_file}: {e}")
+
+        # Determine the Python command (python or python3)
+        python_cmd = sys.executable or "python"
+
+        # Try to use gleitzeit CLI command first (preferred)
+        gleitzeit_cmd = shutil.which('gleitzeit')
+
+        # On Windows, also check for .cmd and .exe versions
+        if not gleitzeit_cmd and platform.system() == 'Windows':
+            gleitzeit_cmd = shutil.which('gleitzeit.cmd') or shutil.which('gleitzeit.exe')
+
+        if gleitzeit_cmd:
+            cmd = [gleitzeit_cmd, "serve",
+                   "--host", self.api_host,
+                   "--port", str(self.api_port),
+                   "--headless"]  # No UI needed for programmatic use
+
+            # On Windows, use shell=True for .cmd files
+            shell = platform.system() == 'Windows' and gleitzeit_cmd.endswith('.cmd')
+
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                env=env,  # Pass the enhanced environment
+                shell=shell
+            )
+            logger.debug(f"Starting server using '{gleitzeit_cmd} serve' command")
+        else:
+            # Fallback to direct uvicorn if CLI not available
+            logger.debug("CLI not found, falling back to direct uvicorn")
+            process = subprocess.Popen(
+                [python_cmd, "-m", "uvicorn", "gleitzeit.api.main:app",
+                 "--host", self.api_host, "--port", str(self.api_port)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                env=env  # Pass the enhanced environment
+            )
+
         # Wait for server to start
         for i in range(30):
             await asyncio.sleep(1)
@@ -260,8 +427,8 @@ class GleitzeitClient(
                             return
             except:
                 continue
-        
-        raise RuntimeError(f"Failed to start SystemManager server at {self.api_host}:{self.api_port}")
+
+        raise SystemError(f"Failed to start SystemManager server at {self.api_host}:{self.api_port}")
         
     def _register_default_handlers(self) -> None:
         """Register default event handlers."""
@@ -288,19 +455,21 @@ class GleitzeitClient(
         if not self._initialized:
             return
             
-        # Emit shutdown event
-        await self.event_bus.emit(ClientEvent(
-            event_type=EventType.CLIENT_SHUTTING_DOWN,
-            data={'mode': self.mode.value}
-        ))
+        # Emit shutdown event if event bus exists
+        if self.event_bus:
+            await self.event_bus.emit(ClientEvent(
+                event_type=EventType.CLIENT_SHUTTING_DOWN,
+                data={'mode': self.mode.value}
+            ))
         
         # Shutdown adapter
         if self._adapter:
             await self._adapter.shutdown()
             self._adapter = None
             
-        # Stop event bus
-        await self.event_bus.stop()
+        # Stop event bus if it exists
+        if self.event_bus:
+            await self.event_bus.stop()
         
         self._initialized = False
         logger.info("GleitzeitClient shutdown complete")

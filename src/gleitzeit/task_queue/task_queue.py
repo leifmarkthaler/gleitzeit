@@ -14,8 +14,8 @@ from dataclasses import dataclass, field
 
 from gleitzeit.core.models import Task, Workflow, TaskStatus, Priority, WorkflowStatus
 from gleitzeit.persistence.base import PersistenceBackend
-from gleitzeit.persistence.unified_persistence import UnifiedInMemoryAdapter
 from gleitzeit.core.logging_mixin import LoggingMixin
+from gleitzeit.core.errors import QueueError, QueueNotFoundError, ConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,12 @@ class TaskQueue(LoggingMixin):
         self._component_name = f"TaskQueue.{name}"
         
         self.name = name
-        self.persistence = persistence or UnifiedInMemoryAdapter()
+        if not persistence:
+            raise ConfigurationError(
+                "TaskQueue requires Redis persistence - in-memory queuing is not supported",
+                config={"component": "TaskQueue", "queue_name": name}
+            )
+        self.persistence = persistence
         self.event_bus = event_bus
         
         # No more in-memory structures - everything goes through persistence
@@ -79,7 +84,7 @@ class TaskQueue(LoggingMixin):
         self._monitor_task: Optional[asyncio.Task] = None
         self._running = False
         
-        logger.info(f"Initialized TaskQueue: {name} (persistence-backed)")
+        logger.info(f"Initialized TaskQueue: {name} (Redis-backed)")
     
     async def initialize(self) -> None:
         """Initialize persistence backend"""
@@ -122,7 +127,7 @@ class TaskQueue(LoggingMixin):
                         task_id=task.id,
                         workflow_id=task.workflow_id,
                         dependencies=task.dependencies,
-                        status="pending"
+                        status=TaskStatus.PENDING.value
                     )
                     return
             
@@ -328,18 +333,9 @@ class TaskQueue(LoggingMixin):
                 # Emit TASK_READY event for ExecutionEngine to pick up
                 if self.event_bus:
                     from ..core.events import EventType, create_custom_event
-                    ready_event = create_custom_event(
-                        event_type=EventType.TASK_READY,
-                        data={
-                            'task_id': fresh_task.id,
-                            'workflow_id': fresh_task.workflow_id,
-                            'protocol': fresh_task.protocol,
-                            'method': fresh_task.method
-                        },
-                        source="task_queue"
-                    )
-                    await self.event_bus.emit(ready_event)
-                    logger.info(f"Emitted TASK_READY event for {fresh_task.id}")
+                    # Event emission removed from TaskQueue.enqueue() to avoid duplicates
+                    # TASK_READY event is emitted only once in QueueManager.enqueue_task()
+                    logger.debug(f"Task {fresh_task.id} is ready (no dependencies)")
     
     async def _check_workflow_completion(self, workflow_id: str) -> None:
         """Check if a workflow is complete and update its status"""
@@ -517,18 +513,16 @@ class TaskQueue(LoggingMixin):
             return cleared_count
 
     async def start_monitoring(self, interval: int = 5) -> None:
-        """Start monitoring for pending tasks that can be enqueued
-        
+        """DEPRECATED - Use check_pending_once() for stateless operation
+
+        This method is kept for backward compatibility but does nothing.
+        For stateless operation, call check_pending_once() via external triggers.
+
         Args:
-            interval: Check interval in seconds
+            interval: Check interval in seconds (ignored)
         """
-        if self._running:
-            logger.warning("Monitoring already running")
-            return
-        
-        self._running = True
-        self._monitor_task = asyncio.create_task(self._monitor_loop(interval))
-        logger.info(f"Started queue monitoring with {interval}s interval")
+        logger.warning("start_monitoring() is deprecated for stateless operation. Use check_pending_once() instead.")
+        # NO LOOPS! Stateless operation only
     
     async def stop_monitoring(self) -> None:
         """Stop the monitoring task"""
@@ -542,17 +536,24 @@ class TaskQueue(LoggingMixin):
             self._monitor_task = None
         logger.info("Stopped queue monitoring")
     
-    async def _monitor_loop(self, interval: int) -> None:
-        """Monitoring loop that checks for pending tasks with satisfied dependencies"""
-        while self._running:
-            try:
-                await self._check_and_enqueue_ready_tasks()
-                await asyncio.sleep(interval)
-            except asyncio.CancelledError:
-                break
-            except Exception as e:
-                logger.error(f"Error in monitoring loop: {e}")
-                await asyncio.sleep(interval)
+    async def check_pending_once(self) -> Dict[str, int]:
+        """Check pending tasks once and enqueue ready ones (stateless).
+
+        This replaces the monitoring loop for stateless operation.
+        Should be called via external triggers (cron, webhook, etc).
+
+        Returns:
+            Dict with statistics: {"checked": N, "enqueued": M}
+        """
+        stats = {"checked": 0, "enqueued": 0}
+        try:
+            result = await self._check_and_enqueue_ready_tasks()
+            if isinstance(result, dict):
+                stats = result
+        except Exception as e:
+            logger.error(f"Error checking pending tasks: {e}")
+            stats["error"] = str(e)
+        return stats
     
     async def _check_and_enqueue_ready_tasks(self) -> None:
         """Check for pending tasks that have satisfied dependencies and enqueue them"""
@@ -604,56 +605,95 @@ class TaskQueue(LoggingMixin):
                     # Emit TASK_READY event for ExecutionEngine to pick up
                     if self.event_bus:
                         from ..core.events import EventType, create_custom_event
-                        ready_event = create_custom_event(
-                            event_type=EventType.TASK_READY,
-                            data={
-                                'task_id': fresh_task.id,
-                                'workflow_id': fresh_task.workflow_id,
-                                'protocol': fresh_task.protocol,
-                                'method': fresh_task.method
-                            },
-                            source="task_queue"
-                        )
-                        await self.event_bus.emit(ready_event)
-                        logger.info(f"Emitted TASK_READY event for {fresh_task.id}")
+                        # Event emission removed from here to avoid duplicates
+                        # TASK_READY event is emitted only once in QueueManager.enqueue_task()
+                        logger.debug(f"Task {fresh_task.id} dependencies met, now ready")
 
 
 class QueueManager:
     """
-    Manager for multiple task queues with routing and load balancing
+    Manager for multiple task queues with routing and load balancing.
+    
+    Can optionally use a transport layer (e.g., StreamTransport) for
+    reliable message delivery instead of in-memory queuing.
     """
     
-    def __init__(self, persistence: Optional[PersistenceBackend] = None, event_bus: Optional[Any] = None):
+    def __init__(
+        self, 
+        persistence: Optional[PersistenceBackend] = None, 
+        event_bus: Optional[Any] = None,
+        transport: Optional[Any] = None
+    ):
+        """
+        Initialize QueueManager.
+        
+        Args:
+            persistence: Persistence backend for task storage
+            event_bus: Event bus for coordination
+            transport: Optional transport layer (e.g., StreamTransport for Redis Streams)
+        """
         self.persistence = persistence
         self.event_bus = event_bus
+        self.transport = transport  # Optional transport layer
         self.queues: Dict[str, TaskQueue] = {}
         self.default_queue_name = "default"
         self._stats_lock = asyncio.Lock()
         
         # Create default queue with persistence and event bus
-        self.queues[self.default_queue_name] = TaskQueue(self.default_queue_name, persistence=self.persistence, event_bus=self.event_bus)
+        self.queues[self.default_queue_name] = TaskQueue(
+            self.default_queue_name, 
+            persistence=self.persistence, 
+            event_bus=self.event_bus
+        )
+        
+        # If using transport, set up transport-specific handling
+        if self.transport:
+            self._setup_transport()
+            logger.info("Initialized QueueManager with transport layer")
+        else:
+            logger.info("Initialized QueueManager with Redis persistence")
         
         # Register event handlers if event bus is available
         if self.event_bus:
             self._register_event_handlers()
-        
-        logger.info("Initialized QueueManager with persistence backend")
+    
+    def _setup_transport(self):
+        """Setup transport-specific configuration."""
+        # Transport layer will handle message delivery
+        # We still use TaskQueue for persistence and state management
+        logger.info(f"Using {type(self.transport).__name__} for message transport")
     
     def _register_event_handlers(self):
         """Register event handlers for task and workflow management"""
         from ..core.events import EventType
-        
+
         # Task lifecycle events
         self.event_bus.register(EventType.TASK_SUBMITTED, self._on_task_submitted)
-        
+
         # Retry events
         self.event_bus.register(EventType.TASK_READY_FOR_RETRY, self._on_task_ready_for_retry)
-        
+
         # Workflow events
         self.event_bus.register(EventType.WORKFLOW_SUBMITTED, self._on_workflow_submitted)
-        
+
         logger.debug("QueueManager registered event handlers")
-    
+
+    def register_with_stream_manager(self, stream_manager):
+        """
+        Register handlers with StreamSystemManager for stream-based events.
+
+        This bridges the gap between old event bus and new stream-based events.
+        The handlers reuse existing methods that handle queue management.
+        """
+        component_name = 'QueueManager'
+
+        # Register handlers for task and workflow queue events
+        stream_manager.register_event_handler('task:submitted', self._on_task_submitted, component_name)
+        stream_manager.register_event_handler('task:ready_for_retry', self._on_task_ready_for_retry, component_name)
+        stream_manager.register_event_handler('workflow:submitted', self._on_workflow_submitted, component_name)
+
+        logger.info(f"{component_name} registered handlers with StreamSystemManager")
+
     async def _on_task_submitted(self, event):
         """Handle task submission - enqueue if dependencies satisfied"""
         from ..core.events import EventType, create_custom_event
@@ -728,20 +768,9 @@ class QueueManager:
         task.status = TaskStatus.QUEUED
         await self.persistence.save_task(task)
         logger.info(f"Enqueued task {task.id}")
-        
-        # Emit TASK_READY event for ExecutionEngine
-        ready_event = create_custom_event(
-            event_type=EventType.TASK_READY,
-            data={
-                'task_id': task.id,
-                'workflow_id': task.workflow_id,
-                'protocol': task.protocol,
-                'method': task.method
-            },
-            source="queue_manager"
-        )
-        await self.event_bus.emit(ready_event)
-        logger.info(f"Emitted TASK_READY event for {task.id}")
+
+        # Event emission removed from here to avoid duplicates
+        # The event is emitted only once in QueueManager.enqueue_task()
     
     async def _are_task_dependencies_satisfied(self, task):
         """Check if all task dependencies are completed"""
@@ -768,7 +797,7 @@ class QueueManager:
     def create_queue(self, name: str) -> TaskQueue:
         """Create a new task queue"""
         if name in self.queues:
-            raise ValueError(f"Queue {name} already exists")
+            raise QueueError(f"Queue {name} already exists", queue_name=name)
         
         queue = TaskQueue(name, persistence=self.persistence)
         self.queues[name] = queue
@@ -787,18 +816,37 @@ class QueueManager:
     async def enqueue_task(self, task: Task, queue_name: Optional[str] = None) -> None:
         """
         Enqueue a task to a specific queue or the default queue
-        
+
         Args:
             task: Task to enqueue
             queue_name: Target queue name (uses default if None)
         """
         target_queue_name = queue_name or self.default_queue_name
         queue = self.get_queue(target_queue_name)
-        
+
         if not queue:
-            raise ValueError(f"Queue not found: {target_queue_name}")
-        
+            raise QueueNotFoundError(target_queue_name)
+
         await queue.enqueue(task)
+
+        # Emit TASK_READY event if task has no dependencies and is queued
+        if not task.dependencies and self.event_bus:
+            # Check if task was actually queued (not pending)
+            from ..core.models import TaskStatus
+            if task.status == TaskStatus.QUEUED:
+                from ..core.events import EventType, create_custom_event
+                ready_event = create_custom_event(
+                    event_type=EventType.TASK_READY,
+                    data={
+                        'task_id': task.id,
+                        'workflow_id': task.workflow_id,
+                        'protocol': getattr(task, 'protocol', None),
+                        'method': getattr(task, 'method', None)
+                    },
+                    source="queue_manager"
+                )
+                await self.event_bus.emit(ready_event)
+                logger.info(f"Emitted TASK_READY event for {task.id} after enqueue")
     
     async def dequeue_next_task(self, queue_names: Optional[List[str]] = None) -> Optional[Task]:
         """

@@ -17,7 +17,7 @@ from jinja2 import Template, Environment, BaseLoader
 
 from .simple import SimpleProvider
 from .discovery import discover_service
-from gleitzeit.core.errors import ProviderError, TaskValidationError as ValidationError
+from gleitzeit.core.errors import ProviderError, TaskValidationError as ValidationError, InvalidParameterError
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ class ConfigProvider(SimpleProvider):
             self.config_path = None
             self.config = config_path
         else:
-            raise ValueError("config_path must be a file path or dictionary")
+            raise InvalidParameterError("config_path", "config_path must be a file path or dictionary")
         
         # Extract provider configuration
         provider_config = self.config.get('provider', {})

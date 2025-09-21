@@ -1,0 +1,26 @@
+name: secure_signal_test
+version: 1.0.0
+
+tasks:
+  - name: start_workflow
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: signal_test_start.py
+
+  - name: wait_for_approval
+    protocol: signal/v1
+    method: signal/wait
+    params:
+      signal: test_approval
+      timeout: 60
+    dependencies:
+      - start_workflow
+
+  - name: process_after_signal
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: signal_test_process.py
+    dependencies:
+      - wait_for_approval

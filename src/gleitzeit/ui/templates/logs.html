@@ -1,0 +1,642 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - Gleitzeit UI{% endblock %}
+
+{% block head %}
+<style>
+    .logs-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+    
+    .logs-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 20px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .logs-title {
+        margin: 0;
+        color: #333;
+    }
+    
+    .logs-controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .log-filters {
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .filter-row {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        min-width: 150px;
+    }
+    
+    .filter-group label {
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #555;
+    }
+    
+    .filter-group select,
+    .filter-group input {
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+    }
+    
+    .btn-filter {
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 20px;
+    }
+    
+    .btn-filter:hover {
+        background: #0056b3;
+    }
+    
+    .btn-clear {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-top: 20px;
+    }
+    
+    .btn-clear:hover {
+        background: #545b62;
+    }
+    
+    .realtime-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .realtime-toggle input[type="checkbox"] {
+        transform: scale(1.2);
+    }
+    
+    .logs-stats {
+        background: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    
+    .stats-row {
+        display: flex;
+        gap: 30px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .stat-label {
+        font-weight: 600;
+        color: #555;
+    }
+    
+    .stat-value {
+        padding: 4px 8px;
+        background: #f8f9fa;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 14px;
+    }
+    
+    .logs-display {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .logs-display-header {
+        background: #f8f9fa;
+        padding: 15px 20px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .logs-display-title {
+        margin: 0;
+        font-size: 16px;
+        color: #333;
+    }
+    
+    .logs-count {
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .logs-list {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .log-entry {
+        padding: 12px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        font-family: monospace;
+        font-size: 13px;
+        line-height: 1.4;
+    }
+    
+    .log-entry:hover {
+        background: #f8f9fa;
+    }
+    
+    .log-entry.log-level-DEBUG { border-left: 4px solid #6c757d; }
+    .log-entry.log-level-INFO { border-left: 4px solid #007bff; }
+    .log-entry.log-level-WARNING { border-left: 4px solid #ffc107; }
+    .log-entry.log-level-ERROR { border-left: 4px solid #dc3545; }
+    .log-entry.log-level-CRITICAL { border-left: 4px solid #6f42c1; }
+    
+    .log-timestamp {
+        color: #666;
+        margin-right: 10px;
+    }
+    
+    .log-level {
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: bold;
+        font-size: 11px;
+        margin-right: 10px;
+        min-width: 60px;
+        text-align: center;
+        display: inline-block;
+    }
+    
+    .log-level-DEBUG { background: #e9ecef; color: #495057; }
+    .log-level-INFO { background: #d1ecf1; color: #0c5460; }
+    .log-level-WARNING { background: #fff3cd; color: #856404; }
+    .log-level-ERROR { background: #f8d7da; color: #721c24; }
+    .log-level-CRITICAL { background: #e2d9f3; color: #493057; }
+    
+    .log-source {
+        color: #28a745;
+        margin-right: 10px;
+        font-weight: 600;
+    }
+    
+    .log-message {
+        color: #333;
+    }
+    
+    .no-logs {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+    
+    .loading {
+        text-align: center;
+        padding: 40px 20px;
+        color: #666;
+    }
+    
+    .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 4px;
+        margin: 20px;
+    }
+    
+    .connection-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+    
+    .status-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    
+    .status-connected { background: #28a745; }
+    .status-disconnected { background: #dc3545; }
+    .status-connecting { background: #ffc107; }
+    
+    .auto-scroll-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="logs-container">
+    <!-- Header -->
+    <div class="logs-header">
+        <h1 class="logs-title">System Logs</h1>
+        <div class="logs-controls">
+            <div class="connection-status">
+                <div id="connection-indicator" class="status-indicator status-disconnected"></div>
+                <span id="connection-status-text">Disconnected</span>
+            </div>
+            <div class="realtime-toggle">
+                <input type="checkbox" id="realtime-toggle" checked>
+                <label for="realtime-toggle">Real-time</label>
+            </div>
+            <div class="auto-scroll-toggle">
+                <input type="checkbox" id="auto-scroll-toggle" checked>
+                <label for="auto-scroll-toggle">Auto-scroll</label>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filters -->
+    <div class="log-filters">
+        <div class="filter-row">
+            <div class="filter-group">
+                <label for="level-filter">Log Level</label>
+                <select id="level-filter">
+                    <option value="">All Levels</option>
+                    <option value="DEBUG">DEBUG</option>
+                    <option value="INFO">INFO</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="ERROR">ERROR</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="source-filter">Source</label>
+                <select id="source-filter">
+                    <option value="">All Sources</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="limit-filter">Limit</label>
+                <select id="limit-filter">
+                    <option value="50">50</option>
+                    <option value="100" selected>100</option>
+                    <option value="200">200</option>
+                    <option value="500">500</option>
+                    <option value="1000">1000</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="start-time-filter">Start Time</label>
+                <input type="datetime-local" id="start-time-filter">
+            </div>
+            <div class="filter-group">
+                <label for="end-time-filter">End Time</label>
+                <input type="datetime-local" id="end-time-filter">
+            </div>
+        </div>
+        <div class="filter-row" style="justify-content: flex-start; margin-top: 15px;">
+            <button class="btn-filter" onclick="loadLogs()">Apply Filters</button>
+            <button class="btn-clear" onclick="clearFilters()">Clear Filters</button>
+        </div>
+    </div>
+    
+    <!-- Stats -->
+    <div class="logs-stats" id="logs-stats" style="display: none;">
+        <div class="stats-row">
+            <div class="stat-item">
+                <span class="stat-label">Total:</span>
+                <span class="stat-value" id="stat-total">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Cached:</span>
+                <span class="stat-value" id="stat-cached">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Last Updated:</span>
+                <span class="stat-value" id="stat-updated">-</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Logs Display -->
+    <div class="logs-display">
+        <div class="logs-display-header">
+            <h3 class="logs-display-title">Log Entries</h3>
+            <span class="logs-count" id="logs-count">Loading...</span>
+        </div>
+        <div class="logs-list" id="logs-list">
+            <div class="loading">Loading logs...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global state
+let ws = null;
+let logs = [];
+let isRealTimeEnabled = true;
+let isAutoScrollEnabled = true;
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    initializeWebSocket();
+    loadLogs();
+    loadLogSources();
+    
+    // Set up real-time toggle
+    document.getElementById('realtime-toggle').addEventListener('change', function() {
+        isRealTimeEnabled = this.checked;
+        if (isRealTimeEnabled) {
+            initializeWebSocket();
+        } else {
+            disconnectWebSocket();
+        }
+    });
+    
+    // Set up auto-scroll toggle
+    document.getElementById('auto-scroll-toggle').addEventListener('change', function() {
+        isAutoScrollEnabled = this.checked;
+    });
+});
+
+function initializeWebSocket() {
+    if (!isRealTimeEnabled || ws) return;
+    
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/updates`;
+    
+    updateConnectionStatus('connecting', 'Connecting...');
+    
+    ws = new WebSocket(wsUrl);
+    
+    ws.onopen = function() {
+        console.log('WebSocket connected');
+        updateConnectionStatus('connected', 'Connected');
+        
+        // Subscribe to log events
+        ws.send(JSON.stringify({
+            type: 'subscribe',
+            channels: ['logs']
+        }));
+    };
+    
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        
+        if (data.type === 'log_event' || data.type === 'real_time_log') {
+            handleRealtimeLog(data.data);
+        } else if (data.type === 'subscription') {
+            console.log('Subscribed to channels:', data.channels);
+        }
+    };
+    
+    ws.onclose = function() {
+        console.log('WebSocket disconnected');
+        updateConnectionStatus('disconnected', 'Disconnected');
+        ws = null;
+        
+        // Try to reconnect after 5 seconds if real-time is enabled
+        if (isRealTimeEnabled) {
+            setTimeout(initializeWebSocket, 5000);
+        }
+    };
+    
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        updateConnectionStatus('disconnected', 'Error');
+    };
+}
+
+function disconnectWebSocket() {
+    if (ws) {
+        ws.close();
+        ws = null;
+    }
+    updateConnectionStatus('disconnected', 'Disabled');
+}
+
+function updateConnectionStatus(status, text) {
+    const indicator = document.getElementById('connection-indicator');
+    const statusText = document.getElementById('connection-status-text');
+    
+    indicator.className = `status-indicator status-${status}`;
+    statusText.textContent = text;
+}
+
+function handleRealtimeLog(logData) {
+    // Add to logs array at the beginning (newest first)
+    logs.unshift(logData);
+    
+    // Limit logs array to prevent memory issues
+    if (logs.length > 1000) {
+        logs = logs.slice(0, 1000);
+    }
+    
+    // Update display if no filters are applied or log matches current filters
+    if (shouldShowLog(logData)) {
+        displayLogs([logData, ...getCurrentDisplayedLogs()]);
+        
+        // Auto-scroll to bottom if enabled
+        if (isAutoScrollEnabled) {
+            const logsList = document.getElementById('logs-list');
+            logsList.scrollTop = 0; // Scroll to top since we're showing newest first
+        }
+    }
+}
+
+function shouldShowLog(logData) {
+    const levelFilter = document.getElementById('level-filter').value;
+    const sourceFilter = document.getElementById('source-filter').value;
+    
+    if (levelFilter && logData.level !== levelFilter) {
+        return false;
+    }
+    
+    if (sourceFilter && logData.source !== sourceFilter) {
+        return false;
+    }
+    
+    return true;
+}
+
+function getCurrentDisplayedLogs() {
+    // Extract logs from current display
+    const entries = document.querySelectorAll('.log-entry[data-log]');
+    return Array.from(entries).map(entry => JSON.parse(entry.dataset.log));
+}
+
+async function loadLogs() {
+    const logsList = document.getElementById('logs-list');
+    const logsCount = document.getElementById('logs-count');
+    
+    logsList.innerHTML = '<div class="loading">Loading logs...</div>';
+    logsCount.textContent = 'Loading...';
+    
+    try {
+        // Build query parameters
+        const params = new URLSearchParams();
+        
+        const level = document.getElementById('level-filter').value;
+        if (level) params.append('level', level);
+        
+        const source = document.getElementById('source-filter').value;
+        if (source) params.append('source', source);
+        
+        const limit = document.getElementById('limit-filter').value;
+        if (limit) params.append('limit', limit);
+        
+        const startTime = document.getElementById('start-time-filter').value;
+        if (startTime) params.append('start_time', new Date(startTime).toISOString());
+        
+        const endTime = document.getElementById('end-time-filter').value;
+        if (endTime) params.append('end_time', new Date(endTime).toISOString());
+        
+        // Fetch logs from API
+        const response = await fetch(`/api/logs/?${params.toString()}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const fetchedLogs = await response.json();
+        logs = Array.isArray(fetchedLogs) ? fetchedLogs : [];
+        
+        displayLogs(logs);
+        
+    } catch (error) {
+        console.error('Failed to load logs:', error);
+        logsList.innerHTML = `<div class="error-message">Failed to load logs: ${error.message}</div>`;
+        logsCount.textContent = 'Error';
+    }
+    
+    // Also load stats
+    loadLogStats();
+}
+
+function displayLogs(logsToDisplay) {
+    const logsList = document.getElementById('logs-list');
+    const logsCount = document.getElementById('logs-count');
+    
+    if (!logsToDisplay || logsToDisplay.length === 0) {
+        logsList.innerHTML = '<div class="no-logs">No logs found matching the current filters.</div>';
+        logsCount.textContent = 'No logs';
+        return;
+    }
+    
+    const logsHtml = logsToDisplay.map(log => {
+        const timestamp = log.timestamp ? new Date(log.timestamp).toLocaleString() : 'Unknown';
+        const level = log.level || 'INFO';
+        const source = log.source || 'system';
+        const message = log.message || JSON.stringify(log.data || {});
+        
+        return `
+            <div class="log-entry log-level-${level}" data-log='${JSON.stringify(log)}'>
+                <span class="log-timestamp">${timestamp}</span>
+                <span class="log-level log-level-${level}">${level}</span>
+                <span class="log-source">${source}</span>
+                <span class="log-message">${escapeHtml(message)}</span>
+            </div>
+        `;
+    }).join('');
+    
+    logsList.innerHTML = logsHtml;
+    logsCount.textContent = `${logsToDisplay.length} logs`;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+async function loadLogSources() {
+    try {
+        const response = await fetch('/api/logs/sources');
+        if (response.ok) {
+            const sources = await response.json();
+            const sourceFilter = document.getElementById('source-filter');
+            
+            // Keep the "All Sources" option
+            const currentValue = sourceFilter.value;
+            sourceFilter.innerHTML = '<option value="">All Sources</option>';
+            
+            sources.forEach(source => {
+                const option = document.createElement('option');
+                option.value = source;
+                option.textContent = source;
+                sourceFilter.appendChild(option);
+            });
+            
+            // Restore previous selection
+            sourceFilter.value = currentValue;
+        }
+    } catch (error) {
+        console.error('Failed to load log sources:', error);
+    }
+}
+
+async function loadLogStats() {
+    try {
+        const response = await fetch('/api/logs/stats');
+        if (response.ok) {
+            const stats = await response.json();
+            
+            document.getElementById('stat-total').textContent = stats.cached_logs || 0;
+            document.getElementById('stat-cached').textContent = stats.cached_logs || 0;
+            document.getElementById('stat-updated').textContent = 
+                stats.last_updated ? new Date(stats.last_updated).toLocaleTimeString() : 'Never';
+            
+            document.getElementById('logs-stats').style.display = 'block';
+        }
+    } catch (error) {
+        console.error('Failed to load log stats:', error);
+    }
+}
+
+function clearFilters() {
+    document.getElementById('level-filter').value = '';
+    document.getElementById('source-filter').value = '';
+    document.getElementById('limit-filter').value = '100';
+    document.getElementById('start-time-filter').value = '';
+    document.getElementById('end-time-filter').value = '';
+    
+    // Reload logs with cleared filters
+    loadLogs();
+}
+</script>
+{% endblock %}

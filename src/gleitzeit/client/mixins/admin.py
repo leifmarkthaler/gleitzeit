@@ -5,6 +5,8 @@ Admin and user management mixin for Gleitzeit client.
 from typing import Any, Dict, List, Optional
 from datetime import datetime
 
+from gleitzeit.core.errors import SystemError
+
 
 class AdminMixin:
     """Mixin providing admin and user management operations."""
@@ -31,7 +33,7 @@ class AdminMixin:
             Created user details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.create_user(username, email, password, role, **kwargs)
     
     async def list_users(self,
@@ -52,7 +54,7 @@ class AdminMixin:
             List of user details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.list_users(role, active, limit, offset)
     
     async def get_user(self, user_id: str) -> Dict[str, Any]:
@@ -66,7 +68,7 @@ class AdminMixin:
             User details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_user(user_id)
     
     async def update_user(self, 
@@ -83,7 +85,7 @@ class AdminMixin:
             Updated user details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.update_user(user_id, **updates)
     
     async def delete_user(self, user_id: str) -> Dict[str, Any]:
@@ -97,7 +99,7 @@ class AdminMixin:
             Deletion confirmation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.delete_user(user_id)
     
     async def reset_user_password(self, 
@@ -114,7 +116,7 @@ class AdminMixin:
             Password reset result
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.reset_user_password(user_id, new_password)
     
     async def disable_user(self, user_id: str, reason: Optional[str] = None) -> Dict[str, Any]:
@@ -129,7 +131,7 @@ class AdminMixin:
             Updated user status
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.update_user(user_id, active=False, disabled_reason=reason)
     
     async def enable_user(self, user_id: str) -> Dict[str, Any]:
@@ -143,7 +145,7 @@ class AdminMixin:
             Updated user status
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.update_user(user_id, active=True, disabled_reason=None)
     
     # API Key Management
@@ -166,7 +168,7 @@ class AdminMixin:
             API key details including the key value
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.create_api_key(name, user_id, expires_at, scopes)
     
     async def list_api_keys(self,
@@ -183,7 +185,7 @@ class AdminMixin:
             List of API key details (without key values)
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.list_api_keys(user_id, active_only)
     
     async def get_api_key(self, key_id: str) -> Dict[str, Any]:
@@ -197,7 +199,7 @@ class AdminMixin:
             API key details (without key value)
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_api_key(key_id)
     
     async def revoke_api_key(self, key_id: str, reason: Optional[str] = None) -> Dict[str, Any]:
@@ -212,7 +214,7 @@ class AdminMixin:
             Revocation confirmation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.revoke_api_key(key_id, reason)
     
     async def rotate_api_key(self, key_id: str) -> Dict[str, Any]:
@@ -226,7 +228,7 @@ class AdminMixin:
             New API key details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.rotate_api_key(key_id)
     
     # Role Management
@@ -247,7 +249,7 @@ class AdminMixin:
             Created role details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.create_role(name, permissions, description)
     
     async def list_roles(self) -> List[Dict[str, Any]]:
@@ -258,7 +260,7 @@ class AdminMixin:
             List of role details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.list_roles()
     
     async def get_role(self, role_id: str) -> Dict[str, Any]:
@@ -272,7 +274,7 @@ class AdminMixin:
             Role details including permissions
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_role(role_id)
     
     async def update_role(self,
@@ -291,7 +293,7 @@ class AdminMixin:
             Updated role details
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.update_role(role_id, permissions, description)
     
     async def delete_role(self, role_id: str) -> Dict[str, Any]:
@@ -305,7 +307,7 @@ class AdminMixin:
             Deletion confirmation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.delete_role(role_id)
     
     async def assign_role_to_user(self, user_id: str, role_id: str) -> Dict[str, Any]:
@@ -320,7 +322,7 @@ class AdminMixin:
             Assignment confirmation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.assign_role_to_user(user_id, role_id)
     
     async def remove_role_from_user(self, user_id: str, role_id: str) -> Dict[str, Any]:
@@ -335,7 +337,7 @@ class AdminMixin:
             Removal confirmation
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.remove_role_from_user(user_id, role_id)
     
     # Audit Logs
@@ -364,7 +366,7 @@ class AdminMixin:
             List of audit log entries
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_audit_logs(
             user_id=user_id,
             action=action,
@@ -391,7 +393,7 @@ class AdminMixin:
             User activity summary
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_user_activity(user_id, start_time, end_time)
     
     async def export_audit_logs(self,
@@ -410,7 +412,7 @@ class AdminMixin:
             Audit log data as bytes
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.export_audit_logs(format, start_time, end_time)
     
     # Permission Management
@@ -431,7 +433,7 @@ class AdminMixin:
             True if user has permission, False otherwise
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         result = await self._adapter.check_user_permission(user_id, permission, resource)
         return result.get("has_permission", False)
     
@@ -446,6 +448,6 @@ class AdminMixin:
             List of permission strings
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         result = await self._adapter.get_user_permissions(user_id)
         return result.get("permissions", [])

@@ -10,7 +10,7 @@ from functools import wraps
 import inspect
 
 from .simple import SimpleProvider
-from gleitzeit.core.errors import ProviderError
+from gleitzeit.core.errors import ProviderError, ConfigurationError, MethodNotSupportedError
 
 
 def provider(
@@ -48,7 +48,7 @@ def provider(
             elif method == "get_forecast":
                 return {"forecast": "sunny", "days": params.get("days", 7)}
             else:
-                raise ValueError(f"Unknown method: {method}")
+                raise MethodNotSupportedError(method, self.provider_id)
         
         # weather_provider is now a SimpleProvider instance
         result = await weather_provider.execute("get_weather", city="Paris")
@@ -56,7 +56,7 @@ def provider(
     def decorator(func: Callable) -> SimpleProvider:
         # Ensure function is async
         if not inspect.iscoroutinefunction(func):
-            raise ValueError(f"Provider function {func.__name__} must be async")
+            raise ConfigurationError(f"Provider function {func.__name__} must be async")
         
         # Create provider class
         class DecoratedProvider(SimpleProvider):
@@ -178,7 +178,7 @@ def provider_class(
                 method_names.append(method_name)
         
         if not method_handlers:
-            raise ValueError(f"Class {cls.__name__} has no @method_handler decorated methods")
+            raise ConfigurationError(f"Class {cls.__name__} has no @method_handler decorated methods")
         
         # Create the provider class
         class ClassBasedProvider(SimpleProvider):
@@ -294,11 +294,11 @@ def simple_http_provider(
     def decorator(func: Callable) -> SimpleProvider:
         # Get endpoint configuration
         if inspect.iscoroutinefunction(func):
-            raise ValueError("Endpoint configuration function should not be async")
+            raise ConfigurationError("Endpoint configuration function should not be async")
         
         endpoints_config = func()
         if not isinstance(endpoints_config, dict):
-            raise ValueError("Endpoint configuration must return a dictionary")
+            raise ConfigurationError("Endpoint configuration must return a dictionary")
         
         # Create HTTP provider class
         class HTTPConfigProvider(SimpleProvider):

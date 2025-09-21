@@ -6,6 +6,8 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime
 import logging
 
+from gleitzeit.core.errors import SystemError
+
 logger = logging.getLogger(__name__)
 
 
@@ -58,7 +60,7 @@ class ReplayMixin:
             )
         """
         if not self._initialized:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         try:
             service = self._get_replay_service()
@@ -216,7 +218,7 @@ class ReplayMixin:
             )
         """
         if not self._initialized:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         service = self._get_replay_service()
         return await service.list_replayable_workflows(status, since, limit)
@@ -238,7 +240,7 @@ class ReplayMixin:
             history = await client.get_replay_history("original_wf_123")
         """
         if not self._initialized:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         
         service = self._get_replay_service()
         return await service.get_replay_history(workflow_id)

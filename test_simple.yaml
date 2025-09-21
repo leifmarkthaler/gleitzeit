@@ -1,0 +1,10 @@
+name: Simple Test Without Dependencies
+description: Test that basic task execution works
+
+tasks:
+  - id: simple_task
+    name: Simple Task
+    protocol: python
+    method: execute_script
+    params:
+      script: test_tasks/simple_task1.py

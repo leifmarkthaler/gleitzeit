@@ -1,0 +1,26 @@
+name: Test Event-Driven Task Progression
+description: Test that tasks progress automatically via events without polling
+
+tasks:
+  - id: task1
+    name: First Task
+    protocol: python
+    method: execute_script
+    params:
+      script: test_tasks/task1.py
+
+  - id: task2
+    name: Second Task (depends on task1)
+    protocol: python
+    method: execute_script
+    dependencies: [task1]
+    params:
+      script: test_tasks/task2.py
+
+  - id: task3
+    name: Third Task (depends on task2)
+    protocol: python
+    method: execute_script
+    dependencies: [task2]
+    params:
+      script: test_tasks/task3.py

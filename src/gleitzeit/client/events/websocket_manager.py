@@ -276,11 +276,19 @@ class WebSocketManager:
         if isinstance(message, (ClientEvent, GleitzeitEvent)):
             ws_message = WebSocketMessage(
                 type='event',
-                event=message if isinstance(message, ClientEvent) else 
+                event=message if isinstance(message, ClientEvent) else
                       ClientEvent.from_server_event(message)
             )
+        elif isinstance(message, dict):
+            # If message already has a type field, use it directly
+            if 'type' in message:
+                ws_message = WebSocketMessage(**message)
+            else:
+                # Otherwise default to 'message' type
+                ws_message = WebSocketMessage(type='message', **message)
         else:
-            ws_message = WebSocketMessage(type='message', **message)
+            # Assume it's already a WebSocketMessage
+            ws_message = message
             
         # Queue message for sending
         try:

@@ -1,0 +1,8 @@
+name: test-execution
+tasks:
+  - id: task1
+    name: Simple Math Task
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: test_task.py

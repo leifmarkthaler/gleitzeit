@@ -11,21 +11,32 @@ from contextlib import asynccontextmanager
 import logging
 import os
 import secrets
+import signal
+import asyncio
 
 from .routes import (
     workflow_router,
     task_router,
-    admin_router, 
+    admin_router,
     system_router,
     auth_router,
     logs_router,
     errors_router,
     events_router
 )
+from .routes.users import router as users_router
+from .routes.sessions import router as sessions_router
+from .routes.timers import router as timers_router
+from .routes.scheduler import router as scheduler_router
+from .routes.signals import router as signals_router
+from .routes.streams import router as streams_router
+from .routes.error_discovery import router as error_discovery_router
+from .routes.triggers import router as triggers_router
 from .dependencies import (
     initialize_client_pool,
     shutdown_client_pool,
-    get_client_pool
+    get_client_pool,
+    get_system_manager
 )
 from .middleware import (
     AuthenticationMiddleware,
@@ -60,36 +71,88 @@ async def get_persistence_for_middleware():
     return None
 
 
+# Global shutdown event
+shutdown_event = asyncio.Event()
+
+
+def handle_sigterm(signum, frame):
+    """Handle SIGTERM signal for graceful shutdown."""
+    logger.info(f"Received signal {signum}, initiating graceful shutdown...")
+    shutdown_event.set()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle."""
     # Startup
     logger.info("Starting Gleitzeit API...")
     
-    # Generate or load service token for NATIVE mode authentication
-    service_token = os.getenv("GLEITZEIT_SERVICE_TOKEN")
-    if not service_token:
-        service_token = secrets.token_hex(32)
-        logger.info("Generated new service token for NATIVE mode")
-    else:
-        logger.info("Using configured service token for NATIVE mode")
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGTERM, handle_sigterm)
+    signal.signal(signal.SIGINT, handle_sigterm)
     
-    # Set the service token on the GleitzeitClient class
-    from gleitzeit.client import GleitzeitClient
-    GleitzeitClient.set_service_token(service_token)
-    
-    # Store token in app state for dependencies to use
-    app.state.service_token = service_token
+    # Native mode will use SystemManager's AuthManager directly
+    # No separate service token needed - auth is centralized
+    logger.info("API startup: Native mode will use SystemManager's AuthManager")
     
     await initialize_client_pool()
     logger.info("API startup complete")
+    
+    # Create background task to monitor shutdown
+    shutdown_task = asyncio.create_task(monitor_shutdown())
     
     yield
     
     # Shutdown
     logger.info("Shutting down Gleitzeit API...")
+    
+    # Cancel shutdown monitor
+    shutdown_task.cancel()
+    try:
+        await shutdown_task
+    except asyncio.CancelledError:
+        pass
+    
+    # Graceful shutdown with timeout
+    shutdown_timeout = int(os.getenv('GLEITZEIT_SHUTDOWN_TIMEOUT', '30'))
+    try:
+        logger.info(f"Waiting up to {shutdown_timeout}s for tasks to complete...")
+        await asyncio.wait_for(
+            graceful_shutdown(),
+            timeout=shutdown_timeout
+        )
+    except asyncio.TimeoutError:
+        logger.warning(f"Shutdown timeout after {shutdown_timeout}s, forcing shutdown")
+    
     await shutdown_client_pool()
     logger.info("API shutdown complete")
+
+
+async def monitor_shutdown():
+    """Monitor for shutdown signal and trigger graceful shutdown."""
+    await shutdown_event.wait()
+    logger.info("Shutdown signal received, stopping server...")
+    # This will trigger the lifespan shutdown
+    os._exit(0)
+
+
+async def graceful_shutdown():
+    """Perform graceful shutdown tasks."""
+    logger.info("Starting graceful shutdown...")
+    
+    # Get system manager and stop services
+    try:
+        system_manager = await get_system_manager()
+        if system_manager:
+            logger.info("Stopping system manager services...")
+            await system_manager.stop()
+    except Exception as e:
+        logger.error(f"Error stopping system manager: {e}")
+    
+    # Wait for active requests to complete
+    await asyncio.sleep(1)
+    
+    logger.info("Graceful shutdown completed")
 
 
 def create_modular_app() -> FastAPI:
@@ -129,22 +192,43 @@ def create_modular_app() -> FastAPI:
     # Error handling
     app.add_middleware(ErrorHandlingMiddleware)
     
-    # Authentication (innermost - runs first)
-    app.add_middleware(AuthenticationMiddleware, auth_mode="basic")
+    # Authentication middleware will be added after startup
+    # when SystemManager is available
     
     # Include modular route modules
     app.include_router(auth_router)
+    app.include_router(users_router)
+    app.include_router(sessions_router)
     app.include_router(workflow_router)
     app.include_router(task_router)
     app.include_router(admin_router)
     app.include_router(system_router)
     app.include_router(logs_router)
     app.include_router(errors_router)
+    app.include_router(error_discovery_router)
     app.include_router(events_router)
+    app.include_router(timers_router)
+    app.include_router(scheduler_router)
+    app.include_router(signals_router)
+    app.include_router(streams_router)
+    app.include_router(triggers_router)
     
     @app.on_event("startup")
-    async def add_rate_limiting():
-        """Add rate limiting middleware after persistence is available."""
+    async def add_dynamic_middleware():
+        """Add middleware that requires SystemManager/persistence after startup."""
+        # Get SystemManager for auth middleware
+        system_manager = await get_system_manager()
+        
+        # Add authentication middleware with SystemManager
+        auth_mode = os.getenv("GLEITZEIT_AUTH_MODE", "basic").lower()
+        app.add_middleware(
+            AuthenticationMiddleware, 
+            auth_mode=auth_mode,
+            system_manager=system_manager
+        )
+        logger.info(f"Authentication middleware added with SystemManager (mode: {auth_mode})")
+        
+        # Add rate limiting middleware
         persistence = await get_persistence_for_middleware()
         if persistence:
             app.add_middleware(RateLimitMiddleware, requests_per_minute=60, persistence=persistence)

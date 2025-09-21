@@ -20,7 +20,7 @@ from gleitzeit.core.models import (
 from gleitzeit.core.execution_engine_v2 import ExecutionEngineV2 as ExecutionEngine
 from gleitzeit.core.stateless_dependency_manager import StatelessDependencyManager
 from gleitzeit.persistence.workflow_persistence_ext import WorkflowPersistenceExtensions
-from gleitzeit.core.errors import WorkflowError, WorkflowValidationError
+from gleitzeit.core.errors import WorkflowError, WorkflowValidationError, InvalidParameterError
 from gleitzeit.core.logging_mixin import LoggingMixin
 
 logger = logging.getLogger(__name__)
@@ -88,18 +88,190 @@ class WorkflowManager(LoggingMixin):
         """Setup event handlers for workflow events."""
         if not self.event_bus:
             return
-        
-        from gleitzeit.core.events import EventType
-        
-        # Register handlers
-        self.event_bus.register(EventType.TASK_COMPLETED, self._on_task_completed)
-        self.event_bus.register(EventType.TASK_FAILED, self._on_task_failed)
-        self.event_bus.register(EventType.WORKFLOW_COMPLETED, self._on_workflow_completed)
-        self.event_bus.register(EventType.WORKFLOW_FAILED, self._on_workflow_failed)
-        
-        logger.debug("Registered event handlers for workflow events")
+
+        # Event handler registration requires async context
+        # Will be handled by the system that creates WorkflowManager
+        logger.debug("Event handlers ready for registration (requires async context)")
+
+    def register_with_stream_manager(self, stream_manager):
+        """
+        Register handlers with StreamSystemManager for stream-based events.
+
+        This bridges the gap between old event bus and new stream-based events.
+        The handlers reuse existing methods that handle persistence updates.
+        """
+        component_name = 'WorkflowManager'
+
+        # Register handlers for critical workflow events
+        stream_manager.register_event_handler('task:completed', self._on_task_completed, component_name)
+        stream_manager.register_event_handler('task:failed', self._on_task_failed, component_name)
+        stream_manager.register_event_handler('workflow:completed', self._on_workflow_completed, component_name)
+        stream_manager.register_event_handler('workflow:failed', self._on_workflow_failed, component_name)
+
+        logger.info(f"{component_name} registered handlers with StreamSystemManager")
+
+    # Workflow submission and execution methods
     
-    # Workflow execution methods
+    async def submit_workflow(
+        self,
+        workflow: Workflow,
+        execution_context: Optional[Dict[str, Any]] = None
+    ) -> str:
+        """
+        Submit a workflow for execution with validation.
+        
+        This method handles:
+        1. Dependency validation
+        2. Provider/method validation
+        3. Workflow persistence
+        4. Status tracking
+        
+        Args:
+            workflow: Workflow to submit
+            execution_context: Optional execution context
+            
+        Returns:
+            Workflow ID
+            
+        Raises:
+            WorkflowValidationError: If validation fails
+        """
+        await self.log_operation(
+            "workflow_submission_start",
+            workflow_id=workflow.id,
+            task_count=len(workflow.tasks)
+        )
+        
+        try:
+            # Step 1: Validate workflow dependencies
+            await self.log_debug(
+                "workflow_dependency_validation",
+                f"Validating dependencies for workflow {workflow.id}",
+                workflow_id=workflow.id
+            )
+            
+            validation_errors = await self.dependency_manager.validate_workflow(workflow)
+            
+            # Step 2: Validate provider availability and method support
+            # Access pooling adapter through execution engine
+            if hasattr(self.execution_engine, 'pooling_adapter') and self.execution_engine.pooling_adapter:
+                pooling_adapter = self.execution_engine.pooling_adapter
+                
+                await self.log_debug(
+                    "workflow_provider_validation",
+                    f"Validating providers and methods for workflow {workflow.id}",
+                    workflow_id=workflow.id
+                )
+                
+                for task in workflow.tasks:
+                    if task.protocol:
+                        # Validate provider availability and method support
+                        is_available, error_msg = await pooling_adapter.validate_provider_availability(
+                            protocol=task.protocol,
+                            method=task.method
+                        )
+                        if not is_available:
+                            validation_errors.append(f"Task '{task.name}' ({task.id}): {error_msg}")
+                            await self.log_error(
+                                "task_validation_failed",
+                                InvalidParameterError("method", error_msg),
+                                task_id=task.id,
+                                task_name=task.name,
+                                protocol=task.protocol,
+                                method=task.method,
+                                error_message=error_msg
+                            )
+            else:
+                # If no pooling adapter, log warning but continue
+                await self.log_warning(
+                    "no_pooling_adapter",
+                    "No pooling adapter available for provider validation",
+                    workflow_id=workflow.id
+                )
+            
+            # Step 3: Check for validation errors
+            if validation_errors:
+                await self.log_error(
+                    "workflow_submission_validation_failed",
+                    WorkflowValidationError(workflow.id, validation_errors),
+                    workflow_id=workflow.id,
+                    validation_errors=validation_errors
+                )
+                raise WorkflowValidationError(
+                    workflow_id=workflow.id,
+                    validation_errors=validation_errors
+                )
+            
+            await self.log_success(
+                "workflow_validation_complete",
+                workflow_id=workflow.id,
+                description="Workflow validation completed successfully"
+            )
+            
+            # Step 4: Set initial workflow status
+            workflow.status = WorkflowStatus.PENDING
+            workflow.created_at = datetime.utcnow()
+            
+            # Step 5: Persist workflow
+            await self.log_debug(
+                "workflow_persistence_save",
+                "Saving workflow to persistence",
+                workflow_id=workflow.id,
+                status=workflow.status.value
+            )
+            
+            await self.persistence.save_workflow(workflow)
+            
+            # Also save individual tasks
+            # Note: workflow_id is now set centrally by WorkflowLoaderV2
+            for task in workflow.tasks:
+                # Ensure workflow_id is set (should already be set by WorkflowLoaderV2)
+                if not task.workflow_id:
+                    task.workflow_id = workflow.id
+                task.status = TaskStatus.PENDING
+                await self.persistence.save_task(task)
+            
+            # Step 6: Emit workflow submitted event
+            if self.event_bus:
+                from gleitzeit.core.events import EventType, WorkflowEventData, GleitzeitEvent
+                event_data = WorkflowEventData(
+                    workflow_id=workflow.id,
+                    status=workflow.status,
+                    total_tasks=len(workflow.tasks)
+                )
+                event = GleitzeitEvent(
+                    event_type=EventType.WORKFLOW_SUBMITTED,
+                    data={"workflow_event": event_data.to_dict()},
+                    source="WorkflowManager"
+                )
+                await self.event_bus.emit(event)
+            
+            # Step 7: Submit to execution engine for actual execution
+            # The execution engine will handle task scheduling and execution
+            await self.log_debug(
+                "workflow_execution_submit",
+                "Submitting workflow to execution engine for execution",
+                workflow_id=workflow.id
+            )
+            
+            await self.execution_engine.submit_workflow(workflow)
+            
+            await self.log_success(
+                "workflow_submitted",
+                workflow_id=workflow.id,
+                status=workflow.status.value,
+                description=f"Workflow '{workflow.name}' submitted successfully"
+            )
+            
+            return workflow.id
+            
+        except Exception as e:
+            await self.log_error(
+                "workflow_submission_failed",
+                e,
+                workflow_id=workflow.id
+            )
+            raise
     
     async def execute_workflow(
         self,
@@ -148,7 +320,7 @@ class WorkflowManager(LoggingMixin):
                 pooling_adapter = self.execution_engine.pooling_adapter
                 for task in workflow.tasks:
                     if task.protocol:
-                        is_available, error_msg = await pooling_adapter.validate_provider_availability(task.protocol)
+                        is_available, error_msg = await pooling_adapter.validate_provider_availability(task.protocol, task.method)
                         if not is_available:
                             validation_errors.append(f"Task '{task.name}': {error_msg}")
             
@@ -436,7 +608,7 @@ class WorkflowManager(LoggingMixin):
                 ValueError(f"Template {template_id} not found"),
                 template_id=template_id
             )
-            raise ValueError(f"Template {template_id} not found")
+            raise WorkflowError(f"Template {template_id} not found")
         
         # Generate workflow ID if not provided
         workflow_id = workflow_id or f"{template_id}-{uuid4().hex[:8]}"

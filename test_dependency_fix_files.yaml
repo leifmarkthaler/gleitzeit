@@ -1,0 +1,27 @@
+name: test-dependency-fix-files
+version: "1.0"
+description: Simple workflow to test dependency resolution fix using Python files
+
+tasks:
+  - id: task1
+    name: First Task
+    protocol: python/v1
+    method: python/execute
+    params:
+      file: task1.py
+
+  - id: task2
+    name: Second Task
+    protocol: python/v1
+    method: python/execute
+    dependencies: [task1]
+    params:
+      file: task2.py
+
+  - id: task3
+    name: Third Task
+    protocol: python/v1
+    method: python/execute
+    dependencies: [task2]
+    params:
+      file: task3.py

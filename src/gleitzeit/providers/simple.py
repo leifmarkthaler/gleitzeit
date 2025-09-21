@@ -12,6 +12,7 @@ from abc import abstractmethod
 from typing import Dict, Any, Optional, List
 
 from .base import ProtocolProvider
+from gleitzeit.core.errors import MethodNotSupportedError
 
 
 class SimpleProvider(ProtocolProvider):

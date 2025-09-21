@@ -124,6 +124,9 @@ class SystemConfig(BaseModel):
     # Persistence
     persistence_backend: str = "unified"  # Use existing unified persistence
     
+    # Event Transport Configuration - Instance-specific consumer group
+    stream_consumer_group: Optional[str] = None  # Will be auto-generated if not provided
+    
     # ProviderHub configuration
     provider_hub_port: int = 8090  # Port for ProviderHub HTTP server
     

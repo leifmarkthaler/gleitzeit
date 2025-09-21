@@ -5,6 +5,8 @@ Monitoring and statistics mixin for Gleitzeit client.
 from typing import Any, Dict, Optional
 from datetime import datetime
 
+from gleitzeit.core.errors import SystemError
+
 
 class MonitoringMixin:
     """Mixin providing monitoring and statistics operations."""
@@ -23,7 +25,7 @@ class MonitoringMixin:
             Task statistics including counts, durations, success rates
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_detailed_task_statistics(start_time, end_time)
     
     async def get_detailed_workflow_statistics(self, 
@@ -40,7 +42,7 @@ class MonitoringMixin:
             Workflow statistics including counts, durations, success rates
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_detailed_workflow_statistics(start_time, end_time)
     
     async def get_system_statistics(self) -> Dict[str, Any]:
@@ -51,7 +53,7 @@ class MonitoringMixin:
             System statistics including uptime, throughput, resource usage
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_system_statistics()
     
     async def get_resource_limits(self) -> Dict[str, Any]:
@@ -62,7 +64,7 @@ class MonitoringMixin:
             Dictionary with resource limits (CPU, memory, disk, etc.)
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_resource_limits()
     
     async def get_resource_usage(self) -> Dict[str, Any]:
@@ -73,7 +75,7 @@ class MonitoringMixin:
             Dictionary with current resource usage metrics
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_resource_usage()
     
     async def get_event_stream(self, 
@@ -90,7 +92,7 @@ class MonitoringMixin:
             Event stream data
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_event_stream(filter, follow)
     
     async def get_provider_details(self, provider_id: str) -> Dict[str, Any]:
@@ -104,7 +106,7 @@ class MonitoringMixin:
             Provider details including capabilities and status
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_provider_details(provider_id)
     
     async def check_provider_health(self, provider_id: str) -> Dict[str, Any]:
@@ -118,7 +120,7 @@ class MonitoringMixin:
             Health check results
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.check_provider_health(provider_id)
     
     async def get_performance_metrics(self,
@@ -137,7 +139,7 @@ class MonitoringMixin:
             Performance metrics including latency, throughput, error rates
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_performance_metrics(component, start_time, end_time)
     
     async def get_queue_metrics(self) -> Dict[str, Any]:
@@ -148,5 +150,5 @@ class MonitoringMixin:
             Queue metrics including sizes, processing rates, wait times
         """
         if not self._adapter:
-            raise RuntimeError("Client not initialized")
+            raise SystemError("Client not initialized")
         return await self._adapter.get_queue_metrics()

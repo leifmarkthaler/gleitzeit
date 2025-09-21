@@ -1,0 +1,47 @@
+name: signal_integration_test
+version: 1.0.0
+description: Integration test for signal functionality with real workflow execution
+
+tasks:
+  - name: init_workflow
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        import datetime
+        print(f"Workflow started at {datetime.datetime.now()}")
+        print("Ready to wait for signal...")
+        result = {"status": "initialized", "timestamp": str(datetime.datetime.now())}
+
+  - name: wait_for_approval_signal
+    protocol: signal/v1
+    method: signal/wait
+    params:
+      signal: approval_granted
+      timeout: 120
+    dependencies:
+      - init_workflow
+
+  - name: process_approval
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        import datetime
+        print(f"Signal received! Processing approval at {datetime.datetime.now()}")
+        print("Approval signal successfully triggered task continuation")
+        result = {"status": "approved", "processed_at": str(datetime.datetime.now())}
+    dependencies:
+      - wait_for_approval_signal
+
+  - name: final_step
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        import datetime
+        print(f"Workflow completed successfully at {datetime.datetime.now()}")
+        print("Signal integration test passed!")
+        result = {"status": "completed", "timestamp": str(datetime.datetime.now())}
+    dependencies:
+      - process_approval

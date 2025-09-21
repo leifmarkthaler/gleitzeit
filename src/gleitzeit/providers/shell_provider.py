@@ -17,7 +17,7 @@ from datetime import datetime
 import logging
 
 from gleitzeit.providers.simple import SimpleProvider
-from gleitzeit.core.errors import ProviderError, TaskValidationError, TaskExecutionError
+from gleitzeit.core.errors import ProviderError, TaskValidationError, TaskExecutionError, MethodNotSupportedError
 
 
 class ShellProvider(SimpleProvider):
@@ -161,7 +161,7 @@ class ShellProvider(SimpleProvider):
             elif method == "shell/batch":
                 result = await self._exec_batch(params)
             else:
-                raise ValueError(f"Unknown method: {method}")
+                raise MethodNotSupportedError(method, self.provider_id)
             
             # Add metadata
             result["provider"] = self.provider_id

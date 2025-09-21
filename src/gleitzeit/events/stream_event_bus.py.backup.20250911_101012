@@ -1,0 +1,599 @@
+"""
+Redis Streams Event Bus for Stateless Operation with Durability.
+
+This provides an alternative to PubSubEventBus using Redis Streams for:
+- Message persistence and durability
+- Guaranteed delivery with acknowledgments
+- Consumer groups for distributed processing
+- Message replay capability
+- Automatic failure recovery
+"""
+
+import asyncio
+import logging
+import json
+import uuid
+import re
+from typing import Dict, Set, Callable, Optional, Any, List, Union
+from datetime import datetime
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, asdict
+
+from gleitzeit.core.events import GleitzeitEvent, EventType
+
+logger = logging.getLogger(__name__)
+
+
+@dataclass
+class GleitzeitStreamEvent:
+    """
+    Event wrapper for Redis Streams that ensures all required fields are present
+    and properly formatted for stream storage.
+    """
+    event_type: str
+    timestamp: str
+    data: str  # JSON string
+    source: str
+    correlation_id: str
+    severity: str
+    metadata: str  # JSON string
+    
+    @classmethod
+    def from_event(cls, event: GleitzeitEvent) -> 'GleitzeitStreamEvent':
+        """Create a stream event from a regular Gleitzeit event."""
+        return cls(
+            event_type=event.event_type,
+            timestamp=event.timestamp.isoformat() if event.timestamp else datetime.utcnow().isoformat(),
+            data=json.dumps(event.data),
+            source=event.source or "",
+            correlation_id=event.correlation_id or "",
+            severity=event.severity,
+            metadata=json.dumps(event.tags) if event.tags else "{}"
+        )
+    
+    def to_dict(self) -> Dict[str, str]:
+        """Convert to dictionary for Redis XADD - all values must be strings."""
+        return asdict(self)
+    
+    def to_event(self) -> GleitzeitEvent:
+        """Convert back to a regular Gleitzeit event."""
+        return GleitzeitEvent(
+            event_type=self.event_type,
+            data=json.loads(self.data),
+            source=self.source if self.source else None,
+            correlation_id=self.correlation_id if self.correlation_id else None,
+            severity=self.severity,
+            tags=json.loads(self.metadata) if self.metadata != "{}" else {},
+            timestamp=datetime.fromisoformat(self.timestamp) if self.timestamp else None
+        )
+
+
+class StreamEventBus:
+    """
+    Event bus implementation using Redis Streams.
+    
+    Provides durability and guaranteed delivery unlike Pub/Sub which is fire-and-forget.
+    Supports consumer groups for distributed processing and automatic failure recovery.
+    """
+    
+    def __init__(self, redis_client, event_store=None, 
+                 consumer_group: str = "gleitzeit_workers",
+                 consumer_id: Optional[str] = None,
+                 max_retries: int = 3,
+                 claim_idle_time: int = 60000,
+                 validate_event_types: bool = True):
+        """
+        Initialize the Stream event bus.
+        
+        Args:
+            redis_client: Redis client instance
+            event_store: Optional EventStore for additional persistence
+            consumer_group: Name of the consumer group for distributed processing
+            consumer_id: Unique ID for this consumer (auto-generated if None)
+            max_retries: Maximum retries for failed messages
+            claim_idle_time: Time in ms before claiming idle messages
+        """
+        self.redis = redis_client
+        self.event_store = event_store
+        self.consumer_group = consumer_group
+        self.consumer_id = consumer_id or f"consumer_{uuid.uuid4().hex[:8]}"
+        self.max_retries = max_retries
+        self.claim_idle_time = claim_idle_time
+        self.validate_event_types = validate_event_types
+        
+        self._handlers: Dict[str, List[Callable]] = {}
+        self._running = False
+        self._consumer_task: Optional[asyncio.Task] = None
+        self._claim_task: Optional[asyncio.Task] = None
+        self._created_groups: Set[str] = set()
+        
+        logger.info(f"Initialized StreamEventBus (group: {consumer_group}, consumer: {consumer_id})")
+    
+    def _normalize_event_type(self, event_type: Union[str, EventType]) -> str:
+        """
+        Normalize event type to string value.
+        
+        Args:
+            event_type: Event type as string or EventType enum
+            
+        Returns:
+            Normalized event type string
+            
+        Raises:
+            ValueError: If event type format is invalid and validation is enabled
+        """
+        # Handle EventType enum
+        if isinstance(event_type, EventType):
+            normalized = event_type.value
+        # Duck typing for other enums with value attribute
+        elif hasattr(event_type, 'value'):
+            normalized = event_type.value
+        else:
+            normalized = str(event_type)
+        
+        # Validate format if enabled
+        if self.validate_event_types and not self._is_valid_event_type(normalized):
+            raise ValueError(
+                f"Invalid event type format '{normalized}'. "
+                f"Expected format: 'component:action' (e.g., 'workflow:submitted')"
+            )
+        
+        return normalized
+    
+    def _is_valid_event_type(self, event_type: str) -> bool:
+        """
+        Validate event type follows expected format.
+        
+        Args:
+            event_type: Event type string to validate
+            
+        Returns:
+            True if valid, False otherwise
+        """
+        # Allow both component:action and EventType.NAME formats for compatibility
+        patterns = [
+            r'^[a-z]+:[a-z_]+$',  # Standard format: component:action
+            r'^EventType\.[A-Z_]+$'  # Legacy format: EventType.NAME
+        ]
+        return any(re.match(pattern, event_type) for pattern in patterns)
+    
+    async def initialize(self):
+        """Initialize the event bus (for compatibility)."""
+        await self.start()
+    
+    async def start(self):
+        """Start the event bus consumer and claim tasks."""
+        if self._running:
+            logger.warning("StreamEventBus already running")
+            return
+            
+        self._running = True
+        
+        # Start consumer task
+        self._consumer_task = asyncio.create_task(self._consume_events())
+        
+        # Start claim task for recovering failed messages
+        self._claim_task = asyncio.create_task(self._claim_idle_messages())
+        
+        logger.info("StreamEventBus started")
+    
+    async def stop(self):
+        """Stop the event bus and all consumers."""
+        logger.info("Stopping StreamEventBus...")
+        self._running = False
+        
+        # Cancel consumer tasks
+        if self._consumer_task:
+            self._consumer_task.cancel()
+            try:
+                await self._consumer_task
+            except asyncio.CancelledError:
+                pass
+                
+        if self._claim_task:
+            self._claim_task.cancel()
+            try:
+                await self._claim_task
+            except asyncio.CancelledError:
+                pass
+        
+        self._handlers.clear()
+        self._created_groups.clear()
+        logger.info("StreamEventBus stopped")
+    
+    async def shutdown(self):
+        """Shutdown the event bus (alias for stop)."""
+        await self.stop()
+    
+    async def emit(self, event: GleitzeitEvent) -> str:
+        """
+        Emit an event to Redis Stream.
+        
+        Args:
+            event: Event to emit
+            
+        Returns:
+            Message ID from Redis stream
+        """
+        # Persist event if store is configured
+        if self.event_store:
+            try:
+                await self.event_store.save_event(event)
+            except Exception as e:
+                logger.warning(f"Failed to persist event {event.event_type}: {e}")
+        
+        # Normalize event type and get stream key
+        normalized_event_type = self._normalize_event_type(event.event_type)
+        stream_key = self._get_stream_key(normalized_event_type)
+        
+        # Convert to stream event for proper serialization
+        stream_event = GleitzeitStreamEvent.from_event(event)
+        
+        try:
+            # Add to stream - all values are guaranteed to be strings
+            message_id = await self.redis.xadd(stream_key, stream_event.to_dict())
+            
+            logger.debug(f"Emitted event {event.event_type} to stream {stream_key}: {message_id}")
+            return message_id
+            
+        except Exception as e:
+            logger.error(f"Failed to emit event {event.event_type}: {e}")
+            raise
+    
+    def register(self, event_type: Union[str, EventType], handler: Callable) -> None:
+        """
+        Register an event handler.
+        
+        Args:
+            event_type: Event type to handle (can be EventType enum or string)
+            handler: Handler function
+        """
+        # Use centralized normalization
+        event_type = self._normalize_event_type(event_type)
+            
+        if event_type not in self._handlers:
+            self._handlers[event_type] = []
+            
+            # Ensure consumer group exists for this event type
+            asyncio.create_task(self._ensure_consumer_group(event_type))
+        
+        self._handlers[event_type].append(handler)
+        logger.debug(f"Registered handler for {event_type}")
+    
+    def unregister(self, event_type: Union[str, EventType], handler: Callable) -> None:
+        """
+        Unregister an event handler.
+        
+        Args:
+            event_type: Event type (can be EventType enum or string)
+            handler: Handler to remove
+        """
+        # Use centralized normalization
+        event_type = self._normalize_event_type(event_type)
+            
+        if event_type in self._handlers:
+            try:
+                self._handlers[event_type].remove(handler)
+                logger.debug(f"Unregistered handler for {event_type}")
+            except ValueError:
+                pass
+    
+    async def _process_pending_on_startup(self):
+        """Process any pending messages when the consumer starts."""
+        if not self._handlers:
+            return
+            
+        logger.info(f"Checking for pending messages on startup for consumer {self.consumer_id}")
+        
+        for event_type in self._handlers.keys():
+            stream_key = self._get_stream_key(event_type)
+            
+            # Ensure consumer group exists
+            await self._ensure_consumer_group(event_type)
+            
+            try:
+                # Check for pending messages in this stream
+                pending_info = await self.redis.xpending(stream_key, self.consumer_group)
+                
+                if pending_info and pending_info[0] > 0:  # pending_info[0] is count
+                    logger.info(f"Found {pending_info[0]} pending messages in {stream_key}")
+                    
+                    # Claim and process old pending messages
+                    min_idle_time = 10000  # 10 seconds
+                    messages = await self.redis.xclaim(
+                        stream_key,
+                        self.consumer_group,
+                        self.consumer_id,
+                        min_idle_time,
+                        pending_info[1],  # Start ID
+                        count=100
+                    )
+                    
+                    if messages:
+                        logger.info(f"Claimed {len(messages)} pending messages from {stream_key}")
+                        for msg_id, data in messages:
+                            event_type = self._get_event_type_from_key(stream_key)
+                            success = await self._process_event(event_type, data, msg_id, stream_key)
+                            if success:
+                                await self.redis.xack(stream_key, self.consumer_group, msg_id)
+                
+                # Also check for any unread messages (messages added before consumer group existed)
+                # Get the last delivered ID for this consumer group
+                group_info = await self.redis.xinfo_groups(stream_key)
+                last_delivered_id = "0"
+                
+                for group in group_info:
+                    if group['name'] == self.consumer_group:
+                        last_delivered_id = group.get('last-delivered-id', '0')
+                        break
+                
+                # If last_delivered_id is 0, the group hasn't read anything yet
+                # Read some recent messages that might have been missed
+                if last_delivered_id == "0" or last_delivered_id == "0-0":
+                    # Read last 10 messages from the stream
+                    recent_messages = await self.redis.xrevrange(stream_key, count=10)
+                    if recent_messages:
+                        logger.info(f"Found {len(recent_messages)} unread messages in {stream_key}, processing...")
+                        
+                        # Process in reverse order (oldest first)
+                        for msg_id, data in reversed(recent_messages):
+                            event_type = self._get_event_type_from_key(stream_key)
+                            await self._process_event(event_type, data, msg_id, stream_key)
+                            # Don't ACK these as they're not part of our consumer group yet
+                            
+            except Exception as e:
+                logger.error(f"Error processing pending messages for {stream_key}: {e}")
+    
+    async def _ensure_consumer_group(self, event_type: Union[str, EventType]):
+        """Ensure consumer group exists for an event type."""
+        # Use centralized normalization
+        event_type = self._normalize_event_type(event_type)
+            
+        stream_key = self._get_stream_key(event_type)
+        
+        if stream_key not in self._created_groups:
+            try:
+                # Create consumer group from the beginning
+                await self.redis.xgroup_create(
+                    stream_key,
+                    self.consumer_group,
+                    id="0",
+                    mkstream=True
+                )
+                self._created_groups.add(stream_key)
+                logger.info(f"Created consumer group {self.consumer_group} for {stream_key}")
+            except Exception as e:
+                if "BUSYGROUP" not in str(e):
+                    logger.warning(f"Could not create consumer group for {stream_key}: {e}")
+                self._created_groups.add(stream_key)
+    
+    async def _consume_events(self):
+        """Main consumer loop for processing events from streams."""
+        logger.info(f"Starting event consumer for {self.consumer_id}")
+        
+        first_iteration = True
+        while self._running:
+            try:
+                # Build streams dict for all registered event types
+                if not self._handlers:
+                    await asyncio.sleep(1)
+                    continue
+                
+                streams = {}
+                for event_type in self._handlers.keys():
+                    # event_type is already normalized in register()
+                    stream_key = self._get_stream_key(event_type)
+                    # Ensure consumer group exists for this stream
+                    await self._ensure_consumer_group(event_type)
+                    
+                    # On first iteration, check for pending messages
+                    if first_iteration:
+                        streams[stream_key] = "0"  # Read from beginning on first iteration
+                    else:
+                        streams[stream_key] = ">"  # Read only new messages
+                
+                # Read from streams with consumer group
+                messages = await self.redis.xreadgroup(
+                    self.consumer_group,
+                    self.consumer_id,
+                    streams,
+                    block=1000,  # Block for 1 second
+                    count=10     # Process up to 10 messages at once
+                )
+                
+                if not messages:
+                    continue
+                
+                logger.info(f"Consumer {self.consumer_id} received {len(messages)} stream(s) with messages")
+                for stream_key, entries in messages:
+                    logger.debug(f"Stream {stream_key}: {len(entries)} messages")
+                
+                # Process messages
+                for stream_key, entries in messages:
+                    for msg_id, data in entries:
+                        # Extract event type from stream key
+                        event_type = self._get_event_type_from_key(stream_key)
+                        
+                        # Process the event
+                        success = await self._process_event(event_type, data, msg_id, stream_key)
+                        
+                        if success:
+                            # Acknowledge successful processing
+                            await self.redis.xack(stream_key, self.consumer_group, msg_id)
+                        else:
+                            # Don't ACK - message will be retried later
+                            logger.warning(f"Failed to process message {msg_id}, will retry")
+                
+                # After first iteration, only read new messages
+                first_iteration = False
+                            
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in event consumer: {e}")
+                await asyncio.sleep(1)
+        
+        logger.info(f"Event consumer {self.consumer_id} stopped")
+    
+    async def _claim_idle_messages(self):
+        """Periodically claim idle messages from failed consumers."""
+        logger.info(f"Starting idle message claimer for {self.consumer_id}")
+        
+        while self._running:
+            try:
+                # Wait before next claim cycle
+                await asyncio.sleep(30)  # Check every 30 seconds
+                
+                if not self._handlers:
+                    continue
+                
+                for event_type in self._handlers.keys():
+                    # event_type is already normalized in register()
+                    stream_key = self._get_stream_key(event_type)
+                    
+                    try:
+                        # Get pending messages info
+                        pending = await self.redis.xpending_range(
+                            stream_key,
+                            self.consumer_group,
+                            min="-",
+                            max="+",
+                            count=10
+                        )
+                        
+                        if not pending:
+                            continue
+                        
+                        # Claim messages idle for too long
+                        for entry in pending:
+                            if entry["time_since_delivered"] < self.claim_idle_time:
+                                continue
+                            
+                            # Check retry count
+                            if entry.get("times_delivered", 0) > self.max_retries:
+                                # Move to dead letter queue or log
+                                logger.error(f"Message {entry['message_id']} exceeded max retries")
+                                # ACK to remove from pending
+                                await self.redis.xack(stream_key, self.consumer_group, entry['message_id'])
+                                continue
+                            
+                            # Claim the message
+                            result = await self.redis.xclaim(
+                                stream_key,
+                                self.consumer_group,
+                                self.consumer_id,
+                                self.claim_idle_time,
+                                entry["message_id"]
+                            )
+                            
+                            if result:
+                                msg_id, data = result[0]
+                                logger.info(f"Claimed idle message {msg_id} from {stream_key}")
+                                
+                                # Process the reclaimed message
+                                success = await self._process_event(event_type, data, msg_id, stream_key)
+                                
+                                if success:
+                                    await self.redis.xack(stream_key, self.consumer_group, msg_id)
+                                    
+                    except Exception as e:
+                        logger.error(f"Error claiming messages from {stream_key}: {e}")
+                        
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"Error in idle message claimer: {e}")
+                await asyncio.sleep(5)
+        
+        logger.info(f"Idle message claimer {self.consumer_id} stopped")
+    
+    async def _process_event(self, event_type: str, data: Dict, msg_id: str, stream_key: str) -> bool:
+        """
+        Process a single event from the stream.
+        
+        Returns:
+            True if processed successfully, False otherwise
+        """
+        try:
+            # Decode bytes to strings if necessary
+            decoded_data = {}
+            for key, value in data.items():
+                if isinstance(key, bytes):
+                    key = key.decode()
+                if isinstance(value, bytes):
+                    value = value.decode()
+                decoded_data[key] = value
+            
+            # Reconstruct the stream event
+            stream_event = GleitzeitStreamEvent(
+                event_type=decoded_data.get("event_type", ""),
+                timestamp=decoded_data.get("timestamp", datetime.utcnow().isoformat()),
+                data=decoded_data.get("data", "{}"),
+                source=decoded_data.get("source", ""),
+                correlation_id=decoded_data.get("correlation_id", ""),
+                severity=decoded_data.get("severity", "INFO"),
+                metadata=decoded_data.get("metadata", "{}")
+            )
+            
+            # Convert to regular event
+            event = stream_event.to_event()
+            
+            # Call all handlers for this event type
+            handlers = self._handlers.get(event_type, [])
+            
+            if not handlers:
+                logger.warning(f"No handlers for event_type '{event_type}'. Available: {list(self._handlers.keys())}")
+            else:
+                logger.info(f"Processing event '{event_type}' with {len(handlers)} handler(s), msg_id: {msg_id}")
+            
+            for handler in handlers:
+                try:
+                    if asyncio.iscoroutinefunction(handler):
+                        await handler(event)
+                    else:
+                        handler(event)
+                except Exception as e:
+                    logger.error(f"Handler error for {event_type}: {e}")
+                    # Continue with other handlers even if one fails
+            
+            logger.debug(f"Processed event {event_type} (msg_id: {msg_id})")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to process event from {stream_key}: {e}")
+            return False
+    
+    def _get_stream_key(self, event_type: str) -> str:
+        """Get Redis stream key for an event type.
+        
+        Note: event_type should already be normalized before calling this.
+        """
+        return f"gleitzeit:events:stream:{event_type}"
+    
+    def _get_event_type_from_key(self, stream_key: str) -> str:
+        """Extract event type from stream key."""
+        if isinstance(stream_key, bytes):
+            stream_key = stream_key.decode()
+        return stream_key.replace("gleitzeit:events:stream:", "")
+    
+    async def get_pending_count(self, event_type: Union[str, EventType]) -> int:
+        """Get count of pending messages for an event type."""
+        event_type = self._normalize_event_type(event_type)
+        stream_key = self._get_stream_key(event_type)
+        
+        try:
+            info = await self.redis.xpending(stream_key, self.consumer_group)
+            return info.get("pending", 0) if info else 0
+        except:
+            return 0
+    
+    async def trim_stream(self, event_type: Union[str, EventType], max_length: int = 10000):
+        """Trim stream to prevent unbounded growth."""
+        event_type = self._normalize_event_type(event_type)
+        stream_key = self._get_stream_key(event_type)
+        
+        try:
+            await self.redis.xtrim(stream_key, maxlen=max_length, approximate=True)
+            logger.debug(f"Trimmed stream {stream_key} to ~{max_length} messages")
+        except Exception as e:
+            logger.error(f"Failed to trim stream {stream_key}: {e}")

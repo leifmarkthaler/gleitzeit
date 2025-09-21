@@ -57,6 +57,15 @@ class EventType(str, Enum):
     WORKFLOW_PAUSED = "workflow:paused"
     WORKFLOW_RESUMED = "workflow:resumed"
     WORKFLOW_PROGRESS = "workflow:progress"
+    WORKFLOW_STUCK = "workflow:stuck"
+    WORKFLOW_WAITING_FOR_SIGNAL = "workflow:waiting_for_signal"
+    
+    # Reconciliation Events
+    RECONCILIATION_LEADER_ELECTED = "reconciliation:leader_elected"
+    RECONCILIATION_LEADER_STEPPED_DOWN = "reconciliation:leader_stepped_down"
+    RECONCILIATION_STARTED = "reconciliation:started"
+    RECONCILIATION_COMPLETED = "reconciliation:completed"
+    RECONCILIATION_FAILED = "reconciliation:failed"
     
     # Provider Events
     PROVIDER_REGISTERED = "provider:registered"
@@ -68,6 +77,12 @@ class EventType(str, Enum):
     PROVIDER_OVERLOADED = "provider:overloaded"
     PROVIDER_CLEANUP_REQUESTED = "provider:cleanup_requested"
     PROVIDER_SESSION_CLEANUP = "provider:session_cleanup"
+    
+    # Session Events
+    SESSION_CREATED = "session:created"
+    SESSION_REVOKED = "session:revoked"
+    SESSION_EXPIRED = "session:expired"
+    SESSION_REFRESHED = "session:refreshed"
     
     # Pool Events
     POOL_SCALED = "pool:scaled"
@@ -250,6 +265,9 @@ class WorkflowEventData:
         result = asdict(self)
         if self.timestamp:
             result['timestamp'] = self.timestamp.isoformat()
+        if self.status:
+            # Convert WorkflowStatus enum to string value
+            result['status'] = self.status.value if hasattr(self.status, 'value') else str(self.status)
         return result
 
 
@@ -336,6 +354,7 @@ class GleitzeitEvent(BaseModel):
     source: Optional[str] = Field(None, description="Component that emitted the event")
     correlation_id: Optional[str] = Field(None, description="ID for tracking related events")
     tags: Dict[str, str] = Field(default_factory=dict, description="Additional metadata tags")
+    timestamp: Optional[datetime] = Field(default=None, description="When the event occurred")
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
@@ -345,7 +364,8 @@ class GleitzeitEvent(BaseModel):
             "data": self.data,
             "source": self.source,
             "correlation_id": self.correlation_id,
-            "tags": self.tags
+            "tags": self.tags,
+            "timestamp": self.timestamp.isoformat() if self.timestamp else None
         }
     
     def to_socket_io(self) -> tuple[str, Dict[str, Any]]:

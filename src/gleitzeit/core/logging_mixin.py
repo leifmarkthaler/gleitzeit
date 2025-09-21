@@ -12,7 +12,10 @@ import asyncio
 import contextvars
 
 from gleitzeit.core.logs import LogLevel, LogSource
-from gleitzeit.core.log_collector import get_log_collector, log_context
+
+# Log collector was removed for stateless architecture
+get_log_collector = lambda: None
+log_context = contextvars.ContextVar('log_context', default={})
 
 # Optional OpenTelemetry integration
 try:

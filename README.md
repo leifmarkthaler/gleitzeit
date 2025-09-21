@@ -90,6 +90,75 @@ async with GleitzeitClient() as client:
 - **Parallel Execution**: Independent tasks run concurrently
 - **Parameter Substitution**: Pass results between tasks using `${task_id.field}`
 
+### Pause & Rewind (NEW!)
+Gleitzeit now supports pausing workflows with optional "rewind" capability:
+- **Pause**: Stop workflow execution gracefully
+- **Rewind**: Reset tasks to re-execute from an earlier point
+- **Resume**: Continue from where you paused or rewound
+
+```python
+# Pause a running workflow
+await client.pause_workflow(workflow_id)
+
+# Pause with rewind to specific task
+await client.pause_workflow(workflow_id, rewind_to_task="validation")
+
+# Pause with rewind to step number
+await client.pause_workflow(workflow_id, rewind_to_step=3)
+
+# Resume workflow
+await client.resume_workflow(workflow_id)
+```
+
+CLI commands:
+```bash
+# Pause workflow
+gleitzeit pause wf-123 --reason "Debugging"
+
+# Pause with rewind
+gleitzeit pause wf-123 --rewind-to-task validation
+
+# Resume workflow
+gleitzeit resume wf-123
+
+# Check pause status
+gleitzeit pause-status wf-123
+```
+
+See [Pause-Rewind Documentation](PAUSE-REWIND-DOCUMENTATION.md) for complete details.
+
+### Timers & Scheduling (NEW!)
+Gleitzeit now supports timer-based workflow control and scheduled execution:
+- **Timers**: Add delays and time-based waits to workflows
+- **Signals**: Wake tasks early with signals
+- **Scheduling**: Schedule workflows to run at specific times
+- **Cron Jobs**: Create recurring workflow executions
+
+```python
+# Timer in workflow
+workflow = Workflow(
+    tasks=[
+        Task(protocol="timer/v1", method="sleep", params={"seconds": 30}),
+        Task(protocol="timer/v1", method="wait_until", 
+             params={"timestamp": "2024-12-25T00:00:00Z"})
+    ]
+)
+
+# Schedule a workflow
+await client.schedule_workflow(
+    workflow=workflow,
+    run_at=datetime(2024, 12, 25, 9, 0)
+)
+
+# Create a cron job (daily at 9 AM)
+await client.create_cron_job(
+    cron_expression="0 9 * * *",
+    workflow=workflow
+)
+```
+
+See [Timer & Scheduler Documentation](TIMER-SCHEDULER-IMPLEMENTATION.md) for complete details.
+
 ### Persistence
 Gleitzeit includes a unified persistence layer with automatic fallback:
 -  **Redis** (if available) - High performance
