@@ -1,0 +1,102 @@
+# Signal Send and Broadcast Example Workflow
+# Demonstrates new signal sending capabilities in Gleitzeit
+
+name: signal-communication-example
+version: "1.0"
+description: "Example workflow showing signal send, broadcast, and wait operations"
+
+tasks:
+  # Step 1: Initialize and send internal signal
+  - id: initialize
+    type: python
+    name: Initialize Processing
+    code: |
+      import datetime
+      result = {
+        "started_at": datetime.datetime.now().isoformat(),
+        "status": "initialized"
+      }
+      print("Workflow initialized")
+
+  - id: send_internal_signal
+    type: signal
+    name: Send Internal Ready Signal
+    signal_action: send  # NEW: Send to current workflow
+    signal_name: internal-ready
+    payload:
+      stage: initialization
+      ready: true
+    dependencies: [initialize]
+
+  # Step 2: Wait for internal signal and process
+  - id: wait_internal
+    type: signal
+    name: Wait for Internal Ready
+    signal_action: wait
+    signal_name: internal-ready
+    timeout: 30
+    dependencies: [send_internal_signal]
+
+  - id: process_data
+    type: python
+    name: Process Data
+    code: |
+      print("Processing data after internal signal received")
+      result = {"processed_items": 100}
+    dependencies: [wait_internal]
+
+  # Step 3: Send signal to specific workflows
+  - id: notify_downstream
+    type: signal
+    name: Notify Downstream Workflows
+    signal_action: send  # NEW: Send to specific workflows
+    signal_name: data-processed
+    target_workflows: ["consumer-workflow-1", "consumer-workflow-2"]  # NEW
+    payload:
+      source_workflow: "${WORKFLOW_ID}"
+      items_processed: 100
+      timestamp: "${TIMESTAMP}"
+    dependencies: [process_data]
+
+  # Step 4: Broadcast system-wide event
+  - id: broadcast_completion
+    type: signal
+    name: Broadcast Completion Event
+    signal_action: broadcast  # NEW: System-wide broadcast
+    signal_name: workflow-completed
+    payload:
+      workflow_type: signal-example
+      completion_time: "${TIMESTAMP}"
+      success: true
+    dependencies: [notify_downstream]
+
+  # Step 5: Demonstrate wait_any with multiple signals
+  - id: wait_for_acknowledgment
+    type: signal
+    name: Wait for Any Acknowledgment
+    signal_action: wait_any
+    signal_names:
+      - ack-from-consumer-1
+      - ack-from-consumer-2
+      - timeout-signal
+    timeout: 60
+    dependencies: [broadcast_completion]
+
+  # Step 6: Final cleanup
+  - id: cleanup
+    type: python
+    name: Cleanup and Report
+    code: |
+      print("Workflow completed successfully")
+      print("- Sent internal signal")
+      print("- Notified downstream workflows")
+      print("- Broadcast system-wide completion")
+      result = {"status": "completed", "all_signals_processed": True}
+    dependencies: [wait_for_acknowledgment]
+
+# Signal Usage Summary:
+# 1. signal/send (default): Sends to current workflow
+# 2. signal/send (with targets): Sends to specific workflows
+# 3. signal/broadcast: Sends system-wide
+# 4. signal/wait: Waits for single signal
+# 5. signal/wait_any: Waits for any of multiple signals

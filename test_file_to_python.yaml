@@ -1,0 +1,20 @@
+name: "File to Python Workflow"
+description: "Test File Handler loading Python file and Python Handler executing it"
+version: "1.0.0"
+
+tasks:
+  - id: "load_python_file"
+    name: "Load Python Script"
+    type: "file"
+    method: "file/load"
+    params:
+      path: "test_script.py"
+      encoding: "utf-8"
+
+  - id: "execute_python_code"
+    name: "Execute Loaded Python Code"
+    type: "python"
+    method: "python/execute"
+    params:
+      code: "${load_python_file.content}"
+    dependencies: ["load_python_file"]

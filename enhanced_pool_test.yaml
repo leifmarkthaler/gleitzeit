@@ -1,0 +1,14 @@
+name: "Enhanced Pool Test"
+description: "Test enhanced subprocess pool with print statements"
+version: "1.0.0"
+
+tasks:
+  - id: "pool_test"
+    name: "Pool Test"
+    type: "python"
+    method: "python/execute"
+    params:
+      code: |
+        print("TEST: Starting enhanced pool test")
+        result = {"pool_test": True, "value": 999}
+        print("TEST: Pool test completed")

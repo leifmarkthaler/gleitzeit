@@ -1,0 +1,34 @@
+workflow:
+  name: Simple Test Workflow
+  tasks:
+    - name: First Task
+      protocol: python/v1
+      method: python/execute
+      params:
+        code: |
+          print("First task running")
+          result = "Task 1 completed"
+          print(result)
+        capture_output: true
+    - name: Second Task
+      protocol: python/v1
+      method: python/execute
+      params:
+        code: |
+          print("Second task running")
+          result = "Task 2 completed"
+          print(result)
+        capture_output: true
+      dependencies:
+        - First Task
+    - name: Third Task
+      protocol: python/v1
+      method: python/execute
+      params:
+        code: |
+          print("Third task running")
+          result = "Task 3 completed"
+          print(result)
+        capture_output: true
+      dependencies:
+        - Second Task

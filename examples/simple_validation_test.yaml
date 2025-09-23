@@ -1,0 +1,51 @@
+workflow:
+  name: Simple Validation Test
+  description: Basic test of validation task flow
+
+  tasks:
+    # Generate test data
+    - name: create_test_data
+      protocol: python/v1
+      method: python/execute
+      params:
+        code: |
+          import random
+          value = random.randint(1, 100)
+          result = {'value': value}
+          print(f"Generated value: {value}")
+
+    # Validation that checks if value > 50
+    - name: validate_threshold
+      protocol: validation/v1
+      method: validation/evaluate
+      dependencies: [create_test_data]
+      params:
+        conditions:
+          - expression: "value > 50"
+            name: "threshold_check"
+        mode: "all"
+        on_failure: "skip"
+        context:
+          value: "${create_test_data.value}"
+
+    # This task should only run if validation passes (value > 50)
+    - name: process_if_valid
+      protocol: python/v1
+      method: python/execute
+      dependencies: [validate_threshold]
+      params:
+        code: |
+          value = ${create_test_data.value}
+          result = {'processed_value': value * 2}
+          print(f"Processing value {value} -> {value * 2}")
+
+    # This task always runs to show validation_behavior override
+    - name: always_run
+      protocol: python/v1
+      method: python/execute
+      dependencies: [validate_threshold]
+      validation_behavior: "continue"
+      params:
+        code: |
+          print("This task always runs regardless of validation")
+          result = {'executed': True}

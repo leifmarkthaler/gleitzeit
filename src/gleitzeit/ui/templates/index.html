@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gleitzeit{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Dashboard</h1>
+
+    <!-- Metrics Grid -->
+    <div class="metrics-grid"
+         hx-get="/htmx/metrics"
+         hx-trigger="load, every 5s"
+         hx-swap="innerHTML">
+        {% include "components/metrics.html" %}
+    </div>
+
+    <!-- System Status -->
+    <div class="section">
+        <h2 class="section-title">System Status</h2>
+
+        {% if status %}
+        <div class="status-grid">
+            <!-- Orchestrator Status -->
+            <div class="status-card">
+                <h3>Orchestrator</h3>
+                {% if status.orchestrator %}
+                <div class="status-item">
+                    <span class="label">Status:</span>
+                    <span class="value">Running</span>
+                </div>
+                {% else %}
+                <div class="status-item">
+                    <span class="label">Status:</span>
+                    <span class="value error">Not Running</span>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Workers Status -->
+            <div class="status-card">
+                <h3>Workers</h3>
+                <div class="status-item">
+                    <span class="label">Active:</span>
+                    <span class="value">{{ status.workers|length if status.workers else 0 }}</span>
+                </div>
+            </div>
+
+            <!-- Queue Status -->
+            <div class="status-card">
+                <h3>Queues</h3>
+                {% if status.queues %}
+                {% for queue, depth in status.queues.items() %}
+                <div class="status-item">
+                    <span class="label">{{ queue }}:</span>
+                    <span class="value">{{ depth }}</span>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="status-item">
+                    <span class="label">No queue data</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            Unable to fetch system status. Is the API server running?
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="section">
+        <h2 class="section-title">Quick Actions</h2>
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="showSubmitWorkflowModal()">
+                Submit Workflow
+            </button>
+            <a href="/workflows" class="btn btn-secondary">
+                View Workflows
+            </a>
+            <a href="/tasks" class="btn btn-secondary">
+                View Tasks
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Submit Workflow Modal -->
+<div id="submit-workflow-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <h2>Submit Workflow</h2>
+        <form hx-post="/api/workflows/submit"
+              hx-target="#workflow-result"
+              hx-swap="innerHTML">
+            <div class="form-group">
+                <label for="workflow-yaml">Workflow Definition (YAML/JSON):</label>
+                <textarea id="workflow-yaml" name="workflow" rows="15" class="form-control">
+name: example_workflow
+tasks:
+  - id: task1
+    type: python
+    handler: python
+    config:
+      code: |
+        result = "Hello from Gleitzeit!"
+                </textarea>
+            </div>
+            <div class="button-group">
+                <button type="submit" class="btn btn-primary">Submit</button>
+                <button type="button" class="btn btn-secondary" onclick="hideSubmitWorkflowModal()">Cancel</button>
+            </div>
+        </form>
+        <div id="workflow-result"></div>
+    </div>
+</div>
+
+<script>
+function showSubmitWorkflowModal() {
+    document.getElementById('submit-workflow-modal').style.display = 'block';
+}
+
+function hideSubmitWorkflowModal() {
+    document.getElementById('submit-workflow-modal').style.display = 'none';
+}
+</script>
+{% endblock %}

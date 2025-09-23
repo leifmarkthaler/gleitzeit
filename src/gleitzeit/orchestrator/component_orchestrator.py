@@ -68,13 +68,8 @@ class ComponentOrchestrator:
     workflows/tasks, it manages the workers that do the processing.
     """
 
-    def __init__(self, redis_url: Optional[str] = None, config: Optional[Dict] = None, machine_id: Optional[str] = None):
+    def __init__(self, redis_url: Optional[str] = None, config: Optional[Dict] = None):
         self.config = config or {}
-
-        # Generate unique machine ID if not provided
-        import socket
-        import os
-        self.machine_id = machine_id or f"{socket.gethostname()}-{os.getpid()}"
 
         # Use Redis URL from config if not provided directly
         if redis_url:
@@ -183,23 +178,11 @@ class ComponentOrchestrator:
         logger.info("Starting ComponentOrchestrator")
         self._running = True
 
-        # Register this orchestrator instance
+        # Store PID for management
         import os
         pid = os.getpid()
-        orchestrator_key = f"orchestrator:{self.machine_id}"
-        orchestrator_info = {
-            "pid": str(pid),
-            "machine_id": self.machine_id,
-            "started_at": datetime.utcnow().isoformat(),
-            "status": "running"
-        }
-        await self.redis.hset(orchestrator_key.encode(), mapping={k.encode(): v.encode() for k, v in orchestrator_info.items()})
-        await self.redis.expire(orchestrator_key.encode(), 120)  # 2 minute TTL
-
-        # Start heartbeat task to keep registration alive
-        self._tasks.add(asyncio.create_task(self.orchestrator_heartbeat()))
-
-        logger.info(f"Orchestrator registered: {self.machine_id} (PID: {pid})")
+        await self.redis.set(b"orchestrator:pid", str(pid).encode())
+        logger.info(f"Orchestrator PID: {pid}")
 
         # Start initial workers
         await self.start_all_workers()
@@ -222,8 +205,7 @@ class ComponentOrchestrator:
             logger.info(f"Starting {spec.count} {worker_type} workers")
 
             for i in range(spec.count):
-                # Include machine ID in worker ID to ensure uniqueness across machines
-                worker_id = f"{self.machine_id}-{worker_type}-{i}"
+                worker_id = f"{worker_type}-{i}"
 
                 # Assign shards
                 assigned_shards = self.assign_shards_to_worker(
@@ -468,31 +450,6 @@ class ComponentOrchestrator:
                 logger.error(f"Auto-scaler error: {e}")
                 await asyncio.sleep(30)
 
-    async def orchestrator_heartbeat(self):
-        """Maintain orchestrator registration in Redis"""
-        while self._running:
-            try:
-                orchestrator_key = f"orchestrator:{self.machine_id}"
-                await self.redis.hset(
-                    orchestrator_key.encode(),
-                    b"last_heartbeat",
-                    datetime.utcnow().isoformat().encode()
-                )
-                await self.redis.expire(orchestrator_key.encode(), 120)  # Refresh TTL
-
-                # Also publish metrics about this orchestrator's workers
-                local_workers = len([w for w in self.managed_workers.values() if w.state == WorkerState.RUNNING])
-                await self.redis.hset(
-                    orchestrator_key.encode(),
-                    b"worker_count",
-                    str(local_workers).encode()
-                )
-
-                await asyncio.sleep(30)  # Heartbeat every 30 seconds
-            except Exception as e:
-                logger.error(f"Orchestrator heartbeat error: {e}")
-                await asyncio.sleep(10)
-
     async def get_queue_metrics(self, worker_type: str) -> Dict[str, int]:
         """Get queue depth metrics for a worker type"""
         metrics = {
@@ -531,8 +488,7 @@ class ComponentOrchestrator:
             # Scale up
             spec = self.worker_specs[worker_type]
             for i in range(current_count, target_count):
-                # Include machine ID in worker ID for uniqueness
-                worker_id = f"{self.machine_id}-{worker_type}-{i}"
+                worker_id = f"{worker_type}-{i}"
 
                 # For autoscaling, distribute shards evenly across workers
                 # When workers > shards, some workers will get fewer or no shards
@@ -703,11 +659,7 @@ class ComponentOrchestrator:
 
     async def shutdown(self):
         """Gracefully shutdown all components"""
-        logger.info(f"Shutting down ComponentOrchestrator {self.machine_id}")
-
-        # Deregister this orchestrator
-        orchestrator_key = f"orchestrator:{self.machine_id}"
-        await self.redis.delete(orchestrator_key.encode())
+        logger.info("Shutting down ComponentOrchestrator")
 
         # Stop all workers
         worker_ids = list(self.managed_workers.keys())
@@ -763,10 +715,7 @@ if __name__ == "__main__":
             config = yaml.safe_load(content)
 
         # Pass None as redis_url to use config
-        # Machine ID will be auto-generated from hostname
-        import socket
-        machine_id = config.get('machine_id') or socket.gethostname()
-        orchestrator = ComponentOrchestrator(redis_url=None, config=config, machine_id=machine_id)
+        orchestrator = ComponentOrchestrator(redis_url=None, config=config)
         await orchestrator.initialize()
         try:
             await orchestrator.start()

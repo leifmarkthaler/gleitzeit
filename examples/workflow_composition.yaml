@@ -1,0 +1,123 @@
+# Workflow Composition Example
+# Demonstrates workflows calling other workflows as tasks
+
+name: parent-orchestrator
+version: "1.0"
+description: "Parent workflow that orchestrates multiple child workflows"
+
+tasks:
+  # Step 1: Execute data ingestion workflow
+  - id: ingest_data
+    type: workflow
+    name: Run Data Ingestion
+    method: workflow/execute
+    params:
+      workflow_ref: workflows/data_ingestion.yaml
+      inputs:
+        source: "s3://bucket/data"
+        format: "parquet"
+      shard_preference: "any"  # Let system choose optimal shard
+      timeout: 1800  # 30 minutes
+
+  # Step 2: Process ingested data (depends on ingestion)
+  - id: process_data
+    type: workflow
+    name: Process Data
+    method: workflow/execute
+    params:
+      workflow_ref: workflows/data_processing.yaml
+      inputs:
+        data_location: "{{ inputs.ingest_data.output_path }}"
+        processing_type: "transform"
+      shard_preference: "specific:2"  # Force to shard 2 (high-memory)
+    dependencies: [ingest_data]
+
+  # Step 3: Parallel validation workflows
+  - id: validate_schema
+    type: workflow
+    name: Schema Validation
+    method: workflow/execute
+    params:
+      workflow_ref: workflows/schema_validator.yaml
+      inputs:
+        data: "{{ inputs.process_data.result }}"
+      shard_preference: "same"  # Run on same shard as parent
+    dependencies: [process_data]
+
+  - id: validate_quality
+    type: workflow
+    name: Quality Checks
+    method: workflow/execute
+    params:
+      workflow_ref: workflows/quality_checks.yaml
+      inputs:
+        data: "{{ inputs.process_data.result }}"
+        thresholds:
+          completeness: 0.95
+          accuracy: 0.99
+    dependencies: [process_data]
+
+  # Step 4: Fire-and-forget cleanup (async)
+  - id: cleanup_temp
+    type: workflow
+    name: Cleanup Temporary Files
+    method: workflow/execute_async
+    params:
+      workflow_ref: workflows/cleanup.yaml
+      inputs:
+        paths:
+          - "{{ inputs.ingest_data.temp_path }}"
+          - "{{ inputs.process_data.temp_path }}"
+      callback:
+        signal: "cleanup-complete"
+    dependencies: [validate_schema, validate_quality]
+
+  # Step 5: Aggregate results
+  - id: final_report
+    type: python
+    name: Generate Final Report
+    code: |
+      # Aggregate results from all child workflows
+      report = {
+        "ingestion": {
+          "status": "completed",
+          "records": inputs.get('ingest_data', {}).get('record_count', 0),
+          "duration": inputs.get('ingest_data', {}).get('duration', 0)
+        },
+        "processing": {
+          "status": "completed",
+          "transformations": inputs.get('process_data', {}).get('transformations', [])
+        },
+        "validation": {
+          "schema": inputs.get('validate_schema', {}).get('valid', False),
+          "quality": inputs.get('validate_quality', {}).get('passed', False)
+        },
+        "timestamp": datetime.utcnow().isoformat(),
+        "workflow_id": "${WORKFLOW_ID}"
+      }
+      
+      print(f"Pipeline completed: {report['validation']['schema'] and report['validation']['quality']}")
+      result = report
+    dependencies: [validate_schema, validate_quality]
+
+  # Step 6: Conditional workflow based on validation
+  - id: deploy_if_valid
+    type: workflow
+    name: Deploy to Production
+    method: workflow/execute
+    params:
+      workflow_ref: workflows/deploy.yaml
+      inputs:
+        artifact: "{{ inputs.process_data.artifact_id }}"
+        environment: "production"
+    dependencies: [final_report]
+    when: "{{ inputs.validate_schema.valid and inputs.validate_quality.passed }}"
+
+# Workflow features demonstrated:
+# 1. Sequential workflow execution (ingest -> process)
+# 2. Parallel workflow execution (schema & quality validation)
+# 3. Async workflow execution (cleanup)
+# 4. Shard control (any, same, specific)
+# 5. Conditional workflow execution (deploy if valid)
+# 6. Result aggregation from child workflows
+# 7. Cross-workflow data passing

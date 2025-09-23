@@ -1,0 +1,55 @@
+# Parent workflow that calls a child workflow
+name: parent-workflow-example
+version: "1.0"
+description: "Parent workflow that demonstrates calling child workflows"
+
+tasks:
+  - id: prepare_data
+    type: python
+    name: Prepare Data
+    code: |
+      import json
+      # Prepare data for child workflow
+      data = {
+        "items": [1, 2, 3, 4, 5],
+        "operation": "sum"
+      }
+      print(f"Prepared data: {data}")
+      result = data
+
+  - id: call_child_workflow
+    type: workflow
+    name: Execute Child Workflow
+    method: workflow/execute
+    params:
+      workflow_ref: examples/child_workflow.yaml
+      inputs:
+        data: "{{ inputs.prepare_data }}"
+      shard_preference: any
+      timeout: 60
+    dependencies: [prepare_data]
+
+  - id: process_result
+    type: python
+    name: Process Child Result
+    code: |
+      # Get result from child workflow
+      child_result = inputs.get('call_child_workflow', {})
+      print(f"Child workflow returned: {child_result}")
+      
+      # Process the result
+      if child_result.get('success'):
+          final_result = {
+              "status": "completed",
+              "child_result": child_result.get('result'),
+              "message": f"Successfully processed {child_result.get('items_processed', 0)} items"
+          }
+      else:
+          final_result = {
+              "status": "failed",
+              "error": "Child workflow failed"
+          }
+      
+      print(f"Final result: {final_result}")
+      result = final_result
+    dependencies: [call_child_workflow]

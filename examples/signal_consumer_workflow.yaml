@@ -1,0 +1,90 @@
+# Signal Consumer Example Workflow
+# Demonstrates receiving signals from other workflows
+
+name: signal-consumer-example
+version: "1.0"
+description: "Example workflow that receives and processes signals from other workflows"
+
+tasks:
+  # Step 1: Wait for broadcast signal (system-wide)
+  - id: wait_for_broadcast
+    type: signal
+    name: Wait for System Broadcast
+    signal_action: wait
+    signal_name: system-maintenance  # Any workflow can broadcast this
+    timeout: 300  # 5 minutes
+
+  - id: handle_broadcast
+    type: python
+    name: Handle Broadcast Event
+    code: |
+      print("Received system-wide broadcast signal")
+      # Access signal payload through context
+      result = {
+        "broadcast_received": True,
+        "action": "entering_safe_mode"
+      }
+    dependencies: [wait_for_broadcast]
+
+  # Step 2: Wait for targeted signal from specific workflow
+  - id: wait_for_data
+    type: signal
+    name: Wait for Data Signal
+    signal_action: wait
+    signal_name: data-processed  # Sent by specific workflow
+    timeout: 120
+    dependencies: [handle_broadcast]
+
+  - id: process_received_data
+    type: python
+    name: Process Received Data
+    code: |
+      print("Received data-processed signal from upstream workflow")
+      # Signal payload available in context
+      result = {
+        "data_received": True,
+        "processing": "started"
+      }
+    dependencies: [wait_for_data]
+
+  # Step 3: Send acknowledgment back
+  - id: send_ack
+    type: signal
+    name: Send Acknowledgment
+    signal_action: send
+    signal_name: ack-from-consumer-1
+    target_workflows: ["${SENDER_WORKFLOW_ID}"]  # Send back to sender
+    payload:
+      consumer_id: "${WORKFLOW_ID}"
+      status: "data_received"
+      timestamp: "${TIMESTAMP}"
+    dependencies: [process_received_data]
+
+  # Step 4: Wait for all required signals before final processing
+  - id: wait_for_all_dependencies
+    type: signal
+    name: Wait for All Dependencies
+    signal_action: wait_all
+    signal_names:
+      - config-loaded
+      - database-ready
+      - cache-warmed
+    timeout: 180
+    dependencies: [send_ack]
+
+  - id: final_processing
+    type: python
+    name: Final Processing
+    code: |
+      print("All dependencies ready - performing final processing")
+      result = {
+        "status": "completed",
+        "all_signals_received": True
+      }
+    dependencies: [wait_for_all_dependencies]
+
+# Consumer Workflow Patterns:
+# 1. Receives broadcast signals (system-wide events)
+# 2. Receives targeted signals (from specific workflows)
+# 3. Sends acknowledgments back to senders
+# 4. Waits for multiple signals before proceeding

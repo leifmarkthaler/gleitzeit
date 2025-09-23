@@ -1,0 +1,182 @@
+# HTTP Handler Example Workflow
+# Demonstrates external API integration capabilities
+
+name: http-api-integration
+version: "1.0"
+description: "Example workflow showing HTTP/REST API calls"
+
+tasks:
+  # Step 1: Simple GET request
+  - id: fetch_data
+    type: http
+    name: Fetch Public Data
+    method: http/get
+    params:
+      url: https://api.github.com/repos/anthropics/claude-code
+      headers:
+        Accept: application/vnd.github.v3+json
+      timeout: 10
+
+  - id: process_github_data
+    type: python
+    name: Process GitHub Data
+    code: |
+      # Access previous task result
+      github_data = inputs.get('fetch_data')
+      print(f"Repository: {github_data.get('full_name')}")
+      print(f"Stars: {github_data.get('stargazers_count')}")
+      result = {
+        "repo_name": github_data.get('full_name'),
+        "stars": github_data.get('stargazers_count'),
+        "language": github_data.get('language')
+      }
+    dependencies: [fetch_data]
+
+  # Step 2: POST request with JSON payload
+  - id: create_resource
+    type: http
+    name: Create Resource
+    method: http/post
+    params:
+      url: https://httpbin.org/post
+      json:
+        name: Test Resource
+        created_by: Gleitzeit
+        timestamp: "${TIMESTAMP}"
+        workflow_id: "${WORKFLOW_ID}"
+      headers:
+        Content-Type: application/json
+        X-Request-ID: "${REQUEST_ID}"
+    dependencies: [process_github_data]
+
+  # Step 3: Authenticated request
+  - id: auth_request
+    type: http
+    name: Authenticated API Call
+    method: http/get
+    params:
+      url: https://httpbin.org/bearer
+      auth:
+        type: bearer
+        token: "${API_TOKEN:test-token-12345}"  # Use env var or default
+      expected_status: [200, 401]  # Accept both success and unauthorized
+    dependencies: [create_resource]
+
+  # Step 4: Parallel API calls with different methods
+  - id: update_resource
+    type: http
+    name: Update Resource
+    method: http/put
+    params:
+      url: https://httpbin.org/put
+      json:
+        id: 123
+        status: updated
+        modified_at: "${TIMESTAMP}"
+    dependencies: [auth_request]
+
+  - id: patch_resource
+    type: http
+    name: Patch Resource
+    method: http/patch
+    params:
+      url: https://httpbin.org/patch
+      json:
+        status: patched
+    dependencies: [auth_request]
+
+  # Step 5: Delete operation
+  - id: cleanup_resource
+    type: http
+    name: Delete Resource
+    method: http/delete
+    params:
+      url: https://httpbin.org/delete
+      params:
+        id: 123
+        confirm: true
+    dependencies: [update_resource, patch_resource]
+
+  # Step 6: Error handling example
+  - id: handle_404
+    type: http
+    name: Handle Not Found
+    method: http/get
+    params:
+      url: https://httpbin.org/status/404
+      expected_status: [200, 404]  # Expect 404, don't fail
+    dependencies: [cleanup_resource]
+
+  # Step 7: Rate-limited request
+  - id: rate_limited_call
+    type: http
+    name: Rate Limited API Call
+    method: http/get
+    params:
+      url: https://httpbin.org/delay/1
+      timeout: 5
+      rate_limit: 2  # Max 2 requests per second
+      rate_limit_key: httpbin-delay
+    dependencies: [handle_404]
+
+  # Step 8: Response extraction with JSONPath
+  - id: extract_data
+    type: http
+    name: Extract Specific Data
+    method: http/get
+    params:
+      url: https://httpbin.org/json
+      response_type: json
+      extract:
+        slide_title: $.slideshow.slides[0].title
+        author: $.slideshow.author
+    dependencies: [rate_limited_call]
+
+  # Step 9: Form data POST
+  - id: submit_form
+    type: http
+    name: Submit Form Data
+    method: http/post
+    params:
+      url: https://httpbin.org/post
+      data:
+        username: test_user
+        email: test@example.com
+        subscribe: "true"
+      headers:
+        Content-Type: application/x-www-form-urlencoded
+    dependencies: [extract_data]
+
+  # Step 10: Final aggregation
+  - id: aggregate_results
+    type: python
+    name: Aggregate All Results
+    code: |
+      results = {
+        "github_data": inputs.get('process_github_data'),
+        "post_response": inputs.get('create_resource'),
+        "auth_status": "authenticated" if inputs.get('auth_request') else "not authenticated",
+        "operations": ["PUT", "PATCH", "DELETE"],
+        "extracted_data": inputs.get('extract_data'),
+        "form_submitted": True if inputs.get('submit_form') else False
+      }
+      print("HTTP workflow completed successfully!")
+      print(f"Executed {len(results['operations'])} operations")
+      result = results
+    dependencies: [submit_form]
+
+# Configuration options for HTTP handler:
+# - url: Target URL (required)
+# - method: GET, POST, PUT, DELETE, PATCH
+# - headers: Custom headers dict
+# - params: Query parameters (for GET)
+# - json: JSON payload (for POST/PUT/PATCH)
+# - data: Form data (for POST)
+# - auth: Authentication config
+#   - type: bearer, basic, api_key
+#   - token/username+password/key
+# - timeout: Request timeout in seconds
+# - expected_status: List of acceptable status codes
+# - rate_limit: Requests per second
+# - response_type: json, text, binary
+# - extract: JSONPath expressions to extract data

@@ -1,0 +1,23 @@
+# Minimal Gleitzeit Configuration
+
+redis:
+  mode: single
+  single_node:
+    host: localhost
+    port: 6379
+
+workers:
+  - worker_type: task_execution
+    worker_class: gleitzeit.workers.task_execution_worker.TaskExecutionWorker
+    count: 2
+    max_concurrent: 5
+
+  - worker_type: dependency
+    worker_class: gleitzeit.workers.dependency_worker.DependencyWorker
+    count: 1
+    max_concurrent: 10
+
+  - worker_type: workflow_loader_v2
+    worker_class: gleitzeit.workers.workflow_loader_worker_v2.WorkflowLoaderWorkerV2
+    count: 1
+    max_concurrent: 5

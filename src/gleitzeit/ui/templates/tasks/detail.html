@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Task {{ task.task_id[:8] }} - Gleitzeit{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">Task Details</h1>
+
+    <div class="section">
+        <h2 class="section-title">Task Information</h2>
+        <div class="info-grid">
+            <div class="info-item">
+                <span class="info-label">ID:</span>
+                <code>{{ task.task_id }}</code>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Status:</span>
+                <span class="badge badge-{{ task.state.status }}">{{ task.state.status }}</span>
+            </div>
+        </div>
+    </div>
+
+    {% if task.result %}
+    <div class="section">
+        <h2 class="section-title">Result</h2>
+        <pre class="code-block">{{ task.result | tojson(indent=2) }}</pre>
+    </div>
+    {% endif %}
+
+    <div class="section">
+        <div class="button-group">
+            <button class="btn btn-secondary" onclick="window.history.back()">Back</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.code-block {
+    background: var(--bg-tertiary);
+    padding: 1rem;
+    border-radius: 0.375rem;
+    overflow-x: auto;
+    font-family: monospace;
+    font-size: 0.875rem;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,43 @@
+<!-- Metrics Component - Auto-refreshed via HTMX -->
+{% if metrics %}
+<div class="metric-card">
+    <div class="metric-label">Total Workflows</div>
+    <div class="metric-value">{{ metrics.workflows.total }}</div>
+    <div class="metric-detail">
+        <span class="success">{{ metrics.workflows.completed }} completed</span>
+        <span class="warning">{{ metrics.workflows.running }} running</span>
+        <span class="error">{{ metrics.workflows.failed }} failed</span>
+    </div>
+</div>
+
+<div class="metric-card">
+    <div class="metric-label">Total Tasks</div>
+    <div class="metric-value">{{ metrics.tasks.total }}</div>
+    <div class="metric-detail">
+        <span class="success">{{ metrics.tasks.completed }} completed</span>
+        <span class="warning">{{ metrics.tasks.running }} running</span>
+        <span class="info">{{ metrics.tasks.pending }} pending</span>
+    </div>
+</div>
+
+<div class="metric-card">
+    <div class="metric-label">Success Rate</div>
+    <div class="metric-value">
+        {% if metrics.tasks.total > 0 %}
+            {{ ((metrics.tasks.completed / metrics.tasks.total) * 100)|round(1) }}%
+        {% else %}
+            N/A
+        {% endif %}
+    </div>
+</div>
+
+<div class="metric-card">
+    <div class="metric-label">Active Workers</div>
+    <div class="metric-value">{{ status.workers|length if status else 0 }}</div>
+</div>
+{% else %}
+<div class="metric-card">
+    <div class="metric-label">Metrics</div>
+    <div class="metric-value">Loading...</div>
+</div>
+{% endif %}

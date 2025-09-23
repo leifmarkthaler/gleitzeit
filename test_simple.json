@@ -1,0 +1,26 @@
+{
+  "workflow": {
+    "name": "JSON Test Workflow",
+    "tasks": [
+      {
+        "name": "Task A",
+        "protocol": "python/v1",
+        "method": "python/execute",
+        "params": {
+          "code": "print('Task A executing')\nresult = 'A done'\nprint(result)",
+          "capture_output": true
+        }
+      },
+      {
+        "name": "Task B",
+        "protocol": "python/v1", 
+        "method": "python/execute",
+        "params": {
+          "code": "print('Task B executing')\nresult = 'B done'\nprint(result)",
+          "capture_output": true
+        },
+        "dependencies": ["Task A"]
+      }
+    ]
+  }
+}

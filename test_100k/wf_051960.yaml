@@ -1,0 +1,15 @@
+name: 'Performance Test 51960'
+version: '1.0.0'
+tasks:
+  - id: 'task_1'
+    type: 'python'
+    method: 'python/execute'
+    params:
+      code: |
+        import time
+        start = time.time()
+        result = {
+            'workflow_id': 51960,
+            'calculation': sum(range(100)),
+            'duration': time.time() - start
+        }

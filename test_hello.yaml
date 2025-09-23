@@ -1,0 +1,25 @@
+name: hello-world
+version: 1.0
+description: Simple test workflow
+
+tasks:
+  - id: greeting
+    type: python
+    code: |
+      import datetime
+      result = {
+        "message": "Hello, Gleitzeit!",
+        "timestamp": datetime.datetime.now().isoformat(),
+        "status": "success"
+      }
+
+  - id: response
+    type: python
+    code: |
+      greeting = inputs.get("greeting", {})
+      result = {
+        "response": f"Received: {greeting.get('message', 'no message')}",
+        "completed": True
+      }
+    dependencies:
+      - greeting

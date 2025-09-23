@@ -1,0 +1,23 @@
+name: "Performance Test"
+version: "1.0.0"
+description: "Workflow for performance testing"
+
+tasks:
+  - id: "calc_task"
+    name: "Calculate Task"
+    type: "python"
+    method: "python/execute"
+    params:
+      code: |
+        import time
+        import random
+        
+        # Simulate some work
+        start = time.time()
+        result = {
+            'calculation': sum(range(1000)),
+            'random': random.random(),
+            'timestamp': start,
+            'process_time': time.time() - start
+        }
+        print(f'Task completed in {result["process_time"]:.3f}s')

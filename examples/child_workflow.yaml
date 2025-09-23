@@ -1,0 +1,80 @@
+# Child workflow that gets called by parent
+name: child-workflow-example
+version: "1.0"
+description: "Child workflow that processes data"
+
+tasks:
+  - id: validate_input
+    type: python
+    name: Validate Input
+    code: |
+      # Get input data from parent
+      data = inputs.get('data', {})
+      print(f"Received data from parent: {data}")
+      
+      # Validate
+      if not data:
+          raise ValueError("No data provided")
+      
+      if 'items' not in data:
+          raise ValueError("No items to process")
+      
+      result = {
+          "validated": True,
+          "item_count": len(data.get('items', [])),
+          "operation": data.get('operation', 'unknown')
+      }
+      print(f"Validation result: {result}")
+
+  - id: process_items
+    type: python
+    name: Process Items
+    code: |
+      # Get validated data
+      data = inputs.get('data', {})
+      items = data.get('items', [])
+      operation = data.get('operation', 'sum')
+      
+      print(f"Processing {len(items)} items with operation: {operation}")
+      
+      # Process based on operation
+      if operation == 'sum':
+          result_value = sum(items)
+      elif operation == 'multiply':
+          result_value = 1
+          for item in items:
+              result_value *= item
+      elif operation == 'average':
+          result_value = sum(items) / len(items) if items else 0
+      else:
+          result_value = len(items)
+      
+      result = {
+          "success": True,
+          "result": result_value,
+          "items_processed": len(items),
+          "operation_performed": operation
+      }
+      
+      print(f"Processing complete: {result}")
+    dependencies: [validate_input]
+
+  - id: prepare_response
+    type: python
+    name: Prepare Response
+    code: |
+      # Get processing result
+      process_result = inputs.get('process_items', {})
+      
+      # Prepare final response for parent
+      result = {
+          "success": process_result.get('success', False),
+          "result": process_result.get('result'),
+          "items_processed": process_result.get('items_processed', 0),
+          "operation": process_result.get('operation_performed'),
+          "timestamp": "${TIMESTAMP}",
+          "child_workflow_id": "${WORKFLOW_ID}"
+      }
+      
+      print(f"Returning to parent: {result}")
+    dependencies: [process_items]

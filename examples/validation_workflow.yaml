@@ -1,0 +1,160 @@
+workflow:
+  name: Validation Example Workflow
+  description: Demonstrates validation tasks controlling workflow execution
+
+  tasks:
+    # Step 1: Generate some data
+    - name: generate_data
+      protocol: python/v1
+      method: python/execute
+      params:
+        code: |
+          import random
+          items = random.randint(0, 10)
+          total = random.randint(500, 2000)
+          result = {
+              'items': items,
+              'total': total,
+              'status': 'success' if items > 0 else 'empty'
+          }
+          print(f"Generated data: {result}")
+
+    # Step 2: Validate the data
+    - name: validate_data_quality
+      protocol: validation/v1
+      method: validation/evaluate
+      dependencies: [generate_data]
+      params:
+        conditions:
+          - name: "has_items"
+            expression: "items > 0"
+          - name: "reasonable_total"
+            expression: "total > 100"
+        mode: "all"
+        on_failure: "skip"
+        context:
+          items: "${generate_data.items}"
+          total: "${generate_data.total}"
+
+    # Step 3: Validate business rules
+    - name: validate_business_rules
+      protocol: validation/v1
+      method: validation/evaluate
+      dependencies: [generate_data]
+      params:
+        conditions:
+          - name: "minimum_order"
+            expression: "total >= 1000"
+          - name: "item_check"
+            expression: "items >= 5"
+        mode: "any"  # At least one must pass
+        on_failure: "skip"
+        context:
+          items: "${generate_data.items}"
+          total: "${generate_data.total}"
+
+    # Step 4: Process data (only if both validations pass)
+    - name: process_data
+      protocol: python/v1
+      method: python/execute
+      dependencies: [validate_data_quality, validate_business_rules]
+      params:
+        code: |
+          # This task only runs if both validations pass
+          items = ${generate_data.items}
+          total = ${generate_data.total}
+
+          result = {
+              'processed_items': items,
+              'final_total': total * 1.1,  # Add 10% processing fee
+              'status': 'processed'
+          }
+          print(f"Processing completed: {result}")
+
+    # Step 5: Save results (depends on processing)
+    - name: save_results
+      protocol: python/v1
+      method: python/execute
+      dependencies: [process_data]
+      params:
+        code: |
+          # This only runs if process_data runs
+          print("Results saved successfully")
+          result = {'saved': True, 'timestamp': '${workflow.timestamp}'}
+
+    # Alternative path: Handle validation failure
+    - name: handle_invalid_data
+      protocol: python/v1
+      method: python/execute
+      dependencies: [validate_data_quality]
+      validation_behavior: "continue"  # Run even if validation fails
+      params:
+        code: |
+          # This runs regardless of validation result
+          validation_passed = ${validate_data_quality.valid}
+
+          if not validation_passed:
+              print("Data validation failed - sending notification")
+              result = {'notification_sent': True, 'reason': 'validation_failed'}
+          else:
+              print("Data validation passed - no notification needed")
+              result = {'notification_sent': False}
+
+    # Assertion example - strict validation that fails the workflow
+    - name: assert_critical_conditions
+      protocol: validation/v1
+      method: validation/assert
+      dependencies: [generate_data]
+      params:
+        assertions:
+          - name: "data_generated"
+            expression: "status == 'success' or status == 'empty'"
+        context:
+          status: "${generate_data.status}"
+
+    # Gate example - controls multiple downstream tasks
+    - name: quality_gate
+      protocol: validation/v1
+      method: validation/gate
+      dependencies: [process_data]
+      params:
+        rules:
+          - name: "premium_processing"
+            condition: "final_total > 1500"
+            enable_tasks: [premium_notification, express_shipping]
+            disable_tasks: [standard_notification]
+
+          - name: "standard_processing"
+            condition: "final_total <= 1500"
+            enable_tasks: [standard_notification]
+            disable_tasks: [premium_notification, express_shipping]
+        context:
+          final_total: "${process_data.final_total}"
+
+    # Tasks controlled by gate
+    - name: premium_notification
+      protocol: python/v1
+      method: python/execute
+      dependencies: [quality_gate]
+      params:
+        code: |
+          print("Sending premium customer notification")
+          result = {'notification_type': 'premium'}
+
+    - name: standard_notification
+      protocol: python/v1
+      method: python/execute
+      dependencies: [quality_gate]
+      params:
+        code: |
+          print("Sending standard notification")
+          result = {'notification_type': 'standard'}
+
+    - name: express_shipping
+      protocol: python/v1
+      method: python/execute
+      dependencies: [quality_gate]
+      params:
+        code: |
+          print("Arranging express shipping")
+          result = {'shipping_type': 'express'}

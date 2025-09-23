@@ -1,0 +1,3 @@
+[console_scripts]
+gleitzeit = gleitzeit.cli.main:main
+gleitzeit-api = gleitzeit.api.run_server:main

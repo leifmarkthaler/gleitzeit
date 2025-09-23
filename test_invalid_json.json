@@ -1,0 +1,14 @@
+{
+  "name": "invalid_json_workflow",
+  "description": "This JSON is malformed",
+  "tasks": [
+    {
+      "id": "task1",
+      "handler": "python",
+      "method": "python/execute"
+      "params": {  // Missing comma above
+        "code": "print('test')"
+      }
+    }
+  ]
+}

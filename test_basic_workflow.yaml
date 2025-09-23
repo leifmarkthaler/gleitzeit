@@ -1,0 +1,42 @@
+# Basic test workflow for Gleitzeit
+name: basic_test_workflow
+version: "1.0"
+description: "A simple workflow to test basic functionality"
+
+tasks:
+  - id: task1
+    name: "Print Hello"
+    type: python
+    handler: python
+    method: python/execute
+    params:
+      code: |
+        print("Hello from Gleitzeit!")
+        result = {"message": "Task 1 completed", "value": 42}
+
+  - id: task2
+    name: "Process Data"
+    type: python
+    handler: python
+    method: python/execute
+    depends_on:
+      - task1
+    params:
+      code: |
+        # This task depends on task1 completing first
+        import json
+        data = {"status": "processing", "count": 10}
+        print(f"Processing data: {json.dumps(data)}")
+        result = {"message": "Task 2 completed", "processed": data}
+
+  - id: task3
+    name: "Final Task"
+    type: python
+    handler: python
+    method: python/execute
+    depends_on:
+      - task2
+    params:
+      code: |
+        print("Final task executing...")
+        result = {"message": "Workflow completed successfully!", "final": True}

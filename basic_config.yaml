@@ -1,0 +1,55 @@
+# Basic Gleitzeit Configuration
+# Minimal setup for basic functionality
+
+redis:
+  mode: single
+  single_node:
+    host: localhost
+    port: 6379
+
+workers:
+  # Essential worker for executing tasks
+  - worker_type: task_execution
+    worker_class: gleitzeit.workers.task_execution_worker.TaskExecutionWorker
+    count: 2
+    max_concurrent: 5
+    batch_size: 10
+    block_timeout: 5000
+
+  # Handles workflow dependencies
+  - worker_type: dependency
+    worker_class: gleitzeit.workers.dependency_worker.DependencyWorker
+    count: 1
+    max_concurrent: 10
+    batch_size: 10
+    block_timeout: 5000
+
+  # Loads workflows (using v2)
+  - worker_type: workflow_loader
+    worker_class: gleitzeit.workers.workflow_loader_worker_v2.WorkflowLoaderWorkerV2
+    count: 1
+    max_concurrent: 5
+    batch_size: 5
+    block_timeout: 5000
+
+  # Handles workflow submissions
+  - worker_type: workflow_submission
+    worker_class: gleitzeit.workers.workflow_submission_worker.WorkflowSubmissionWorker
+    count: 1
+    max_concurrent: 5
+    batch_size: 5
+    block_timeout: 5000
+
+  # Handles retries
+  - worker_type: retry
+    worker_class: gleitzeit.workers.retry_worker.RetryWorker
+    count: 1
+    max_concurrent: 10
+    batch_size: 10
+    block_timeout: 5000
+
+# Optional monitoring
+monitoring:
+  health_check_interval: 30
+  heartbeat_interval: 10
+  scale_check_interval: 60
