@@ -1,6 +1,6 @@
 # Gleitzeit 0.0.7 - Worker-Based Architecture
 
-A complete rewrite of Gleitzeit with a distributed, worker-based architecture for massive horizontal scalability.
+A complete rewrite of Gleitzeit with a distributed, worker-based architecture for horizontal scalability.
 
 ## Key Features
 
