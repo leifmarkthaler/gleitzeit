@@ -65,6 +65,9 @@ class GleitzeitServer:
         self.env = os.environ.copy()
         self.env['PYTHONPATH'] = f"{src_path}:{self.env.get('PYTHONPATH', '')}"
 
+        # Add auth and security environment variables from config
+        self._setup_environment_from_config()
+
     def _load_config(self) -> Dict:
         """Load configuration from YAML file"""
         try:
@@ -76,6 +79,92 @@ class GleitzeitServer:
         except Exception as e:
             logger.error(f"Failed to load config: {e}")
             return {}
+
+    def _setup_environment_from_config(self):
+        """Setup environment variables from YAML configuration"""
+        # Get auth config
+        auth_config = self.config.get('auth', {})
+        security_config = self.config.get('security', {})
+        redis_config = self.config.get('redis', {})
+
+        # Set authentication variables
+        if 'auto_login' in auth_config:
+            self.env['GLEITZEIT_AUTO_LOGIN'] = str(auth_config['auto_login']).lower()
+
+        # Set JWT configuration
+        jwt_config = auth_config.get('jwt', {})
+        if 'secret' in jwt_config:
+            # Expand environment variable if present
+            jwt_secret = str(jwt_config['secret'])
+            if jwt_secret.startswith('${') and jwt_secret.endswith('}'):
+                # Extract variable name and default
+                var_content = jwt_secret[2:-1]
+                if ':-' in var_content:
+                    var_name, default = var_content.split(':-', 1)
+                    jwt_secret = os.environ.get(var_name, default)
+            self.env['JWT_SECRET'] = jwt_secret
+
+        # Compute CORS origins dynamically from serve configuration
+        cors_origins = []
+
+        # Add API URL
+        api_host = self.api_host if self.api_host != '0.0.0.0' else 'localhost'
+        api_url = f"http://{api_host}:{self.api_port}"
+        cors_origins.append(api_url)
+
+        # Add UI URL if enabled
+        if not self.no_ui:
+            ui_host = self.ui_host if self.ui_host != '0.0.0.0' else 'localhost'
+            ui_url = f"http://{ui_host}:{self.ui_port}"
+            cors_origins.append(ui_url)
+
+        # Add localhost variants if using 0.0.0.0
+        if self.api_host == '0.0.0.0':
+            cors_origins.append(f"http://localhost:{self.api_port}")
+            cors_origins.append(f"http://127.0.0.1:{self.api_port}")
+
+        if not self.no_ui and self.ui_host == '0.0.0.0':
+            cors_origins.append(f"http://localhost:{self.ui_port}")
+            cors_origins.append(f"http://127.0.0.1:{self.ui_port}")
+
+        # Add additional origins from config
+        cors_config = security_config.get('cors', {})
+        if 'additional_origins' in cors_config:
+            additional = cors_config['additional_origins']
+            if isinstance(additional, str) and additional:
+                cors_origins.extend(additional.split(','))
+
+        # Also check environment for additional origins
+        env_origins = os.environ.get('CORS_ORIGINS', '')
+        if env_origins:
+            cors_origins.extend(env_origins.split(','))
+
+        # Remove duplicates and empty values
+        cors_origins = list(filter(None, set(cors_origins)))
+        self.env['CORS_ORIGINS'] = ','.join(cors_origins)
+
+        # Compute Redis URL from config
+        if redis_config.get('mode') == 'single':
+            single_node = redis_config.get('single_node', {})
+            redis_host = single_node.get('host', 'localhost')
+            redis_port = single_node.get('port', 6379)
+            redis_db = single_node.get('db', 0)
+            self.env['REDIS_URL'] = f"redis://{redis_host}:{redis_port}/{redis_db}"
+        elif redis_config.get('mode') == 'cluster':
+            # For cluster mode, use first node as seed
+            cluster_nodes = redis_config.get('cluster_nodes', [])
+            if cluster_nodes:
+                first_node = cluster_nodes[0]
+                self.env['REDIS_URL'] = f"redis://{first_node['host']}:{first_node['port']}"
+
+        # If not set from config, use environment or default
+        if 'REDIS_URL' not in self.env:
+            self.env['REDIS_URL'] = os.environ.get('REDIS_URL', 'redis://localhost:6379')
+
+        logger.info(f"Environment configured:")
+        logger.info(f"  - Auto-login: {self.env.get('GLEITZEIT_AUTO_LOGIN', 'not set')}")
+        logger.info(f"  - CORS origins: {self.env.get('CORS_ORIGINS', 'not set')}")
+        logger.info(f"  - Redis URL: {self.env.get('REDIS_URL', 'not set')}")
 
     def check_existing_processes(self) -> Dict[str, bool]:
         """Check if Gleitzeit processes are already running"""
@@ -123,7 +212,7 @@ class GleitzeitServer:
         subprocess.run(["pkill", "-f", "gleitzeit.ui.api"], capture_output=True)
         subprocess.run(["pkill", "-f", "gleitzeit/ui/run_ui"], capture_output=True)
 
-        # Kill by port if still in use
+        # Kill by port if still in use - be more aggressive
         for port in [self.api_port, self.ui_port]:
             try:
                 for proc in psutil.process_iter(['pid', 'connections']):
@@ -132,14 +221,22 @@ class GleitzeitServer:
                         for conn in connections:
                             if hasattr(conn, 'laddr') and conn.laddr.port == port:
                                 try:
-                                    psutil.Process(proc.pid).terminate()
-                                except:
-                                    pass
-            except:
-                pass
+                                    p = psutil.Process(proc.pid)
+                                    print(f"  Terminating process {proc.pid} on port {port}")
+                                    p.terminate()
+                                    # Wait briefly, then force kill if needed
+                                    try:
+                                        p.wait(timeout=1)
+                                    except psutil.TimeoutExpired:
+                                        print(f"  Force killing process {proc.pid}")
+                                        p.kill()
+                                except Exception as e:
+                                    print(f"  Could not kill process {proc.pid}: {e}")
+            except Exception as e:
+                logger.debug(f"Error checking port {port}: {e}")
 
-        time.sleep(3)  # Give processes time to stop
-        print("Existing processes stopped")
+        time.sleep(2)  # Give processes and OS time to release ports
+        print("  Existing processes stopped")
 
     def start(self):
         """Start all components"""
@@ -150,6 +247,7 @@ class GleitzeitServer:
             if self.restart:
                 print("\n⚠️  Existing Gleitzeit processes detected")
                 self.kill_existing_processes()
+                time.sleep(2)  # Give processes time to fully terminate
             else:
                 print("\n⚠️  Existing Gleitzeit processes detected:")
                 if existing["orchestrator"]:

@@ -51,7 +51,7 @@ class DependencyWorker(BaseWorker):
 
     def get_base_streams(self) -> List[str]:
         """Return streams this worker consumes from"""
-        return ["task:completed", "workflow:submitted"]
+        return ["task:completed", "workflow:submitted", "task:cancelled", "workflow:cancelled"]
 
     async def process_message(self, stream: str, message_id: str, data: Dict) -> bool:
         """Process dependency-related events
@@ -71,6 +71,10 @@ class DependencyWorker(BaseWorker):
                 await self.handle_task_completion(workflow_id, data)
             elif "workflow:submitted" in stream:
                 await self.handle_workflow_submission(workflow_id, data)
+            elif "task:cancelled" in stream:
+                await self.handle_task_cancellation(workflow_id, data)
+            elif "workflow:cancelled" in stream:
+                await self.handle_workflow_cancellation(workflow_id, data)
 
             return True  # Successfully processed
 
@@ -771,4 +775,147 @@ class DependencyWorker(BaseWorker):
                                 return True
 
         return False
+
+    async def handle_task_cancellation(self, workflow_id: str, data: Dict):
+        """Handle task cancellation - with hard fail policy, cancel dependent tasks and workflow"""
+        task_id = data.get('task_id')
+        if not task_id:
+            logger.error(f"Missing task_id in cancellation message")
+            return
+
+        logger.info(f"Processing task cancellation with hard fail policy: {task_id} in workflow {workflow_id}")
+
+        # Mark task as cancelled in Redis (if not already)
+        task_key = default_sharding.get_task_key(task_id, workflow_id)
+        current_status = await self.redis.hget(task_key.encode(), b"status")
+
+        if current_status and current_status.decode() in ["completed", "failed", "cancelled", "blocked"]:
+            logger.info(f"Task {task_id} already in terminal state: {current_status.decode()}")
+            return
+
+        # Update task status to cancelled
+        await self.redis.hset(
+            task_key.encode(),
+            mapping={
+                b"status": b"cancelled",
+                b"cancelled_at": datetime.utcnow().isoformat().encode(),
+                b"cancelled_reason": data.get('reason', b'user_requested')
+            }
+        )
+
+        # Add to cancelled tasks set
+        await self.redis.sadd(
+            default_sharding.get_workflow_key("tasks:cancelled", workflow_id).encode(),
+            task_id.encode()
+        )
+
+        # Get dependency graph to find dependent tasks
+        graph_key = default_sharding.get_workflow_key("dependency:graph", workflow_id)
+        dependency_graph = {}
+
+        graph_data = await self.redis.hgetall(graph_key.encode())
+        for tid, deps in graph_data.items():
+            dependency_graph[tid.decode()] = json.loads(deps.decode())
+
+        # Find tasks that depend on the cancelled task
+        dependent_tasks = []
+        for tid, deps in dependency_graph.items():
+            if task_id in deps:
+                dependent_tasks.append(tid)
+
+        # HARD FAIL POLICY: Cancel all dependent tasks (not just block them)
+        for dep_task_id in dependent_tasks:
+            dep_task_key = default_sharding.get_task_key(dep_task_id, workflow_id)
+            dep_status = await self.redis.hget(dep_task_key.encode(), b"status")
+
+            # Only cancel if not already in terminal state
+            if not dep_status or dep_status.decode() not in ["completed", "failed", "cancelled", "blocked"]:
+                logger.info(f"Cancelling dependent task {dep_task_id} due to cancelled dependency {task_id} (hard fail policy)")
+
+                # Emit cancellation event for the dependent task (will cascade)
+                await self.redis.xadd(
+                    default_sharding.get_stream_key("task:cancelled", dep_task_id).encode(),
+                    {
+                        b"task_id": dep_task_id.encode(),
+                        b"workflow_id": workflow_id.encode(),
+                        b"reason": f"dependency_{task_id}_cancelled".encode(),
+                        b"timestamp": datetime.utcnow().isoformat().encode()
+                    }
+                )
+
+        # HARD FAIL POLICY: Cancel the entire workflow when any task is cancelled
+        logger.info(f"Cancelling entire workflow {workflow_id} due to task {task_id} cancellation (hard fail policy)")
+
+        # Emit workflow cancellation event
+        await self.redis.xadd(
+            default_sharding.get_stream_key("workflow:cancelled", workflow_id).encode(),
+            {
+                b"workflow_id": workflow_id.encode(),
+                b"reason": f"task_{task_id}_cancelled_hard_fail".encode(),
+                b"timestamp": datetime.utcnow().isoformat().encode()
+            }
+        )
+
+    async def handle_workflow_cancellation(self, workflow_id: str, data: Dict):
+        """Handle workflow cancellation - cancel all non-terminal tasks"""
+        logger.info(f"Processing workflow cancellation: {workflow_id}")
+
+        # Get all tasks in the workflow
+        tasks_key = default_sharding.get_workflow_key("tasks", workflow_id)
+        task_ids = await self.redis.smembers(tasks_key.encode())
+
+        if not task_ids:
+            # Get tasks from workflow data if not in tasks set
+            workflow_data = await self.redis.hget(
+                default_sharding.get_workflow_key("data", workflow_id).encode(),
+                b"workflow"
+            )
+            if workflow_data:
+                workflow = json.loads(workflow_data.decode())
+                task_ids = [task['id'].encode() for task in workflow.get('tasks', [])]
+
+        cancelled_count = 0
+        for task_id_bytes in task_ids:
+            task_id = task_id_bytes.decode() if isinstance(task_id_bytes, bytes) else task_id_bytes
+            task_key = default_sharding.get_task_key(task_id, workflow_id)
+
+            # Check current status
+            current_status = await self.redis.hget(task_key.encode(), b"status")
+
+            # Only cancel non-terminal tasks
+            if not current_status or current_status.decode() not in ["completed", "failed", "cancelled", "blocked"]:
+                # Emit task cancellation event for each task
+                await self.redis.xadd(
+                    default_sharding.get_stream_key("task:cancelled", task_id).encode(),
+                    {
+                        b"task_id": task_id.encode(),
+                        b"workflow_id": workflow_id.encode(),
+                        b"reason": b"workflow_cancelled",
+                        b"timestamp": datetime.utcnow().isoformat().encode()
+                    }
+                )
+                cancelled_count += 1
+
+        logger.info(f"Emitted cancellation for {cancelled_count} tasks in workflow {workflow_id}")
+
+        # Update workflow status
+        await self.redis.hset(
+            default_sharding.get_workflow_key("status", workflow_id).encode(),
+            mapping={
+                b"status": b"cancelled",
+                b"cancelled_at": datetime.utcnow().isoformat().encode(),
+                b"cancelled_reason": data.get('reason', b'user_requested')
+            }
+        )
+
+        # Store cancellation event
+        await self.event_store.store_event(
+            event_type=EventType.WORKFLOW_CANCELLED,
+            workflow_id=workflow_id,
+            level=EventLevel.CRITICAL,
+            data={
+                'reason': data.get('reason', 'user_requested'),
+                'tasks_cancelled': cancelled_count
+            }
+        )
 

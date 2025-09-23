@@ -1,48 +1,67 @@
 """
-Gleitzeit Python Client SDK
+Modular Gleitzeit Python Client SDK.
 
-Client library for interacting with Gleitzeit API.
-Supports client sessions for authentication.
+This is the main client class that combines all mixins to provide
+the complete Gleitzeit client functionality.
 """
 
-import json
-import asyncio
-import time
 import logging
-from typing import Dict, Any, Optional, List
-from dataclasses import dataclass
-import aiohttp
-import uuid
+from typing import Optional, Dict, Any
+
+from .base import BaseClient
+from .mixins import (
+    AuthMixin,
+    RetryMixin,
+    WorkflowMixin,
+    TaskMixin,
+    MonitoringMixin
+)
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class WorkflowResponse:
-    """Workflow submission response"""
-    workflow_id: str
-    status: str
-    message: str
-    submitted_at: str
-
-
-@dataclass
-class TaskResponse:
-    """Task status response"""
-    task_id: str
-    state: Dict[str, Any]
-    result: Optional[Dict[str, Any]] = None
-
-
-class GleitzeitClient:
+class GleitzeitClient(
+    AuthMixin,
+    RetryMixin,
+    WorkflowMixin,
+    TaskMixin,
+    MonitoringMixin,
+    BaseClient
+):
     """
-    Client for Gleitzeit API.
+    Complete Gleitzeit client with modular mixin architecture.
 
-    Supports:
-    - Client session authentication
+    This client combines all functionality through mixins:
+    - AuthMixin: Authentication and session management
+    - RetryMixin: Retry logic and error handling
+    - WorkflowMixin: Workflow operations
+    - TaskMixin: Task operations
+    - MonitoringMixin: System monitoring and health checks
+    - BaseClient: Core HTTP functionality
+
+    Example usage:
+        ```python
+        async with GleitzeitClient() as client:
+            # Auto-login happens automatically if enabled
+            response = await client.submit_workflow({
+                "workflow_id": "example",
+                "tasks": [...]
+            })
+
+            # Wait for completion
+            status = await client.wait_for_workflow(response.workflow_id)
+        ```
+
+    The client supports multiple authentication methods:
+    - Session-based auth with cookies (default with auto-login)
     - JWT token authentication
     - API key authentication
+
+    All operations include:
+    - Automatic retry with exponential backoff
+    - Rate limit handling
     - Connection pooling
+    - Error classification
     """
 
     def __init__(
@@ -52,259 +71,105 @@ class GleitzeitClient:
         api_key: Optional[str] = None,
         jwt_token: Optional[str] = None,
         pool_size: int = 5,
+        timeout: int = 30,
+        auto_login: bool = True,
+        username: Optional[str] = None,
+        password: Optional[str] = None,
+        retry_config: Optional[Dict[str, Any]] = None,
         auto_start_server: bool = False
     ):
-        self.api_url = api_url.rstrip('/')
-        self.session_id = session_id
-        self.api_key = api_key
-        self.jwt_token = jwt_token
-        self.pool_size = pool_size
+        """
+        Initialize Gleitzeit client with all mixin functionality.
 
-        # Connection pool
-        self._session: Optional[aiohttp.ClientSession] = None
-        self._connector: Optional[aiohttp.TCPConnector] = None
+        Args:
+            api_url: Base URL of the Gleitzeit API
+            session_id: Existing session ID for authentication
+            api_key: API key for authentication
+            jwt_token: JWT token for authentication
+            pool_size: Size of the connection pool
+            timeout: Default request timeout in seconds
+            auto_login: Whether to automatically create a session
+            username: Username for auto-login
+            password: Password for authentication
+            retry_config: Custom retry configuration
+            auto_start_server: Whether to attempt starting the server
+        """
+        # Initialize all mixins and base class
+        super().__init__(
+            api_url=api_url,
+            session_id=session_id,
+            api_key=api_key,
+            jwt_token=jwt_token,
+            pool_size=pool_size,
+            timeout=timeout,
+            auto_login=auto_login,
+            username=username,
+            password=password,
+            retry_config=retry_config
+        )
 
+        self.auto_start_server = auto_start_server
         if auto_start_server:
             self._ensure_server_running()
 
+        logger.info(f"Initialized modular Gleitzeit client for {api_url}")
+
     def _ensure_server_running(self):
-        """Check if server is running and start if needed"""
+        """Check if server is running and attempt to start if needed."""
         import requests
         try:
-            response = requests.get(f"{self.api_url}/health/", timeout=2)
+            response = requests.get(f"{self.api_url}/health", timeout=2)
             if response.status_code == 200:
-                logger.info("API server is running")
-            return
+                logger.info("API server is already running")
+                return
         except:
-            logger.info("API server not running, attempting to start...")
-            # TODO: Implement server startup
+            logger.info("API server not running")
+            # Could implement server startup here if needed
             pass
 
-    async def __aenter__(self):
-        """Async context manager entry"""
-        await self.connect()
-        return self
+    async def connect(self):
+        """
+        Initialize connection and perform auto-authentication if configured.
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Async context manager exit"""
+        This method:
+        1. Establishes the HTTP connection pool
+        2. Performs auto-login if enabled and no credentials exist
+        """
+        await super().connect()
+
+        # Auto-authenticate if configured (from AuthMixin)
+        await self.auto_authenticate()
+
+    async def initialize(self):
+        """
+        Alias for connect() for backward compatibility.
+        """
+        await self.connect()
+
+    async def shutdown(self):
+        """
+        Alias for close() for backward compatibility.
+        """
         await self.close()
 
-    async def connect(self):
-        """Initialize connection pool"""
-        if not self._session:
-            self._connector = aiohttp.TCPConnector(
-                limit=self.pool_size,
-                limit_per_host=self.pool_size
-            )
-            self._session = aiohttp.ClientSession(
-                connector=self._connector
-            )
-
-    async def close(self):
-        """Close connection pool"""
-        if self._session:
-            await self._session.close()
-            self._session = None
-            self._connector = None
-
-    def _get_headers(self) -> Dict[str, str]:
-        """Get request headers with authentication"""
-        headers = {"Content-Type": "application/json"}
-
+    def __repr__(self) -> str:
+        """String representation of the client."""
+        auth_method = "none"
         if self.session_id:
-            headers["X-Session-ID"] = self.session_id
-        elif self.api_key:
-            headers["X-API-Key"] = self.api_key
+            auth_method = "session"
         elif self.jwt_token:
-            headers["Authorization"] = f"Bearer {self.jwt_token}"
+            auth_method = "jwt"
+        elif self.api_key:
+            auth_method = "api_key"
 
-        return headers
+        return (
+            f"<GleitzeitClient("
+            f"api_url='{self.api_url}', "
+            f"auth='{auth_method}', "
+            f"pool_size={self.pool_size}"
+            f")>"
+        )
 
-    # Authentication methods
 
-    async def create_session(self, username: str, password: Optional[str] = None) -> str:
-        """Create a new client session"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.post(
-            f"{self.api_url}/auth/session/create",
-            json={"username": username, "password": password},
-            headers={"Content-Type": "application/json"}
-        ) as resp:
-            data = await resp.json()
-            self.session_id = data["session_id"]
-            logger.info(f"Created session for user {username}")
-            return self.session_id
-
-    async def destroy_session(self):
-        """Destroy current session"""
-        if not self.session_id:
-            raise ValueError("No active session")
-
-        if not self._session:
-            await self.connect()
-
-        async with self._session.post(
-            f"{self.api_url}/auth/session/destroy",
-            json={"session_id": self.session_id},
-            headers=self._get_headers()
-        ) as resp:
-            data = await resp.json()
-            self.session_id = None
-            logger.info("Session destroyed")
-            return data
-
-    async def create_token(self, username: str, password: Optional[str] = None) -> str:
-        """Create JWT token"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.post(
-            f"{self.api_url}/auth/token",
-            json={"username": username, "password": password},
-            headers={"Content-Type": "application/json"}
-        ) as resp:
-            data = await resp.json()
-            self.jwt_token = data["access_token"]
-            logger.info(f"Created token for user {username}")
-            return self.jwt_token
-
-    # Workflow operations
-
-    async def submit_workflow(
-        self,
-        workflow: Dict[str, Any],
-        workflow_id: Optional[str] = None
-    ) -> WorkflowResponse:
-        """Submit a workflow for execution"""
-        if not self._session:
-            await self.connect()
-
-        request_data = {
-            "workflow": workflow,
-            "workflow_id": workflow_id or str(uuid.uuid4())
-        }
-
-        async with self._session.post(
-            f"{self.api_url}/workflows/submit",
-            json=request_data,
-            headers=self._get_headers()
-        ) as resp:
-            data = await resp.json()
-            return WorkflowResponse(**data)
-
-    async def get_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Get workflow status"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.get(
-            f"{self.api_url}/workflows/{workflow_id}",
-            headers=self._get_headers()
-        ) as resp:
-            return await resp.json()
-
-    async def get_workflow_tasks(self, workflow_id: str) -> Dict[str, Any]:
-        """Get all tasks for a workflow"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.get(
-            f"{self.api_url}/workflows/{workflow_id}/tasks",
-            headers=self._get_headers()
-        ) as resp:
-            return await resp.json()
-
-    async def cancel_workflow(self, workflow_id: str) -> Dict[str, Any]:
-        """Cancel a workflow"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.post(
-            f"{self.api_url}/workflows/{workflow_id}/cancel",
-            headers=self._get_headers()
-        ) as resp:
-            return await resp.json()
-
-    # Task operations
-
-    async def get_task(self, task_id: str) -> TaskResponse:
-        """Get task status and result"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.get(
-            f"{self.api_url}/tasks/{task_id}",
-            headers=self._get_headers()
-        ) as resp:
-            data = await resp.json()
-            return TaskResponse(**data)
-
-    async def retry_task(self, task_id: str) -> Dict[str, Any]:
-        """Retry a failed task"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.post(
-            f"{self.api_url}/tasks/{task_id}/retry",
-            headers=self._get_headers()
-        ) as resp:
-            return await resp.json()
-
-    # System operations
-
-    async def get_system_status(self) -> Dict[str, Any]:
-        """Get system status"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.get(
-            f"{self.api_url}/system/status",
-            headers=self._get_headers()
-        ) as resp:
-            return await resp.json()
-
-    async def get_metrics(self) -> Dict[str, Any]:
-        """Get system metrics"""
-        if not self._session:
-            await self.connect()
-
-        async with self._session.get(
-            f"{self.api_url}/system/metrics",
-            headers=self._get_headers()
-        ) as resp:
-            return await resp.json()
-
-    # Synchronous wrappers for convenience
-
-    def submit_workflow_sync(self, workflow: Dict[str, Any]) -> WorkflowResponse:
-        """Synchronous wrapper for submit_workflow"""
-        return asyncio.run(self.submit_workflow(workflow))
-
-    def get_task_sync(self, task_id: str) -> TaskResponse:
-        """Synchronous wrapper for get_task"""
-        return asyncio.run(self.get_task(task_id))
-
-    def wait_for_completion(
-        self,
-        workflow_id: str,
-        timeout: int = 300,
-        poll_interval: int = 2
-    ) -> Dict[str, Any]:
-        """Wait for workflow to complete (synchronous)"""
-        start = time.time()
-
-        while time.time() - start < timeout:
-            status = asyncio.run(self.get_workflow(workflow_id))
-
-            if status["state"].get("status") in ["completed", "failed", "cancelled"]:
-                return status
-
-            time.sleep(poll_interval)
-
-        raise TimeoutError(f"Workflow {workflow_id} did not complete within {timeout} seconds")
-
-    def create_session_sync(self, username: str) -> str:
-        """Synchronous wrapper for create_session"""
-        return asyncio.run(self.create_session(username))
+# Backward compatibility - export the new modular client as the main client
+__all__ = ['GleitzeitClient']

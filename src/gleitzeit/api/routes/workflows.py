@@ -243,9 +243,12 @@ async def cancel_workflow(
         "workflow_id": workflow_id,
         "status": "cancelled",
         "tasks_cancelled": cancelled_count,
-        "message": f"Workflow cancelled, {cancelled_count} tasks were cancelled"
+        "cancelled_by": user.username,
+        "message": f"Workflow cancelled successfully, {cancelled_count} tasks were cancelled"
     }
 
 
 # Fix circular import by getting app instance
 from ..main import app
+
+

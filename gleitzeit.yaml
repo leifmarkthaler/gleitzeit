@@ -68,17 +68,123 @@ monitoring:
   heartbeat_interval: 10
   scale_check_interval: 60
 
+# Authentication and Security
+auth:
+  # Auto-login for development (creates basic user automatically)
+  auto_login: true  # Set to false in production
+
+  # JWT Configuration
+  jwt:
+    secret: ${JWT_SECRET:-development-secret-change-in-production}
+    algorithm: HS256
+    expiration: 3600  # 1 hour
+    refresh_expiration: 86400  # 24 hours
+
+  # Session Configuration
+  session:
+    cookie_name: session_id
+    cookie_httponly: true
+    cookie_secure: false  # Set to true for HTTPS in production
+    cookie_samesite: lax
+    session_ttl: 86400  # 24 hours
+
+  # API Key Configuration (optional)
+  api_keys:
+    enabled: false
+    redis_prefix: api_keys
+
+# Security Configuration
+security:
+  # CORS Settings
+  cors:
+    # Use dynamic origins based on serve configuration
+    # Will be computed as http://{host}:{port} for each service
+    use_serve_config: true  # Automatically add API and UI URLs
+    additional_origins: ${CORS_ORIGINS:-}  # Additional origins if needed
+    allow_credentials: true
+    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers: ["Content-Type", "Authorization", "X-Session-ID", "X-API-Key"]
+    expose_headers: ["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"]
+
+  # Rate Limiting
+  rate_limiting:
+    enabled: true
+    default_limit: 100  # Requests per window
+    window: 60  # Window in seconds
+
+    # Endpoint-specific limits
+    endpoints:
+      "/workflows/submit": 10
+      "/auth/session/create": 5
+      "/auth/token": 5
+      "/tasks": 50
+      "/system": 20
+
+  # Audit Logging
+  audit:
+    enabled: true
+    redis_stream: audit:log
+    max_entries: 100000
+
+    # Endpoints to audit
+    audit_paths:
+      - /workflows/submit
+      - /workflows/*/cancel
+      - /tasks/*/retry
+      - /auth/session/create
+      - /auth/session/destroy
+      - /auth/token
+
+  # IP Whitelisting (optional)
+  ip_whitelist:
+    enabled: false
+    whitelist: ${ADMIN_IP_WHITELIST:-}  # Comma-separated IPs
+    protected_paths:
+      - /admin
+      - /system/shutdown
+      - /system/config
+
+# Input Validation
+validation:
+  # Workflow limits
+  workflow:
+    max_size_mb: 10
+    max_tasks: 1000
+    max_workflow_id_length: 100
+    workflow_id_pattern: "^[a-zA-Z0-9-_]+$"
+
+  # Task limits
+  task:
+    max_payload_size_mb: 1
+    max_result_size_mb: 10
+    max_retry_count: 5
+
+  # Request limits
+  request:
+    max_body_size_mb: 50
+    max_header_size: 8192
+
 # Serve configuration
 serve:
   api:
     host: 0.0.0.0
     port: 8000
     reload_on_dev: true
+
+    # Environment variables to set (these will be auto-computed from config)
+    # The serve command will automatically set:
+    # - GLEITZEIT_AUTO_LOGIN from auth.auto_login
+    # - JWT_SECRET from auth.jwt.secret
+    # - CORS_ORIGINS from serve.api/ui host:port
+    # - REDIS_URL from redis configuration
+
   ui:
     host: 0.0.0.0
     port: 8004
     enabled: true
     reload_on_dev: true
+
   orchestrator:
     enabled: true
+
   dev_mode: false
