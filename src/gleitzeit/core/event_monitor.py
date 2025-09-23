@@ -331,7 +331,8 @@ class EventMonitor:
 
         # For each shard, get workflows
         # This is a simplified version - in production you'd want an index
-        for shard in range(10):  # Assuming 10 shards
+        num_shards = getattr(default_sharding, 'num_shards', self.config.get('num_shards', 16))
+        for shard in range(num_shards):
             pattern = f"{{shard:{shard}}}:workflow:data:*"
 
             # Get workflow keys from this shard

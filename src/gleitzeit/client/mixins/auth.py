@@ -155,8 +155,9 @@ class AuthMixin:
 
         try:
             response = await self._request(
-                "GET",
-                "/auth/session/validate"
+                "POST",
+                "/auth/session/validate",
+                json_data={"session_id": self.session_id}
             )
             return response.get("valid", False)
         except Exception:

@@ -85,11 +85,11 @@ class MonitoringMixin:
 
         for worker in response.get("workers", []):
             workers.append(WorkerStatus(
-                worker_id=worker["worker_id"],
-                worker_type=worker["worker_type"],
-                status=worker["status"],
+                worker_id=worker.get("worker_id", "unknown"),
+                worker_type=worker.get("worker_type", "unknown"),
+                status=worker.get("state", worker.get("status", "unknown")),
                 last_heartbeat=worker.get("last_heartbeat", ""),
-                tasks_processed=worker.get("tasks_processed", 0),
+                tasks_processed=int(worker.get("tasks_processed", 0) or 0),
                 current_task=worker.get("current_task")
             ))
 
@@ -210,7 +210,7 @@ class MonitoringMixin:
             "/system/logs/errors",
             params=params
         )
-        return response.get("logs", [])
+        return response.get("errors", [])
 
     async def get_resource_usage(self) -> Dict[str, Any]:
         """
@@ -271,6 +271,6 @@ class MonitoringMixin:
         return {
             "limit": response.get("limit", 0),
             "remaining": response.get("remaining", 0),
-            "reset_at": response.get("reset_at", ""),
-            "window": response.get("window", 60)
+            "reset_in_seconds": response.get("reset_in_seconds", 0),
+            "current": response.get("current", 0)
         }

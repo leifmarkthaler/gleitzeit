@@ -165,7 +165,7 @@ class TaskExecutionWorker(BaseWorker):
 
         try:
             # Check if task has been cancelled before starting execution
-            state_key = default_sharding.get_task_key("state", task_id)
+            state_key = default_sharding.get_task_key(task_id, workflow_id)
             task_state = await self.redis.hgetall(state_key.encode())
 
             if task_state:
@@ -174,7 +174,7 @@ class TaskExecutionWorker(BaseWorker):
                     logger.info(f"Task {task_id} was cancelled, skipping execution")
                     # Emit cancellation confirmation event
                     await self.redis.xadd(
-                        default_sharding.get_stream_key("task:cancelled", task_id).encode(),
+                        default_sharding.get_stream_key("task:cancelled", workflow_id).encode(),
                         {
                             b"task_id": task_id.encode(),
                             b"workflow_id": workflow_id.encode(),

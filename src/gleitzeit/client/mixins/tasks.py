@@ -48,12 +48,8 @@ class TaskMixin:
         Returns:
             Task information
         """
-        if workflow_id:
-            endpoint = f"/workflows/{workflow_id}/tasks/{task_id}"
-        else:
-            endpoint = f"/tasks/{task_id}"
-
-        return await self._request("GET", endpoint)
+        # Server exposes task endpoints at /tasks/{task_id}
+        return await self._request("GET", f"/tasks/{task_id}")
 
     async def get_task_status(self, task_id: str, workflow_id: Optional[str] = None) -> TaskStatus:
         """
@@ -67,17 +63,19 @@ class TaskMixin:
             TaskStatus object
         """
         task = await self.get_task(task_id, workflow_id)
+        state = task.get("state", {})
+
         return TaskStatus(
-            task_id=task["task_id"],
-            workflow_id=task["workflow_id"],
-            status=task["status"],
-            provider=task.get("provider", ""),
-            created_at=task.get("created_at", ""),
-            started_at=task.get("started_at"),
-            completed_at=task.get("completed_at"),
+            task_id=task.get("task_id", task_id),
+            workflow_id=state.get("workflow_id") or task.get("workflow_id", workflow_id or ""),
+            status=state.get("status", task.get("status", "unknown")),
+            provider=state.get("provider", task.get("provider", "")),
+            created_at=state.get("created_at", task.get("created_at", "")),
+            started_at=state.get("started_at") or task.get("started_at"),
+            completed_at=state.get("completed_at") or task.get("completed_at"),
             result=task.get("result"),
-            error=task.get("error"),
-            retry_count=task.get("retry_count", 0)
+            error=state.get("error") or task.get("error"),
+            retry_count=int(state.get("retry_count", task.get("retry_count", 0)) or 0)
         )
 
     async def get_task_result(self, task_id: str, workflow_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
@@ -105,12 +103,7 @@ class TaskMixin:
         Returns:
             Retry result
         """
-        if workflow_id:
-            endpoint = f"/workflows/{workflow_id}/tasks/{task_id}/retry"
-        else:
-            endpoint = f"/tasks/{task_id}/retry"
-
-        response = await self._request("POST", endpoint)
+        response = await self._request("POST", f"/tasks/{task_id}/retry")
         logger.info(f"Retried task {task_id}")
         return response
 
@@ -125,12 +118,7 @@ class TaskMixin:
         Returns:
             Cancellation result
         """
-        if workflow_id:
-            endpoint = f"/workflows/{workflow_id}/tasks/{task_id}/cancel"
-        else:
-            endpoint = f"/tasks/{task_id}/cancel"
-
-        response = await self._request("POST", endpoint)
+        response = await self._request("POST", f"/tasks/{task_id}/cancel")
         logger.info(f"Cancelled task {task_id}")
         return response
 
@@ -145,12 +133,7 @@ class TaskMixin:
         Returns:
             List of log entries
         """
-        if workflow_id:
-            endpoint = f"/workflows/{workflow_id}/tasks/{task_id}/logs"
-        else:
-            endpoint = f"/tasks/{task_id}/logs"
-
-        response = await self._request("GET", endpoint)
+        response = await self._request("GET", f"/tasks/{task_id}/logs")
         return response.get("logs", [])
 
     async def get_task_dependencies(self, task_id: str, workflow_id: str) -> List[str]:

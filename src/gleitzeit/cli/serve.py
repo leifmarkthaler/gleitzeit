@@ -339,6 +339,22 @@ class GleitzeitServer:
         """Start the API server"""
         print(f"Starting API Server on port {self.api_port}...")
 
+        # Kill any existing process on the API port first
+        try:
+            result = subprocess.run(
+                ["lsof", "-ti", f":{self.api_port}"],
+                capture_output=True,
+                text=True
+            )
+            if result.stdout:
+                for pid in result.stdout.strip().split('\n'):
+                    if pid:
+                        logger.info(f"Killing existing process on port {self.api_port} (PID: {pid})")
+                        os.kill(int(pid), signal.SIGKILL)
+                        time.sleep(0.5)
+        except:
+            pass
+
         cmd = [
             sys.executable, "-m", "uvicorn",
             "gleitzeit.api.main:app",
@@ -373,6 +389,37 @@ class GleitzeitServer:
     def start_ui(self):
         """Start the UI server"""
         print(f"Starting UI Server on port {self.ui_port}...")
+
+        # Kill any existing process on the UI port first
+        try:
+            # Find and kill any process using the UI port
+            import psutil
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    for conn in proc.connections(kind='inet'):
+                        if conn.laddr.port == self.ui_port and conn.status == 'LISTEN':
+                            logger.info(f"Killing existing process on port {self.ui_port} (PID: {proc.pid})")
+                            proc.kill()
+                            time.sleep(0.5)  # Give it time to release the port
+                            break
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    pass
+        except ImportError:
+            # If psutil not available, try using lsof
+            try:
+                result = subprocess.run(
+                    ["lsof", "-ti", f":{self.ui_port}"],
+                    capture_output=True,
+                    text=True
+                )
+                if result.stdout:
+                    for pid in result.stdout.strip().split('\n'):
+                        if pid:
+                            logger.info(f"Killing existing process on port {self.ui_port} (PID: {pid})")
+                            os.kill(int(pid), signal.SIGKILL)
+                            time.sleep(0.5)
+            except:
+                pass
 
         # Set API URL for UI
         self.env["GLEITZEIT_API_URL"] = f"http://localhost:{self.api_port}"

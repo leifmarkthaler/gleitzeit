@@ -3,12 +3,13 @@ Authentication routes
 """
 
 import uuid
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Dict
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from pydantic import BaseModel
 import redis.asyncio as aioredis
 
 from ..auth.models import User, UserRole, Token, LoginRequest
-from ..auth.dependencies import ClientSessionAuth, jwt_manager, init_auth
+from ..auth.dependencies import ClientSessionAuth, jwt_manager, init_auth, get_current_user as get_current_user_dep
 
 router = APIRouter()
 
@@ -135,6 +136,47 @@ async def refresh_token(
         )
 
     return new_token
+
+
+@router.get("/me")
+async def get_current_user(
+    current_user: Dict = Depends(get_current_user_dep)
+):
+    """Get current authenticated user information"""
+    return current_user
+
+
+@router.get("/rate-limit")
+async def get_rate_limit_status(
+    request: Request,
+    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+):
+    """Get rate limit status for current client"""
+
+    # Get client IP
+    client_ip = request.client.host
+
+    # Check rate limit key
+    rate_key = f"rate_limit:{client_ip}"
+
+    # Get current count and TTL
+    count = await redis.get(rate_key)
+    ttl = await redis.ttl(rate_key)
+
+    # Get limits from config
+    from ..main import CONFIG
+    rate_config = CONFIG.get('security', {}).get('rate_limiting', {})
+    limit = rate_config.get('requests_per_minute', 60)
+
+    current_count = int(count) if count else 0
+    remaining = max(0, limit - current_count)
+
+    return {
+        "limit": limit,
+        "remaining": remaining,
+        "reset_in_seconds": ttl if ttl > 0 else 60,
+        "current": current_count
+    }
 
 
 # Fix circular import

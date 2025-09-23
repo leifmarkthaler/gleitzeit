@@ -167,33 +167,20 @@ class WorkflowMixin:
         """
         response = await self.get_workflow(workflow_id)
 
-        # Handle 0.0.7's response structure
-        # Status can be in response.data.status or response.state.status
-        if 'data' in response and 'status' in response['data']:
-            status = response['data']['status']
-        elif 'state' in response and 'status' in response['state']:
-            status = response['state']['status']
-        else:
-            status = response.get('status', 'unknown')
+        state = response.get('state', {})
+        data_section = response.get('data', {})
 
-        # Get timestamps from various locations
-        created_at = response.get('created_at', '')
-        if not created_at and 'state' in response:
-            created_at = response['state'].get('submitted_at', '')
-
-        completed_at = response.get('completed_at')
-        if not completed_at and 'data' in response:
-            completed_at = response['data'].get('completed_at')
-
-        error = response.get('error')
-        if not error and 'data' in response:
-            error = response['data'].get('error')
+        status = state.get('status') or response.get('status', 'unknown')
+        created_at = state.get('submitted_at') or response.get('created_at', '')
+        updated_at = state.get('updated_at') or response.get('updated_at', '')
+        completed_at = data_section.get('completed_at') or response.get('completed_at')
+        error = data_section.get('error') or response.get('error')
 
         return WorkflowStatus(
-            workflow_id=response["workflow_id"],
+            workflow_id=response.get("workflow_id", workflow_id),
             status=status,
             created_at=created_at,
-            updated_at=response.get("updated_at", ""),
+            updated_at=updated_at,
             completed_at=completed_at,
             error=error,
             progress=response.get("progress")
@@ -304,11 +291,16 @@ class WorkflowMixin:
         """
         # Get original workflow
         workflow = await self.get_workflow(workflow_id)
+        workflow_definition = workflow.get('data', {}).get('workflow')
 
-        # Submit as new workflow with retry suffix
+        if not workflow_definition:
+            raise ValueError(
+                f"Workflow {workflow_id} does not include a persisted definition to retry"
+            )
+
         new_workflow_id = f"{workflow_id}-retry-{uuid.uuid4().hex[:8]}"
         return await self.submit_workflow(
-            workflow["definition"],
+            workflow_definition,
             workflow_id=new_workflow_id,
             metadata={"original_workflow_id": workflow_id, "is_retry": True}
         )

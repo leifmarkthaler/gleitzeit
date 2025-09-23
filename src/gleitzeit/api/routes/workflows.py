@@ -5,7 +5,7 @@ Workflow submission and management endpoints
 import json
 import uuid
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from pydantic import BaseModel, Field
@@ -29,6 +29,64 @@ class WorkflowSubmitResponse(BaseModel):
     status: str
     message: str
     submitted_at: str
+
+
+@router.get("/")
+async def list_workflows(
+    limit: int = 100,
+    offset: int = 0,
+    status: Optional[str] = None,
+    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+):
+    """List workflows with optional filtering"""
+
+    pattern = b"*:workflow:state:*"
+    cursor = b"0"
+    workflows: List[Dict[str, Any]] = []
+
+    while True:
+        cursor, keys = await redis.scan(cursor, match=pattern, count=100)
+        for key in keys:
+            workflow_id = key.decode().split(':')[-1]
+            state_data = await redis.hgetall(key)
+            if not state_data:
+                continue
+
+            decoded_state = {k.decode(): v.decode() for k, v in state_data.items()}
+            workflow_status = decoded_state.get("status", "unknown")
+
+            if status and workflow_status != status:
+                continue
+
+            data_key = default_sharding.get_workflow_key("data", workflow_id)
+            workflow_data = await redis.hget(data_key.encode(), b"workflow")
+
+            workflow_info = {
+                "workflow_id": workflow_id,
+                "status": workflow_status,
+                "submitted_at": decoded_state.get("submitted_at", ""),
+                "updated_at": decoded_state.get("updated_at", ""),
+            }
+
+            if workflow_data:
+                data = json.loads(workflow_data)
+                workflow_info["name"] = data.get("name", "Unnamed")
+                workflow_info["task_count"] = len(data.get("tasks", []))
+
+            workflows.append(workflow_info)
+
+        if cursor == b"0":
+            break
+
+    total = len(workflows)
+    paginated = workflows[offset: offset + limit]
+
+    return {
+        "workflows": paginated,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
 
 
 @router.post("/submit", response_model=WorkflowSubmitResponse)
@@ -145,19 +203,90 @@ async def get_workflow_tasks(
     tasks = []
     for task_id_bytes in task_ids:
         task_id = task_id_bytes.decode()
-        task_key = default_sharding.get_task_key("state", task_id)
+        task_key = default_sharding.get_task_key(task_id, workflow_id)
         task_data = await redis.hgetall(task_key.encode())
 
         if task_data:
+            decoded = {k.decode(): v.decode() for k, v in task_data.items()}
+            for field in ("result", "error"):
+                if field in decoded:
+                    try:
+                        decoded[field] = json.loads(decoded[field])
+                    except json.JSONDecodeError:
+                        pass
+
             tasks.append({
                 "task_id": task_id,
-                **{k.decode(): v.decode() for k, v in task_data.items()}
+                **decoded
             })
 
     return {
         "workflow_id": workflow_id,
         "task_count": len(tasks),
         "tasks": tasks
+    }
+
+
+@router.get("/{workflow_id}/tasks/{task_id}/dependencies")
+async def get_task_dependencies(
+    workflow_id: str,
+    task_id: str,
+    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+):
+    """Get dependencies for a specific task in a workflow"""
+
+    # Get workflow data
+    data_key = default_sharding.get_workflow_key("data", workflow_id)
+    workflow_data = await redis.hget(data_key.encode(), b"workflow")
+
+    if not workflow_data:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    workflow = json.loads(workflow_data)
+    tasks = workflow.get("tasks", [])
+
+    # Find the task and its dependencies
+    for task in tasks:
+        if task.get("name") == task_id or task.get("id") == task_id:
+            return {
+                "task_id": task_id,
+                "workflow_id": workflow_id,
+                "dependencies": task.get("dependencies", [])
+            }
+
+    raise HTTPException(status_code=404, detail="Task not found in workflow")
+
+
+@router.get("/{workflow_id}/tasks/{task_id}/dependents")
+async def get_task_dependents(
+    workflow_id: str,
+    task_id: str,
+    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+):
+    """Get tasks that depend on a specific task"""
+
+    # Get workflow data
+    data_key = default_sharding.get_workflow_key("data", workflow_id)
+    workflow_data = await redis.hget(data_key.encode(), b"workflow")
+
+    if not workflow_data:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+
+    workflow = json.loads(workflow_data)
+    tasks = workflow.get("tasks", [])
+
+    # Find all tasks that depend on this task
+    dependents = []
+    for task in tasks:
+        task_name = task.get("name", task.get("id", ""))
+        dependencies = task.get("dependencies", [])
+        if task_id in dependencies:
+            dependents.append(task_name)
+
+    return {
+        "task_id": task_id,
+        "workflow_id": workflow_id,
+        "dependents": dependents
     }
 
 
@@ -203,7 +332,7 @@ async def cancel_workflow(
     cancelled_count = 0
     for task_id_bytes in task_ids:
         task_id = task_id_bytes.decode()
-        task_state_key = default_sharding.get_task_key("state", task_id)
+        task_state_key = default_sharding.get_task_key(task_id, workflow_id)
         task_state = await redis.hgetall(task_state_key.encode())
 
         if task_state:
@@ -227,7 +356,7 @@ async def cancel_workflow(
                 )
 
                 # Emit task cancellation event
-                task_stream_key = default_sharding.get_stream_key("task:cancelled", task_id)
+                task_stream_key = default_sharding.get_stream_key("task:cancelled", workflow_id)
                 await redis.xadd(
                     task_stream_key.encode(),
                     {
@@ -243,12 +372,10 @@ async def cancel_workflow(
         "workflow_id": workflow_id,
         "status": "cancelled",
         "tasks_cancelled": cancelled_count,
-        "cancelled_by": user.username,
         "message": f"Workflow cancelled successfully, {cancelled_count} tasks were cancelled"
     }
 
 
 # Fix circular import by getting app instance
 from ..main import app
-
 

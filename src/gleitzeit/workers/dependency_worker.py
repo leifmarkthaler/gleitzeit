@@ -307,7 +307,7 @@ class DependencyWorker(BaseWorker):
                     if should_skip:
                         # Mark task as skipped due to validation failure
                         await self.redis.hset(
-                            default_sharding.get_task_key("status", workflow_id, task_id).encode(),
+                            default_sharding.get_task_key(task_id, workflow_id).encode(),
                             mapping={
                                 b"status": b"skipped",
                                 b"skipped_reason": b"validation_failed",
@@ -834,7 +834,7 @@ class DependencyWorker(BaseWorker):
 
                 # Emit cancellation event for the dependent task (will cascade)
                 await self.redis.xadd(
-                    default_sharding.get_stream_key("task:cancelled", dep_task_id).encode(),
+                    default_sharding.get_stream_key("task:cancelled", workflow_id).encode(),
                     {
                         b"task_id": dep_task_id.encode(),
                         b"workflow_id": workflow_id.encode(),
@@ -886,7 +886,7 @@ class DependencyWorker(BaseWorker):
             if not current_status or current_status.decode() not in ["completed", "failed", "cancelled", "blocked"]:
                 # Emit task cancellation event for each task
                 await self.redis.xadd(
-                    default_sharding.get_stream_key("task:cancelled", task_id).encode(),
+                    default_sharding.get_stream_key("task:cancelled", workflow_id).encode(),
                     {
                         b"task_id": task_id.encode(),
                         b"workflow_id": workflow_id.encode(),
@@ -918,4 +918,3 @@ class DependencyWorker(BaseWorker):
                 'tasks_cancelled': cancelled_count
             }
         )
-

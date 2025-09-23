@@ -202,6 +202,9 @@ class ComponentOrchestrator:
     async def start_all_workers(self):
         """Start all configured workers"""
         for worker_type, spec in self.worker_specs.items():
+            if spec.count <= 0:
+                logger.info(f"Skipping {worker_type} workers because count is set to {spec.count}")
+                continue
             logger.info(f"Starting {spec.count} {worker_type} workers")
 
             for i in range(spec.count):
@@ -265,7 +268,8 @@ class ComponentOrchestrator:
             # Ensure correct PYTHONPATH
             import pathlib
             src_path = str(pathlib.Path(__file__).parent.parent.parent.absolute())
-            env['PYTHONPATH'] = f"{src_path}:{env.get('PYTHONPATH', '')}"
+            existing_path = env.get('PYTHONPATH')
+            env['PYTHONPATH'] = src_path if not existing_path else f"{src_path}{os.pathsep}{existing_path}"
 
             process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -336,6 +340,10 @@ class ComponentOrchestrator:
 
         # Get total workers of this type
         total_workers = self.worker_specs[worker_type].count
+
+        if total_workers <= 0:
+            logger.debug(f"No shards assigned to {worker_id} because total_workers is {total_workers}")
+            return []
 
         # Assign shards round-robin
         assigned = []
@@ -498,7 +506,7 @@ class ComponentOrchestrator:
                 workers_with_shards = min(target_count, self.num_shards)
 
                 # Only assign shards if this worker should have them
-                if i < workers_with_shards:
+                if workers_with_shards > 0 and i < workers_with_shards:
                     for shard in range(self.num_shards):
                         # Distribute shards evenly across workers that should have shards
                         if shard % workers_with_shards == i:

@@ -140,7 +140,11 @@ class CircuitBreaker(Generic[T]):
         # Lock for thread-safe state changes
         self._lock = asyncio.Lock()
 
-        logger.info(f"Circuit breaker '{name}' initialized with threshold={config.failure_threshold}")
+        logger.info(
+            "Circuit breaker '%s' initialized with threshold=%s",
+            name,
+            self.config.failure_threshold,
+        )
 
     @property
     def state(self) -> CircuitState:

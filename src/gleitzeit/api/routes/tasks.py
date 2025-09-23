@@ -1,9 +1,7 @@
-"""
-Task management endpoints
-"""
+"""Task management endpoints"""
 
 import json
-from typing import Optional
+from typing import Dict, Optional, Tuple
 
 from fastapi import APIRouter, Depends, HTTPException
 import redis.asyncio as aioredis
@@ -13,6 +11,54 @@ from ...core.sharding import default_sharding
 router = APIRouter()
 
 
+async def _find_task_state(redis: aioredis.Redis, task_id: str) -> Tuple[Optional[str], Optional[Dict[str, str]]]:
+    """Locate and decode the Redis hash that stores task state."""
+
+    pattern = f"*task:status:{task_id}".encode()
+    cursor: bytes = b"0"
+
+    while True:
+        cursor, keys = await redis.scan(cursor, match=pattern, count=100)
+        for key in keys:
+            state_data = await redis.hgetall(key)
+            if not state_data:
+                continue
+
+            decoded = {k.decode(): v.decode() for k, v in state_data.items()}
+
+            # Parse JSON encoded fields when possible
+            for field in ("result", "error"):
+                if field in decoded:
+                    try:
+                        decoded[field] = json.loads(decoded[field])
+                    except json.JSONDecodeError:
+                        pass
+
+            return key.decode(), decoded
+
+        if cursor == b"0":
+            break
+
+    return None, None
+
+
+def _decode_logs(entries):
+    decoded = []
+    for entry in entries:
+        try:
+            decoded.append(json.loads(entry.decode()))
+        except json.JSONDecodeError:
+            decoded.append({"message": entry.decode()})
+    return decoded
+
+
+def _find_task_definition(workflow: Dict[str, Dict], task_id: str) -> Optional[Dict]:
+    for task in workflow.get("tasks", []):
+        if task.get("id") == task_id or task.get("name") == task_id:
+            return task
+    return None
+
+
 @router.get("/{task_id}")
 async def get_task(
     task_id: str,
@@ -20,30 +66,15 @@ async def get_task(
 ):
     """Get task status and details"""
 
-    # Get task state
-    state_key = default_sharding.get_task_key("state", task_id)
-    state_data = await redis.hgetall(state_key.encode())
-
-    if not state_data:
+    state_key, state = await _find_task_state(redis, task_id)
+    if not state_key or not state:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Get task result if available
-    result_key = default_sharding.get_task_key("result", task_id)
-    result_data = await redis.hgetall(result_key.encode())
-
-    # Decode and combine
-    task_info = {
+    return {
         "task_id": task_id,
-        "state": {k.decode(): v.decode() for k, v in state_data.items()},
+        "workflow_id": state.get("workflow_id"),
+        "state": state,
     }
-
-    if result_data:
-        task_info["result"] = {
-            k.decode(): json.loads(v.decode()) if k in [b"result", b"error"] else v.decode()
-            for k, v in result_data.items()
-        }
-
-    return task_info
 
 
 @router.get("/{task_id}/logs")
@@ -53,25 +84,26 @@ async def get_task_logs(
 ):
     """Get task execution logs"""
 
-    # Get logs from Redis list
-    logs_key = default_sharding.get_task_key("logs", task_id)
-    logs = await redis.lrange(logs_key.encode(), 0, -1)
+    # Logs are optional; they may be stored under {shard}:task:logs:{task_id}
+    pattern = f"*task:logs:{task_id}".encode()
+    cursor = b"0"
+    logs = []
+
+    while True:
+        cursor, keys = await redis.scan(cursor, match=pattern, count=100)
+        if keys:
+            logs = await redis.lrange(keys[0], 0, -1)
+            break
+        if cursor == b"0":
+            break
 
     if not logs:
         return {"task_id": task_id, "logs": []}
 
-    # Decode logs
-    decoded_logs = []
-    for log_entry in logs:
-        try:
-            decoded_logs.append(json.loads(log_entry.decode()))
-        except:
-            decoded_logs.append({"message": log_entry.decode()})
-
     return {
         "task_id": task_id,
-        "log_count": len(decoded_logs),
-        "logs": decoded_logs
+        "log_count": len(logs),
+        "logs": _decode_logs(logs)
     }
 
 
@@ -82,15 +114,13 @@ async def retry_task(
 ):
     """Submit task for retry"""
 
-    # Check task exists
-    state_key = default_sharding.get_task_key("state", task_id)
-    state_data = await redis.hgetall(state_key.encode())
+    task_state_key, state = await _find_task_state(redis, task_id)
 
-    if not state_data:
+    if not task_state_key or not state:
         raise HTTPException(status_code=404, detail="Task not found")
 
     # Check if task is in retryable state
-    status = state_data.get(b"status", b"").decode()
+    status = state.get("status", "")
     # Don't allow retry of cancelled or blocked tasks (same behavior)
     if status not in ["failed", "error", "timeout"]:
         if status in ["cancelled", "blocked"]:
@@ -103,20 +133,32 @@ async def retry_task(
             detail=f"Task cannot be retried in status: {status}"
         )
 
-    # Get task data
-    data_key = default_sharding.get_task_key("data", task_id)
-    task_data = await redis.hget(data_key.encode(), b"task")
+    workflow_id = state.get("workflow_id")
+    if not workflow_id:
+        raise HTTPException(status_code=400, detail="Workflow ID missing for task")
 
-    if not task_data:
-        raise HTTPException(status_code=404, detail="Task data not found")
+    workflow_data = await redis.hget(
+        default_sharding.get_workflow_key("data", workflow_id).encode(),
+        b"workflow"
+    )
+
+    if not workflow_data:
+        raise HTTPException(status_code=404, detail="Workflow definition not found")
+
+    workflow = json.loads(workflow_data)
+    task_definition = _find_task_definition(workflow, task_id)
+
+    if not task_definition:
+        raise HTTPException(status_code=404, detail="Task definition not found in workflow")
 
     # Submit to retry stream
-    stream_key = default_sharding.get_stream_key("task:retry", task_id)
+    stream_key = default_sharding.get_stream_key("task:retry", workflow_id)
     await redis.xadd(
         stream_key.encode(),
         {
             b"task_id": task_id.encode(),
-            b"task": task_data,
+            b"workflow_id": workflow_id.encode(),
+            b"task": json.dumps(task_definition).encode(),
             b"retry_reason": b"manual_retry",
             b"previous_status": status.encode()
         }
@@ -124,7 +166,7 @@ async def retry_task(
 
     # Update task state
     await redis.hset(
-        state_key.encode(),
+        task_state_key.encode(),
         mapping={
             b"status": b"retrying",
             b"retry_requested": b"true"
@@ -146,32 +188,25 @@ async def cancel_task(
     """Cancel a task"""
     from datetime import datetime
 
-    # Check task exists
-    state_key = default_sharding.get_task_key("state", task_id)
-    state_data = await redis.hgetall(state_key.encode())
+    task_state_key, state = await _find_task_state(redis, task_id)
 
-    if not state_data:
+    if not task_state_key or not state:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    # Check if task is in cancellable state
-    status = state_data.get(b"status", b"").decode()
+    status = state.get("status", "")
     if status in ["completed", "failed", "cancelled", "blocked"]:
         raise HTTPException(
             status_code=400,
             detail=f"Task cannot be cancelled in status: {status}"
         )
 
-    # Get workflow_id from state data
-    workflow_id = state_data.get(b"workflow_id", b"").decode()
+    workflow_id = state.get("workflow_id")
     if not workflow_id:
-        # Try to extract from task_id pattern if not in state
-        parts = task_id.split("_")
-        if len(parts) > 1:
-            workflow_id = parts[0]
+        raise HTTPException(status_code=400, detail="Workflow ID missing for task")
 
     # Update task state to cancelled
     await redis.hset(
-        state_key.encode(),
+        task_state_key.encode(),
         mapping={
             b"status": b"cancelled",
             b"cancelled_at": datetime.utcnow().isoformat().encode(),
@@ -180,23 +215,22 @@ async def cancel_task(
     )
 
     # Add to workflow's cancelled tasks set
-    if workflow_id:
-        await redis.sadd(
-            default_sharding.get_workflow_key("tasks:cancelled", workflow_id).encode(),
-            task_id.encode()
-        )
+    await redis.sadd(
+        default_sharding.get_workflow_key("tasks:cancelled", workflow_id).encode(),
+        task_id.encode()
+    )
 
-        # Emit cancellation event to stream (similar to blocked)
-        stream_key = default_sharding.get_stream_key("task:cancelled", task_id)
-        await redis.xadd(
-            stream_key.encode(),
-            {
-                b"task_id": task_id.encode(),
-                b"workflow_id": workflow_id.encode(),
-                b"reason": b"user_requested",
-                b"timestamp": datetime.utcnow().isoformat().encode()
-            }
-        )
+    # Emit cancellation event to stream (similar to blocked)
+    stream_key = default_sharding.get_stream_key("task:cancelled", workflow_id)
+    await redis.xadd(
+        stream_key.encode(),
+        {
+            b"task_id": task_id.encode(),
+            b"workflow_id": workflow_id.encode(),
+            b"reason": b"user_requested",
+            b"timestamp": datetime.utcnow().isoformat().encode()
+        }
+    )
 
     return {
         "task_id": task_id,
