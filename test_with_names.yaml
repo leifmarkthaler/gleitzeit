@@ -1,0 +1,31 @@
+name: hello-world-with-names
+version: "1.0"
+description: Test workflow using name references
+
+tasks:
+  - id: greeting
+    name: Greeting Task
+    type: python
+    method: python/execute
+    params:
+      code: |
+        import datetime
+        result = {
+          "message": "Hello, Gleitzeit!",
+          "timestamp": datetime.datetime.now().isoformat(),
+          "status": "success"
+        }
+
+  - id: response
+    name: Response Task
+    type: python
+    method: python/execute
+    dependencies:
+      - Greeting Task
+    params:
+      code: |
+        # Access previous task results
+        result = {
+          "response": "Processed the greeting",
+          "completed": True
+        }

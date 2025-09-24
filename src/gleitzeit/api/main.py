@@ -78,8 +78,11 @@ async def lifespan(app: FastAPI):
         decode_responses=False
     )
 
-    # Initialize client connection pool
-    app.state.client_pool = ClientPool()
+    # Initialize client connection pool with Redis URL
+    app.state.client_pool = ClientPool(
+        redis_url=redis_url,
+        max_clients_per_user=10  # Can be configured
+    )
     await app.state.client_pool.initialize()
 
     # Store sharding config
@@ -174,20 +177,7 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RequestTrackingMiddleware)
 
 
-# Dependency injection helpers
-async def get_redis() -> aioredis.Redis:
-    """Get Redis connection from app state"""
-    return app.state.redis
-
-
-async def get_client_pool() -> ClientPool:
-    """Get client pool from app state"""
-    return app.state.client_pool
-
-
-async def get_sharding():
-    """Get sharding configuration"""
-    return app.state.sharding
+# Dependency injection helpers are now in dependencies.py
 
 
 # Import and include routers

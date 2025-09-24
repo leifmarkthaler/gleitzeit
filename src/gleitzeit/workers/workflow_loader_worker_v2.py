@@ -140,6 +140,7 @@ class WorkflowLoaderWorkerV2(BaseWorker):
 
         logger.info(f"Loading workflow {workflow_id} from {workflow_path or 'inline'}")
 
+        raw_workflow = None  # Initialize to handle failures
         try:
             # Load workflow based on source
             if data.get('workflow'):
@@ -207,13 +208,25 @@ class WorkflowLoaderWorkerV2(BaseWorker):
             # Validation/configuration errors are unretryable
             logger.error(f"Workflow validation/configuration failed: {e}")
 
-            # Mark workflow as failed permanently
+            # Extract safe basic metadata from raw workflow (if available)
+            workflow_name = "unnamed"
+            workflow_description = ""
+            if raw_workflow and isinstance(raw_workflow, dict):
+                # Safely extract name and description
+                workflow_name = str(raw_workflow.get('name', 'unnamed'))[:255]  # Limit length
+                workflow_description = str(raw_workflow.get('description', ''))[:1000]  # Limit length
+
+            # Save minimal workflow metadata for failed validation
             await self.redis.hset(
-                default_sharding.get_workflow_key("data", workflow_id).encode(),
+                default_sharding.get_workflow_key("status", workflow_id).encode(),
                 mapping={
-                    b"status": b"failed",
+                    b"workflow_id": workflow_id.encode(),
+                    b"status": b"validation_failed",
+                    b"name": workflow_name.encode(),
+                    b"description": workflow_description.encode(),
                     b"error": str(e).encode(),
-                    b"failed_at": datetime.utcnow().isoformat().encode()
+                    b"failed_at": datetime.utcnow().isoformat().encode(),
+                    b"submitted_at": data.get('submitted_at', datetime.utcnow().isoformat()).encode()
                 }
             )
 

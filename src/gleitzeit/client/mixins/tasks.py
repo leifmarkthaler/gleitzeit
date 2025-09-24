@@ -166,6 +166,55 @@ class TaskMixin:
         response = await self._request("GET", endpoint)
         return response.get("dependents", [])
 
+    async def list_tasks(
+        self,
+        limit: int = 100,
+        offset: int = 0,
+        status: Optional[str] = None,
+        workflow_id: Optional[str] = None,
+        full_data: bool = False
+    ) -> Any:
+        """
+        List tasks.
+
+        Args:
+            limit: Maximum number of tasks
+            offset: Offset for pagination
+            status: Optional status filter
+            workflow_id: Optional workflow ID filter
+            full_data: If True, return full task data; if False, return just IDs
+
+        Returns:
+            List of task IDs or task data objects
+        """
+        # Step 1: Get task IDs
+        params = {"limit": limit, "offset": offset}
+        if status:
+            params["status"] = status
+        if workflow_id:
+            params["workflow_id"] = workflow_id
+
+        response = await self._request(
+            "GET",
+            "/tasks/list",
+            params=params
+        )
+
+        task_ids = response.get("task_ids", [])
+
+        if not full_data or not task_ids:
+            # Return just the IDs
+            return task_ids
+
+        # Step 2: Get full task data for those IDs
+        tasks_response = await self._request(
+            "POST",
+            "/tasks/",
+            json_data={"task_ids": task_ids}
+        )
+
+        return tasks_response.get("tasks", [])
+
     async def wait_for_task(
         self,
         task_id: str,

@@ -220,7 +220,8 @@ class TaskExecutionWorker(BaseWorker):
                             b"status": b"failed",
                             b"error": f"No handler available for protocol {task.protocol}".encode(),
                             b"failed_at": datetime.utcnow().isoformat().encode(),
-                            b"failed_by": self.config.worker_id.encode()
+                            b"failed_by": self.config.worker_id.encode(),
+                            b"workflow_id": workflow_id.encode()
                         }
                     )
 
@@ -257,7 +258,8 @@ class TaskExecutionWorker(BaseWorker):
                     b"execution_id": execution_id.encode(),
                     b"executed_at": datetime.utcnow().isoformat().encode(),
                     b"handler_id": handler.handler_id.encode(),
-                    b"worker_id": self.config.worker_id.encode()
+                    b"worker_id": self.config.worker_id.encode(),
+                    b"workflow_id": workflow_id.encode()
                 }
             )
 
@@ -402,7 +404,8 @@ class TaskExecutionWorker(BaseWorker):
                 b"result": json.dumps(result.result).encode() if result.result else b"{}",
                 b"completed_at": datetime.utcnow().isoformat().encode(),
                 b"handler_id": result.handler_id.encode() if hasattr(result, 'handler_id') and result.handler_id else b"",
-                b"worker_id": self.config.worker_id.encode()
+                b"worker_id": self.config.worker_id.encode(),
+                b"workflow_id": workflow_id.encode()
             }
         )
 

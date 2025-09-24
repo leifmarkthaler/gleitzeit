@@ -10,6 +10,7 @@ import redis.asyncio as aioredis
 
 from ..auth.models import User, UserRole, Token, LoginRequest
 from ..auth.dependencies import ClientSessionAuth, jwt_manager, init_auth, get_current_user as get_current_user_dep
+from ..dependencies import get_redis
 
 router = APIRouter()
 
@@ -23,7 +24,7 @@ class SessionResponse(BaseModel):
 @router.post("/session/create", response_model=SessionResponse)
 async def create_session(
     request: LoginRequest,
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """
     Create a client session.
@@ -56,7 +57,7 @@ async def create_session(
 @router.post("/session/validate")
 async def validate_session(
     session_id: str,
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Validate a client session"""
 
@@ -75,7 +76,7 @@ async def validate_session(
 @router.post("/session/destroy")
 async def destroy_session(
     session_id: str,
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Destroy a client session (logout)"""
 
@@ -94,7 +95,7 @@ async def destroy_session(
 @router.post("/token", response_model=Token)
 async def create_token(
     request: LoginRequest,
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """
     Create JWT token for user.
@@ -120,7 +121,7 @@ async def create_token(
 @router.post("/token/refresh")
 async def refresh_token(
     refresh_token: str,
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Refresh access token using refresh token"""
 
@@ -149,7 +150,7 @@ async def get_current_user(
 @router.get("/rate-limit")
 async def get_rate_limit_status(
     request: Request,
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get rate limit status for current client"""
 
@@ -178,6 +179,3 @@ async def get_rate_limit_status(
         "current": current_count
     }
 
-
-# Fix circular import
-from ..main import app

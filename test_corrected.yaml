@@ -1,0 +1,32 @@
+name: hello-world-corrected
+version: "1.0"
+description: Corrected test workflow
+
+tasks:
+  - id: greeting
+    name: Greeting Task
+    type: python
+    method: python/execute
+    params:
+      code: |
+        import datetime
+        result = {
+          "message": "Hello, Gleitzeit!",
+          "timestamp": datetime.datetime.now().isoformat(),
+          "status": "success"
+        }
+
+  - id: response
+    name: Response Task
+    type: python
+    method: python/execute
+    dependencies:
+      - greeting
+    params:
+      code: |
+        # Access previous task results
+        greeting_result = greeting
+        result = {
+          "response": f"Received: {greeting_result.get('message', 'no message')}",
+          "completed": True
+        }

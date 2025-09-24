@@ -9,13 +9,14 @@ from fastapi import APIRouter, Depends, HTTPException
 import redis.asyncio as aioredis
 
 from ...core.sharding import default_sharding
+from ..dependencies import get_redis
 
 router = APIRouter()
 
 
 @router.get("/status")
 async def system_status(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get overall system status"""
 
@@ -68,7 +69,7 @@ async def system_status(
 
 @router.get("/metrics")
 async def get_metrics(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get system metrics"""
 
@@ -125,7 +126,7 @@ async def get_metrics(
 
 @router.get("/workers")
 async def list_workers(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """List all registered workers"""
 
@@ -150,7 +151,7 @@ async def list_workers(
 @router.get("/metrics/workflows")
 async def get_workflow_metrics(
     time_range: str = "1h",
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get workflow-specific metrics"""
 
@@ -185,7 +186,7 @@ async def get_workflow_metrics(
 @router.get("/metrics/tasks")
 async def get_task_metrics(
     time_range: str = "1h",
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get task-specific metrics"""
 
@@ -217,7 +218,7 @@ async def get_task_metrics(
 
 @router.get("/redis/info")
 async def get_redis_info(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get Redis server information"""
 
@@ -239,7 +240,7 @@ async def get_redis_info(
 
 @router.get("/queues")
 async def get_queue_depths(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get queue depths for all streams"""
 
@@ -273,7 +274,7 @@ async def get_audit_logs(
     offset: int = 0,
     level: Optional[str] = None,
     workflow_id: Optional[str] = None,
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get audit logs (placeholder - would need proper logging implementation)"""
 
@@ -292,7 +293,7 @@ async def get_error_logs(
     limit: int = 100,
     offset: int = 0,
     level: str = "ERROR",
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get error logs from Redis"""
 
@@ -374,7 +375,7 @@ async def get_configuration():
 
 @router.post("/workers/health-check")
 async def trigger_health_check_all_workers(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Trigger health check for all workers"""
 
@@ -395,7 +396,7 @@ async def trigger_health_check_all_workers(
 
 @router.get("/sessions")
 async def get_active_sessions(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Get active user sessions"""
 
@@ -426,6 +427,3 @@ async def get_active_sessions(
         "active": len(sessions)
     }
 
-
-# Fix circular import
-from ..main import app

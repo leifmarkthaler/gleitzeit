@@ -8,20 +8,41 @@ import uuid
 from typing import Dict, List, Optional
 from contextlib import asynccontextmanager
 import logging
+import redis.asyncio as aioredis
 
 logger = logging.getLogger(__name__)
 
 
 class ClientConnection:
-    """Individual client connection"""
+    """Individual client connection with Redis backend"""
 
-    def __init__(self, user_id: str, connection_id: str):
+    def __init__(self, user_id: str, connection_id: str, redis_url: str):
         self.user_id = user_id
         self.connection_id = connection_id
         self.created_at = time.time()
         self.last_used = time.time()
         self.request_count = 0
         self.is_healthy = True
+        self.redis: Optional[aioredis.Redis] = None
+        self.redis_url = redis_url
+
+    async def connect(self):
+        """Initialize Redis connection"""
+        if not self.redis:
+            self.redis = await aioredis.from_url(
+                self.redis_url,
+                decode_responses=False,
+                socket_keepalive=True,
+                socket_connect_timeout=5
+            )
+            logger.debug(f"Redis connection {self.connection_id} established for user {self.user_id}")
+
+    async def close(self):
+        """Close Redis connection"""
+        if self.redis:
+            await self.redis.close()
+            self.redis = None
+            logger.debug(f"Redis connection {self.connection_id} closed for user {self.user_id}")
 
     def touch(self):
         """Update last used time"""
@@ -32,8 +53,9 @@ class ClientConnection:
 class UserPool:
     """Per-user connection pool"""
 
-    def __init__(self, user_id: str, max_connections: int = 10):
+    def __init__(self, user_id: str, redis_url: str, max_connections: int = 10):
         self.user_id = user_id
+        self.redis_url = redis_url
         self.max_connections = max_connections
         self.connections: List[ClientConnection] = []
         self.available: asyncio.Queue = asyncio.Queue()
@@ -44,7 +66,7 @@ class UserPool:
         # Try to get available connection
         try:
             conn = await asyncio.wait_for(self.available.get(), timeout=0.1)
-            if conn.is_healthy:
+            if conn.is_healthy and conn.redis:
                 conn.touch()
                 return conn
         except asyncio.TimeoutError:
@@ -55,10 +77,13 @@ class UserPool:
             if len(self.connections) < self.max_connections:
                 conn = ClientConnection(
                     user_id=self.user_id,
-                    connection_id=str(uuid.uuid4())[:8]
+                    connection_id=str(uuid.uuid4())[:8],
+                    redis_url=self.redis_url
                 )
+                await conn.connect()  # Initialize Redis connection
                 self.connections.append(conn)
                 logger.debug(f"Created new connection {conn.connection_id} for user {self.user_id}")
+                conn.touch()
                 return conn
 
         # Wait for connection to become available
@@ -80,6 +105,9 @@ class UserPool:
 
     async def shutdown(self):
         """Clean up pool"""
+        # Close all connections
+        for conn in self.connections:
+            await conn.close()
         self.connections.clear()
         # Clear queue
         while not self.available.empty():
@@ -92,7 +120,8 @@ class UserPool:
 class ClientPool:
     """Main client connection pool manager"""
 
-    def __init__(self, max_clients_per_user: int = 10):
+    def __init__(self, redis_url: str, max_clients_per_user: int = 10):
+        self.redis_url = redis_url
         self.max_clients_per_user = max_clients_per_user
         self.pools: Dict[str, UserPool] = {}
         self.lock = asyncio.Lock()
@@ -111,6 +140,7 @@ class ClientPool:
                 if user_id not in self.pools:
                     self.pools[user_id] = UserPool(
                         user_id=user_id,
+                        redis_url=self.redis_url,
                         max_connections=self.max_clients_per_user
                     )
                     logger.debug(f"Created pool for user {user_id}")

@@ -309,8 +309,9 @@ class WorkflowMixin:
         self,
         limit: int = 100,
         offset: int = 0,
-        status: Optional[str] = None
-    ) -> List[Dict[str, Any]]:
+        status: Optional[str] = None,
+        full_data: bool = False
+    ) -> List[Any]:
         """
         List workflows.
 
@@ -318,17 +319,33 @@ class WorkflowMixin:
             limit: Maximum number of workflows
             offset: Offset for pagination
             status: Optional status filter
+            full_data: If True, return full workflow data; if False, return just IDs
 
         Returns:
-            List of workflows
+            List of workflow IDs or workflow data objects
         """
+        # Step 1: Get workflow IDs
         params = {"limit": limit, "offset": offset}
         if status:
             params["status"] = status
 
         response = await self._request(
             "GET",
-            "/workflows",
+            "/workflows/list",
             params=params
         )
-        return response.get("workflows", [])
+
+        workflow_ids = response.get("workflow_ids", [])
+
+        if not full_data or not workflow_ids:
+            # Return just the IDs
+            return workflow_ids
+
+        # Step 2: Get full workflow data for those IDs
+        workflows_response = await self._request(
+            "POST",
+            "/workflows/",
+            json_data={"workflow_ids": workflow_ids}
+        )
+
+        return workflows_response.get("workflows", [])

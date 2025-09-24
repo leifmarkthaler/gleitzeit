@@ -5,12 +5,14 @@ Health check endpoints
 from fastapi import APIRouter, Depends
 import redis.asyncio as aioredis
 
+from ..dependencies import get_redis
+
 router = APIRouter()
 
 
 @router.get("/")
 async def health_check(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Basic health check"""
 
@@ -32,7 +34,7 @@ async def health_check(
 
 @router.get("/ready")
 async def readiness_check(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Readiness check for k8s"""
 
@@ -51,7 +53,7 @@ async def liveness_check():
 
 @router.get("/detailed")
 async def detailed_health_check(
-    redis: aioredis.Redis = Depends(lambda: app.state.redis)
+    redis: aioredis.Redis = Depends(get_redis)
 ):
     """Detailed health check with system information"""
 
@@ -66,33 +68,15 @@ async def detailed_health_check(
         redis_status = "unhealthy"
         redis_connected = False
 
-    # Count workers
-    worker_pattern = b"worker:*:state"
-    cursor = b"0"
     worker_count = 0
-
     if redis_connected:
-        while True:
-            cursor, keys = await redis.scan(cursor, match=worker_pattern, count=100)
-            worker_count += len(keys)
-            if cursor == b"0":
-                break
+        async for _ in redis.scan_iter(match=b"{shard:*}:worker:registry:*", count=100):
+            worker_count += 1
 
     # Count active workflows
-    workflow_pattern = b"*:workflow:state:*"
-    cursor = b"0"
-    workflow_keys = []
     active_workflows = 0
-
     if redis_connected:
-        while True:
-            cursor, keys = await redis.scan(cursor, match=workflow_pattern, count=100)
-            workflow_keys.extend(keys)
-            if cursor == b"0":
-                break
-
-        # Count active workflows
-        for key in workflow_keys[:100]:  # Limit for performance
+        async for key in redis.scan_iter(match=b"{shard:*}:workflow:state:*", count=100):
             state_data = await redis.hgetall(key)
             if state_data:
                 status = state_data.get(b"status", b"").decode()
@@ -111,7 +95,3 @@ async def detailed_health_check(
             "connected_clients": redis_info.get("connected_clients", 0) if redis_info else 0
         }
     }
-
-
-# Fix circular import
-from ..main import app
