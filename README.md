@@ -9,6 +9,8 @@ A complete rewrite of Gleitzeit with a distributed, worker-based architecture fo
 - **Component Orchestrator**: Manages worker lifecycle, health, and auto-scaling
 - **No SystemManager Bottleneck**: Direct API → Redis Streams → Workers architecture
 - **Linear Scalability**: Add workers to increase throughput
+- **Robust Restart Capability**: Force restart with `--restart` flag to take over ports from stuck processes
+- **Distributed Port Management**: Redis-based port allocation with file-based locks for multi-instance support
 
 ## Architecture
 
@@ -31,7 +33,22 @@ Specialized Workers
 pip install -e .
 ```
 
-### Start Component Orchestrator
+### Start Gleitzeit Services
+
+Start all services with the serve command:
+
+```bash
+# Start with default settings
+gleitzeit serve
+
+# Start with restart capability (forcefully takes over ports)
+gleitzeit serve --restart
+
+# Start with custom instance name
+gleitzeit serve --instance-name "production" --restart
+```
+
+### Start Component Orchestrator (Alternative)
 
 The orchestrator manages all workers:
 

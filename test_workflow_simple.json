@@ -1,0 +1,32 @@
+{
+  "name": "audit-test-workflow",
+  "description": "Test workflow for system audit",
+  "tasks": [
+    {
+      "id": "task1",
+      "name": "First Task",
+      "provider": "python",
+      "params": {
+        "code": "print('Task 1 executed'); return {'result': 'task1-done'}"
+      }
+    },
+    {
+      "id": "task2",
+      "name": "Second Task",
+      "dependencies": ["task1"],
+      "provider": "python",
+      "params": {
+        "code": "print('Task 2 executed with dependency'); return {'result': 'task2-done'}"
+      }
+    },
+    {
+      "id": "task3",
+      "name": "Third Task",
+      "dependencies": ["task1", "task2"],
+      "provider": "python",
+      "params": {
+        "code": "print('Task 3 executed with 2 dependencies'); return {'result': 'task3-done'}"
+      }
+    }
+  ]
+}

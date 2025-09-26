@@ -19,6 +19,8 @@ import redis.asyncio as aioredis
 import yaml
 from ..core.sharding import default_sharding
 from .serve import serve
+from .serve_v3 import serve_v3
+from .process_commands import add_process_commands
 
 # Setup logging
 logging.basicConfig(
@@ -800,8 +802,28 @@ def show_metrics(ctx):
     asyncio.run(metrics())
 
 
-# Add the serve command to the CLI group
-cli.add_command(serve)
+# Add the serve command to the CLI group (using v3 with Layered Architecture)
+cli.add_command(serve_v3, name='serve')
+
+# Add process monitoring commands
+add_process_commands(cli)
+
+# Add top-level ps command as shortcut to process ps
+@cli.command('ps')
+@click.option('--json', 'output_json', is_flag=True, help='Output as JSON')
+@click.option('--watch', is_flag=True, help='Auto-refresh display')
+@click.option('--interval', default=2, help='Refresh interval in seconds')
+@click.option('--instance', help='Filter by instance name or ID')
+@click.option('--machine', help='Filter by machine ID or hostname')
+@click.option('--all-machines', is_flag=True, help='Show processes from all machines')
+@click.pass_context
+def ps_shortcut(ctx, output_json, watch, interval, instance, machine, all_machines):
+    """List all Gleitzeit processes (shortcut for 'process ps')"""
+    from .process_commands import ps
+    # Call the actual ps command from process_commands
+    ctx.invoke(ps, output_json=output_json, watch=watch, interval=interval,
+               instance=instance, machine=machine, all_machines=all_machines,
+               redis_url=ctx.obj.get('redis_url', 'redis://localhost:6379'))
 
 
 def main():

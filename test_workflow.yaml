@@ -1,0 +1,30 @@
+name: test_workflow
+description: Simple test workflow to verify execution
+
+tasks:
+  - id: task1
+    type: shell
+    name: "First Task"
+    command: "echo 'Task 1 executed successfully'"
+
+  - id: task2
+    type: shell
+    name: "Second Task"
+    command: "echo 'Task 2 executed successfully'"
+    depends_on:
+      - task1
+
+  - id: task3
+    type: shell
+    name: "Final Task"
+    command: "echo 'Workflow completed!'"
+    depends_on:
+      - task2
+
+on_success:
+  - type: log
+    message: "Test workflow completed successfully!"
+
+on_failure:
+  - type: log
+    message: "Test workflow failed!"

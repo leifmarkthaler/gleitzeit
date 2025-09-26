@@ -19,31 +19,43 @@
                     <th>ID</th>
                     <th>Name</th>
                     <th>Status</th>
+                    <th>Tasks</th>
                     <th>Submitted</th>
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody id="workflows-tbody"
-                   hx-get="/api/workflows"
-                   hx-trigger="load, every 5s"
-                   hx-swap="innerHTML">
+            <tbody id="workflows-tbody">
                 {% for workflow in workflows %}
                 <tr>
-                    <td><code>{{ workflow.workflow_id[:8] }}...</code></td>
+                    <td><code>{{ workflow.workflow_id[:12] }}...</code></td>
                     <td>{{ workflow.name or 'Unnamed' }}</td>
                     <td>
-                        <span class="badge badge-{{ workflow.status }}">
-                            {{ workflow.status }}
+                        {% set status = workflow.status if workflow.status else 'unknown' %}
+                        <span class="badge badge-{{ status.replace(' ', '-') }}">
+                            {{ status }}
                         </span>
                     </td>
-                    <td>{{ workflow.submitted_at }}</td>
+                    <td>{{ workflow.task_count or 0 }}</td>
                     <td>
-                        <a href="/workflows/{{ workflow.workflow_id }}" class="btn btn-sm">View</a>
+                        {% set created_at = workflow.created_at if workflow.created_at else None %}
+                        {% if created_at %}
+                            {{ created_at[:19].replace('T', ' ') if created_at else '-' }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="/workflows/{{ workflow.workflow_id }}" class="btn btn-sm btn-primary">View</a>
+                        {% if status in ['failed', 'validation_failed', 'cancelled'] %}
+                        <button onclick="retryWorkflow('{{ workflow.workflow_id }}')" class="btn btn-sm btn-secondary">Retry</button>
+                        {% elif status in ['running', 'submitted'] %}
+                        <button onclick="cancelWorkflow('{{ workflow.workflow_id }}')" class="btn btn-sm btn-danger">Cancel</button>
+                        {% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="5" class="text-center">No workflows found</td>
+                    <td colspan="6" class="text-center">No workflows found</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -98,14 +110,36 @@
     color: var(--success-color);
 }
 
-.badge-failed {
+.badge-failed,
+.badge-validation-failed {
     background: rgba(239, 68, 68, 0.1);
     color: var(--error-color);
+}
+
+.badge-cancelled {
+    background: rgba(156, 163, 175, 0.1);
+    color: var(--text-secondary);
 }
 
 .btn-sm {
     padding: 0.25rem 0.5rem;
     font-size: 0.875rem;
+    margin-right: 0.25rem;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.btn-danger {
+    background: var(--error-color);
+    color: white;
 }
 
 .text-center {
@@ -113,4 +147,86 @@
     color: var(--text-secondary);
 }
 </style>
+
+<script>
+function showSubmitWorkflowModal() {
+    // For now, just show a simple prompt
+    const workflowJson = prompt("Paste workflow JSON:");
+    if (workflowJson) {
+        try {
+            const workflow = JSON.parse(workflowJson);
+            submitWorkflow(workflow);
+        } catch (e) {
+            alert("Invalid JSON: " + e.message);
+        }
+    }
+}
+
+function submitWorkflow(workflow) {
+    fetch('/api/workflows/submit', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ workflow: workflow })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.workflow_id) {
+            alert('Workflow submitted successfully: ' + data.workflow_id);
+            location.reload();
+        } else {
+            alert('Failed to submit workflow: ' + (data.detail || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error submitting workflow: ' + error);
+    });
+}
+
+function retryWorkflow(workflowId) {
+    if (confirm('Retry this workflow?')) {
+        fetch(`/api/workflows/${workflowId}/retry`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                location.reload();
+            } else {
+                alert('Failed to retry workflow: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            alert('Error retrying workflow: ' + error);
+        });
+    }
+}
+
+function cancelWorkflow(workflowId) {
+    if (confirm('Cancel this workflow?')) {
+        fetch(`/api/workflows/${workflowId}/cancel`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'cancelled') {
+                alert('Workflow cancelled successfully');
+                location.reload();
+            } else {
+                alert('Failed to cancel workflow: ' + (data.detail || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            alert('Error cancelling workflow: ' + error);
+        });
+    }
+}
+</script>
 {% endblock %}

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional
 import httpx
 import json
+import yaml
 
 from fastapi import FastAPI, Request, HTTPException, Depends, Response
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -20,9 +21,38 @@ from starlette.background import BackgroundTask
 
 logger = logging.getLogger(__name__)
 
+# Load configuration using ConfigurationManager for unified config
+def load_config():
+    # Try to import ConfigurationManager
+    try:
+        from gleitzeit.core.config_manager import ConfigurationManager
+        config_manager = ConfigurationManager("gleitzeit.yaml", {})
+
+        api_host = config_manager.get_host('api')
+        api_port = config_manager.get_port('api')
+        ui_port = config_manager.get_port('ui')
+
+        # If API host is 0.0.0.0, use localhost for client connections
+        if api_host == '0.0.0.0':
+            api_host = 'localhost'
+
+        if api_host and api_port:
+            return f"http://{api_host}:{api_port}", ui_port
+    except Exception as e:
+        logger.warning(f"Could not load config using ConfigurationManager: {e}")
+
+    # Fall back to environment variables only (no hardcoded defaults)
+    api_url = os.getenv("GLEITZEIT_API_URL")
+    ui_port = os.getenv("GLEITZEIT_UI_PORT")
+
+    if not api_url:
+        raise ValueError("API URL not configured. Set GLEITZEIT_API_URL or configure in gleitzeit.yaml")
+
+    return api_url, int(ui_port) if ui_port else None
+
 # Configuration
-API_BASE_URL = os.getenv("GLEITZEIT_API_URL", "http://localhost:8000")
-UI_PORT = int(os.getenv("GLEITZEIT_UI_PORT", "8004"))
+API_BASE_URL, UI_PORT = load_config()
+logger.info(f"UI configured to connect to API at: {API_BASE_URL}")
 
 # FastAPI app
 app = FastAPI(
@@ -109,8 +139,21 @@ async def workflows_list(request: Request):
     """Workflows list page"""
     context = await get_base_context(request)
 
-    # TODO: Get workflows from API
-    context["workflows"] = []
+    session_id = context["session_id"]
+    headers = {"X-Session-ID": session_id} if session_id else {}
+
+    try:
+        # Get workflows from API - now returns full workflow data directly
+        response = await client.get("/workflows/list?limit=50", headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            # API now returns workflows directly with full data
+            context["workflows"] = data.get("workflows", [])
+        else:
+            context["workflows"] = []
+    except Exception as e:
+        logger.error(f"Failed to fetch workflows: {e}")
+        context["workflows"] = []
 
     return templates.TemplateResponse("workflows/list.html", context)
 
@@ -141,13 +184,115 @@ async def workflow_detail(request: Request, workflow_id: str):
     return templates.TemplateResponse("workflows/detail.html", context)
 
 
+@app.get("/processes", response_class=HTMLResponse)
+async def processes_list(request: Request):
+    """Processes list page showing all instances and machines"""
+    context = await get_base_context(request)
+
+    session_id = context["session_id"]
+    headers = {"X-Session-ID": session_id} if session_id else {}
+
+    try:
+        # Get topology from discovery API
+        topology_response = await client.get("/discovery/topology", headers=headers)
+        if topology_response.status_code == 200:
+            context["topology"] = topology_response.json()
+        else:
+            context["topology"] = None
+
+        # Get all machines
+        machines_response = await client.get("/discovery/machines", headers=headers)
+        if machines_response.status_code == 200:
+            context["machines"] = machines_response.json().get("machines", [])
+        else:
+            context["machines"] = []
+
+        # Get current instance info
+        instance_response = await client.get("/discovery/instance/current", headers=headers)
+        if instance_response.status_code == 200:
+            context["current_instance"] = instance_response.json()
+        else:
+            context["current_instance"] = None
+
+        # Get system status including worker health
+        status_response = await client.get("/system/status", headers=headers)
+        if status_response.status_code == 200:
+            system_status = status_response.json()
+            context["workers"] = system_status.get("workers", {})
+            context["queues"] = system_status.get("queues", {})
+        else:
+            context["workers"] = {}
+            context["queues"] = {}
+
+    except Exception as e:
+        logger.error(f"Failed to get processes info: {e}")
+        context["topology"] = None
+        context["machines"] = []
+        context["current_instance"] = None
+        context["workers"] = {}
+        context["queues"] = {}
+
+    return templates.TemplateResponse("processes/list.html", context)
+
+
+@app.get("/handlers", response_class=HTMLResponse)
+async def handlers_list(request: Request):
+    """Handlers and workers health page"""
+    context = await get_base_context(request)
+
+    session_id = context["session_id"]
+    headers = {"X-Session-ID": session_id} if session_id else {}
+
+    try:
+        # Get system status including worker health
+        status_response = await client.get("/system/status", headers=headers)
+        if status_response.status_code == 200:
+            system_status = status_response.json()
+            context["workers"] = system_status.get("workers", {})
+            context["queues"] = system_status.get("queues", {})
+            context["orchestrator"] = system_status.get("orchestrator", {})
+        else:
+            context["workers"] = {}
+            context["queues"] = {}
+            context["orchestrator"] = {}
+
+        # Get metrics for additional info
+        metrics_response = await client.get("/system/metrics", headers=headers)
+        if metrics_response.status_code == 200:
+            context["metrics"] = metrics_response.json()
+        else:
+            context["metrics"] = None
+
+    except Exception as e:
+        logger.error(f"Failed to get handler info: {e}")
+        context["workers"] = {}
+        context["queues"] = {}
+        context["orchestrator"] = {}
+        context["metrics"] = None
+
+    return templates.TemplateResponse("handlers/list.html", context)
+
+
 @app.get("/tasks", response_class=HTMLResponse)
 async def tasks_list(request: Request):
     """Tasks list page"""
     context = await get_base_context(request)
 
-    # TODO: Get tasks from API
-    context["tasks"] = []
+    session_id = context["session_id"]
+    headers = {"X-Session-ID": session_id} if session_id else {}
+
+    try:
+        # Get tasks from API - now returns full task data directly
+        response = await client.get("/tasks/list?limit=100", headers=headers)
+        if response.status_code == 200:
+            data = response.json()
+            # API now returns tasks directly with full data
+            context["tasks"] = data.get("tasks", [])
+        else:
+            context["tasks"] = []
+    except Exception as e:
+        logger.error(f"Failed to fetch tasks: {e}")
+        context["tasks"] = []
 
     return templates.TemplateResponse("tasks/list.html", context)
 

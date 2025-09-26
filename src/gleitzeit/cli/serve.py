@@ -16,6 +16,21 @@ from typing import Dict, Optional, List
 from pathlib import Path
 import click
 import yaml
+import asyncio
+import redis.asyncio as aioredis
+from datetime import datetime
+
+from ..core.errors import (
+    SystemError as GleitzeitSystemError,
+    ErrorCode,
+    ConfigurationError,
+    ServiceRegistrationError
+)
+from ..core.instance import InstanceIdentity, initialize_instance, get_current_instance
+from ..core.config_loader import ConfigLoader
+from ..core.process_manager import SmartProcessManager
+from ..core.ports import PortManager
+from ..core.config_manager import ConfigurationManager
 
 logger = logging.getLogger(__name__)
 
@@ -33,32 +48,84 @@ class GleitzeitServer:
         dev_mode: Optional[bool] = None,
         no_ui: Optional[bool] = None,
         no_orchestrator: Optional[bool] = None,
-        restart: bool = False
+        restart: bool = False,
+        instance_name: Optional[str] = None,
+        instance_role: str = "standalone",
+        port_offset: int = 0
     ):
         self.config_file = config_file or "gleitzeit.yaml"
 
-        # Load configuration from YAML
-        self.config = self._load_config()
-        serve_config = self.config.get('serve', {})
+        # Initialize instance identity
+        self.instance = initialize_instance(
+            instance_name=instance_name or os.getenv("GLEITZEIT_INSTANCE_NAME"),
+            role=instance_role or os.getenv("GLEITZEIT_ROLE", "standalone"),
+            port_offset=port_offset or int(os.getenv("GLEITZEIT_PORT_OFFSET", "0"))
+        )
 
-        # Use command line args if provided, otherwise use config, otherwise use defaults
-        self.api_port = api_port if api_port is not None else serve_config.get('api', {}).get('port', 8000)
-        self.ui_port = ui_port if ui_port is not None else serve_config.get('ui', {}).get('port', 8004)
-        self.api_host = api_host if api_host is not None else serve_config.get('api', {}).get('host', '0.0.0.0')
-        self.ui_host = ui_host if ui_host is not None else serve_config.get('ui', {}).get('host', '0.0.0.0')
-        self.dev_mode = dev_mode if dev_mode is not None else serve_config.get('dev_mode', False)
+        logger.info(f"Initialized instance: {self.instance}")
+        logger.info(f"Instance ID: {self.instance.instance_id}")
+        logger.info(f"Machine: {self.instance.machine_id} ({self.instance.machine_ip})")
+        logger.info(f"Capabilities: {self.instance.capabilities.cpu_count} CPUs, "
+                   f"{self.instance.capabilities.memory_gb:.1f} GB RAM")
 
-        # Handle enable/disable flags
-        ui_enabled = serve_config.get('ui', {}).get('enabled', True)
-        orchestrator_enabled = serve_config.get('orchestrator', {}).get('enabled', True)
+        # Initialize ConfigurationManager with CLI args
+        cli_args = {}
+        if api_port is not None:
+            cli_args['api_port'] = api_port
+        if ui_port is not None:
+            cli_args['ui_port'] = ui_port
+        if api_host is not None:
+            cli_args['api_host'] = api_host
+        if ui_host is not None:
+            cli_args['ui_host'] = ui_host
+        if no_ui is not None:
+            cli_args['no_ui'] = no_ui
+        if no_orchestrator is not None:
+            cli_args['no_orchestrator'] = no_orchestrator
+        if dev_mode is not None:
+            cli_args['dev_mode'] = dev_mode
 
-        self.no_ui = no_ui if no_ui is not None else not ui_enabled
-        self.no_orchestrator = no_orchestrator if no_orchestrator is not None else not orchestrator_enabled
+        self.config_manager = ConfigurationManager(self.config_file, cli_args)
+        self.config = self._load_config()  # Keep for compatibility
+
+        # Store command line overrides for compatibility
+        self.api_port_override = api_port
+        self.ui_port_override = ui_port
+
+        # Use ConfigurationManager for all config values
+        self.api_host = self.config_manager.get_host('api')
+        self.ui_host = self.config_manager.get_host('ui')
+        self.dev_mode = self.config_manager.get_value('dev_mode') or False
+
+        # Ports will be allocated properly in _allocate_ports()
+        self.api_port = None
+        self.ui_port = None
+
+        # Service state from ConfigurationManager
+        # API is always enabled (no CLI flag to disable it)
+        self.no_api = False
+        self.no_ui = not self.config_manager.is_enabled('ui')
+        self.no_orchestrator = not self.config_manager.is_enabled('orchestrator')
         self.restart = restart
 
-        # Process management
-        self.processes: Dict[str, subprocess.Popen] = {}
+        # Process management with Smart Process Manager
+        self.process_manager = SmartProcessManager()
+        self.port_manager = PortManager()
         self.running = False
+
+        # Create event loop for async operations
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+
+        # Track allocated ports
+        self.allocated_ports = {}
+
+        # Keep legacy process tracking for compatibility
+        self.processes: Dict[str, subprocess.Popen] = {}
+        self.restart_attempts: Dict[str, int] = {}
+        self.max_restart_attempts = 3
+        self.process_start_time: Dict[str, float] = {}
+        self.stable_uptime_seconds = 30
 
         # Setup Python path
         src_path = Path(__file__).parent.parent.parent.absolute()
@@ -67,6 +134,13 @@ class GleitzeitServer:
 
         # Add auth and security environment variables from config
         self._setup_environment_from_config()
+
+        # Add instance identity to environment
+        self.env['GLEITZEIT_INSTANCE_ID'] = self.instance.instance_id
+        self.env['GLEITZEIT_INSTANCE_NAME'] = self.instance.instance_name
+        self.env['GLEITZEIT_INSTANCE_ROLE'] = self.instance.role
+        self.env['GLEITZEIT_DEPLOYMENT_ID'] = self.instance.deployment_id
+        self.env['GLEITZEIT_REDIS_NAMESPACE'] = self.instance.get_redis_namespace()
 
     def _load_config(self) -> Dict:
         """Load configuration from YAML file"""
@@ -171,9 +245,23 @@ class GleitzeitServer:
         existing = {
             "api": self._is_port_in_use(self.api_port),
             "ui": self._is_port_in_use(self.ui_port) if not self.no_ui else False,
-            "orchestrator": self._check_orchestrator_running()
+            "orchestrator": self._check_orchestrator_running(),
+            "zombie_serve": self._check_zombie_serve_processes()
         }
         return existing
+
+    def _check_zombie_serve_processes(self) -> bool:
+        """Check for zombie serve processes that failed to start properly"""
+        try:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                cmdline = proc.info.get('cmdline', [])
+                if cmdline and 'gleitzeit.cli.serve' in ' '.join(cmdline):
+                    # Check if this is a different serve process (not ourselves)
+                    if proc.pid != os.getpid():
+                        return True
+        except:
+            pass
+        return False
 
     def _is_port_in_use(self, port: int) -> bool:
         """Check if a port is in use"""
@@ -183,6 +271,28 @@ class GleitzeitServer:
                 return False
             except socket.error:
                 return True
+
+    def _find_process_on_port(self, port: int) -> Optional[Dict]:
+        """Find what process is using a specific port"""
+        try:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    for conn in proc.connections(kind='inet'):
+                        if conn.laddr.port == port and conn.status == 'LISTEN':
+                            cmdline = proc.info.get('cmdline', [])
+                            # Check if it's a Gleitzeit process
+                            is_gleitzeit = any('gleitzeit' in str(cmd).lower() for cmd in cmdline)
+                            return {
+                                'pid': proc.pid,
+                                'name': proc.info['name'],
+                                'cmdline': ' '.join(cmdline) if cmdline else proc.info['name'],
+                                'is_gleitzeit': is_gleitzeit
+                            }
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception as e:
+            logger.debug(f"Error finding process on port {port}: {e}")
+        return None
 
     def _check_orchestrator_running(self) -> bool:
         """Check if orchestrator is running"""
@@ -198,6 +308,9 @@ class GleitzeitServer:
     def kill_existing_processes(self):
         """Kill existing Gleitzeit processes"""
         print("Stopping existing Gleitzeit processes...")
+
+        # First, kill any zombie serve processes
+        self._kill_zombie_serve_processes()
 
         # Kill orchestrator and workers
         subprocess.run(["pkill", "-f", "gleitzeit.orchestrator"], capture_output=True)
@@ -238,12 +351,152 @@ class GleitzeitServer:
         time.sleep(2)  # Give processes and OS time to release ports
         print("  Existing processes stopped")
 
+    def _cleanup_zombie_serve_processes(self):
+        """Kill zombie serve processes automatically"""
+        current_pid = os.getpid()
+        killed_pids = []
+
+        try:
+            for proc in psutil.process_iter(['pid', 'cmdline', 'create_time']):
+                try:
+                    cmdline = proc.info.get('cmdline', [])
+                    if not cmdline:
+                        continue
+
+                    # Identify serve processes (multiple patterns)
+                    is_serve = False
+                    cmdline_str = ' '.join(str(c) for c in cmdline)
+
+                    if any(pattern in cmdline_str for pattern in [
+                        'gleitzeit.cli.serve',
+                        'gleitzeit.cli.main serve',
+                        'python -m gleitzeit.cli.serve'
+                    ]):
+                        is_serve = True
+
+                    if not is_serve or proc.pid == current_pid:
+                        continue
+
+                    # Check if process is stuck (older than 30 seconds and not binding ports)
+                    create_time = proc.info.get('create_time', 0)
+                    age = time.time() - create_time
+
+                    if age > 30:  # Process older than 30 seconds
+                        # Check if it has any listening ports
+                        has_ports = False
+                        try:
+                            for conn in proc.connections():
+                                if conn.status == 'LISTEN':
+                                    has_ports = True
+                                    break
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+
+                        if not has_ports:
+                            # It's a zombie - kill it
+                            logger.warning(f"Killing zombie serve process {proc.pid} (age: {age:.0f}s)")
+                            proc.terminate()
+                            killed_pids.append(proc.pid)
+                except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                    logger.debug(f"Process access error: {e}")
+                    continue
+
+            # Wait for termination and force kill if needed
+            for pid in killed_pids:
+                try:
+                    p = psutil.Process(pid)
+                    p.wait(timeout=2)
+                except psutil.TimeoutExpired:
+                    try:
+                        p.kill()  # Force kill if needed
+                        logger.info(f"Force killed zombie process {pid}")
+                    except:
+                        pass
+                except psutil.NoSuchProcess:
+                    pass  # Already gone
+
+            if killed_pids:
+                logger.info(f"Cleaned up {len(killed_pids)} zombie serve processes")
+                time.sleep(1)  # Give OS time to release resources
+
+        except Exception as e:
+            logger.error(f"Error during zombie cleanup: {e}")
+
+    def _kill_zombie_serve_processes(self):
+        """Legacy method - now calls cleanup method"""
+        self._cleanup_zombie_serve_processes()
+
+    def _allocate_ports(self):
+        """Properly allocate ports using PortManager"""
+        async def allocate():
+            # Ensure PortManager has Redis connection
+            await self.port_manager._ensure_redis()
+
+            # Allocate API port using ConfigurationManager for precedence
+            requested_port = self.config_manager.get_port('api')
+            try:
+                allocated = await self.port_manager._allocate_port('api', requested_port)
+                if self.api_port_override and allocated != requested_port:
+                    # If user specified a port and we couldn't get it, fail
+                    raise RuntimeError(f"Port {requested_port} not available (allocated {allocated} instead)")
+                self.api_port = allocated
+                logger.info(f"Allocated API port {self.api_port} (requested: {requested_port})")
+            except Exception as e:
+                logger.error(f"Failed to allocate API port {requested_port}: {e}")
+                raise RuntimeError(f"Cannot allocate API port {requested_port}: {e}")
+
+            # Allocate UI port if enabled
+            if not self.no_ui:
+                requested_port = self.config_manager.get_port('ui')
+                try:
+                    allocated = await self.port_manager._allocate_port('ui', requested_port)
+                    if self.ui_port_override and allocated != requested_port:
+                        # If user specified a port and we couldn't get it, fail
+                        raise RuntimeError(f"Port {requested_port} not available (allocated {allocated} instead)")
+                    self.ui_port = allocated
+                    logger.info(f"Allocated UI port {self.ui_port} (requested: {requested_port})")
+                except Exception as e:
+                    logger.error(f"Failed to allocate UI port {requested_port}: {e}")
+                    raise RuntimeError(f"Cannot allocate UI port {requested_port}: {e}")
+
+            self.allocated_ports = {
+                'api': self.api_port,
+                'ui': self.ui_port if not self.no_ui else None
+            }
+
+            return self.api_port, self.ui_port
+
+        # Execute async allocation
+        try:
+            api_port, ui_port = self.loop.run_until_complete(allocate())
+            logger.info(f"Port allocation complete - API: {api_port}, UI: {ui_port if not self.no_ui else 'disabled'}")
+        except Exception as e:
+            logger.error(f"Port allocation failed: {e}")
+            raise
+
     def start(self):
         """Start all components"""
-        # Check for existing processes
+        # ALWAYS clean up zombie serve processes first
+        self._cleanup_zombie_serve_processes()
+
+        # Allocate ports using PortManager
+        try:
+            self._allocate_ports()
+        except Exception as e:
+            logger.error(f"Failed to allocate ports: {e}")
+            sys.exit(1)
+
+        # Check for existing processes on allocated ports
         existing = self.check_existing_processes()
 
-        if any(existing.values()):
+        # Always kill zombie serve processes - they're failed attempts
+        if existing.get("zombie_serve"):
+            print("\n⚠️  Cleaning up failed serve attempts...")
+            self._kill_zombie_serve_processes()
+            # Re-check after cleanup
+            existing = self.check_existing_processes()
+
+        if any([existing.get(k) for k in ["orchestrator", "api", "ui"]]):
             if self.restart:
                 print("\n⚠️  Existing Gleitzeit processes detected")
                 self.kill_existing_processes()
@@ -253,9 +506,19 @@ class GleitzeitServer:
                 if existing["orchestrator"]:
                     print("   • Orchestrator is already running")
                 if existing["api"]:
-                    print(f"   • API port {self.api_port} is already in use")
+                    proc_info = self._find_process_on_port(self.api_port)
+                    if proc_info and proc_info['is_gleitzeit']:
+                        print(f"   • API port {self.api_port} is in use by Gleitzeit API (PID: {proc_info['pid']})")
+                    else:
+                        proc_desc = f" by {proc_info['name']}" if proc_info else ""
+                        print(f"   • API port {self.api_port} is already in use{proc_desc}")
                 if existing["ui"]:
-                    print(f"   • UI port {self.ui_port} is already in use")
+                    proc_info = self._find_process_on_port(self.ui_port)
+                    if proc_info and proc_info['is_gleitzeit']:
+                        print(f"   • UI port {self.ui_port} is in use by Gleitzeit UI (PID: {proc_info['pid']})")
+                    else:
+                        proc_desc = f" by {proc_info['name']}" if proc_info else ""
+                        print(f"   • UI port {self.ui_port} is already in use{proc_desc}")
                 print("\nUse --restart flag to stop existing processes and restart")
                 print("Example: gleitzeit serve --restart")
                 sys.exit(1)
@@ -288,17 +551,69 @@ class GleitzeitServer:
 
             # Keep running
             while self.running:
+                # Reset restart counters for processes that have been stable
+                current_time = time.time()
+                for name in list(self.process_start_time.keys()):
+                    if name in self.processes and self.processes[name].poll() is None:
+                        # Process is still running
+                        uptime = current_time - self.process_start_time[name]
+                        if uptime >= self.stable_uptime_seconds and self.restart_attempts.get(name, 0) > 0:
+                            logger.info(f"{name} has been stable for {uptime:.0f}s, resetting restart counter")
+                            self.restart_attempts[name] = 0
+
                 # Check process health
                 for name, proc in list(self.processes.items()):
                     if proc.poll() is not None:
                         logger.warning(f"{name} process died (exit code: {proc.returncode})")
-                        # Try to restart - don't kill existing processes to avoid loops
-                        if name == "orchestrator" and not self.no_orchestrator:
-                            self.start_orchestrator()
-                        elif name == "api":
-                            self.start_api(kill_existing=False)
-                        elif name == "ui" and not self.no_ui:
-                            self.start_ui(kill_existing=False)
+
+                        # Remove dead process from tracking
+                        del self.processes[name]
+
+                        # Check restart limit
+                        restart_count = self.restart_attempts.get(name, 0)
+                        if restart_count >= self.max_restart_attempts:
+                            error = ServiceRegistrationError(
+                                service_id=name,
+                                operation="restart",
+                                data={
+                                    "reason": f"Maximum restart attempts ({self.max_restart_attempts}) exceeded",
+                                    "exit_code": proc.returncode
+                                }
+                            )
+                            logger.error(error.to_json_string())
+                            continue  # Skip restart attempt
+
+                        # Try to restart with a delay to avoid rapid restart loops
+                        time.sleep(2)
+
+                        try:
+                            self.restart_attempts[name] = restart_count + 1
+                            logger.info(f"Attempting to restart {name} (attempt {self.restart_attempts[name]}/{self.max_restart_attempts})")
+
+                            if name == "orchestrator" and not self.no_orchestrator:
+                                self.start_orchestrator()
+                            elif name == "api":
+                                self.start_api(kill_existing=False)
+                            elif name == "ui" and not self.no_ui:
+                                self.start_ui(kill_existing=False)
+
+                            # Don't reset counter immediately - wait to see if process stays alive
+                            # Counter will be reset after the process runs successfully for a while
+
+                        except Exception as e:
+                            # Use Gleitzeit's error system for proper error handling
+                            error = ServiceRegistrationError(
+                                service_id=name,
+                                operation="restart",
+                                cause=e,
+                                data={
+                                    "attempt": self.restart_attempts[name],
+                                    "max_attempts": self.max_restart_attempts
+                                }
+                            )
+                            logger.error(error.to_json_string())
+                            # Don't try again immediately to avoid rapid loops
+                            time.sleep(10)
 
                 time.sleep(5)
 
@@ -328,12 +643,75 @@ class GleitzeitServer:
             )
 
             self.processes["orchestrator"] = proc
+            self.process_start_time["orchestrator"] = time.time()
 
             print("✓ Orchestrator started")
 
         except Exception as e:
             logger.error(f"Failed to start orchestrator: {e}")
             raise
+
+    async def _register_service(self, service_name: str, port: int, pid: int):
+        """Register service in Redis for discovery"""
+        try:
+            redis = await aioredis.from_url(self.env.get('REDIS_URL', 'redis://localhost:6379'))
+
+            # Service registration key
+            service_key = f"service:{self.instance.machine_id}:{self.instance.instance_id}:{service_name}"
+
+            service_info = {
+                'name': service_name,
+                'instance_id': self.instance.instance_id,
+                'machine_id': self.instance.machine_id,
+                'host': self.api_host if service_name == 'api' else self.ui_host,
+                'port': port,
+                'pid': pid,
+                'status': 'running',
+                'started_at': datetime.utcnow().isoformat(),
+                'metadata': {
+                    'datacenter': getattr(self.instance.metadata, 'datacenter', 'default'),
+                    'rack': getattr(self.instance.metadata, 'rack', 'default'),
+                    'network_zone': getattr(self.instance.metadata, 'network_zone', 'default')
+                }
+            }
+
+            # Store service info with TTL
+            import json
+            await redis.setex(
+                service_key,
+                300,  # 5 minute TTL
+                json.dumps(service_info)
+            )
+
+            # Add to service index
+            await redis.sadd(f"services:{service_name}", service_key)
+            await redis.sadd(f"machine:{self.instance.machine_id}:services", service_key)
+
+            logger.info(f"Registered {service_name} service on port {port}")
+            await redis.close()
+
+        except Exception as e:
+            logger.error(f"Failed to register service {service_name}: {e}")
+
+    async def _deregister_service(self, service_name: str):
+        """Deregister service from Redis"""
+        try:
+            redis = await aioredis.from_url(self.env.get('REDIS_URL', 'redis://localhost:6379'))
+
+            service_key = f"service:{self.instance.machine_id}:{self.instance.instance_id}:{service_name}"
+
+            # Remove service info
+            await redis.delete(service_key)
+
+            # Remove from indexes
+            await redis.srem(f"services:{service_name}", service_key)
+            await redis.srem(f"machine:{self.instance.machine_id}:services", service_key)
+
+            logger.info(f"Deregistered {service_name} service")
+            await redis.close()
+
+        except Exception as e:
+            logger.error(f"Failed to deregister service {service_name}: {e}")
 
     def start_api(self, kill_existing=True):
         """Start the API server"""
@@ -380,7 +758,28 @@ class GleitzeitServer:
                 bufsize=1
             )
 
+            # Wait a moment and check if process is still alive
+            time.sleep(0.5)
+            if proc.poll() is not None:
+                # Process died immediately
+                stderr_output = proc.stderr.read() if proc.stderr else ""
+                raise ServiceRegistrationError(
+                    service_id="api",
+                    operation="start",
+                    data={
+                        "exit_code": proc.returncode,
+                        "stderr": stderr_output,
+                        "port": self.api_port
+                    }
+                )
+
             self.processes["api"] = proc
+            self.process_start_time["api"] = time.time()
+
+            # Register service in discovery
+            self.loop.run_until_complete(
+                self._register_service('api', self.api_port, proc.pid)
+            )
 
             print(f"✓ API Server started on http://{self.api_host}:{self.api_port}")
 
@@ -392,8 +791,8 @@ class GleitzeitServer:
         """Start the UI server"""
         print(f"Starting UI Server on port {self.ui_port}...")
 
-        # Only kill existing processes if explicitly requested (e.g., on initial start)
-        # Don't kill when restarting from monitor loop to avoid killing newly started instances
+        # Only kill existing processes if explicitly requested
+        # IMPORTANT: When kill_existing=False, we assume the port is free or we want to fail
         if kill_existing:
             try:
                 # Find and kill any process using the UI port
@@ -425,10 +824,14 @@ class GleitzeitServer:
                 except:
                     pass
 
-        # Set API URL for UI
+        # Set API URL for UI - use the actual API port that's running
+        # This ensures UI connects to the right port even if there was an override
         self.env["GLEITZEIT_API_URL"] = f"http://localhost:{self.api_port}"
         self.env["GLEITZEIT_UI_PORT"] = str(self.ui_port)
         self.env["GLEITZEIT_UI_HOST"] = self.ui_host
+
+        # Also pass the config file path so UI can read the same config
+        self.env["GLEITZEIT_CONFIG_FILE"] = self.config_file
 
         cmd = [
             sys.executable, "-m", "uvicorn",
@@ -453,7 +856,28 @@ class GleitzeitServer:
                 bufsize=1
             )
 
+            # Wait a moment and check if process is still alive
+            time.sleep(0.5)
+            if proc.poll() is not None:
+                # Process died immediately
+                stderr_output = proc.stderr.read() if proc.stderr else ""
+                raise ServiceRegistrationError(
+                    service_id="ui",
+                    operation="start",
+                    data={
+                        "exit_code": proc.returncode,
+                        "stderr": stderr_output,
+                        "port": self.ui_port
+                    }
+                )
+
             self.processes["ui"] = proc
+            self.process_start_time["ui"] = time.time()
+
+            # Register service in discovery
+            self.loop.run_until_complete(
+                self._register_service('ui', self.ui_port, proc.pid)
+            )
 
             print(f"✓ UI Server started on http://{self.ui_host}:{self.ui_port}")
 
@@ -466,6 +890,10 @@ class GleitzeitServer:
         print("\n" + "=" * 60)
         print("✨ Gleitzeit is running!")
         print("=" * 60)
+        print(f"\n📦 Instance: {self.instance.instance_name} ({self.instance.instance_id[:8]})")
+        print(f"   Role: {self.instance.role}")
+        if self.instance.port_offset > 0:
+            print(f"   Port Offset: +{self.instance.port_offset}")
         print("\n📍 Service URLs:")
         print(f"   API Server:  http://localhost:{self.api_port}")
         if not self.no_ui:
@@ -482,11 +910,42 @@ class GleitzeitServer:
         """Handle shutdown signals"""
         print("\n\nShutting down Gleitzeit...")
         self.running = False
+
+        # Release allocated ports
+        self._release_ports()
+
         self.stop()
         sys.exit(0)
 
+    def _release_ports(self):
+        """Release allocated ports in Redis"""
+        async def release():
+            try:
+                await self.port_manager._ensure_redis()
+                for service in ['api', 'ui']:
+                    if service in self.allocated_ports and self.allocated_ports[service]:
+                        await self.port_manager.release_port(service)
+                        logger.info(f"Released port for {service}")
+
+                        # Also deregister from discovery
+                        await self._deregister_service(service)
+            except Exception as e:
+                logger.error(f"Error releasing ports: {e}")
+
+        if self.allocated_ports:
+            self.loop.run_until_complete(release())
+
     def stop(self):
         """Stop all components"""
+        # Deregister services first
+        async def deregister_all():
+            for name in self.processes.keys():
+                await self._deregister_service(name)
+
+        if self.processes:
+            self.loop.run_until_complete(deregister_all())
+
+        # Then stop processes
         for name, proc in self.processes.items():
             if proc.poll() is None:
                 print(f"Stopping {name}...")
@@ -533,7 +992,10 @@ class GleitzeitServer:
 @click.option('--no-ui', is_flag=True, default=None, help='Start without UI server')
 @click.option('--no-orchestrator', is_flag=True, default=None, help='Start without orchestrator (API and UI only)')
 @click.option('--restart', is_flag=True, help='Stop existing Gleitzeit processes before starting')
-def serve(config, api_port, ui_port, api_host, ui_host, dev, no_ui, no_orchestrator, restart):
+@click.option('--instance-name', help='Name for this instance (used for identification and namespacing)')
+@click.option('--instance-role', default='standalone', help='Instance role: standalone, worker, coordinator, gateway')
+@click.option('--port-offset', type=int, default=0, help='Port offset for all services (useful for multiple instances)')
+def serve(config, api_port, ui_port, api_host, ui_host, dev, no_ui, no_orchestrator, restart, instance_name, instance_role, port_offset):
     """
     Start all Gleitzeit components (orchestrator, API, and UI).
 
@@ -565,7 +1027,10 @@ def serve(config, api_port, ui_port, api_host, ui_host, dev, no_ui, no_orchestra
         dev_mode=dev,
         no_ui=no_ui,
         no_orchestrator=no_orchestrator,
-        restart=restart
+        restart=restart,
+        instance_name=instance_name,
+        instance_role=instance_role,
+        port_offset=port_offset
     )
 
     server.start()

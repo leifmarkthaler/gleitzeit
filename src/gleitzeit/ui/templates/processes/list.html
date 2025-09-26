@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+{% block title %}Processes - Gleitzeit{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1>🖥️ Processes & Machines</h1>
+        <p class="subtitle">Multi-machine deployment overview</p>
+    </div>
+
+    <!-- Current Instance Info -->
+    {% if current_instance %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>📍 Current Instance</h3>
+        </div>
+        <div class="card-body">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Instance:</span>
+                    <span class="info-value">{{ current_instance.instance_name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Machine:</span>
+                    <span class="info-value">{{ current_instance.machine.hostname }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">IP:</span>
+                    <span class="info-value">{{ current_instance.machine.primary_ip }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Datacenter:</span>
+                    <span class="info-value">{{ current_instance.machine.datacenter }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Role:</span>
+                    <span class="info-value badge badge-info">{{ current_instance.role }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Uptime:</span>
+                    <span class="info-value">{{ current_instance.uptime_seconds // 60 }} min</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Topology Overview -->
+    {% if topology %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>🌐 Deployment Topology</h3>
+            <span class="badge badge-primary">{{ topology.total_machines }} Machines</span>
+            <span class="badge badge-success">{{ topology.total_instances }} Instances</span>
+        </div>
+        <div class="card-body">
+            <div class="topology-tree">
+                {% for dc_name, datacenter in topology.datacenters.items() %}
+                <div class="datacenter-node">
+                    <h4>📍 Datacenter: {{ dc_name }}</h4>
+                    <span class="text-muted">({{ datacenter.machine_count }} machines, {{ datacenter.instance_count }} instances)</span>
+
+                    {% for rack_name, rack in datacenter.racks.items() %}
+                    <div class="rack-node">
+                        <h5>🗄️ Rack: {{ rack_name }}</h5>
+
+                        {% for machine_id, machine in rack.machines.items() %}
+                        <div class="machine-node">
+                            <div class="machine-header">
+                                <strong>💻 {{ machine.hostname }}</strong>
+                                <span class="text-muted">{{ machine.ip }}</span>
+                                <span class="badge badge-info">{{ machine.instance_count }} instances</span>
+                            </div>
+                            <div class="instance-list">
+                                {% for instance in machine.instances %}
+                                <span class="instance-badge">{{ instance }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Machines Table -->
+    <div class="card">
+        <div class="card-header">
+            <h3>🖥️ All Machines</h3>
+            <button class="btn btn-sm btn-secondary"
+                    hx-get="/processes"
+                    hx-target="#machines-table"
+                    hx-trigger="click">
+                🔄 Refresh
+            </button>
+        </div>
+        <div class="card-body" id="machines-table">
+            {% if machines %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Hostname</th>
+                        <th>IP Address</th>
+                        <th>Datacenter</th>
+                        <th>Rack</th>
+                        <th>Network Zone</th>
+                        <th>Instances</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for machine in machines %}
+                    <tr>
+                        <td>
+                            <strong>{{ machine.hostname }}</strong>
+                            <br>
+                            <small class="text-muted">{{ machine.machine_id[:12] }}...</small>
+                        </td>
+                        <td>{{ machine.primary_ip }}</td>
+                        <td>{{ machine.datacenter }}</td>
+                        <td>{{ machine.rack }}</td>
+                        <td>
+                            <span class="badge badge-secondary">{{ machine.network_zone }}</span>
+                        </td>
+                        <td>
+                            <span class="badge badge-primary">{{ machine.instance_count }}</span>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-info"
+                                    onclick="showMachineDetails('{{ machine.machine_id }}')">
+                                View Details
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="empty-state">
+                <p>No machines found in the deployment</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.info-label {
+    font-size: 0.875rem;
+    color: #666;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-weight: 500;
+}
+
+.topology-tree {
+    padding: 1rem;
+}
+
+.datacenter-node {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.rack-node {
+    margin: 1rem 0 1rem 2rem;
+    padding: 0.75rem;
+    background: white;
+    border-left: 3px solid #dee2e6;
+}
+
+.machine-node {
+    margin: 0.75rem 0 0.75rem 2rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.machine-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.instance-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.instance-badge {
+    padding: 0.25rem 0.5rem;
+    background: #e3f2fd;
+    border-radius: 4px;
+    font-size: 0.875rem;
+}
+
+.mb-4 {
+    margin-bottom: 1.5rem;
+}
+</style>
+
+<script>
+function showMachineDetails(machineId) {
+    // TODO: Implement machine details modal or page
+    console.log('Show details for machine:', machineId);
+}
+
+// Auto-refresh every 10 seconds
+setInterval(() => {
+    htmx.trigger('#machines-table', 'refresh');
+}, 10000);
+</script>
+{% endblock %}

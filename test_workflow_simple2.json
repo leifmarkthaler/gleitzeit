@@ -1,0 +1,30 @@
+{
+  "name": "audit-test-workflow-v2",
+  "description": "Test workflow with no dependencies",
+  "tasks": [
+    {
+      "id": "task1",
+      "name": "First Task",
+      "provider": "python",
+      "params": {
+        "code": "print('Task 1 executed'); return {'result': 'task1-done'}"
+      }
+    },
+    {
+      "id": "task2",
+      "name": "Second Task",
+      "provider": "python",
+      "params": {
+        "code": "print('Task 2 executed'); return {'result': 'task2-done'}"
+      }
+    },
+    {
+      "id": "task3",
+      "name": "Third Task",
+      "provider": "python",
+      "params": {
+        "code": "print('Task 3 executed'); return {'result': 'task3-done'}"
+      }
+    }
+  ]
+}

@@ -17,6 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import redis.asyncio as aioredis
 
 from ..core.sharding import default_sharding
+from ..core.instance import initialize_instance
+from ..core.config_manager import ConfigurationManager
 from .pools.client_pool import ClientPool
 from .middleware.security import (
     RateLimitMiddleware,
@@ -31,22 +33,9 @@ logger = logging.getLogger(__name__)
 
 def load_config(config_path: str = "gleitzeit.yaml") -> Dict[str, Any]:
     """Load configuration from gleitzeit.yaml"""
-    # Check multiple locations for config file
-    possible_paths = [
-        Path(config_path),
-        Path.cwd() / config_path,
-        Path.cwd().parent / config_path,
-        Path(__file__).parent.parent.parent / config_path,
-    ]
-
-    for path in possible_paths:
-        if path.exists():
-            logger.info(f"Loading config from {path}")
-            with open(path, 'r') as f:
-                return yaml.safe_load(f) or {}
-
-    logger.warning(f"Config file {config_path} not found, using defaults")
-    return {}
+    # Initialize ConfigurationManager for unified config
+    config_manager = ConfigurationManager(config_path, {})
+    return config_manager.get_all_config()
 
 
 # Load configuration at module level
@@ -57,6 +46,13 @@ CONFIG = load_config(os.environ.get('GLEITZEIT_CONFIG', 'gleitzeit.yaml'))
 async def lifespan(app: FastAPI):
     """Manage application lifecycle"""
     logger.info("Starting Gleitzeit API server")
+
+    # Initialize instance from environment variables if set
+    instance_name = os.environ.get('GLEITZEIT_INSTANCE_NAME')
+    instance_role = os.environ.get('GLEITZEIT_INSTANCE_ROLE', 'standalone')
+    if instance_name:
+        initialize_instance(instance_name, instance_role)
+        logger.info(f"Initialized instance: {instance_name} with role {instance_role}")
 
     # Initialize Redis connection from config
     redis_config = CONFIG.get('redis', {})
@@ -183,6 +179,7 @@ app.add_middleware(RequestTrackingMiddleware)
 # Import and include routers
 from .routes import workflows, tasks, system, health, auth
 from .auth.dependencies import init_auth
+from .discovery import router as discovery_router
 
 # Initialize authentication and rate limiting
 @app.on_event("startup")
@@ -238,6 +235,7 @@ app.include_router(workflows.router, prefix="/workflows", tags=["workflows"])
 app.include_router(tasks.router, prefix="/tasks", tags=["tasks"])
 app.include_router(system.router, prefix="/system", tags=["system"])
 app.include_router(health.router, prefix="/health", tags=["health"])
+app.include_router(discovery_router, tags=["discovery"])
 
 
 @app.get("/")

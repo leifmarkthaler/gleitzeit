@@ -7,6 +7,36 @@ redis:
     host: localhost
     port: 6379
 
+# Multi-Machine Deployment Configuration
+deployment:
+  # Machine location configuration (can be overridden by environment variables)
+  datacenter: ${GLEITZEIT_DATACENTER:-default}
+  rack: ${GLEITZEIT_RACK:-default}
+  network_zone: ${GLEITZEIT_NETWORK_ZONE:-default}
+
+  # Instance metadata
+  environment: ${GLEITZEIT_ENVIRONMENT:-development}
+  region: ${GLEITZEIT_REGION:-default}
+  zone: ${GLEITZEIT_ZONE:-default}
+  cluster: ${GLEITZEIT_CLUSTER:-default}
+
+  # Port management
+  port_management:
+    ttl: 300  # Port allocation TTL in seconds
+    refresh_interval: 120  # TTL refresh interval in seconds
+    max_attempts: 100  # Max attempts to find available port
+
+  # Service discovery
+  discovery:
+    enabled: true
+    cache_ttl: 60  # Cache discovery results for 60 seconds
+    prefer_local: true  # Prefer services on same machine
+
+  # Network tags for instance communication control
+  network_tags:
+    - ${GLEITZEIT_ENVIRONMENT:-development}-network
+    # Add more tags as needed for cross-environment communication
+
 workers:
   # Essential worker for executing tasks
   - worker_type: task_execution
@@ -62,11 +92,19 @@ workers:
     block_timeout: 1000
 
 
+# Sharding configuration for multi-machine worker distribution
+sharding:
+  num_shards: 16  # Total number of shards for task distribution
+  rebalance_interval: 300  # Rebalance shards every 5 minutes
+
 # Optional monitoring
 monitoring:
   health_check_interval: 30
   heartbeat_interval: 10
   scale_check_interval: 60
+  # Multi-machine monitoring
+  machine_heartbeat_interval: 30  # Machine heartbeat to Redis
+  instance_heartbeat_interval: 10  # Instance heartbeat to Redis
 
 # Authentication and Security
 auth:

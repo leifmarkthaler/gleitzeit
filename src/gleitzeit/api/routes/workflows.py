@@ -34,38 +34,99 @@ class WorkflowSubmitResponse(BaseModel):
 
 
 @router.get("/list")
-async def list_workflow_ids(
+async def list_workflows(
     limit: int = 100,
     offset: int = 0,
     status: Optional[str] = None,
     user: User = Depends(get_current_user_auto),
     client_pool = Depends(get_client_pool)
 ):
-    """List workflow identifiers with optional status filtering"""
+    """List workflows with full details"""
 
     async with client_pool.acquire_connection(user.id) as conn:
-        pattern = b"*:workflow:status:*"
-        workflow_ids: List[str] = []
-        seen_keys = set()  # Track seen keys to avoid duplicates
+        workflows = []
 
-        # Use scan_iter which handles the cursor internally
-        async for key in conn.redis.scan_iter(match=pattern, count=200):
-            if key in seen_keys:
-                continue  # Skip already processed keys
-            seen_keys.add(key)
+        # Use per-shard indexes instead of scanning
+        for shard in range(16):
+            index_key = f"{{shard:{shard}}}:index:workflows"
+            workflow_ids = await conn.redis.smembers(index_key.encode())
 
-            workflow_id = key.decode().split(':')[-1]
-            if status:
-                wf_status = await conn.redis.hget(key, b"status")
-                if not wf_status or wf_status.decode() != status:
+            if not workflow_ids:
+                continue
+
+            # Use pipeline for efficient batch fetching
+            pipe = conn.redis.pipeline()
+            for wf_id_bytes in workflow_ids:
+                workflow_id = wf_id_bytes.decode()
+
+                # Get workflow status
+                status_key = default_sharding.get_workflow_key("status", workflow_id)
+                pipe.hgetall(status_key.encode())
+
+                # Get workflow data
+                data_key = default_sharding.get_workflow_key("data", workflow_id)
+                pipe.hget(data_key.encode(), b"workflow")
+
+            # Execute pipeline and process results in pairs
+            results = await pipe.execute()
+            workflow_ids_list = list(workflow_ids)
+
+            for i in range(0, len(results), 2):
+                state_data = results[i]
+                workflow_data = results[i + 1]
+
+                if not state_data:
                     continue
-            workflow_ids.append(workflow_id)
 
-    total = len(workflow_ids)
-    paginated = workflow_ids[offset: offset + limit]
+                workflow_id = workflow_ids_list[i // 2].decode()
+
+                # Decode state data
+                decoded_state = {k.decode(): v.decode() for k, v in state_data.items()}
+
+                workflow_info = {
+                    "workflow_id": workflow_id,
+                    "name": "Unnamed",
+                    "status": decoded_state.get("status", "unknown"),
+                    "created_at": decoded_state.get("submitted_at", ""),
+                    "progress": {}
+                }
+
+                # Add workflow definition details if available
+                if workflow_data:
+                    try:
+                        data = json.loads(workflow_data)
+                        workflow_info["name"] = data.get("name", "Unnamed")
+                        workflow_info["description"] = data.get("description", "")
+                        workflow_info["task_count"] = len(data.get("tasks", []))
+                        workflow_info["version"] = data.get("version", "")
+                    except json.JSONDecodeError:
+                        pass
+
+                # Use cached task counts if available
+                completed_count = int(decoded_state.get("completed_count", 0))
+                failed_count = int(decoded_state.get("failed_count", 0))
+                running_count = int(decoded_state.get("running_count", 0))
+                total_count = int(decoded_state.get("total_tasks", 0))
+
+                workflow_info["progress"] = {
+                    "total": total_count,
+                    "completed": completed_count,
+                    "failed": failed_count,
+                    "running": running_count
+                }
+
+                # Apply status filter if specified
+                if not status or workflow_info["status"] == status:
+                    workflows.append(workflow_info)
+
+    # Sort by creation time (most recent first)
+    workflows.sort(key=lambda w: w.get("created_at", ""), reverse=True)
+
+    total = len(workflows)
+    paginated = workflows[offset: offset + limit]
 
     return {
-        "workflow_ids": paginated,
+        "workflows": paginated,
         "total": total,
         "limit": limit,
         "offset": offset
@@ -237,23 +298,37 @@ async def get_workflow_tasks(
     """Get all tasks for a workflow"""
 
     async with client_pool.acquire_connection(user.id) as conn:
-        # First try to get tasks from dependency graph (more reliable)
-        graph_key_pattern = f"*:workflow:dependency:graph:{workflow_id}".encode()
-        task_ids = set()  # Use set to avoid duplicates
+        # Use index to get shard directly
+        shard_bytes = await conn.redis.hget(b"{shard:0}:index:workflow_shards", workflow_id.encode())
 
-        # Find the dependency graph
-        graph_found = False
-        async for key in conn.redis.scan_iter(match=graph_key_pattern, count=10):
-            graph_data = await conn.redis.hgetall(key)
-            for task_id_bytes in graph_data.keys():
-                task_ids.add(task_id_bytes)
-            graph_found = True
-            break
+        task_ids = set()
 
-        # Fallback to workflow:tasks set if no graph found
-        if not graph_found:
-            task_list_key = default_sharding.get_workflow_key("tasks", workflow_id)
-            task_ids = await conn.redis.smembers(task_list_key.encode())
+        if shard_bytes:
+            # Direct lookup using shard - no scanning!
+            shard = shard_bytes.decode()
+            graph_key = f"{{shard:{shard}}}:workflow:dependency:graph:{workflow_id}"
+            graph_data = await conn.redis.hgetall(graph_key.encode())
+
+            if graph_data:
+                task_ids = set(graph_data.keys())
+            else:
+                # Fallback to workflow:tasks set
+                task_list_key = default_sharding.get_workflow_key("tasks", workflow_id)
+                task_ids = await conn.redis.smembers(task_list_key.encode())
+        else:
+            # Fallback to scanning if index doesn't exist
+            graph_key_pattern = f"*:workflow:dependency:graph:{workflow_id}".encode()
+            graph_found = False
+            async for key in conn.redis.scan_iter(match=graph_key_pattern, count=10):
+                graph_data = await conn.redis.hgetall(key)
+                for task_id_bytes in graph_data.keys():
+                    task_ids.add(task_id_bytes)
+                graph_found = True
+                break
+
+            if not graph_found:
+                task_list_key = default_sharding.get_workflow_key("tasks", workflow_id)
+                task_ids = await conn.redis.smembers(task_list_key.encode())
 
         if not task_ids:
             return {"workflow_id": workflow_id, "tasks": []}

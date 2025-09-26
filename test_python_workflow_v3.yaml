@@ -1,0 +1,25 @@
+name: test_python_workflow_v3
+description: Simple test workflow using Python tasks with name-based dependencies
+
+tasks:
+  - name: "First Task"
+    type: python
+    params:
+      code: |
+        print('Task 1 executed successfully')
+
+  - name: "Second Task"
+    type: python
+    params:
+      code: |
+        print('Task 2 executed successfully')
+    depends_on:
+      - "First Task"
+
+  - name: "Final Task"
+    type: python
+    params:
+      code: |
+        print('Workflow completed!')
+    depends_on:
+      - "Second Task"

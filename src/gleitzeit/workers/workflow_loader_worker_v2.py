@@ -201,7 +201,30 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                 }
             )
 
-            logger.info(f"Workflow {workflow_id} loaded and submitted to shard {shard}")
+            # Add workflow to global shard mapping index
+            await self.redis.hset(
+                b"{shard:0}:index:workflow_shards",
+                workflow_id.encode(),
+                str(shard).encode()
+            )
+
+            # Add to per-shard workflow index for efficient listing
+            await self.redis.sadd(
+                f"{{shard:{shard}}}:index:workflows".encode(),
+                workflow_id.encode()
+            )
+
+            # Store task to workflow mappings for direct task lookups
+            for task in workflow.get('tasks', []):
+                task_id = task.get('id')
+                if task_id:
+                    await self.redis.hset(
+                        b"{shard:0}:index:task_workflow",
+                        task_id.encode(),
+                        workflow_id.encode()
+                    )
+
+            logger.info(f"Workflow {workflow_id} loaded and submitted to shard {shard} with indexes")
             return True  # Successfully processed
 
         except (WorkflowValidationError, ConfigurationError) as e:

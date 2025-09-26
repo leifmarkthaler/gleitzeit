@@ -1,0 +1,165 @@
+# Gleitzeit Instance Configuration
+# This file defines the configuration for a Gleitzeit instance
+# Environment variables can be used with ${VAR_NAME:-default_value} syntax
+
+instance:
+  # Instance name - used for identification and namespacing
+  name: "${GLEITZEIT_INSTANCE_NAME:-default}"
+
+  # Instance role - defines the behavior of this instance
+  # Options: standalone, worker, coordinator, gateway
+  role: "${GLEITZEIT_ROLE:-standalone}"
+
+  # Port offset - added to all base ports for this instance
+  # Useful for running multiple instances on the same machine
+  port_offset: "${GLEITZEIT_PORT_OFFSET:-0}"
+
+  # Enable/disable specific features
+  features:
+    multi_instance: "${GLEITZEIT_MULTI_INSTANCE:-false}"
+    auto_discovery: "${GLEITZEIT_AUTO_DISCOVERY:-true}"
+    metrics: "${GLEITZEIT_METRICS_ENABLED:-true}"
+    health_checks: "${GLEITZEIT_HEALTH_CHECKS:-true}"
+
+networking:
+  # Address to bind services to
+  bind_address: "${GLEITZEIT_BIND_ADDRESS:-0.0.0.0}"
+
+  # Address to advertise to other instances
+  # Use 'auto' to auto-detect, or specify explicitly
+  advertise_address: "${GLEITZEIT_ADVERTISE_ADDRESS:-auto}"
+
+  # Service-specific configurations
+  services:
+    api:
+      enabled: true
+      port: "${GLEITZEIT_API_PORT:-8000}"
+      workers: "${GLEITZEIT_API_WORKERS:-4}"
+
+    ui:
+      enabled: true
+      port: "${GLEITZEIT_UI_PORT:-8004}"
+
+    metrics:
+      enabled: "${GLEITZEIT_METRICS_ENABLED:-true}"
+      port: "${GLEITZEIT_METRICS_PORT:-9090}"
+
+redis:
+  # Redis connection URL
+  url: "${REDIS_URL:-redis://localhost:6379}"
+
+  # Database number to use
+  db: "${REDIS_DB:-0}"
+
+  # Key namespace for this instance
+  namespace: "gleitzeit:${instance.name}"
+
+  # Connection pool settings
+  pool:
+    max_connections: "${REDIS_MAX_CONNECTIONS:-50}"
+    min_idle: "${REDIS_MIN_IDLE:-5}"
+    max_idle: "${REDIS_MAX_IDLE:-10}"
+
+  # Retry settings
+  retry:
+    max_attempts: 3
+    backoff_ms: 100
+
+clustering:
+  # Enable clustering features
+  enabled: "${GLEITZEIT_CLUSTERING_ENABLED:-false}"
+
+  # Discovery method: redis, dns, static
+  discovery: "${GLEITZEIT_DISCOVERY_METHOD:-redis}"
+
+  # Heartbeat settings
+  heartbeat:
+    interval_seconds: 5
+    ttl_seconds: 15
+
+  # Static peers (if discovery is 'static')
+  peers: []
+  # Example:
+  # - "instance1.example.com:8000"
+  # - "instance2.example.com:8000"
+
+metadata:
+  # Environment: development, staging, production
+  environment: "${GLEITZEIT_ENVIRONMENT:-development}"
+
+  # Geographic location
+  region: "${GLEITZEIT_REGION:-default}"
+  zone: "${GLEITZEIT_ZONE:-default}"
+
+  # Custom tags for this instance
+  tags:
+    team: "${GLEITZEIT_TEAM:-}"
+    owner: "${GLEITZEIT_OWNER:-}"
+    purpose: "${GLEITZEIT_PURPOSE:-}"
+
+  # Labels for categorization
+  labels:
+    - "${GLEITZEIT_LABEL1:-}"
+    - "${GLEITZEIT_LABEL2:-}"
+    - "${GLEITZEIT_LABEL3:-}"
+
+performance:
+  # Process management
+  process:
+    restart_policy: "${GLEITZEIT_RESTART_POLICY:-on-failure}"
+    max_restart_attempts: "${GLEITZEIT_MAX_RESTARTS:-3}"
+    restart_backoff_seconds: "${GLEITZEIT_RESTART_BACKOFF:-5}"
+    health_check_interval: "${GLEITZEIT_HEALTH_CHECK_INTERVAL:-30}"
+
+  # Resource limits
+  limits:
+    max_workflows: "${GLEITZEIT_MAX_WORKFLOWS:-1000}"
+    max_tasks_per_workflow: "${GLEITZEIT_MAX_TASKS:-100}"
+    max_concurrent_tasks: "${GLEITZEIT_MAX_CONCURRENT:-50}"
+
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: "${GLEITZEIT_LOG_LEVEL:-INFO}"
+
+  # Log format: json, text
+  format: "${GLEITZEIT_LOG_FORMAT:-text}"
+
+  # Log outputs
+  outputs:
+    - type: "console"
+      enabled: true
+    - type: "file"
+      enabled: "${GLEITZEIT_LOG_TO_FILE:-false}"
+      path: "${GLEITZEIT_LOG_PATH:-/var/log/gleitzeit/instance.log}"
+      max_size_mb: 100
+      max_files: 5
+
+monitoring:
+  # Prometheus metrics
+  prometheus:
+    enabled: "${GLEITZEIT_PROMETHEUS_ENABLED:-true}"
+    path: "/metrics"
+
+  # Health check endpoint
+  health:
+    enabled: true
+    path: "/health"
+
+  # Readiness check endpoint
+  readiness:
+    enabled: true
+    path: "/ready"
+
+security:
+  # Enable authentication
+  auth_enabled: "${GLEITZEIT_AUTH_ENABLED:-false}"
+
+  # TLS configuration
+  tls:
+    enabled: "${GLEITZEIT_TLS_ENABLED:-false}"
+    cert_file: "${GLEITZEIT_TLS_CERT:-}"
+    key_file: "${GLEITZEIT_TLS_KEY:-}"
+    ca_file: "${GLEITZEIT_TLS_CA:-}"
+
+  # API key for inter-instance communication
+  api_key: "${GLEITZEIT_API_KEY:-}"
