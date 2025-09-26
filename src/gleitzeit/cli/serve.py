@@ -12,7 +12,8 @@ import time
 import logging
 import psutil
 import socket
-from typing import Dict, Optional, List
+import json
+from typing import Dict, Optional, List, Any
 from pathlib import Path
 import click
 import yaml
@@ -550,9 +551,20 @@ class GleitzeitServer:
             signal.signal(signal.SIGTERM, self._handle_signal)
 
             # Keep running
+            metrics_last_collected = 0
+            metrics_interval = 30  # Collect metrics every 30 seconds
+
             while self.running:
-                # Reset restart counters for processes that have been stable
                 current_time = time.time()
+
+                # Collect and log metrics periodically
+                if current_time - metrics_last_collected >= metrics_interval:
+                    metrics = self.collect_metrics()
+                    if metrics:
+                        logger.info(f"Process metrics: {json.dumps(metrics, indent=2)}")
+                    metrics_last_collected = current_time
+
+                # Reset restart counters for processes that have been stable
                 for name in list(self.process_start_time.keys()):
                     if name in self.processes and self.processes[name].poll() is None:
                         # Process is still running
@@ -561,14 +573,35 @@ class GleitzeitServer:
                             logger.info(f"{name} has been stable for {uptime:.0f}s, resetting restart counter")
                             self.restart_attempts[name] = 0
 
-                # Check process health
-                for name, proc in list(self.processes.items()):
+                # Check process health using improved health checks
+                for name in list(self.processes.keys()):
+                    proc = self.processes.get(name)
+                    if not proc:
+                        continue
+
+                    # First check if process is alive
                     if proc.poll() is not None:
                         logger.warning(f"{name} process died (exit code: {proc.returncode})")
-
-                        # Remove dead process from tracking
                         del self.processes[name]
+                        needs_restart = True
+                    else:
+                        # Process is alive, check if it's healthy
+                        is_healthy = self.check_process_health(name)
+                        if not is_healthy:
+                            logger.warning(f"{name} process is unhealthy, will restart")
+                            # Kill the unhealthy process
+                            try:
+                                proc.terminate()
+                                proc.wait(timeout=5)
+                            except subprocess.TimeoutExpired:
+                                proc.kill()
+                                proc.wait()
+                            del self.processes[name]
+                            needs_restart = True
+                        else:
+                            needs_restart = False
 
+                    if needs_restart:
                         # Check restart limit
                         restart_count = self.restart_attempts.get(name, 0)
                         if restart_count >= self.max_restart_attempts:
@@ -577,14 +610,16 @@ class GleitzeitServer:
                                 operation="restart",
                                 data={
                                     "reason": f"Maximum restart attempts ({self.max_restart_attempts}) exceeded",
-                                    "exit_code": proc.returncode
+                                    "exit_code": proc.returncode if proc else None
                                 }
                             )
                             logger.error(error.to_json_string())
                             continue  # Skip restart attempt
 
-                        # Try to restart with a delay to avoid rapid restart loops
-                        time.sleep(2)
+                        # Use exponential backoff for restart delay
+                        wait_time = self.get_restart_wait_time(name)
+                        logger.info(f"Waiting {wait_time}s before restarting {name} (exponential backoff)")
+                        time.sleep(wait_time)
 
                         try:
                             self.restart_attempts[name] = restart_count + 1
@@ -905,6 +940,105 @@ class GleitzeitServer:
             print(f"   {name.capitalize()}: {status}")
         print("\nPress Ctrl+C to stop all services")
         print("=" * 60 + "\n")
+
+    def check_process_health(self, name: str) -> bool:
+        """
+        Simple health check for a process
+
+        Args:
+            name: Name of the process to check
+
+        Returns:
+            True if process is healthy, False otherwise
+        """
+        proc = self.processes.get(name)
+        if not proc:
+            return False
+
+        # Check if process is alive
+        if proc.poll() is not None:
+            return False
+
+        # Check if port is responsive for services
+        if name == "api":
+            return self._check_port_responsive(self.api_port, "/health")
+        elif name == "ui":
+            return self._check_port_responsive(self.ui_port, "/")
+        elif name == "orchestrator":
+            # Orchestrator doesn't have a port, just check process
+            return True
+
+        return True
+
+    def _check_port_responsive(self, port: int, path: str = "/") -> bool:
+        """Check if a port is responsive via HTTP"""
+        import socket
+        import http.client
+
+        try:
+            conn = http.client.HTTPConnection("localhost", port, timeout=2)
+            conn.request("GET", path)
+            response = conn.getresponse()
+            conn.close()
+            return response.status < 500  # Any non-5xx is considered healthy
+        except:
+            return False
+
+    def get_restart_wait_time(self, service: str) -> float:
+        """
+        Calculate exponential backoff wait time for restart
+
+        Args:
+            service: Name of the service
+
+        Returns:
+            Wait time in seconds
+        """
+        restart_count = self.restart_attempts.get(service, 0)
+        # Exponential backoff: 2^n seconds, max 60 seconds
+        wait_time = min(2 ** restart_count, 60)
+        return wait_time
+
+    def collect_metrics(self) -> Dict[str, Any]:
+        """
+        Collect basic metrics about running processes
+
+        Returns:
+            Dictionary of metrics for each process
+        """
+        metrics = {}
+        current_time = time.time()
+
+        for name, proc in self.processes.items():
+            if proc and proc.poll() is None:
+                uptime = current_time - self.process_start_time.get(name, current_time)
+
+                # Get process memory info if available
+                try:
+                    process = psutil.Process(proc.pid)
+                    memory_mb = process.memory_info().rss / 1024 / 1024
+                    cpu_percent = process.cpu_percent(interval=0.1)
+                except:
+                    memory_mb = None
+                    cpu_percent = None
+
+                metrics[name] = {
+                    'status': 'running',
+                    'healthy': self.check_process_health(name),
+                    'pid': proc.pid,
+                    'uptime_seconds': round(uptime, 1),
+                    'restarts': self.restart_attempts.get(name, 0),
+                    'memory_mb': round(memory_mb, 1) if memory_mb else None,
+                    'cpu_percent': round(cpu_percent, 1) if cpu_percent else None
+                }
+            else:
+                metrics[name] = {
+                    'status': 'stopped',
+                    'healthy': False,
+                    'restarts': self.restart_attempts.get(name, 0)
+                }
+
+        return metrics
 
     def _handle_signal(self, signum, frame):
         """Handle shutdown signals"""
