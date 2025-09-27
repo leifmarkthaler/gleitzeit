@@ -169,9 +169,23 @@ class WorkerManager:
         """Start a single worker process"""
         logger.info(f"Starting worker {worker_name} with shards {assigned_shards}")
 
+        # Use the project's venv python directly (created by uv)
+        from pathlib import Path
+        project_root = Path(__file__).parent.parent.parent.parent
+        venv_python = project_root / ".venv" / "bin" / "python"
+
+        if not venv_python.exists():
+            raise RuntimeError(
+                f"Virtual environment not found at {venv_python}\n"
+                "Please set up the project with uv:\n"
+                "  cd <project_root>\n"
+                "  uv venv .venv\n"
+                "  uv sync"
+            )
+
         # Build command
         cmd = [
-            sys.executable, "-m", "gleitzeit.workers.runner",
+            str(venv_python), "-m", "gleitzeit.workers.runner",
             "--worker-class", config.worker_class,
             "--worker-id", worker_name,
             "--redis-url", self.process_manager.redis_url,

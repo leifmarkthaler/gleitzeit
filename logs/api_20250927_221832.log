@@ -1,0 +1,22 @@
+[2025-09-27 22:18:32] [STDERR] INFO:     Started server process [58536]
+[2025-09-27 22:18:32] [STDERR] INFO:     Waiting for application startup.
+[2025-09-27 22:18:32] [STDERR] INFO:     Application startup complete.
+[2025-09-27 22:18:32] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-09-27 22:18:44] [STDOUT] INFO:     127.0.0.1:56554 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:18:48] [STDOUT] INFO:     127.0.0.1:56568 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:19:04] [STDOUT] INFO:     127.0.0.1:56614 - "POST /api/v1/workflows/submit HTTP/1.1" 404 Not Found
+[2025-09-27 22:19:08] [STDOUT] INFO:     127.0.0.1:56630 - "GET /docs HTTP/1.1" 200 OK
+[2025-09-27 22:19:12] [STDOUT] INFO:     127.0.0.1:56652 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:19:12] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-27 22:19:12] [STDOUT] INFO:     127.0.0.1:56653 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-27 22:19:12] [STDOUT] INFO:     127.0.0.1:56656 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:19:12] [STDOUT] INFO:     127.0.0.1:56652 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-09-27 22:19:19] [STDOUT] INFO:     127.0.0.1:56670 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-27 22:19:23] [STDOUT] INFO:     127.0.0.1:56688 - "GET /workflows/70a77676-50df-44f7-a16b-200a141c625e/status HTTP/1.1" 404 Not Found
+[2025-09-27 22:19:29] [STDOUT] INFO:     127.0.0.1:56719 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:19:29] [STDOUT] INFO:     127.0.0.1:56721 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:19:49] [STDOUT] INFO:     127.0.0.1:56757 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:19:49] [STDOUT] INFO:     127.0.0.1:56759 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:19:55] [STDOUT] INFO:     127.0.0.1:56766 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:19:55] [STDOUT] INFO:     127.0.0.1:56768 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:21:29] [STDOUT] INFO:     127.0.0.1:56803 - "POST /workflows/submit HTTP/1.1" 200 OK

@@ -1,0 +1,77 @@
+# Development overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  redis:
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --loglevel debug
+
+  api:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+      - RELOAD=true
+    volumes:
+      - ./src:/app/src:ro  # Mount source for hot reload
+      - logs:/app/logs
+    ports:
+      - "8000:8000"
+      - "8001:8001"  # Debug port
+    command: ["python", "-m", "uvicorn", "gleitzeit.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
+
+  ui:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+      - RELOAD=true
+    volumes:
+      - ./src:/app/src:ro  # Mount source for hot reload
+      - logs:/app/logs
+    ports:
+      - "8004:8004"
+      - "8005:8005"  # Debug port
+    command: ["python", "-m", "uvicorn", "gleitzeit.ui.api.app:app", "--host", "0.0.0.0", "--port", "8004", "--reload", "--log-level", "debug"]
+
+  worker-task:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+    volumes:
+      - ./src:/app/src:ro
+      - logs:/app/logs
+    deploy:
+      replicas: 1  # Single instance for dev
+
+  worker-executor:
+    environment:
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+    volumes:
+      - ./src:/app/src:ro
+      - logs:/app/logs
+    deploy:
+      replicas: 1
+
+  # Add debugging container for development
+  debug:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: gleitzeit_debug
+    command: ["sleep", "infinity"]  # Keep container running
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+    depends_on:
+      - redis
+    networks:
+      - gleitzeit
+    volumes:
+      - ./src:/app/src
+      - logs:/app/logs
+    stdin_open: true
+    tty: true

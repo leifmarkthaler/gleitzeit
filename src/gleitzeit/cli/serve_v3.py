@@ -201,6 +201,32 @@ class GleitzeitServerV3:
 
     def start(self):
         """Start the server (synchronous wrapper)"""
+        # Check if uv environment is properly set up
+        # Go from src/gleitzeit/cli/ up to project root
+        project_root = Path(__file__).parent.parent.parent.parent
+        venv_path = project_root / ".venv"
+
+        if not venv_path.exists():
+            logger.error("=" * 60)
+            logger.error("❌ Virtual environment not found!")
+            logger.error("=" * 60)
+            logger.error(f"Expected .venv at: {venv_path}")
+            logger.error("")
+            logger.error("Please set up the project with uv:")
+            logger.error("  1. Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh")
+            logger.error(f"  2. cd {project_root}")
+            logger.error("  3. uv venv .venv")
+            logger.error("  4. uv sync")
+            logger.error("=" * 60)
+            sys.exit(1)
+
+        # Check if the venv has gleitzeit installed
+        venv_python = venv_path / "bin" / "python"
+        if not venv_python.exists():
+            logger.error(f"Virtual environment Python not found at {venv_python}")
+            logger.error("Please recreate the virtual environment with uv")
+            sys.exit(1)
+
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)

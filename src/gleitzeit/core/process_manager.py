@@ -413,29 +413,42 @@ class SmartProcessManager:
 
     def _find_process_on_port(self, port: int) -> Optional[psutil.Process]:
         """Find process listening on a specific port"""
-        try:
-            # Try to find process using connections
-            for proc in psutil.process_iter(['pid', 'connections']):
-                connections = proc.info.get('connections', [])
-                if connections:
-                    for conn in connections:
-                        if hasattr(conn, 'laddr') and conn.laddr.port == port:
-                            return proc
-        except:
-            pass
-
-        # If no process found via connections, try using lsof (macOS/Linux)
+        # First try using lsof with grep for LISTEN state (most reliable)
         try:
             import subprocess
+            # Use lsof to find processes LISTENING on the port
             result = subprocess.run(
-                ['lsof', '-ti', f':{port}'],
+                ['lsof', '-i', f':{port}'],
                 capture_output=True,
                 text=True,
                 timeout=2
             )
-            if result.returncode == 0 and result.stdout.strip():
-                pid = int(result.stdout.strip().split()[0])
-                return psutil.Process(pid)
+            if result.returncode == 0 and result.stdout:
+                # Parse lsof output to find LISTENING processes only
+                for line in result.stdout.strip().split('\n')[1:]:  # Skip header
+                    if 'LISTEN' in line:
+                        parts = line.split()
+                        if len(parts) >= 2:
+                            try:
+                                pid = int(parts[1])
+                                return psutil.Process(pid)
+                            except (ValueError, psutil.NoSuchProcess):
+                                continue
+        except:
+            pass
+
+        # Fallback to psutil, but only check for LISTEN state
+        try:
+            for proc in psutil.process_iter(['pid', 'connections']):
+                connections = proc.info.get('connections', [])
+                if connections:
+                    for conn in connections:
+                        # Check for LISTEN state specifically
+                        if (hasattr(conn, 'laddr') and
+                            conn.laddr.port == port and
+                            hasattr(conn, 'status') and
+                            conn.status == psutil.CONN_LISTEN):
+                            return proc
         except:
             pass
 
@@ -757,8 +770,18 @@ class SmartProcessManager:
 
         # Start the process
         try:
-            # Prepare environment
-            process_env = os.environ.copy()
+            # Prepare environment - include all necessary vars but not PYTHONPATH
+            process_env = {
+                'PATH': os.environ.get('PATH', ''),
+                'HOME': os.environ.get('HOME', ''),
+                'USER': os.environ.get('USER', ''),
+                'SHELL': os.environ.get('SHELL', '/bin/bash'),
+                'TERM': os.environ.get('TERM', 'xterm-256color'),
+                'LANG': os.environ.get('LANG', 'en_US.UTF-8'),
+                'LC_ALL': os.environ.get('LC_ALL', 'en_US.UTF-8'),
+                'TMPDIR': os.environ.get('TMPDIR', '/tmp'),
+                # Don't copy PYTHONPATH - venv handles this
+            }
             if env:
                 process_env.update(env)
 
@@ -767,14 +790,42 @@ class SmartProcessManager:
             process_env['GLEITZEIT_SERVICE_NAME'] = process_name
             process_env['GLEITZEIT_SERVICE_PORT'] = str(port)
 
+            # Log the command being executed
+            logger.info(f"Executing command: {' '.join(command)}")
+
+            # Determine working directory (project root)
+            from pathlib import Path
+            # Go up from src/gleitzeit/core to project root
+            cwd = Path(__file__).parent.parent.parent.parent
+            logger.info(f"Working directory: {cwd}")
+
             # Start process in new process group
             proc = subprocess.Popen(
                 command,
                 env=process_env,
+                cwd=str(cwd),  # Set working directory
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,  # Combine stderr with stdout
+                stderr=subprocess.PIPE,  # Separate stderr for better debugging
                 preexec_fn=os.setsid  # Create new process group
             )
+
+            logger.debug(f"Process started with PID: {proc.pid}")
+
+            # Quick check for immediate failure (0.5 seconds)
+            time.sleep(0.5)
+            if proc.poll() is not None:
+                # Process died immediately - likely import error
+                stdout, stderr = proc.communicate()
+                logger.error(f"Service {process_name} failed immediately!")
+                if stdout:
+                    logger.error(f"STDOUT: {stdout.decode('utf-8', errors='ignore')}")
+                if stderr:
+                    logger.error(f"STDERR: {stderr.decode('utf-8', errors='ignore')}")
+
+                # Clean up and return early
+                await self.release_service(process_name)
+                self._release_port_lock(port)
+                return None
 
             # Track the process
             process_info = ProcessInfo(
@@ -784,7 +835,8 @@ class SmartProcessManager:
                 command=command,
                 started_at=datetime.utcnow(),
                 instance_id=self.instance.instance_id,
-                status="starting"
+                status="starting",
+                process_type=process_type
             )
 
             self.owned_processes[process_name] = process_info
@@ -797,33 +849,45 @@ class SmartProcessManager:
             # Wait a bit and check if process is still running
             time.sleep(2)
             if proc.poll() is None:
-                process_info.status = "running"
-                # Update Redis with running status
-                await self._update_redis_process_info(process_name, process_info, process_type, assigned_shards)
-                logger.info(f"Service {process_name} started successfully (PID: {proc.pid})")
-                return process_info
-            else:
-                process_info.status = "failed"
-                process_info.exit_code = proc.poll()
+                # Double check - wait a bit more and check again
+                time.sleep(1)
+                if proc.poll() is None:
+                    process_info.status = "running"
+                    # Update Redis with running status
+                    await self._update_redis_process_info(process_name, process_info, process_type, assigned_shards)
+                    logger.info(f"Service {process_name} started successfully (PID: {proc.pid})")
+                    return process_info
+                else:
+                    # Died between checks
+                    logger.warning(f"Service {process_name} died after initial success check")
 
-                # Try to get output for debugging
-                try:
-                    output, _ = proc.communicate(timeout=0.1)
-                    if output:
-                        logger.error(f"Service {process_name} output: {output.decode('utf-8', errors='ignore')}")
-                except:
-                    pass
+            # Process has died
+            process_info.status = "failed"
+            process_info.exit_code = proc.poll()
 
-                logger.error(f"Service {process_name} failed to start (exit code: {proc.poll()})")
+            # Try to get all output for debugging
+            try:
+                stdout, stderr = proc.communicate(timeout=0.5)
+                if stdout:
+                    logger.error(f"Service {process_name} STDOUT: {stdout.decode('utf-8', errors='ignore')}")
+                if stderr:
+                    logger.error(f"Service {process_name} STDERR: {stderr.decode('utf-8', errors='ignore')}")
+            except subprocess.TimeoutExpired:
+                # Process is still running but returned non-zero somehow
+                logger.error(f"Could not get output from {process_name} (timeout)")
+            except Exception as e:
+                logger.error(f"Could not read process output: {e}")
 
-                # Clean up
-                await self.release_service(process_name)
-                self._release_port_lock(port)
-                del self.owned_processes[process_name]
-                self.managed_pids.discard(proc.pid)
-                del self.process_handles[process_name]
+            logger.error(f"Service {process_name} failed to start (exit code: {proc.poll()})")
 
-                return None
+            # Clean up
+            await self.release_service(process_name)
+            self._release_port_lock(port)
+            del self.owned_processes[process_name]
+            self.managed_pids.discard(proc.pid)
+            del self.process_handles[process_name]
+
+            return None
 
         except Exception as e:
             logger.error(f"Failed to start service {process_name}: {e}")

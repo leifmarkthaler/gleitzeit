@@ -1,25 +1,32 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.4
 Name: gleitzeit
 Version: 0.0.7
-Summary: Distributed workflow orchestration with worker-based architecture
+Summary: Event-driven workflow orchestration system with distributed task execution
 Home-page: https://github.com/yourorg/gleitzeit
 Author: Gleitzeit Team
-Classifier: Development Status :: 3 - Alpha
-Classifier: Intended Audience :: Developers
-Classifier: Topic :: Software Development :: Libraries :: Application Frameworks
-Classifier: License :: OSI Approved :: MIT License
-Classifier: Programming Language :: Python :: 3
-Classifier: Programming Language :: Python :: 3.8
-Classifier: Programming Language :: Python :: 3.9
-Classifier: Programming Language :: Python :: 3.10
-Classifier: Programming Language :: Python :: 3.11
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
-Provides-Extra: dev
+Requires-Dist: redis>=4.5.0
+Requires-Dist: click>=8.0.0
+Requires-Dist: pyyaml>=6.0
+Requires-Dist: aiohttp>=3.8.0
+Requires-Dist: aiofiles>=23.0.0
+Requires-Dist: psutil>=5.9.0
+Requires-Dist: fastapi>=0.100.0
+Requires-Dist: uvicorn[standard]>=0.23.0
+Requires-Dist: python-multipart>=0.0.6
+Requires-Dist: pydantic>=2.0.0
+Requires-Dist: websockets>=11.0
+Requires-Dist: pyjwt>=2.8.0
+Requires-Dist: httpx>=0.24.0
+Requires-Dist: jinja2>=3.1.0
+Dynamic: author
+Dynamic: home-page
+Dynamic: requires-python
 
 # Gleitzeit 0.0.7 - Worker-Based Architecture
 
-A complete rewrite of Gleitzeit with a distributed, worker-based architecture for massive horizontal scalability.
+A complete rewrite of Gleitzeit with a distributed, worker-based architecture for horizontal scalability.
 
 ## Key Features
 
@@ -28,6 +35,8 @@ A complete rewrite of Gleitzeit with a distributed, worker-based architecture fo
 - **Component Orchestrator**: Manages worker lifecycle, health, and auto-scaling
 - **No SystemManager Bottleneck**: Direct API → Redis Streams → Workers architecture
 - **Linear Scalability**: Add workers to increase throughput
+- **Robust Restart Capability**: Force restart with `--restart` flag to take over ports from stuck processes
+- **Distributed Port Management**: Redis-based port allocation with file-based locks for multi-instance support
 
 ## Architecture
 
@@ -50,7 +59,22 @@ Specialized Workers
 pip install -e .
 ```
 
-### Start Component Orchestrator
+### Start Gleitzeit Services
+
+Start all services with the serve command:
+
+```bash
+# Start with default settings
+gleitzeit serve
+
+# Start with restart capability (forcefully takes over ports)
+gleitzeit serve --restart
+
+# Start with custom instance name
+gleitzeit serve --instance-name "production" --restart
+```
+
+### Start Component Orchestrator (Alternative)
 
 The orchestrator manages all workers:
 

@@ -1,0 +1,248 @@
+version: '3.8'
+
+networks:
+  gleitzeit:
+    driver: bridge
+    name: gleitzeit_network
+
+volumes:
+  redis-data:
+    name: gleitzeit_redis_data
+  logs:
+    name: gleitzeit_logs
+
+services:
+  # Redis - State Management
+  redis:
+    image: redis:7-alpine
+    container_name: gleitzeit_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - gleitzeit
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: gleitzeit_api
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./src:/app/src:ro  # Mount source read-only for development
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`api.gleitzeit.local`)"
+
+  # UI Service
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    container_name: gleitzeit_ui
+    ports:
+      - "8004:8004"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - API_URL=http://api:8000
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      - api
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./src:/app/src:ro  # Mount source read-only for development
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ui.rule=Host(`ui.gleitzeit.local`)"
+
+  # Task Execution Worker (Scalable)
+  worker-task-execution:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.task_execution_worker.TaskExecutionWorker",
+              "--worker-id", "task-exec-1",
+              "--worker-type", "task_execution",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3",
+              "--max-concurrent", "5"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+    deploy:
+      replicas: 2  # Start with 2 replicas
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
+  # Executor Worker (Scalable)
+  worker-executor:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WORKER_TYPE=executor
+      - WORKER_SHARDS=4,5,6,7
+      - WORKER_CONCURRENCY=5
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+    deploy:
+      replicas: 2
+
+  # Workflow Loader Worker
+  worker-workflow-loader:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: gleitzeit_worker_workflow_loader
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.workflow_loader_worker_v2.WorkflowLoaderWorkerV2",
+              "--worker-id", "workflow-loader-1",
+              "--worker-type", "workflow_loader",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+              "--max-concurrent", "10"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+
+  # Dependency Worker
+  worker-dependency:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: gleitzeit_worker_dependency
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.dependency_worker.DependencyWorker",
+              "--worker-id", "dependency-1",
+              "--worker-type", "dependency",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+              "--max-concurrent", "10"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+
+  # Monitor Worker (Single Instance)
+  worker-monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: gleitzeit_worker_monitor
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WORKER_TYPE=monitor
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+
+  # Recovery Worker
+  worker-recovery:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: gleitzeit_worker_recovery
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WORKER_TYPE=recovery
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+
+  # Retry Worker
+  worker-retry:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    container_name: gleitzeit_worker_retry
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - WORKER_TYPE=retry
+      - WORKER_SHARDS=12,13,14,15
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs

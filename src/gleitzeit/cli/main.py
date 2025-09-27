@@ -5,13 +5,32 @@ Gleitzeit 0.0.7 CLI - Worker-based Architecture
 Main command-line interface for managing workers and workflows.
 """
 
+import sys
+import os
+from pathlib import Path
+
+# Check if running in proper uv environment
+if not sys.prefix.endswith('.venv'):
+    print("=" * 60, file=sys.stderr)
+    print("❌ Not running in uv virtual environment!", file=sys.stderr)
+    print("=" * 60, file=sys.stderr)
+    print("", file=sys.stderr)
+    print("Please run gleitzeit through uv:", file=sys.stderr)
+    print("  1. Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh", file=sys.stderr)
+    print("  2. cd <project_root>", file=sys.stderr)
+    print("  3. uv venv .venv", file=sys.stderr)
+    print("  4. uv sync", file=sys.stderr)
+    print("  5. .venv/bin/python -m gleitzeit.cli.main <command>", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("Or use: uv run python -m gleitzeit.cli.main <command>", file=sys.stderr)
+    print("=" * 60, file=sys.stderr)
+    sys.exit(1)
+
 import click
 import asyncio
 import json
-import sys
 import subprocess
 import logging
-import os
 import uuid
 from typing import Optional
 from datetime import datetime
@@ -20,6 +39,8 @@ import yaml
 from ..core.sharding import default_sharding
 from .serve import serve
 from .serve_v3 import serve_v3
+from .serve_unified import serve_unified
+from .serve_docker import serve_with_docker, DockerOrchestrator
 from .process_commands import add_process_commands
 
 # Setup logging
@@ -655,9 +676,9 @@ def workflow_list(ctx, limit):
     async def list_workflows():
         redis = await aioredis.from_url(ctx.obj['redis_url'])
 
-        # Find workflow status keys
+        # Find workflow state keys (consolidated)
         # For listing workflows, we need to scan all shards
-        pattern = b"*:workflow:status:*"
+        pattern = b"*:workflow:state:*"
         keys = []
         cursor = b"0"
         while cursor != b"0" or not keys:
@@ -803,7 +824,7 @@ def show_metrics(ctx):
 
 
 # Add the serve command to the CLI group (using v3 with Layered Architecture)
-cli.add_command(serve_v3, name='serve')
+cli.add_command(serve_unified, name='serve')
 
 # Add process monitoring commands
 add_process_commands(cli)

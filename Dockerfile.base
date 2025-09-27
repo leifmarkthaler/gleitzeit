@@ -1,0 +1,37 @@
+# Base image with all dependencies
+FROM python:3.11-slim
+
+# System dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv for dependency management
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+# Create app directory
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml uv.lock ./
+COPY src/ ./src/
+
+# Install dependencies with uv
+RUN uv venv .venv && \
+    uv sync --frozen
+
+# Set Python environment
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:${PATH}"
+ENV PYTHONPATH=/app/src:${PYTHONPATH}
+
+# Create necessary directories
+RUN mkdir -p /app/logs /app/data
+
+# Set default environment variables
+ENV REDIS_URL=redis://redis:6379
+ENV LOG_LEVEL=INFO
+ENV ENVIRONMENT=docker

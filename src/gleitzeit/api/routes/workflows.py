@@ -59,15 +59,15 @@ async def list_workflows(
             for wf_id_bytes in workflow_ids:
                 workflow_id = wf_id_bytes.decode()
 
-                # Get workflow status
-                status_key = default_sharding.get_workflow_key("status", workflow_id)
-                pipe.hgetall(status_key.encode())
+                # Get consolidated workflow state
+                state_key = default_sharding.get_workflow_key("state", workflow_id)
+                pipe.hgetall(state_key.encode())
 
-                # Get workflow data
+                # Get workflow definition (if needed for details)
                 data_key = default_sharding.get_workflow_key("data", workflow_id)
                 pipe.hget(data_key.encode(), b"workflow")
 
-            # Execute pipeline and process results in pairs
+            # Execute pipeline and process results in groups of 2
             results = await pipe.execute()
             workflow_ids_list = list(workflow_ids)
 
@@ -80,32 +80,39 @@ async def list_workflows(
 
                 workflow_id = workflow_ids_list[i // 2].decode()
 
-                # Decode state data
+                # Decode consolidated state data
                 decoded_state = {k.decode(): v.decode() for k, v in state_data.items()}
+
+                # Get status from consolidated state
+                status_value = decoded_state.get("status", "unknown")
 
                 workflow_info = {
                     "workflow_id": workflow_id,
-                    "name": "Unnamed",
-                    "status": decoded_state.get("status", "unknown"),
+                    "name": decoded_state.get("name", "Unnamed"),
+                    "status": status_value,
                     "created_at": decoded_state.get("submitted_at", ""),
+                    "description": decoded_state.get("description", ""),
+                    "version": decoded_state.get("version", ""),
                     "progress": {}
                 }
 
-                # Add workflow definition details if available
+                # Add task count from workflow definition if available
                 if workflow_data:
                     try:
                         data = json.loads(workflow_data)
-                        workflow_info["name"] = data.get("name", "Unnamed")
-                        workflow_info["description"] = data.get("description", "")
                         workflow_info["task_count"] = len(data.get("tasks", []))
-                        workflow_info["version"] = data.get("version", "")
                     except json.JSONDecodeError:
                         pass
+                else:
+                    # Use total_tasks from state if definition not available
+                    workflow_info["task_count"] = int(decoded_state.get("total_tasks", 0))
 
-                # Use cached task counts if available
-                completed_count = int(decoded_state.get("completed_count", 0))
-                failed_count = int(decoded_state.get("failed_count", 0))
-                running_count = int(decoded_state.get("running_count", 0))
+                # Use task counts from consolidated state
+                completed_count = int(decoded_state.get("completed_tasks", 0))
+                failed_count = int(decoded_state.get("failed_tasks", 0))
+                skipped_count = int(decoded_state.get("skipped_tasks", 0))
+                blocked_count = int(decoded_state.get("blocked_tasks", 0))
+                running_count = int(decoded_state.get("running_tasks", 0))
                 total_count = int(decoded_state.get("total_tasks", 0))
 
                 workflow_info["progress"] = {
@@ -150,8 +157,8 @@ async def get_workflows(
     async with client_pool.acquire_connection(user.id) as conn:
         workflows = []
         for workflow_id in request.workflow_ids[:100]:  # Limit to 100 workflows at once
-            # Get workflow status
-            state_key = default_sharding.get_workflow_key("status", workflow_id)
+            # Get consolidated workflow state
+            state_key = default_sharding.get_workflow_key("state", workflow_id)
             state_data = await conn.redis.hgetall(state_key.encode())
 
             if not state_data:
@@ -263,8 +270,8 @@ async def get_workflow(
     """Get workflow status and details"""
 
     async with client_pool.acquire_connection(user.id) as conn:
-        # Get workflow status
-        state_key = default_sharding.get_workflow_key("status", workflow_id)
+        # Get consolidated workflow state
+        state_key = default_sharding.get_workflow_key("state", workflow_id)
         state_data = await conn.redis.hgetall(state_key.encode())
 
         if not state_data:

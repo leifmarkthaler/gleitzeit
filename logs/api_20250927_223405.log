@@ -1,0 +1,50 @@
+[2025-09-27 22:34:06] [STDERR] INFO:     Started server process [63577]
+[2025-09-27 22:34:06] [STDERR] INFO:     Waiting for application startup.
+[2025-09-27 22:34:06] [STDERR] INFO:     Application startup complete.
+[2025-09-27 22:34:06] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-09-27 22:37:19] [STDOUT] INFO:     127.0.0.1:57381 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:37:19] [STDOUT] INFO:     127.0.0.1:57383 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:37:19] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-27 22:37:19] [STDOUT] INFO:     127.0.0.1:57387 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:37:19] [STDOUT] INFO:     127.0.0.1:57381 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-27 22:37:19] [STDOUT] INFO:     127.0.0.1:57381 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-09-27 22:37:19] [STDOUT] INFO:     127.0.0.1:57381 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:37:20] [STDOUT] INFO:     127.0.0.1:57395 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:37:20] [STDOUT] INFO:     127.0.0.1:57397 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:37:20] [STDOUT] INFO:     127.0.0.1:57381 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:37:20] [STDOUT] INFO:     127.0.0.1:57403 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:38:09] [STDOUT] INFO:     127.0.0.1:57415 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:38:09] [STDOUT] INFO:     127.0.0.1:57417 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:39:34] [STDOUT] INFO:     127.0.0.1:57452 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:39:34] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-27 22:39:34] [STDOUT] INFO:     127.0.0.1:57453 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-27 22:39:34] [STDOUT] INFO:     127.0.0.1:57452 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-09-27 22:39:34] [STDOUT] INFO:     127.0.0.1:57455 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:39:52] [STDOUT] INFO:     127.0.0.1:57461 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:39:52] [STDOUT] INFO:     127.0.0.1:57463 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:46:15] [STDOUT] INFO:     127.0.0.1:57489 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:46:15] [STDOUT] INFO:     127.0.0.1:57491 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:46:22] [STDOUT] INFO:     127.0.0.1:57499 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:46:22] [STDOUT] INFO:     127.0.0.1:57501 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:47:50] [STDOUT] INFO:     127.0.0.1:57585 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:47:50] [STDOUT] INFO:     127.0.0.1:57587 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:47:56] [STDOUT] INFO:     127.0.0.1:57591 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:47:56] [STDOUT] INFO:     127.0.0.1:57593 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:49:35] [STDOUT] INFO:     127.0.0.1:57702 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:49:35] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-27 22:49:35] [STDOUT] INFO:     127.0.0.1:57703 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-27 22:49:35] [STDOUT] INFO:     127.0.0.1:57702 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-09-27 22:49:35] [STDOUT] INFO:     127.0.0.1:57705 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:49:54] [STDOUT] INFO:     127.0.0.1:57715 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:49:54] [STDOUT] INFO:     127.0.0.1:57717 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:50:54] [STDOUT] INFO:     127.0.0.1:57755 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:50:54] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-27 22:50:54] [STDOUT] INFO:     127.0.0.1:57756 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-27 22:50:54] [STDOUT] INFO:     127.0.0.1:57755 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-09-27 22:50:54] [STDOUT] INFO:     127.0.0.1:57758 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:51:11] [STDOUT] INFO:     127.0.0.1:57768 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:51:11] [STDOUT] INFO:     127.0.0.1:57770 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:51:30] [STDOUT] INFO:     127.0.0.1:57786 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:51:30] [STDOUT] INFO:     127.0.0.1:57788 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-27 22:51:36] [STDOUT] INFO:     127.0.0.1:57799 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-27 22:51:36] [STDOUT] INFO:     127.0.0.1:57801 - "GET /health/ HTTP/1.1" 200 OK

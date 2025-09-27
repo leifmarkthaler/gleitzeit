@@ -282,12 +282,33 @@ async def tasks_list(request: Request):
     headers = {"X-Session-ID": session_id} if session_id else {}
 
     try:
-        # Get tasks from API - now returns full task data directly
+        # Get task IDs from API
         response = await client.get("/tasks/list?limit=100", headers=headers)
         if response.status_code == 200:
             data = response.json()
-            # API now returns tasks directly with full data
-            context["tasks"] = data.get("tasks", [])
+            task_ids = data.get("task_ids", [])
+
+            # If we have task IDs, fetch their details
+            if task_ids:
+                try:
+                    tasks_response = await client.post(
+                        "/tasks/",
+                        json={"task_ids": task_ids},
+                        headers=headers
+                    )
+                    if tasks_response.status_code == 200:
+                        tasks_data = tasks_response.json()
+                        context["tasks"] = tasks_data.get("tasks", [])
+                    else:
+                        logger.error(f"Failed to fetch task details: {tasks_response.status_code}")
+                        # Fall back to showing just the IDs without details
+                        context["tasks"] = [{"task_id": tid} for tid in task_ids]
+                except Exception as e:
+                    logger.error(f"Error fetching task details: {e}")
+                    # Fall back to showing just the IDs without details
+                    context["tasks"] = [{"task_id": tid} for tid in task_ids]
+            else:
+                context["tasks"] = []
         else:
             context["tasks"] = []
     except Exception as e:

@@ -51,7 +51,7 @@ class DependencyWorker(BaseWorker):
 
     def get_base_streams(self) -> List[str]:
         """Return streams this worker consumes from"""
-        return ["task:completed", "workflow:submitted", "task:cancelled", "workflow:cancelled"]
+        return ["task:completed", "task:failed", "workflow:submitted", "task:cancelled", "workflow:cancelled"]
 
     async def process_message(self, stream: str, message_id: str, data: Dict) -> bool:
         """Process dependency-related events
@@ -69,6 +69,8 @@ class DependencyWorker(BaseWorker):
         try:
             if "task:completed" in stream:
                 await self.handle_task_completion(workflow_id, data)
+            elif "task:failed" in stream:
+                await self.handle_task_failure(workflow_id, data)
             elif "workflow:submitted" in stream:
                 await self.handle_workflow_submission(workflow_id, data)
             elif "task:cancelled" in stream:
@@ -101,13 +103,11 @@ class DependencyWorker(BaseWorker):
         if isinstance(workflow_data, str):
             workflow_data = json.loads(workflow_data)
 
-        # Store workflow data
+        # Store workflow definition separately (due to size)
         await self.redis.hset(
             default_sharding.get_workflow_key("data", workflow_id).encode(),
             mapping={
-                b"workflow": json.dumps(workflow_data).encode(),
-                b"submitted_at": datetime.utcnow().isoformat().encode(),
-                b"status": b"running"
+                b"workflow": json.dumps(workflow_data).encode()
             }
         )
 
@@ -153,15 +153,40 @@ class DependencyWorker(BaseWorker):
             )
             logger.info(f"Emitted initial task {task_data['id']} to shard {shard}")
 
-        # Track pending tasks
+        # Store consolidated workflow state (replaces both workflow:state and workflow:status)
         pending_count = len(workflow_data.get('tasks', [])) - len(initial_tasks)
+        now = datetime.utcnow().isoformat()
+
+        # Get workflow metadata
+        workflow_name = workflow_data.get('name', 'unnamed')
+        workflow_description = workflow_data.get('description', '')
+        workflow_version = workflow_data.get('version', '1.0.0')
+
         await self.redis.hset(
-            default_sharding.get_workflow_key("status", workflow_id).encode(),
+            default_sharding.get_workflow_key("state", workflow_id).encode(),
             mapping={
+                # Core workflow info
+                b"workflow_id": workflow_id.encode(),
+                b"name": workflow_name.encode(),
+                b"description": workflow_description.encode(),
+                b"version": workflow_version.encode(),
+
+                # Status fields
+                b"status": b"running",  # Actual runtime status
+                b"submitted_at": now.encode(),
+                b"started_at": now.encode(),
+
+                # Task metrics
                 b"total_tasks": str(len(workflow_data.get('tasks', []))).encode(),
                 b"completed_tasks": b"0",
+                b"failed_tasks": b"0",
+                b"skipped_tasks": b"0",
+                b"blocked_tasks": b"0",
                 b"pending_tasks": str(pending_count).encode(),
-                b"running_tasks": str(len(initial_tasks)).encode()
+                b"running_tasks": str(len(initial_tasks)).encode(),
+
+                # Worker tracking
+                b"worker_id": self.config.worker_id.encode()
             }
         )
 
@@ -170,11 +195,18 @@ class DependencyWorker(BaseWorker):
         task_id = data.get('task_id')
         logger.info(f"Processing task completion: {task_id} from workflow {workflow_id}")
 
-        # Update completed tasks count
+        # Update completed tasks count in consolidated state
         await self.redis.hincrby(
-            default_sharding.get_workflow_key("status", workflow_id).encode(),
+            default_sharding.get_workflow_key("state", workflow_id).encode(),
             b"completed_tasks",
             1
+        )
+
+        # Decrement running tasks
+        await self.redis.hincrby(
+            default_sharding.get_workflow_key("state", workflow_id).encode(),
+            b"running_tasks",
+            -1
         )
 
         # Get dependency graph (all on same shard!)
@@ -252,6 +284,34 @@ class DependencyWorker(BaseWorker):
         # Check if workflow is complete
         await self.check_workflow_completion(workflow_id)
 
+    async def handle_task_failure(self, workflow_id: str, data: Dict):
+        """Handle task failure and update consolidated state"""
+        task_id = data.get('task_id')
+        logger.info(f"Processing task failure: {task_id} from workflow {workflow_id}")
+
+        # Update failed tasks count in consolidated state
+        await self.redis.hincrby(
+            default_sharding.get_workflow_key("state", workflow_id).encode(),
+            b"failed_tasks",
+            1
+        )
+
+        # Decrement running tasks
+        await self.redis.hincrby(
+            default_sharding.get_workflow_key("state", workflow_id).encode(),
+            b"running_tasks",
+            -1
+        )
+
+        # Mark task as failed in the failed set
+        await self.redis.sadd(
+            default_sharding.get_workflow_key("tasks:failed", workflow_id).encode(),
+            task_id.encode()
+        )
+
+        # Check if workflow is complete (it might fail early)
+        await self.check_workflow_completion(workflow_id)
+
     async def find_ready_tasks(
         self,
         workflow_id: str,
@@ -295,6 +355,18 @@ class DependencyWorker(BaseWorker):
                             b"blocked_reason": f"Dependencies failed: {', '.join(failed_deps)}".encode()
                         }
                     )
+                    # Update blocked count in consolidated state
+                    await self.redis.hincrby(
+                        default_sharding.get_workflow_key("state", workflow_id).encode(),
+                        b"blocked_tasks",
+                        1
+                    )
+                    # Decrement pending tasks
+                    await self.redis.hincrby(
+                        default_sharding.get_workflow_key("state", workflow_id).encode(),
+                        b"pending_tasks",
+                        -1
+                    )
                     continue
 
                 # Check if all dependencies are satisfied
@@ -314,6 +386,18 @@ class DependencyWorker(BaseWorker):
                                 b"skipped_at": datetime.utcnow().isoformat().encode()
                             }
                         )
+                        # Update skipped count in consolidated state
+                        await self.redis.hincrby(
+                            default_sharding.get_workflow_key("state", workflow_id).encode(),
+                            b"skipped_tasks",
+                            1
+                        )
+                        # Decrement pending tasks
+                        await self.redis.hincrby(
+                            default_sharding.get_workflow_key("state", workflow_id).encode(),
+                            b"pending_tasks",
+                            -1
+                        )
                         logger.info(f"Task {task_id} skipped due to validation failure")
                         continue
 
@@ -330,12 +414,25 @@ class DependencyWorker(BaseWorker):
                             default_sharding.get_workflow_key("tasks:running", workflow_id).encode(),
                             task_id.encode()
                         )
+                        # Update running task count in consolidated state
+                        await self.redis.hincrby(
+                            default_sharding.get_workflow_key("state", workflow_id).encode(),
+                            b"running_tasks",
+                            1
+                        )
+                        # Decrement pending tasks
+                        await self.redis.hincrby(
+                            default_sharding.get_workflow_key("state", workflow_id).encode(),
+                            b"pending_tasks",
+                            -1
+                        )
 
         return ready_tasks
 
     async def check_workflow_completion(self, workflow_id: str):
         """Check if workflow is complete, including skipped and blocked tasks"""
-        status = await self.redis.hgetall(default_sharding.get_workflow_key("status", workflow_id).encode())
+        # Read from consolidated state
+        status = await self.redis.hgetall(default_sharding.get_workflow_key("state", workflow_id).encode())
 
         if status:
             total = int(status.get(b"total_tasks", b"0").decode())
@@ -392,16 +489,18 @@ class DependencyWorker(BaseWorker):
                     }
                 )
 
-                # Update workflow status
+                # Update workflow status in consolidated state
                 await self.redis.hset(
-                    default_sharding.get_workflow_key("status", workflow_id).encode(),
+                    default_sharding.get_workflow_key("state", workflow_id).encode(),
                     mapping={
                         b"status": workflow_status,
                         b"completed_at": datetime.utcnow().isoformat().encode(),
                         b"completed_tasks": str(completed).encode(),
                         b"skipped_tasks": str(skipped_count).encode(),
                         b"blocked_tasks": str(blocked_count).encode(),
-                        b"failed_tasks": str(failed_count).encode()
+                        b"failed_tasks": str(failed_count).encode(),
+                        b"running_tasks": b"0",  # All tasks done
+                        b"pending_tasks": b"0"   # All tasks done
                     }
                 )
 

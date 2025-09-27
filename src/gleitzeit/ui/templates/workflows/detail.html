@@ -21,7 +21,7 @@
             </div>
             <div class="info-item">
                 <span class="info-label">Submitted:</span>
-                <span>{{ workflow.state.submitted_at }}</span>
+                <span>{{ workflow.data.workflow.created_at or workflow.state.completed_at or 'N/A' }}</span>
             </div>
         </div>
     </div>

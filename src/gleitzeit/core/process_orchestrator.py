@@ -173,6 +173,9 @@ class ProcessOrchestrator:
         """Get environment variables for services"""
         env = {}
 
+        # Don't set PYTHONPATH - we use venv Python which has correct paths
+        # The venv created by uv has gleitzeit installed in editable mode
+
         # Instance identity
         env['GLEITZEIT_INSTANCE_ID'] = self.instance.instance_id
         env['GLEITZEIT_INSTANCE_NAME'] = self.instance.instance_name

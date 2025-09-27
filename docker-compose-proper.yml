@@ -1,0 +1,302 @@
+version: '3.8'
+
+networks:
+  gleitzeit:
+    driver: bridge
+    name: gleitzeit_network
+
+volumes:
+  redis-data:
+    name: gleitzeit_redis_data
+  logs:
+    name: gleitzeit_logs
+
+services:
+  # Redis - as defined in gleitzeit.yaml
+  redis:
+    image: redis:7-alpine
+    container_name: gleitzeit_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - gleitzeit
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: gleitzeit_api
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+      - GLEITZEIT_AUTO_LOGIN=true
+      - JWT_SECRET=development-secret-change-in-production
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  # UI Service
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    container_name: gleitzeit_ui
+    ports:
+      - "8004:8004"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - API_URL=http://api:8000
+      - LOG_LEVEL=INFO
+      - ENVIRONMENT=docker
+    depends_on:
+      - api
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  # Workers exactly as defined in gleitzeit.yaml
+
+  # Task Execution Worker (2 instances as per config)
+  worker-task-execution-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.task_execution_worker.TaskExecutionWorker",
+              "--worker-id", "task-exec-1",
+              "--worker-type", "task_execution",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3,4,5,6,7",
+              "--max-concurrent", "5",
+              "--batch-size", "10",
+              "--block-timeout", "5000"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  worker-task-execution-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.task_execution_worker.TaskExecutionWorker",
+              "--worker-id", "task-exec-2",
+              "--worker-type", "task_execution",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "8,9,10,11,12,13,14,15",
+              "--max-concurrent", "5",
+              "--batch-size", "10",
+              "--block-timeout", "5000"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  # Dependency Worker (1 instance as per config)
+  worker-dependency:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.dependency_worker.DependencyWorker",
+              "--worker-id", "dependency-1",
+              "--worker-type", "dependency",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+              "--max-concurrent", "10",
+              "--batch-size", "10",
+              "--block-timeout", "5000"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  # Workflow Loader V2 (2 instances as per config)
+  worker-workflow-loader-1:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.workflow_loader_worker_v2.WorkflowLoaderWorkerV2",
+              "--worker-id", "workflow-loader-1",
+              "--worker-type", "workflow_loader",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3,4,5,6,7",
+              "--max-concurrent", "10",
+              "--batch-size", "10",
+              "--block-timeout", "5000"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  worker-workflow-loader-2:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.workflow_loader_worker_v2.WorkflowLoaderWorkerV2",
+              "--worker-id", "workflow-loader-2",
+              "--worker-type", "workflow_loader",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "8,9,10,11,12,13,14,15",
+              "--max-concurrent", "10",
+              "--batch-size", "10",
+              "--block-timeout", "5000"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  # Workflow Submission Worker (1 instance as per config)
+  worker-workflow-submission:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.workflow_submission_worker.WorkflowSubmissionWorker",
+              "--worker-id", "workflow-submission-1",
+              "--worker-type", "workflow_submission",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+              "--max-concurrent", "5",
+              "--batch-size", "5",
+              "--block-timeout", "5000"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  # Retry Worker (1 instance as per config)
+  worker-retry:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.retry_worker.RetryWorker",
+              "--worker-id", "retry-1",
+              "--worker-type", "retry",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+              "--max-concurrent", "10",
+              "--batch-size", "10",
+              "--block-timeout", "5000"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro
+
+  # Timer Worker (1 instance as per config)
+  worker-timer:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["python", "-m", "gleitzeit.workers.runner",
+              "--worker-class", "gleitzeit.workers.timer_worker.TimerWorker",
+              "--worker-id", "timer-1",
+              "--worker-type", "timer",
+              "--redis-url", "redis://redis:6379",
+              "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+              "--max-concurrent", "10",
+              "--batch-size", "10",
+              "--block-timeout", "1000"]
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REDIS_CLUSTER_NODES=redis:6379
+      - LOG_LEVEL=INFO
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - gleitzeit
+    restart: unless-stopped
+    volumes:
+      - logs:/app/logs
+      - ./gleitzeit.yaml:/app/gleitzeit.yaml:ro

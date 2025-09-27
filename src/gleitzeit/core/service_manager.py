@@ -62,11 +62,7 @@ class ServiceManager:
             dev_mode=dev_mode
         )
 
-        # Update command with the correct port
-        for i, arg in enumerate(cmd):
-            if arg == "--port" and i + 1 < len(cmd):
-                cmd[i + 1] = str(service_port)
-                break
+        # Port is already set correctly in _build_service_command
 
         process_info = await self.process_manager.start_service(
             service_name="api",
@@ -101,11 +97,7 @@ class ServiceManager:
             dev_mode=dev_mode
         )
 
-        # Update command with the correct port
-        for i, arg in enumerate(cmd):
-            if arg == "--port" and i + 1 < len(cmd):
-                cmd[i + 1] = str(service_port)
-                break
+        # Port is already set correctly in _build_service_command
 
         process_info = await self.process_manager.start_service(
             service_name="ui",
@@ -181,12 +173,32 @@ class ServiceManager:
         if not config:
             raise ValueError(f"Unknown service: {service_name}")
 
+        # Use the project's venv python directly (created by uv)
+        from pathlib import Path
+        project_root = Path(__file__).parent.parent.parent.parent
+        venv_python = project_root / ".venv" / "bin" / "python"
+
+        if not venv_python.exists():
+            raise RuntimeError(
+                f"Virtual environment not found at {venv_python}\n"
+                "Please set up the project with uv:\n"
+                "  cd <project_root>\n"
+                "  uv venv .venv\n"
+                "  uv sync"
+            )
+
         cmd = [
-            sys.executable, "-m", config['module'],
+            str(venv_python), "-m", config['module'],
             config['app'],
             "--host", host,
             "--port", str(port)
         ]
+
+        # Add appropriate log level
+        if service_name == 'api':
+            cmd.extend(["--log-level", "info"])
+        elif service_name == 'ui':
+            cmd.extend(["--log-level", "warning"])  # Less verbose for UI
 
         # Add dev mode reload if supported and enabled
         if dev_mode and config.get('supports_reload', False):

@@ -180,13 +180,24 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                     validation_errors=validation_errors
                 )
 
-            # Store workflow
+            # Store workflow definition only (state is handled separately)
             await self.redis.hset(
                 default_sharding.get_workflow_key("data", workflow_id).encode(),
                 mapping={
-                    b"workflow": json.dumps(workflow).encode(),
-                    b"loaded_at": datetime.utcnow().isoformat().encode(),
-                    b"status": b"loaded"
+                    b"workflow": json.dumps(workflow).encode()
+                }
+            )
+
+            # Update consolidated state to loaded status
+            now = datetime.utcnow().isoformat()
+            await self.redis.hset(
+                default_sharding.get_workflow_key("state", workflow_id).encode(),
+                mapping={
+                    b"status": b"loaded",
+                    b"loaded_at": now.encode(),
+                    b"name": workflow.get('name', 'unnamed').encode(),
+                    b"description": workflow.get('description', '').encode(),
+                    b"version": workflow.get('version', '1.0.0').encode()
                 }
             )
 
@@ -239,9 +250,9 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                 workflow_name = str(raw_workflow.get('name', 'unnamed'))[:255]  # Limit length
                 workflow_description = str(raw_workflow.get('description', ''))[:1000]  # Limit length
 
-            # Save minimal workflow metadata for failed validation
+            # Save to consolidated state for failed validation
             await self.redis.hset(
-                default_sharding.get_workflow_key("status", workflow_id).encode(),
+                default_sharding.get_workflow_key("state", workflow_id).encode(),
                 mapping={
                     b"workflow_id": workflow_id.encode(),
                     b"status": b"validation_failed",
@@ -249,7 +260,9 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                     b"description": workflow_description.encode(),
                     b"error": str(e).encode(),
                     b"failed_at": datetime.utcnow().isoformat().encode(),
-                    b"submitted_at": data.get('submitted_at', datetime.utcnow().isoformat()).encode()
+                    b"submitted_at": data.get('submitted_at', datetime.utcnow().isoformat()).encode(),
+                    b"total_tasks": b"0",
+                    b"completed_tasks": b"0"
                 }
             )
 

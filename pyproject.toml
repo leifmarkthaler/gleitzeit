@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gleitzeit"
+version = "0.0.7"
+description = "Event-driven workflow orchestration system with distributed task execution"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "redis>=4.5.0",
+    "click>=8.0.0",
+    "pyyaml>=6.0",
+    "aiohttp>=3.8.0",
+    "aiofiles>=23.0.0",
+    "psutil>=5.9.0",
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+    "python-multipart>=0.0.6",
+    "pydantic>=2.0.0",
+    "websockets>=11.0",
+    "pyjwt>=2.8.0",
+    "httpx>=0.24.0",
+    "jinja2>=3.1.0",
+]
+
+[project.scripts]
+gleitzeit = "gleitzeit.cli.main:cli"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
