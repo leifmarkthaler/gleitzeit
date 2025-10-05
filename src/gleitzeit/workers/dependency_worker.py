@@ -82,11 +82,26 @@ class DependencyWorker(BaseWorker):
 
         except Exception as e:
             logger.error(f"Failed to process dependency message: {e}", exc_info=True)
+            # Log to Redis for queryability
+            await self.log_worker_error(
+                "process_message",
+                e,
+                workflow_id=workflow_id,
+                stream=stream,
+                message_id=message_id
+            )
             return False  # Retry on exception
 
     async def handle_workflow_submission(self, workflow_id: str, data: Dict):
         """Process newly submitted workflow"""
         logger.info(f"Processing workflow submission: {workflow_id}")
+
+        # Log INFO: Workflow submission received
+        await self.log_worker_info(
+            "workflow_submission_received",
+            f"Processing workflow submission {workflow_id}",
+            workflow_id=workflow_id
+        )
 
         # Emit workflow started event
         await self.event_store.store_event(
@@ -153,6 +168,15 @@ class DependencyWorker(BaseWorker):
             )
             logger.info(f"Emitted initial task {task_data['id']} to shard {shard}")
 
+        # Log INFO: Initial tasks emitted
+        await self.log_worker_info(
+            "initial_tasks_emitted",
+            f"Emitted {len(initial_tasks)} initial tasks for workflow {workflow_id}",
+            workflow_id=workflow_id,
+            initial_task_count=len(initial_tasks),
+            total_task_count=len(workflow_data.get('tasks', []))
+        )
+
         # Store consolidated workflow state (replaces both workflow:state and workflow:status)
         pending_count = len(workflow_data.get('tasks', [])) - len(initial_tasks)
         now = datetime.utcnow().isoformat()
@@ -195,6 +219,14 @@ class DependencyWorker(BaseWorker):
         task_id = data.get('task_id')
         logger.info(f"Processing task completion: {task_id} from workflow {workflow_id}")
 
+        # Log DEBUG: Task completion received
+        await self.log_worker_debug(
+            "task_completion_received",
+            f"Processing task completion {task_id}",
+            workflow_id=workflow_id,
+            task_id=task_id
+        )
+
         # Update completed tasks count in consolidated state
         await self.redis.hincrby(
             default_sharding.get_workflow_key("state", workflow_id).encode(),
@@ -236,6 +268,15 @@ class DependencyWorker(BaseWorker):
         # Emit ready tasks to same shard
         if ready_tasks:
             shard = default_sharding.get_shard(workflow_id)
+
+            # Log INFO: Dependencies resolved
+            await self.log_worker_info(
+                "dependencies_resolved",
+                f"Resolved {len(ready_tasks)} newly ready tasks after {task_id} completion",
+                workflow_id=workflow_id,
+                task_id=task_id,
+                ready_task_count=len(ready_tasks)
+            )
 
             for ready_task_id in ready_tasks:
                 # Get task data
@@ -309,8 +350,60 @@ class DependencyWorker(BaseWorker):
             task_id.encode()
         )
 
-        # Check if workflow is complete (it might fail early)
-        await self.check_workflow_completion(workflow_id)
+        # HARD FAIL POLICY: Immediately fail the workflow on first task failure
+        # Get current workflow status
+        workflow_state = await self.redis.hgetall(
+            default_sharding.get_workflow_key("state", workflow_id).encode()
+        )
+        current_status = workflow_state.get(b"status", b"unknown").decode()
+
+        # Only fail workflow if it's still running (not already failed/completed)
+        if current_status == "running":
+            logger.warning(f"Task {task_id} failed - applying HARD FAIL policy for workflow {workflow_id}")
+
+            # Mark all pending and running tasks as blocked
+            total_tasks = int(workflow_state.get(b"total_tasks", b"0").decode())
+            pending_tasks = int(workflow_state.get(b"pending_tasks", b"0").decode())
+            running_tasks = int(workflow_state.get(b"running_tasks", b"0").decode())
+            completed_tasks = int(workflow_state.get(b"completed_tasks", b"0").decode())
+            failed_tasks = int(workflow_state.get(b"failed_tasks", b"0").decode())
+
+            # All non-completed/non-failed tasks become blocked
+            blocked_count = total_tasks - completed_tasks - failed_tasks
+
+            # Update workflow status to failed immediately
+            await self.redis.hset(
+                default_sharding.get_workflow_key("state", workflow_id).encode(),
+                mapping={
+                    b"status": b"failed",
+                    b"completed_at": datetime.utcnow().isoformat().encode(),
+                    b"blocked_tasks": str(blocked_count).encode(),
+                    b"pending_tasks": b"0",
+                    b"running_tasks": b"0"
+                }
+            )
+
+            # Emit workflow failed event
+            await self.event_store.store_event(
+                event_type=EventType.WORKFLOW_FAILED,
+                workflow_id=workflow_id,
+                level=EventLevel.CRITICAL,
+                data={
+                    'status': 'failed',
+                    'failed_task_id': task_id,
+                    'total_tasks': total_tasks,
+                    'completed_tasks': completed_tasks,
+                    'failed_tasks': failed_tasks,
+                    'blocked_tasks': blocked_count,
+                    'reason': 'hard_fail_policy',
+                    'worker_id': self.config.worker_id
+                }
+            )
+
+            logger.info(f"Workflow {workflow_id} marked as FAILED due to task {task_id} failure (hard fail policy)")
+        else:
+            # Workflow already completed/failed, just check for final status
+            await self.check_workflow_completion(workflow_id)
 
     async def find_ready_tasks(
         self,
@@ -343,6 +436,15 @@ class DependencyWorker(BaseWorker):
                 if failed_deps:
                     # Mark task as blocked due to failed dependency
                     logger.info(f"Task {task_id} blocked due to failed dependencies: {failed_deps}")
+
+                    # Log WARNING: Task blocked due to failed dependency
+                    await self.log_worker_warning(
+                        "task_blocked_failed_dependency",
+                        f"Task {task_id} blocked due to failed dependencies: {', '.join(failed_deps)}",
+                        workflow_id=workflow_id,
+                        task_id=task_id,
+                        failed_dependencies=failed_deps
+                    )
                     await self.redis.sadd(
                         default_sharding.get_workflow_key("tasks:blocked", workflow_id).encode(),
                         task_id.encode()

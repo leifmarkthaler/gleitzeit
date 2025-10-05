@@ -1,0 +1,19 @@
+[2025-10-05 20:43:39] [STDERR] INFO:     Started server process [14271]
+[2025-10-05 20:43:39] [STDERR] INFO:     Waiting for application startup.
+[2025-10-05 20:43:39] [STDERR] INFO:     Application startup complete.
+[2025-10-05 20:43:39] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-05 20:43:41] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-05 20:43:41] [STDOUT] INFO:     127.0.0.1:50098 - "POST /workflows/validate HTTP/1.1" 200 OK
+[2025-10-05 20:43:48] [STDOUT] INFO:     127.0.0.1:50112 - "POST /workflows/validate HTTP/1.1" 200 OK
+[2025-10-05 20:44:15] [STDOUT] INFO:     127.0.0.1:50134 - "POST /workflows/validate HTTP/1.1" 200 OK
+[2025-10-05 20:44:25] [STDOUT] INFO:     127.0.0.1:50138 - "POST /workflows/validate HTTP/1.1" 200 OK
+[2025-10-05 20:45:18] [STDOUT] INFO:     127.0.0.1:50216 - "POST /workflows/validate HTTP/1.1" 200 OK
+[2025-10-05 20:45:18] [STDOUT] INFO:     127.0.0.1:50218 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-05 20:45:32] [STDOUT] INFO:     127.0.0.1:50270 - "GET /workflows/b8f57b8f-4e25-4962-b90a-3c079a5bec3d HTTP/1.1" 200 OK
+[2025-10-05 20:45:48] [STDOUT] INFO:     127.0.0.1:50315 - "GET /workflows/b8f57b8f-4e25-4962-b90a-3c079a5bec3d/tasks HTTP/1.1" 200 OK
+[2025-10-05 20:47:33] [STDOUT] INFO:     127.0.0.1:50373 - "GET /workflows/b8f57b8f-4e25-4962-b90a-3c079a5bec3d/tasks HTTP/1.1" 200 OK
+[2025-10-05 20:47:42] [STDOUT] INFO:     127.0.0.1:50424 - "GET /tasks/992fb857-ea0e-404c-9b34-5dafbb91f6ee HTTP/1.1" 200 OK
+[2025-10-05 20:53:53] [STDERR] INFO:     Shutting down
+[2025-10-05 20:53:53] [STDERR] INFO:     Waiting for application shutdown.
+[2025-10-05 20:53:53] [STDERR] INFO:     Application shutdown complete.
+[2025-10-05 20:53:53] [STDERR] INFO:     Finished server process [14271]

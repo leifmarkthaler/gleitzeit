@@ -1,0 +1,933 @@
+{% extends "base.html" %}
+
+{% block title %}Logs - Gleitzeit{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        <h1 class="page-title">System Logs</h1>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('errors')">Errors</button>
+        <button class="tab-btn" onclick="switchTab('all')">All Logs</button>
+        <button class="tab-btn" onclick="switchTab('stats')">Statistics</button>
+    </div>
+
+    <!-- Errors Tab -->
+    <div id="errors-tab" class="tab-content active">
+        <!-- Error Analytics Dashboard -->
+        <div class="section">
+            <h2 class="section-title">Error Analytics</h2>
+            <div class="error-analytics-grid">
+                <div class="analytics-card">
+                    <h3>Total Errors</h3>
+                    <div class="analytics-value" id="analytics-total-errors">0</div>
+                    <div class="analytics-label">All time</div>
+                </div>
+                <div class="analytics-card">
+                    <h3>Last Hour</h3>
+                    <div class="analytics-value" id="analytics-errors-hour">0</div>
+                    <div class="analytics-label">Recent errors</div>
+                </div>
+                <div class="analytics-card">
+                    <h3>Last 24 Hours</h3>
+                    <div class="analytics-value" id="analytics-errors-day">0</div>
+                    <div class="analytics-label">Daily errors</div>
+                </div>
+                <div class="analytics-card">
+                    <h3>Error Rate</h3>
+                    <div class="analytics-value" id="analytics-error-rate">0</div>
+                    <div class="analytics-label">errors/hour</div>
+                </div>
+            </div>
+
+            <!-- Error Breakdown -->
+            <div class="error-breakdown-container">
+                <div class="error-breakdown-section">
+                    <h3>Top Error Types</h3>
+                    <div id="error-types-list" class="breakdown-list">
+                        <div class="loading-spinner">Loading...</div>
+                    </div>
+                </div>
+                <div class="error-breakdown-section">
+                    <h3>Errors by Component</h3>
+                    <div id="error-components-list" class="breakdown-list">
+                        <div class="loading-spinner">Loading...</div>
+                    </div>
+                </div>
+                <div class="error-breakdown-section">
+                    <h3>Affected Workflows</h3>
+                    <div id="error-workflows-list" class="breakdown-list">
+                        <div class="loading-spinner">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error List -->
+        <div class="section">
+            <h2 class="section-title">Error Logs</h2>
+            <div class="filters">
+                <input type="text" id="error-workflow-filter" placeholder="Filter by Workflow ID" class="filter-input">
+                <input type="text" id="error-component-filter" placeholder="Filter by Component" class="filter-input">
+                <button onclick="loadErrors()" class="btn btn-primary">Apply Filters</button>
+                <button onclick="clearErrorFilters()" class="btn btn-secondary">Clear</button>
+            </div>
+
+            <div class="log-count">
+                <span id="error-count">Total Errors: {{ error_total or 0 }}</span>
+            </div>
+
+            <table class="table log-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Workflow ID</th>
+                        <th>Component</th>
+                        <th>Error Type</th>
+                        <th>Message</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="errors-tbody">
+                    {% for error in errors %}
+                    <tr>
+                        <td class="timestamp">{{ error.timestamp }}</td>
+                        <td>
+                            {% if error.workflow_id %}
+                            <code><a href="/workflows/{{ error.workflow_id }}">{{ error.workflow_id[:12] }}...</a></code>
+                            {% else %}
+                            <span class="text-muted">System</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ error.component }}</td>
+                        <td><span class="badge badge-error">{{ error.error_type }}</span></td>
+                        <td class="message-cell">{{ error.message }}</td>
+                        <td>
+                            <button onclick="showErrorDetails('{{ error.log_id }}')" class="btn btn-sm btn-primary">Details</button>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">No errors found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <button onclick="loadErrors(Math.max(0, currentErrorOffset - 50))" class="btn btn-secondary">Previous</button>
+                <span id="error-page-info">Page 1</span>
+                <button onclick="loadErrors(currentErrorOffset + 50)" class="btn btn-secondary">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Logs Tab -->
+    <div id="all-tab" class="tab-content">
+        <div class="section">
+            <div class="filters">
+                <select id="log-level" class="filter-select">
+                    <option value="DEBUG">DEBUG</option>
+                    <option value="INFO" selected>INFO</option>
+                    <option value="WARNING">WARNING</option>
+                    <option value="ERROR">ERROR</option>
+                </select>
+                <input type="text" id="log-workflow-filter" placeholder="Filter by Workflow ID" class="filter-input">
+                <input type="text" id="log-component-filter" placeholder="Filter by Component" class="filter-input">
+                <button onclick="loadLogs()" class="btn btn-primary">Apply Filters</button>
+                <button onclick="clearLogFilters()" class="btn btn-secondary">Clear</button>
+            </div>
+
+            <div class="log-count">
+                <span id="log-count">Total Logs: {{ log_total or 0 }}</span>
+            </div>
+
+            <table class="table log-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Level</th>
+                        <th>Workflow ID</th>
+                        <th>Component</th>
+                        <th>Operation</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody id="logs-tbody">
+                    {% for log in logs %}
+                    <tr>
+                        <td class="timestamp">{{ log.timestamp }}</td>
+                        <td><span class="badge badge-{{ log.level.lower() }}">{{ log.level }}</span></td>
+                        <td>
+                            {% if log.workflow_id %}
+                            <code><a href="/workflows/{{ log.workflow_id }}">{{ log.workflow_id[:12] }}...</a></code>
+                            {% else %}
+                            <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ log.component }}</td>
+                        <td>{{ log.operation or '-' }}</td>
+                        <td class="message-cell">{{ log.message }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">No logs found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="pagination">
+                <button onclick="loadLogs(Math.max(0, currentLogOffset - 50))" class="btn btn-secondary">Previous</button>
+                <span id="log-page-info">Page 1</span>
+                <button onclick="loadLogs(currentLogOffset + 50)" class="btn btn-secondary">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Tab -->
+    <div id="stats-tab" class="tab-content">
+        <div class="section">
+            <div class="filters">
+                <input type="text" id="stats-workflow-filter" placeholder="Filter by Workflow ID" class="filter-input">
+                <input type="text" id="stats-component-filter" placeholder="Filter by Component" class="filter-input">
+                <button onclick="loadStats()" class="btn btn-primary">Apply Filters</button>
+                <button onclick="clearStatsFilters()" class="btn btn-secondary">Clear</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Debug Logs</h3>
+                    <div class="stat-value" id="stat-debug">{{ stats.debug if stats else 0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Info Logs</h3>
+                    <div class="stat-value" id="stat-info">{{ stats.info if stats else 0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Warning Logs</h3>
+                    <div class="stat-value" id="stat-warning">{{ stats.warning if stats else 0 }}</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Error Logs</h3>
+                    <div class="stat-value" id="stat-error">{{ stats.error if stats else 0 }}</div>
+                </div>
+            </div>
+
+            <div class="stats-details">
+                <h3>Total Logs: <span id="stats-total">{{ stats_total if stats_total else 0 }}</span></h3>
+                <p id="stats-filters">Filters: None</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Error Details Modal -->
+<div id="error-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Error Details</h2>
+            <button onclick="closeErrorModal()" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body" id="error-details">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+</div>
+
+<style>
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+    margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+    color: var(--primary-color);
+}
+
+.tab-btn.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.filters {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.filter-input, .filter-select {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.25rem;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-width: 200px;
+}
+
+.log-count {
+    margin-bottom: 1rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.log-table th {
+    background: var(--bg-secondary);
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-bottom: 2px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.log-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.timestamp {
+    font-family: 'Monaco', 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.message-cell {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+    text-transform: uppercase;
+}
+
+.badge-debug {
+    background: rgba(156, 163, 175, 0.1);
+    color: #9ca3af;
+}
+
+.badge-info {
+    background: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+}
+
+.badge-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.badge-error {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+}
+
+/* Error Analytics Styles */
+.error-analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.analytics-card {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.analytics-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.analytics-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #dc3545;
+    margin: 0.5rem 0;
+}
+
+.analytics-label {
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.error-breakdown-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.error-breakdown-section {
+    background: #fff;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid #dee2e6;
+}
+
+.error-breakdown-section h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 0.5rem;
+}
+
+.breakdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.breakdown-item:hover {
+    background: #e9ecef;
+}
+
+.breakdown-item-label {
+    font-size: 0.875rem;
+    color: #495057;
+    font-weight: 500;
+}
+
+.breakdown-item-count {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #dc3545;
+    background: #fff;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    border: 1px solid #dee2e6;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 1rem 0;
+}
+
+.stats-details {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border-color);
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-primary);
+    border-radius: 0.5rem;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90vh;
+    overflow: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 0.25rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-secondary {
+    background: var(--secondary-color);
+    color: white;
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.text-center {
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.text-muted {
+    color: var(--text-secondary);
+}
+</style>
+
+<script>
+let currentErrorOffset = 0;
+let currentLogOffset = 0;
+let currentTab = 'errors';
+
+// Load error analytics data
+function loadErrorAnalytics() {
+    const now = Date.now();
+    const oneHourAgo = now - (60 * 60 * 1000);
+    const oneDayAgo = now - (24 * 60 * 60 * 1000);
+
+    // Load all errors for analytics
+    fetch('/api/system/logs/errors?limit=10000')
+        .then(response => response.json())
+        .then(data => {
+            const errors = data.errors || [];
+            const total = data.total || 0;
+
+            // Calculate time-based stats
+            const errorsLastHour = errors.filter(e => e.timestamp >= oneHourAgo).length;
+            const errorsLastDay = errors.filter(e => e.timestamp >= oneDayAgo).length;
+            const errorRate = errorsLastDay > 0 ? (errorsLastDay / 24).toFixed(1) : 0;
+
+            // Update analytics cards
+            document.getElementById('analytics-total-errors').textContent = total;
+            document.getElementById('analytics-errors-hour').textContent = errorsLastHour;
+            document.getElementById('analytics-errors-day').textContent = errorsLastDay;
+            document.getElementById('analytics-error-rate').textContent = errorRate;
+
+            // Calculate breakdowns
+            const errorTypes = {};
+            const errorComponents = {};
+            const errorWorkflows = {};
+
+            errors.forEach(error => {
+                // Count error types
+                const errorType = error.error_type || 'Unknown';
+                errorTypes[errorType] = (errorTypes[errorType] || 0) + 1;
+
+                // Count components
+                const component = error.component || 'Unknown';
+                errorComponents[component] = (errorComponents[component] || 0) + 1;
+
+                // Count workflows
+                if (error.workflow_id) {
+                    const wf = error.workflow_id.substring(0, 12) + '...';
+                    errorWorkflows[wf] = (errorWorkflows[wf] || 0) + 1;
+                }
+            });
+
+            // Render breakdowns
+            renderBreakdown('error-types-list', errorTypes, 10);
+            renderBreakdown('error-components-list', errorComponents, 10);
+            renderBreakdown('error-workflows-list', errorWorkflows, 10);
+        })
+        .catch(error => {
+            console.error('Error loading analytics:', error);
+        });
+}
+
+function renderBreakdown(containerId, data, limit = 10) {
+    const container = document.getElementById(containerId);
+
+    // Sort by count descending
+    const sorted = Object.entries(data)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit);
+
+    if (sorted.length === 0) {
+        container.innerHTML = '<div style="text-align: center; color: #999; padding: 1rem;">No data available</div>';
+        return;
+    }
+
+    let html = '';
+    sorted.forEach(([label, count]) => {
+        html += `
+            <div class="breakdown-item">
+                <span class="breakdown-item-label">${label}</span>
+                <span class="breakdown-item-count">${count}</span>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+}
+
+function switchTab(tab) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+
+    // Show selected tab
+    document.getElementById(tab + '-tab').classList.add('active');
+    event.target.classList.add('active');
+
+    currentTab = tab;
+
+    // Load data for the tab
+    if (tab === 'errors') {
+        loadErrorAnalytics();
+        loadErrors();
+    } else if (tab === 'all') {
+        loadLogs();
+    } else if (tab === 'stats') {
+        loadStats();
+    }
+}
+
+function loadErrors(offset = 0) {
+    currentErrorOffset = offset;
+
+    const workflowId = document.getElementById('error-workflow-filter').value;
+    const component = document.getElementById('error-component-filter').value;
+
+    let params = new URLSearchParams({
+        limit: 50,
+        offset: offset
+    });
+
+    if (workflowId) params.append('workflow_id', workflowId);
+    if (component) params.append('component', component);
+
+    fetch(`/api/system/logs/errors?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            updateErrorsTable(data.errors || []);
+            document.getElementById('error-count').textContent = `Total Errors: ${data.total || 0}`;
+            document.getElementById('error-page-info').textContent = `Page ${Math.floor(offset / 50) + 1}`;
+        })
+        .catch(error => console.error('Error loading errors:', error));
+}
+
+function loadLogs(offset = 0) {
+    currentLogOffset = offset;
+
+    const level = document.getElementById('log-level').value;
+    const workflowId = document.getElementById('log-workflow-filter').value;
+    const component = document.getElementById('log-component-filter').value;
+
+    let params = new URLSearchParams({
+        level: level,
+        limit: 50,
+        offset: offset
+    });
+
+    if (workflowId) params.append('workflow_id', workflowId);
+    if (component) params.append('component', component);
+
+    fetch(`/api/system/logs?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            updateLogsTable(data.logs || []);
+            document.getElementById('log-count').textContent = `Total Logs: ${data.total || 0}`;
+            document.getElementById('log-page-info').textContent = `Page ${Math.floor(offset / 50) + 1}`;
+        })
+        .catch(error => console.error('Error loading logs:', error));
+}
+
+function loadStats() {
+    const workflowId = document.getElementById('stats-workflow-filter').value;
+    const component = document.getElementById('stats-component-filter').value;
+
+    let params = new URLSearchParams();
+    if (workflowId) params.append('workflow_id', workflowId);
+    if (component) params.append('component', component);
+
+    fetch(`/api/system/logs/stats?${params}`)
+        .then(response => response.json())
+        .then(data => {
+            const stats = data.stats || {};
+            document.getElementById('stat-debug').textContent = stats.debug || 0;
+            document.getElementById('stat-info').textContent = stats.info || 0;
+            document.getElementById('stat-warning').textContent = stats.warning || 0;
+            document.getElementById('stat-error').textContent = stats.error || 0;
+            document.getElementById('stats-total').textContent = data.total || 0;
+
+            const filters = [];
+            if (workflowId) filters.push(`Workflow: ${workflowId}`);
+            if (component) filters.push(`Component: ${component}`);
+            document.getElementById('stats-filters').textContent =
+                `Filters: ${filters.length > 0 ? filters.join(', ') : 'None'}`;
+        })
+        .catch(error => console.error('Error loading stats:', error));
+}
+
+function updateErrorsTable(errors) {
+    const tbody = document.getElementById('errors-tbody');
+    tbody.innerHTML = '';
+
+    if (errors.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No errors found</td></tr>';
+        return;
+    }
+
+    errors.forEach(error => {
+        const row = document.createElement('tr');
+        const timestamp = new Date(error.timestamp).toLocaleString();
+        const workflowId = error.workflow_id || '';
+
+        row.innerHTML = `
+            <td class="timestamp">${timestamp}</td>
+            <td>${workflowId ? `<code><a href="/workflows/${workflowId}">${workflowId.substring(0, 12)}...</a></code>` : '<span class="text-muted">System</span>'}</td>
+            <td>${error.component}</td>
+            <td><span class="badge badge-error">${error.error_type}</span></td>
+            <td class="message-cell">${error.message}</td>
+            <td><button onclick="showErrorDetails('${error.log_id}')" class="btn btn-sm btn-primary">Details</button></td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function updateLogsTable(logs) {
+    const tbody = document.getElementById('logs-tbody');
+    tbody.innerHTML = '';
+
+    if (logs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center">No logs found</td></tr>';
+        return;
+    }
+
+    logs.forEach(log => {
+        const row = document.createElement('tr');
+        const timestamp = new Date(log.timestamp).toLocaleString();
+        const workflowId = log.workflow_id || '';
+
+        row.innerHTML = `
+            <td class="timestamp">${timestamp}</td>
+            <td><span class="badge badge-${log.level.toLowerCase()}">${log.level}</span></td>
+            <td>${workflowId ? `<code><a href="/workflows/${workflowId}">${workflowId.substring(0, 12)}...</a></code>` : '<span class="text-muted">-</span>'}</td>
+            <td>${log.component}</td>
+            <td>${log.operation || '-'}</td>
+            <td class="message-cell">${log.message}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+function showErrorDetails(logId) {
+    // Fetch error details from API
+    fetch(`/api/system/logs/errors?limit=1000`)
+        .then(response => response.json())
+        .then(data => {
+            const error = data.errors.find(e => e.log_id === logId);
+            if (error) {
+                displayErrorDetails(error);
+            }
+        })
+        .catch(error => console.error('Error loading error details:', error));
+}
+
+function displayErrorDetails(error) {
+    const modal = document.getElementById('error-modal');
+    const detailsDiv = document.getElementById('error-details');
+
+    const timestamp = new Date(error.timestamp).toLocaleString();
+
+    detailsDiv.innerHTML = `
+        <div style="margin-bottom: 1rem;">
+            <strong>Log ID:</strong> <code>${error.log_id}</code>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <strong>Timestamp:</strong> ${timestamp}
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <strong>Workflow ID:</strong> ${error.workflow_id ? `<code>${error.workflow_id}</code>` : 'System'}
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <strong>Task ID:</strong> ${error.task_id || 'N/A'}
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <strong>Component:</strong> ${error.component}
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <strong>Error Type:</strong> <span class="badge badge-error">${error.error_type}</span>
+        </div>
+        <div style="margin-bottom: 1rem;">
+            <strong>Message:</strong><br>
+            <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.25rem; overflow-x: auto;">${error.message}</pre>
+        </div>
+        ${error.stack_trace ? `
+        <div style="margin-bottom: 1rem;">
+            <strong>Stack Trace:</strong><br>
+            <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.25rem; overflow-x: auto; max-height: 300px;">${error.stack_trace}</pre>
+        </div>
+        ` : ''}
+        ${error.metadata && Object.keys(error.metadata).length > 0 ? `
+        <div style="margin-bottom: 1rem;">
+            <strong>Metadata:</strong><br>
+            <pre style="background: var(--bg-secondary); padding: 1rem; border-radius: 0.25rem; overflow-x: auto;">${JSON.stringify(error.metadata, null, 2)}</pre>
+        </div>
+        ` : ''}
+    `;
+
+    modal.classList.add('active');
+}
+
+function closeErrorModal() {
+    document.getElementById('error-modal').classList.remove('active');
+}
+
+function clearErrorFilters() {
+    document.getElementById('error-workflow-filter').value = '';
+    document.getElementById('error-component-filter').value = '';
+    loadErrors();
+}
+
+function clearLogFilters() {
+    document.getElementById('log-level').value = 'INFO';
+    document.getElementById('log-workflow-filter').value = '';
+    document.getElementById('log-component-filter').value = '';
+    loadLogs();
+}
+
+function clearStatsFilters() {
+    document.getElementById('stats-workflow-filter').value = '';
+    document.getElementById('stats-component-filter').value = '';
+    loadStats();
+}
+
+// Load initial data
+document.addEventListener('DOMContentLoaded', function() {
+    loadErrorAnalytics();
+    loadErrors();
+});
+
+// Auto-refresh every 30 seconds if on errors tab
+setInterval(() => {
+    if (currentTab === 'errors') {
+        loadErrorAnalytics();
+        loadErrors(currentErrorOffset);
+    } else if (currentTab === 'all') {
+        loadLogs(currentLogOffset);
+    } else if (currentTab === 'stats') {
+        loadStats();
+    }
+}, 30000);
+</script>
+{% endblock %}

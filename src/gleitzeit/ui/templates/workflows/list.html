@@ -27,29 +27,29 @@
             <tbody id="workflows-tbody">
                 {% for workflow in workflows %}
                 <tr>
-                    <td><code>{{ workflow.workflow_id[:12] }}...</code></td>
-                    <td>{{ workflow.name or 'Unnamed' }}</td>
+                    <td><code>{{ workflow['workflow_id'][:12] }}...</code></td>
+                    <td>{{ workflow.get('name', 'Unnamed') }}</td>
                     <td>
-                        {% set status = workflow.status if workflow.status else 'unknown' %}
+                        {% set status = workflow.get('status', 'unknown') %}
                         <span class="badge badge-{{ status.replace(' ', '-') }}">
                             {{ status }}
                         </span>
                     </td>
-                    <td>{{ workflow.task_count or 0 }}</td>
+                    <td>{{ workflow.get('task_count', 0) }}</td>
                     <td>
-                        {% set created_at = workflow.created_at if workflow.created_at else None %}
+                        {% set created_at = workflow.get('created_at') %}
                         {% if created_at %}
-                            {{ created_at[:19].replace('T', ' ') if created_at else '-' }}
+                            {{ created_at[:19].replace('T', ' ') }}
                         {% else %}
                             -
                         {% endif %}
                     </td>
                     <td>
-                        <a href="/workflows/{{ workflow.workflow_id }}" class="btn btn-sm btn-primary">View</a>
+                        <a href="/workflows/{{ workflow['workflow_id'] }}" class="btn btn-sm btn-primary">View</a>
                         {% if status in ['failed', 'validation_failed', 'cancelled'] %}
-                        <button onclick="retryWorkflow('{{ workflow.workflow_id }}')" class="btn btn-sm btn-secondary">Retry</button>
+                        <button onclick="retryWorkflow('{{ workflow['workflow_id'] }}')" class="btn btn-sm btn-secondary">Retry</button>
                         {% elif status in ['running', 'submitted'] %}
-                        <button onclick="cancelWorkflow('{{ workflow.workflow_id }}')" class="btn btn-sm btn-danger">Cancel</button>
+                        <button onclick="cancelWorkflow('{{ workflow['workflow_id'] }}')" class="btn btn-sm btn-danger">Cancel</button>
                         {% endif %}
                     </td>
                 </tr>

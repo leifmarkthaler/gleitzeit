@@ -1,5 +1,5 @@
-# Basic Gleitzeit Configuration
-# Minimal setup for basic functionality
+# Gleitzeit Configuration with Handler Support
+# This example shows how to configure handlers in gleitzeit.yaml
 
 redis:
   mode: single
@@ -7,46 +7,128 @@ redis:
     host: localhost
     port: 6379
 
-# Multi-Machine Deployment Configuration
-deployment:
-  # Machine location configuration (can be overridden by environment variables)
-  datacenter: ${GLEITZEIT_DATACENTER:-default}
-  rack: ${GLEITZEIT_RACK:-default}
-  network_zone: ${GLEITZEIT_NETWORK_ZONE:-default}
-
-  # Instance metadata
-  environment: ${GLEITZEIT_ENVIRONMENT:-development}
-  region: ${GLEITZEIT_REGION:-default}
-  zone: ${GLEITZEIT_ZONE:-default}
-  cluster: ${GLEITZEIT_CLUSTER:-default}
-
-  # Port management
-  port_management:
-    ttl: 300  # Port allocation TTL in seconds
-    refresh_interval: 120  # TTL refresh interval in seconds
-    max_attempts: 100  # Max attempts to find available port
-
-  # Service discovery
-  discovery:
+  # Redis Health Monitoring (per-instance)
+  health:
     enabled: true
-    cache_ttl: 60  # Cache discovery results for 60 seconds
-    prefer_local: true  # Prefer services on same machine
+    check_interval: 10              # Seconds between Redis health checks
+    warning_threshold: 3            # Consecutive failures before WARNING
+    critical_timeout: 120           # Seconds before CRITICAL state
+    shutdown_timeout: 300           # Seconds before SHUTDOWN
 
-  # Network tags for instance communication control
-  network_tags:
-    - ${GLEITZEIT_ENVIRONMENT:-development}-network
-    # Add more tags as needed for cross-environment communication
+  # Shutdown Behavior on Redis Failure
+  shutdown:
+    mode: graceful                  # "graceful" or "immediate"
+    grace_period: 30                # Seconds to wait for task completion
+    force_after: 60                 # Force shutdown after this many seconds
 
+# Handler Configuration Section
+handlers:
+  # Python handler configuration
+  python:
+    execution:
+      mode: container  # Options: native, subprocess, container, remote, auto
+      container:
+        image: python:3.11-slim  # Use official Python image
+        network: bridge  # Use bridge network for isolation
+        memory_limit: "512m"  # Limit memory usage
+        cpu_limit: 1.0  # Limit to 1 CPU core
+        volumes:
+          /tmp/gleitzeit: /tmp/gleitzeit  # For file sharing
+        environment:
+          PYTHONUNBUFFERED: "1"
+          TZ: "UTC"
+    # Handler will now check execution_mode from execution.mode
+    execution_mode: container  # This tells handler to use container mode
+    config:
+      # Subprocess pool settings (used when mode: subprocess or fallback)
+      subprocess_pool_enabled: true
+      subprocess_pool_min_size: 2
+      subprocess_pool_max_size: 10
+      default_timeout: 300
+
+  # Ollama handler configuration
+  ollama:
+    execution:
+      mode: native
+    config:
+      base_url: http://localhost:11434
+      timeout: 300
+      default_model: llama3.2:latest
+      circuit_breaker:
+        enabled: true
+        failure_threshold: 3
+        success_threshold: 2
+        reset_timeout: 60
+
+  # HTTP handler configuration
+  http:
+    execution:
+      mode: native
+    config:
+      timeout: 30
+      max_retries: 3
+      allowed_hosts:
+        - api.example.com
+        - webhook.service.com
+      default_headers:
+        User-Agent: Gleitzeit/0.0.7
+
+  # File handler configuration
+  file:
+    execution:
+      mode: native
+    config:
+      base_directories:
+        input: /data/input
+        output: /data/output
+        temp: /tmp/gleitzeit
+      max_file_size_mb: 100
+
+  # Timer handler configuration
+  timer:
+    execution:
+      mode: native
+    config:
+      precision_ms: 100
+      backend: redis
+
+  # Signal handler configuration
+  signal:
+    execution:
+      mode: native
+    config:
+      delivery_mode: at_least_once
+      max_signals_per_workflow: 1000
+
+  # Workflow handler configuration
+  workflow:
+    execution:
+      mode: native
+    config:
+      max_child_workflows: 100
+      async_submission: true
+
+# Worker configuration with handler configs
 workers:
-  # Essential worker for executing tasks
+  # Task execution worker with handler configurations
   - worker_type: task_execution
     worker_class: gleitzeit.workers.task_execution_worker.TaskExecutionWorker
     count: 2
     max_concurrent: 5
     batch_size: 10
     block_timeout: 5000
+    # Worker-specific handler configs (override global settings)
+    handler_configs:
+      "python/v1":
+        subprocess_pool_enabled: true
+        subprocess_pool_max_size: 20  # Override global setting for this worker
+        default_timeout: 600  # Longer timeout for this worker
+      "ollama/v1":
+        base_url: http://localhost:11434
+        timeout: 180  # 3 minutes for LLM tasks
+        default_model: llama3.2:latest  # Use llama3.2:latest for this worker
 
-  # Handles workflow dependencies
+  # Dependency worker
   - worker_type: dependency
     worker_class: gleitzeit.workers.dependency_worker.DependencyWorker
     count: 1
@@ -54,20 +136,28 @@ workers:
     batch_size: 10
     block_timeout: 5000
 
-  # Loads workflows (using v2) - WITH AUTOSCALING
+  # Workflow loader worker
   - worker_type: workflow_loader
     worker_class: gleitzeit.workers.workflow_loader_worker_v2.WorkflowLoaderWorkerV2
     count: 2
-    min_replicas: 2
-    max_replicas: 20
-    auto_scale: true
-    scale_threshold_high: 100
-    scale_threshold_low: 10
     max_concurrent: 10
     batch_size: 10
     block_timeout: 5000
 
-  # Handles workflow submissions
+  # Specialized Python-only worker with custom config
+  - worker_type: python_specialist
+    worker_class: gleitzeit.workers.task_execution_worker.TaskExecutionWorker
+    count: 1
+    max_concurrent: 3
+    enabled_task_types: [python, script]  # Only handle Python tasks
+    handler_configs:
+      "python/v1":
+        subprocess_pool_enabled: true
+        subprocess_pool_min_size: 5
+        subprocess_pool_max_size: 30  # More capacity for Python-heavy workloads
+        default_timeout: 1800  # 30 minutes for long-running scripts
+
+  # Other workers...
   - worker_type: workflow_submission
     worker_class: gleitzeit.workers.workflow_submission_worker.WorkflowSubmissionWorker
     count: 1
@@ -75,7 +165,6 @@ workers:
     batch_size: 5
     block_timeout: 5000
 
-  # Handles retries
   - worker_type: retry
     worker_class: gleitzeit.workers.retry_worker.RetryWorker
     count: 1
@@ -83,7 +172,6 @@ workers:
     batch_size: 10
     block_timeout: 5000
 
-  # Handles scheduled tasks and retries
   - worker_type: timer
     worker_class: gleitzeit.workers.timer_worker.TimerWorker
     count: 1
@@ -91,138 +179,122 @@ workers:
     batch_size: 10
     block_timeout: 1000
 
-
-# Sharding configuration for multi-machine worker distribution
+# Sharding configuration
 sharding:
-  num_shards: 16  # Total number of shards for task distribution
-  rebalance_interval: 300  # Rebalance shards every 5 minutes
+  num_shards: 16
+  rebalance_interval: 300
 
-# Optional monitoring
+# Logging Configuration
+logging:
+  # Enable Redis-backed queryable logging
+  redis_logging_enabled: true
+
+  # Minimum level to log to Redis (DEBUG, INFO, WARNING, ERROR)
+  # File logging always gets all levels
+  redis_log_level: INFO
+
+  # Sampling rates (0.0 - 1.0) to control Redis memory usage
+  sampling:
+    debug: 0.1    # Only log 10% of DEBUG logs to Redis
+    info: 1.0     # Log all INFO logs
+    warning: 1.0  # Log all WARNING logs
+    error: 1.0    # Log all ERROR logs
+
+  # TTL (time to live) in seconds for log retention
+  ttl:
+    debug: 86400      # 1 day
+    info: 604800      # 7 days
+    warning: 1209600  # 14 days
+    error: 2592000    # 30 days
+
+  # Component-specific log levels
+  # Override redis_log_level for specific components
+  component_levels:
+    # Example: More verbose logging for specific components
+    # PythonHandler: DEBUG
+    # TaskExecutionWorker: INFO
+    # DependencyWorker: WARNING
+
+  # Performance limits to prevent Redis memory bloat
+  limits:
+    # Max logs per workflow (per level) before rotation
+    max_logs_per_workflow: 10000
+
+    # Max log message size (bytes)
+    max_message_size: 10240  # 10KB
+
+    # Batch size for bulk log operations
+    batch_size: 100
+
+# Monitoring Configuration
 monitoring:
-  health_check_interval: 30
-  heartbeat_interval: 10
-  scale_check_interval: 60
-  # Multi-machine monitoring
-  machine_heartbeat_interval: 30  # Machine heartbeat to Redis
-  instance_heartbeat_interval: 10  # Instance heartbeat to Redis
+  # Worker Heartbeat and Metrics
+  worker:
+    heartbeat_interval: 30          # Seconds between worker heartbeats
+    heartbeat_timeout: 60           # Consider worker unhealthy after this
+    max_health_failures: 3          # Restart worker after this many failures
+    include_metrics: true           # Include worker metrics in heartbeat
+    include_system_stats: true      # Include CPU/memory in heartbeat
 
-# Authentication and Security
+    # Enhanced Health Thresholds
+    health_thresholds:
+      max_memory_mb: 2048           # Max memory before unhealthy
+      min_processing_rate: 0.1      # Min messages/sec
+      max_error_rate: 0.5           # Max error rate (0.0-1.0)
+      max_avg_processing_ms: 30000  # Max avg processing time
+
+  # Service Heartbeat
+  service:
+    heartbeat_interval: 30          # Seconds between service heartbeats
+    registration_ttl: 90            # TTL for service registrations
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 10         # Open circuit after N failures
+      reset_timeout: 300            # Reset circuit after N seconds
+
+  # Component Health Monitoring
+  component:
+    health_check_interval: 10       # Seconds between health checks
+    enable_system_metrics: true     # Collect CPU/memory metrics
+    enable_queue_metrics: true      # Collect queue depth metrics
+
+  # Metrics Collection
+  metrics:
+    collection_interval: 60         # Seconds between metric collection
+    retention_period: 3600          # Seconds to retain metrics
+
+  # Auto-Scaling
+  auto_scale:
+    enabled: true
+    check_interval: 30              # Seconds between scaling checks
+    scale_up_threshold: 100         # Avg queue depth to scale up
+    scale_down_threshold: 10        # Avg queue depth to scale down
+
+# Authentication
 auth:
-  # Auto-login for development (creates basic user automatically)
-  auto_login: true  # Set to false in production
-
-  # JWT Configuration
+  auto_login: true
   jwt:
     secret: ${JWT_SECRET:-development-secret-change-in-production}
     algorithm: HS256
-    expiration: 3600  # 1 hour
-    refresh_expiration: 86400  # 24 hours
+    expiration: 3600
 
-  # Session Configuration
-  session:
-    cookie_name: session_id
-    cookie_httponly: true
-    cookie_secure: false  # Set to true for HTTPS in production
-    cookie_samesite: lax
-    session_ttl: 86400  # 24 hours
-
-  # API Key Configuration (optional)
-  api_keys:
-    enabled: false
-    redis_prefix: api_keys
-
-# Security Configuration
+# Security
 security:
-  # CORS Settings
   cors:
-    # Use dynamic origins based on serve configuration
-    # Will be computed as http://{host}:{port} for each service
-    use_serve_config: true  # Automatically add API and UI URLs
-    additional_origins: ${CORS_ORIGINS:-}  # Additional origins if needed
+    use_serve_config: true
     allow_credentials: true
     allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers: ["Content-Type", "Authorization", "X-Session-ID", "X-API-Key"]
-    expose_headers: ["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining"]
-
-  # Rate Limiting
-  rate_limiting:
-    enabled: true
-    default_limit: 100  # Requests per window
-    window: 60  # Window in seconds
-
-    # Endpoint-specific limits
-    endpoints:
-      "/workflows/submit": 10
-      "/auth/session/create": 5
-      "/auth/token": 5
-      "/tasks": 50
-      "/system": 20
-
-  # Audit Logging
-  audit:
-    enabled: true
-    redis_stream: audit:log
-    max_entries: 100000
-
-    # Endpoints to audit
-    audit_paths:
-      - /workflows/submit
-      - /workflows/*/cancel
-      - /tasks/*/retry
-      - /auth/session/create
-      - /auth/session/destroy
-      - /auth/token
-
-  # IP Whitelisting (optional)
-  ip_whitelist:
-    enabled: false
-    whitelist: ${ADMIN_IP_WHITELIST:-}  # Comma-separated IPs
-    protected_paths:
-      - /admin
-      - /system/shutdown
-      - /system/config
-
-# Input Validation
-validation:
-  # Workflow limits
-  workflow:
-    max_size_mb: 10
-    max_tasks: 1000
-    max_workflow_id_length: 100
-    workflow_id_pattern: "^[a-zA-Z0-9-_]+$"
-
-  # Task limits
-  task:
-    max_payload_size_mb: 1
-    max_result_size_mb: 10
-    max_retry_count: 5
-
-  # Request limits
-  request:
-    max_body_size_mb: 50
-    max_header_size: 8192
+    allow_headers: ["Content-Type", "Authorization"]
 
 # Serve configuration
 serve:
   api:
     host: 0.0.0.0
     port: 8000
-    reload_on_dev: true
-
-    # Environment variables to set (these will be auto-computed from config)
-    # The serve command will automatically set:
-    # - GLEITZEIT_AUTO_LOGIN from auth.auto_login
-    # - JWT_SECRET from auth.jwt.secret
-    # - CORS_ORIGINS from serve.api/ui host:port
-    # - REDIS_URL from redis configuration
-
   ui:
     host: 0.0.0.0
     port: 8004
     enabled: true
-    reload_on_dev: true
-
   orchestrator:
     enabled: true
-
   dev_mode: false

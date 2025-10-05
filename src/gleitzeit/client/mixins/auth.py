@@ -38,7 +38,8 @@ class AuthMixin:
 
         # Extract auth-specific parameters
         self.auto_login = kwargs.get('auto_login', True)
-        self.username = kwargs.get('username', 'default_user')
+        # If username is None or not provided, use default_user for auto-login
+        self.username = kwargs.get('username') or 'default_user'
         self.password = kwargs.get('password')
 
         # Set initial auth credentials if provided
@@ -61,17 +62,18 @@ class AuthMixin:
 
         Args:
             username: Username for authentication
-            password: Optional password
+            password: Optional password (defaults to empty string)
 
         Returns:
             Session ID
         """
         await self.ensure_connected()
 
+        # API requires username and password as strings (not null)
         response = await self._request(
             "POST",
             "/auth/session/create",
-            json_data={"username": username, "password": password}
+            json_data={"username": username, "password": password or ""}
         )
 
         self.session_id = response["session_id"]
@@ -92,10 +94,10 @@ class AuthMixin:
         if not self.session_id:
             raise ValueError("No active session to destroy")
 
+        # API expects session_id as query parameter
         response = await self._request(
             "POST",
-            "/auth/session/destroy",
-            json_data={"session_id": self.session_id}
+            f"/auth/session/destroy?session_id={self.session_id}"
         )
 
         logger.info(f"Destroyed session {self.session_id}")
@@ -108,15 +110,16 @@ class AuthMixin:
 
         Args:
             username: Username for authentication
-            password: Optional password
+            password: Optional password (defaults to empty string)
 
         Returns:
             JWT access token
         """
+        # API requires username and password as strings (not null)
         response = await self._request(
             "POST",
             "/auth/token",
-            json_data={"username": username, "password": password}
+            json_data={"username": username, "password": password or ""}
         )
 
         self.jwt_token = response["access_token"]
@@ -133,10 +136,10 @@ class AuthMixin:
         Returns:
             New access token
         """
+        # API expects refresh_token as query parameter
         response = await self._request(
             "POST",
-            "/auth/token/refresh",
-            json_data={"refresh_token": refresh_token}
+            f"/auth/token/refresh?refresh_token={refresh_token}"
         )
 
         self.jwt_token = response["access_token"]
@@ -154,10 +157,10 @@ class AuthMixin:
             return False
 
         try:
+            # API expects session_id as query parameter
             response = await self._request(
                 "POST",
-                "/auth/session/validate",
-                json_data={"session_id": self.session_id}
+                f"/auth/session/validate?session_id={self.session_id}"
             )
             return response.get("valid", False)
         except Exception:

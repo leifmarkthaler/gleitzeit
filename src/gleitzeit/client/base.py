@@ -53,11 +53,15 @@ class BaseClient:
         self._cookie_jar = aiohttp.CookieJar()
 
         # Authentication state (set by AuthMixin)
-        # Preserve existing values set by mixins (e.g., AuthMixin) when present
-        self.session_id: Optional[str] = getattr(self, "session_id", None)
-        self.jwt_token: Optional[str] = getattr(self, "jwt_token", None)
-        self.api_key: Optional[str] = getattr(self, "api_key", None)
-        self.username: Optional[str] = getattr(self, "username", None)
+        # Only set if not already set by a mixin to avoid overwriting
+        if not hasattr(self, 'session_id'):
+            self.session_id: Optional[str] = None
+        if not hasattr(self, 'jwt_token'):
+            self.jwt_token: Optional[str] = None
+        if not hasattr(self, 'api_key'):
+            self.api_key: Optional[str] = None
+        if not hasattr(self, 'username'):
+            self.username: Optional[str] = None
 
     async def __aenter__(self):
         """Async context manager entry."""

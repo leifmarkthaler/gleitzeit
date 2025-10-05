@@ -6,8 +6,13 @@ protocol/method combinations.
 """
 
 import redis
-from typing import Dict, Set, Optional, Tuple
+from typing import Dict, Set, Optional, Tuple, List
 import logging
+from .errors import (
+    ProtocolNotFoundError,
+    MethodNotFoundError,
+    find_closest_matches
+)
 
 logger = logging.getLogger(__name__)
 
@@ -182,6 +187,44 @@ class ProtocolRegistry:
                 return f"Did you mean {proto}? Available methods: {', '.join(sorted(methods))}"
 
         return f"Protocol {protocol} not found. Available protocols: {', '.join(sorted(self._protocols.keys()))}"
+
+    def get_available_protocols(self) -> List[str]:
+        """Get list of available protocols."""
+        self.ensure_loaded()
+        return list(self._protocols.keys())
+
+    def get_available_methods(self, protocol: str) -> List[str]:
+        """Get list of available methods for a protocol."""
+        self.ensure_loaded()
+        return list(self._protocols.get(protocol, set()))
+
+    def validate_with_suggestions(self, protocol: str, method: str, task_id: str) -> Tuple[bool, Optional[Exception]]:
+        """
+        Validate protocol/method with helpful error suggestions.
+
+        Args:
+            protocol: Protocol identifier
+            method: Method name
+            task_id: Task ID for error context
+
+        Returns:
+            Tuple of (is_valid, error_with_suggestions)
+        """
+        self.ensure_loaded()
+
+        # Check if protocol exists
+        if protocol not in self._protocols:
+            available = self.get_available_protocols()
+            error = ProtocolNotFoundError(protocol, task_id, available)
+            return False, error
+
+        # Check if method exists for protocol
+        if method not in self._protocols[protocol]:
+            available = self.get_available_methods(protocol)
+            error = MethodNotFoundError(method, protocol, task_id, available)
+            return False, error
+
+        return True, None
 
 
 # Global registry instance

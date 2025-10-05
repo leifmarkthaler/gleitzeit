@@ -1,0 +1,17 @@
+[2025-09-30 20:40:43] [STDERR] INFO:     Started server process [67081]
+[2025-09-30 20:40:43] [STDERR] INFO:     Waiting for application startup.
+[2025-09-30 20:40:43] [STDERR] INFO:     Application startup complete.
+[2025-09-30 20:40:43] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-09-30 20:41:00] [STDOUT] INFO:     127.0.0.1:64352 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:01] [STDOUT] INFO:     127.0.0.1:64352 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:03] [STDOUT] INFO:     127.0.0.1:64352 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:03] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 20:41:03] [STDOUT] INFO:     127.0.0.1:64352 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 20:41:05] [STDOUT] INFO:     127.0.0.1:64360 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:05] [STDOUT] INFO:     127.0.0.1:64360 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:07] [STDOUT] INFO:     127.0.0.1:64360 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:07] [STDOUT] INFO:     127.0.0.1:64360 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 20:41:09] [STDOUT] INFO:     127.0.0.1:64365 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:10] [STDOUT] INFO:     127.0.0.1:64365 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:12] [STDOUT] INFO:     127.0.0.1:64365 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 20:41:12] [STDOUT] INFO:     127.0.0.1:64365 - "POST /workflows/submit HTTP/1.1" 200 OK

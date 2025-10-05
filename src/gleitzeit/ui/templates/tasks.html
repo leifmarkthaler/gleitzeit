@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks - Gleitzeit</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .table th { background: var(--bg-secondary); padding: 0.75rem; text-align: left; border-bottom: 2px solid var(--border-color); }
+        .table td { padding: 0.75rem; border-bottom: 1px solid var(--border-color); }
+        .table tr:hover { background: var(--bg-secondary); }
+        .badge { padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 0.25rem; font-weight: 600; text-transform: uppercase; }
+        .badge-completed { background: rgba(34, 197, 94, 0.1); color: var(--success-color); }
+        .badge-running, .badge-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+        .badge-failed { background: rgba(239, 68, 68, 0.1); color: var(--error-color); }
+        .loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/" class="brand-link">
+                    <span class="brand-icon">🚀</span>
+                    <span>Gleitzeit</span>
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/workflows" class="nav-link">Workflows</a>
+                <a href="/tasks" class="nav-link active">Tasks</a>
+                <a href="/submit" class="nav-link">Submit</a>
+                <a href="/logs" class="nav-link">Logs</a>
+                <a href="/metrics" class="nav-link">Metrics</a>
+                <a href="/processes" class="nav-link">Processes</a>
+                <a href="/handlers" class="nav-link">Handlers</a>
+                <div class="nav-divider"></div>
+                <span class="nav-status">
+                    <span class="status-indicator" id="api-status"></span>
+                    API Status
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <h1 class="page-title">Tasks</h1>
+
+            <div class="section">
+                <div id="tasks-container">
+                    <div class="loading">Loading tasks...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/tasks/list?limit=100');
+                const data = await response.json();
+
+                const container = document.getElementById('tasks-container');
+
+                if (!data.tasks || data.tasks.length === 0) {
+                    container.innerHTML = '<div class="loading">No tasks found</div>';
+                    return;
+                }
+
+                let html = '<table class="table"><thead><tr>';
+                html += '<th>Task ID</th><th>Workflow ID</th><th>Status</th><th>Provider</th><th>Actions</th>';
+                html += '</tr></thead><tbody>';
+
+                data.tasks.forEach(task => {
+                    const taskId = task.task_id || task.id || '';
+                    const workflowId = task.workflow_id || '-';
+                    const status = task.state?.status || task.status || 'unknown';
+                    const provider = task.provider || task.type || task.state?.provider || '-';
+
+                    html += '<tr>';
+                    html += `<td><code>${taskId.substring(0, 12)}...</code></td>`;
+                    html += `<td>${workflowId !== '-' ? '<code>' + workflowId.substring(0, 12) + '...</code>' : '-'}</td>`;
+                    html += `<td><span class="badge badge-${status}">${status}</span></td>`;
+                    html += `<td>${provider}</td>`;
+                    html += `<td><a href="/tasks/${taskId}" class="btn btn-primary btn-sm">View</a></td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                document.getElementById('tasks-container').innerHTML =
+                    '<div class="loading">Error loading tasks: ' + error.message + '</div>';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadTasks);
+    </script>
+
+    <!-- Custom JavaScript for API status -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

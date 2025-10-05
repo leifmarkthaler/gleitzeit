@@ -13,8 +13,9 @@ import contextvars
 
 from gleitzeit.core.logs import LogLevel, LogSource
 
-# Log collector was removed for stateless architecture
-get_log_collector = lambda: None
+# Use StatelessLogService for logging
+from gleitzeit.core.stateless_log_service import StatelessLogService
+
 log_context = contextvars.ContextVar('log_context', default={})
 
 # Optional OpenTelemetry integration
@@ -84,13 +85,18 @@ class LoggingMixin:
     ) -> None:
         """
         Log an operation with context.
-        
+
         Args:
             operation: Name of the operation being performed
             level: Log severity level
             **context: Additional context to include in the log
         """
         message = f"{self._component_name}.{operation}"
+
+        # Write to Redis if appropriate level
+        await self._log_to_redis(level, message, operation, context)
+
+        # Also write to file logs (existing behavior)
         await self._log(level, message, context)
     
     async def log_success(
@@ -100,12 +106,17 @@ class LoggingMixin:
     ) -> None:
         """
         Log a successful operation.
-        
+
         Args:
             operation: Name of the operation that succeeded
             **context: Additional context to include in the log
         """
         message = f"{self._component_name}.{operation} succeeded"
+
+        # Write to Redis
+        await self._log_to_redis(LogLevel.INFO, message, operation, context)
+
+        # Also write to file logs
         await self._log(LogLevel.INFO, message, context)
     
     async def log_error(
@@ -116,33 +127,69 @@ class LoggingMixin:
     ) -> None:
         """
         Log an error with full context.
-        
+
+        Now writes to Redis via StatelessLogService.
+
         Args:
             operation: Name of the operation that failed
             error: The exception that occurred
             **context: Additional context to include in the log
         """
         message = f"{self._component_name}.{operation} failed: {str(error)}"
-        
-        # Add error details to context
-        error_context = {
-            **context,
-            "error_type": type(error).__name__,
+
+        # Extract workflow and task IDs
+        workflow_id = context.get('workflow_id')
+        task_id = context.get('task_id')
+
+        # Error details
+        error_type = type(error).__name__
+
+        # Get stack trace
+        import traceback
+        stack_trace = ''.join(traceback.format_exception(
+            type(error), error, error.__traceback__
+        ))
+
+        # Build metadata
+        error_metadata = {
+            "operation": operation,
             "error_message": str(error),
-            "operation": operation
+            **context
         }
-        
+
         # Add error code if it's a GleitzeitError
         if hasattr(error, 'code'):
-            error_context["error_code"] = error.code.value if hasattr(error.code, 'value') else error.code
-            error_context["error_code_name"] = error.code.name if hasattr(error.code, 'name') else str(error.code)
-        
+            error_metadata["error_code"] = error.code.value if hasattr(error.code, 'value') else error.code
+            error_metadata["error_code_name"] = error.code.name if hasattr(error.code, 'name') else str(error.code)
+
         # Add cause if available
         if hasattr(error, 'cause') and error.cause:
-            error_context["cause"] = str(error.cause)
-            error_context["cause_type"] = type(error.cause).__name__
-        
-        await self._log(LogLevel.ERROR, message, error_context)
+            error_metadata["cause"] = str(error.cause)
+            error_metadata["cause_type"] = type(error.cause).__name__
+
+        # Get Redis connection
+        redis = context.pop('redis', None) or getattr(self, 'redis', None)
+
+        if redis:
+            try:
+                # Write to Redis via StatelessLogService
+                await StatelessLogService.log_error(
+                    redis=redis,
+                    message=message,
+                    workflow_id=workflow_id,
+                    task_id=task_id,
+                    component=self._component_name,
+                    error_type=error_type,
+                    stack_trace=stack_trace,
+                    metadata=error_metadata
+                )
+            except Exception as e:
+                # Fallback to file logging
+                logger.error(f"Failed to write error to Redis: {e}")
+                self._fallback_log(LogLevel.ERROR, message, error_metadata)
+        else:
+            # No Redis, use fallback
+            self._fallback_log(LogLevel.ERROR, message, error_metadata)
     
     async def log_warning(
         self,
@@ -152,13 +199,18 @@ class LoggingMixin:
     ) -> None:
         """
         Log a warning.
-        
+
         Args:
             operation: Name of the operation
             warning_message: Warning message
             **context: Additional context to include in the log
         """
         message = f"{self._component_name}.{operation}: {warning_message}"
+
+        # Write to Redis
+        await self._log_to_redis(LogLevel.WARNING, message, operation, context)
+
+        # Also write to file logs
         await self._log(LogLevel.WARNING, message, context)
     
     async def log_debug(
@@ -169,15 +221,87 @@ class LoggingMixin:
     ) -> None:
         """
         Log debug information.
-        
+
         Args:
             operation: Name of the operation
             debug_message: Debug message
             **context: Additional context to include in the log
         """
         message = f"{self._component_name}.{operation}: {debug_message}"
+
+        # Write to Redis (with sampling)
+        await self._log_to_redis(LogLevel.DEBUG, message, operation, context)
+
+        # Also write to file logs
         await self._log(LogLevel.DEBUG, message, context)
     
+    async def _log_to_redis(
+        self,
+        level: LogLevel,
+        message: str,
+        operation: str,
+        context: Dict[str, Any]
+    ) -> None:
+        """
+        Write log to Redis via StatelessLogService.
+
+        Args:
+            level: Log severity level
+            message: Log message
+            operation: Operation name
+            context: Additional context
+        """
+        # Get Redis connection
+        redis = context.get('redis') or getattr(self, 'redis', None)
+        if not redis:
+            return  # No Redis, skip
+
+        # Extract workflow/task IDs
+        workflow_id = context.get('workflow_id')
+        task_id = context.get('task_id')
+
+        # Default sample rate for DEBUG (10%)
+        sample_rate = context.get('debug_sample_rate', 0.1)
+
+        try:
+            if level == LogLevel.ERROR:
+                # Errors already handled by log_error method
+                pass
+            elif level == LogLevel.WARNING:
+                await StatelessLogService.log_warning(
+                    redis=redis,
+                    message=message,
+                    workflow_id=workflow_id,
+                    task_id=task_id,
+                    component=self._component_name,
+                    warning_type=operation,
+                    metadata=context
+                )
+            elif level == LogLevel.INFO:
+                await StatelessLogService.log_info(
+                    redis=redis,
+                    message=message,
+                    workflow_id=workflow_id,
+                    task_id=task_id,
+                    component=self._component_name,
+                    operation=operation,
+                    metadata=context
+                )
+            elif level == LogLevel.DEBUG:
+                await StatelessLogService.log_debug(
+                    redis=redis,
+                    message=message,
+                    workflow_id=workflow_id,
+                    task_id=task_id,
+                    component=self._component_name,
+                    operation=operation,
+                    metadata=context,
+                    sample_rate=sample_rate
+                )
+        except Exception as e:
+            # Don't fail if Redis logging fails
+            logger.warning(f"Failed to write log to Redis: {e}")
+
     async def _log(
         self,
         level: LogLevel,
@@ -186,7 +310,7 @@ class LoggingMixin:
     ) -> None:
         """
         Internal method to log via LogCollector or fallback to standard logging.
-        
+
         Args:
             level: Log severity level
             message: Log message

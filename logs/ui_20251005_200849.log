@@ -1,0 +1,696 @@
+[2025-10-05 20:09:13] [STDERR] Failed to validate workflow: while parsing a block mapping
+[2025-10-05 20:09:13] [STDERR]   in "<unicode string>", line 9, column 5:
+[2025-10-05 20:09:13] [STDERR]       - id: task2
+[2025-10-05 20:09:13] [STDERR]         ^
+[2025-10-05 20:09:13] [STDERR] expected <block end>, but found '<scalar>'
+[2025-10-05 20:09:13] [STDERR]   in "<unicode string>", line 11, column 25:
+[2025-10-05 20:09:13] [STDERR]         depends_on: [task1] ddafad 
+[2025-10-05 20:09:13] [STDERR]                             ^
+[2025-10-05 20:10:28] [STDERR] ERROR:    Exception in ASGI application
+[2025-10-05 20:10:28] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-10-05 20:10:28] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 77, in collapse_excgroups
+[2025-10-05 20:10:28] [STDERR]   |     yield
+[2025-10-05 20:10:28] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 183, in __call__
+[2025-10-05 20:10:28] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-10-05 20:10:28] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-10-05 20:10:28] [STDERR]   |     raise BaseExceptionGroup(
+[2025-10-05 20:10:28] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-10-05 20:10:28] [STDERR]   +-+---------------- 1 ----------------
+[2025-10-05 20:10:28] [STDERR]     | Traceback (most recent call last):
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-10-05 20:10:28] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-10-05 20:10:28] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     raise exc
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     with recv_stream, send_stream, collapse_excgroups():
+[2025-10-05 20:10:28] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-10-05 20:10:28] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-10-05 20:10:28] [STDERR]     |     raise exc
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-10-05 20:10:28] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 78, in add_no_cache_headers
+[2025-10-05 20:10:28] [STDERR]     |     response = await call_next(request)
+[2025-10-05 20:10:28] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-10-05 20:10:28] [STDERR]     |     raise app_exc
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-10-05 20:10:28] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:28] [STDERR]     |     raise exc
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:28] [STDERR]     |     await app(scope, receive, sender)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-10-05 20:10:28] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-10-05 20:10:28] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-10-05 20:10:28] [STDERR]     |     await self.app(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-10-05 20:10:28] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:28] [STDERR]     |     raise exc
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:28] [STDERR]     |     await app(scope, receive, sender)
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-10-05 20:10:28] [STDERR]     |     response = await f(request)
+[2025-10-05 20:10:28] [STDERR]     |                ^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-10-05 20:10:28] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-10-05 20:10:28] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-10-05 20:10:28] [STDERR]     |     return await dependant.call(**values)
+[2025-10-05 20:10:28] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 161, in task_detail
+[2025-10-05 20:10:28] [STDERR]     |     return templates.TemplateResponse("task_detail.html", context)
+[2025-10-05 20:10:28] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 209, in TemplateResponse
+[2025-10-05 20:10:28] [STDERR]     |     template = self.get_template(name)
+[2025-10-05 20:10:28] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 132, in get_template
+[2025-10-05 20:10:28] [STDERR]     |     return self.env.get_template(name)
+[2025-10-05 20:10:28] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 1016, in get_template
+[2025-10-05 20:10:28] [STDERR]     |     return self._load_template(name, globals)
+[2025-10-05 20:10:28] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 975, in _load_template
+[2025-10-05 20:10:28] [STDERR]     |     template = self.loader.load(self, name, self.make_globals(globals))
+[2025-10-05 20:10:28] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+[2025-10-05 20:10:28] [STDERR]     |     source, filename, uptodate = self.get_source(environment, name)
+[2025-10-05 20:10:28] [STDERR]     |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 209, in get_source
+[2025-10-05 20:10:28] [STDERR]     |     raise TemplateNotFound(
+[2025-10-05 20:10:28] [STDERR]     | jinja2.exceptions.TemplateNotFound: 'task_detail.html' not found in search path: '/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates'
+[2025-10-05 20:10:28] [STDERR]     +------------------------------------
+[2025-10-05 20:10:28] [STDERR] 
+[2025-10-05 20:10:28] [STDERR] During handling of the above exception, another exception occurred:
+[2025-10-05 20:10:28] [STDERR] 
+[2025-10-05 20:10:28] [STDERR] Traceback (most recent call last):
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-10-05 20:10:28] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-10-05 20:10:28] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-10-05 20:10:28] [STDERR]     return await self.app(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-10-05 20:10:28] [STDERR]     await super().__call__(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-10-05 20:10:28] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-10-05 20:10:28] [STDERR]     raise exc
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-10-05 20:10:28] [STDERR]     await self.app(scope, receive, _send)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-10-05 20:10:28] [STDERR]     with recv_stream, send_stream, collapse_excgroups():
+[2025-10-05 20:10:28] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-10-05 20:10:28] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-10-05 20:10:28] [STDERR]     raise exc
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-10-05 20:10:28] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-10-05 20:10:28] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 78, in add_no_cache_headers
+[2025-10-05 20:10:28] [STDERR]     response = await call_next(request)
+[2025-10-05 20:10:28] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-10-05 20:10:28] [STDERR]     raise app_exc
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-10-05 20:10:28] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-10-05 20:10:28] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:28] [STDERR]     raise exc
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:28] [STDERR]     await app(scope, receive, sender)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-10-05 20:10:28] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-10-05 20:10:28] [STDERR]     await route.handle(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-10-05 20:10:28] [STDERR]     await self.app(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-10-05 20:10:28] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:28] [STDERR]     raise exc
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:28] [STDERR]     await app(scope, receive, sender)
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-10-05 20:10:28] [STDERR]     response = await f(request)
+[2025-10-05 20:10:28] [STDERR]                ^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-10-05 20:10:28] [STDERR]     raw_response = await run_endpoint_function(
+[2025-10-05 20:10:28] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-10-05 20:10:28] [STDERR]     return await dependant.call(**values)
+[2025-10-05 20:10:28] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 161, in task_detail
+[2025-10-05 20:10:28] [STDERR]     return templates.TemplateResponse("task_detail.html", context)
+[2025-10-05 20:10:28] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 209, in TemplateResponse
+[2025-10-05 20:10:28] [STDERR]     template = self.get_template(name)
+[2025-10-05 20:10:28] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 132, in get_template
+[2025-10-05 20:10:28] [STDERR]     return self.env.get_template(name)
+[2025-10-05 20:10:28] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 1016, in get_template
+[2025-10-05 20:10:28] [STDERR]     return self._load_template(name, globals)
+[2025-10-05 20:10:28] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 975, in _load_template
+[2025-10-05 20:10:28] [STDERR]     template = self.loader.load(self, name, self.make_globals(globals))
+[2025-10-05 20:10:28] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+[2025-10-05 20:10:28] [STDERR]     source, filename, uptodate = self.get_source(environment, name)
+[2025-10-05 20:10:28] [STDERR]                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:28] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 209, in get_source
+[2025-10-05 20:10:28] [STDERR]     raise TemplateNotFound(
+[2025-10-05 20:10:28] [STDERR] jinja2.exceptions.TemplateNotFound: 'task_detail.html' not found in search path: '/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates'
+[2025-10-05 20:10:32] [STDERR] ERROR:    Exception in ASGI application
+[2025-10-05 20:10:32] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-10-05 20:10:32] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 77, in collapse_excgroups
+[2025-10-05 20:10:32] [STDERR]   |     yield
+[2025-10-05 20:10:32] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 183, in __call__
+[2025-10-05 20:10:32] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-10-05 20:10:32] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-10-05 20:10:32] [STDERR]   |     raise BaseExceptionGroup(
+[2025-10-05 20:10:32] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-10-05 20:10:32] [STDERR]   +-+---------------- 1 ----------------
+[2025-10-05 20:10:32] [STDERR]     | Traceback (most recent call last):
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-10-05 20:10:32] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-10-05 20:10:32] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     raise exc
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     with recv_stream, send_stream, collapse_excgroups():
+[2025-10-05 20:10:32] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-10-05 20:10:32] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-10-05 20:10:32] [STDERR]     |     raise exc
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-10-05 20:10:32] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 78, in add_no_cache_headers
+[2025-10-05 20:10:32] [STDERR]     |     response = await call_next(request)
+[2025-10-05 20:10:32] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-10-05 20:10:32] [STDERR]     |     raise app_exc
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-10-05 20:10:32] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:32] [STDERR]     |     raise exc
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:32] [STDERR]     |     await app(scope, receive, sender)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-10-05 20:10:32] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-10-05 20:10:32] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-10-05 20:10:32] [STDERR]     |     await self.app(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-10-05 20:10:32] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:32] [STDERR]     |     raise exc
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:32] [STDERR]     |     await app(scope, receive, sender)
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-10-05 20:10:32] [STDERR]     |     response = await f(request)
+[2025-10-05 20:10:32] [STDERR]     |                ^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-10-05 20:10:32] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-10-05 20:10:32] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-10-05 20:10:32] [STDERR]     |     return await dependant.call(**values)
+[2025-10-05 20:10:32] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 161, in task_detail
+[2025-10-05 20:10:32] [STDERR]     |     return templates.TemplateResponse("task_detail.html", context)
+[2025-10-05 20:10:32] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 209, in TemplateResponse
+[2025-10-05 20:10:32] [STDERR]     |     template = self.get_template(name)
+[2025-10-05 20:10:32] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 132, in get_template
+[2025-10-05 20:10:32] [STDERR]     |     return self.env.get_template(name)
+[2025-10-05 20:10:32] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 1016, in get_template
+[2025-10-05 20:10:32] [STDERR]     |     return self._load_template(name, globals)
+[2025-10-05 20:10:32] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 975, in _load_template
+[2025-10-05 20:10:32] [STDERR]     |     template = self.loader.load(self, name, self.make_globals(globals))
+[2025-10-05 20:10:32] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+[2025-10-05 20:10:32] [STDERR]     |     source, filename, uptodate = self.get_source(environment, name)
+[2025-10-05 20:10:32] [STDERR]     |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 209, in get_source
+[2025-10-05 20:10:32] [STDERR]     |     raise TemplateNotFound(
+[2025-10-05 20:10:32] [STDERR]     | jinja2.exceptions.TemplateNotFound: 'task_detail.html' not found in search path: '/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates'
+[2025-10-05 20:10:32] [STDERR]     +------------------------------------
+[2025-10-05 20:10:32] [STDERR] 
+[2025-10-05 20:10:32] [STDERR] During handling of the above exception, another exception occurred:
+[2025-10-05 20:10:32] [STDERR] 
+[2025-10-05 20:10:32] [STDERR] Traceback (most recent call last):
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-10-05 20:10:32] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-10-05 20:10:32] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-10-05 20:10:32] [STDERR]     return await self.app(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-10-05 20:10:32] [STDERR]     await super().__call__(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-10-05 20:10:32] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-10-05 20:10:32] [STDERR]     raise exc
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-10-05 20:10:32] [STDERR]     await self.app(scope, receive, _send)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-10-05 20:10:32] [STDERR]     with recv_stream, send_stream, collapse_excgroups():
+[2025-10-05 20:10:32] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-10-05 20:10:32] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-10-05 20:10:32] [STDERR]     raise exc
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-10-05 20:10:32] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-10-05 20:10:32] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 78, in add_no_cache_headers
+[2025-10-05 20:10:32] [STDERR]     response = await call_next(request)
+[2025-10-05 20:10:32] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-10-05 20:10:32] [STDERR]     raise app_exc
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-10-05 20:10:32] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-10-05 20:10:32] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:32] [STDERR]     raise exc
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:32] [STDERR]     await app(scope, receive, sender)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-10-05 20:10:32] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-10-05 20:10:32] [STDERR]     await route.handle(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-10-05 20:10:32] [STDERR]     await self.app(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-10-05 20:10:32] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:32] [STDERR]     raise exc
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:32] [STDERR]     await app(scope, receive, sender)
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-10-05 20:10:32] [STDERR]     response = await f(request)
+[2025-10-05 20:10:32] [STDERR]                ^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-10-05 20:10:32] [STDERR]     raw_response = await run_endpoint_function(
+[2025-10-05 20:10:32] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-10-05 20:10:32] [STDERR]     return await dependant.call(**values)
+[2025-10-05 20:10:32] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 161, in task_detail
+[2025-10-05 20:10:32] [STDERR]     return templates.TemplateResponse("task_detail.html", context)
+[2025-10-05 20:10:32] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 209, in TemplateResponse
+[2025-10-05 20:10:32] [STDERR]     template = self.get_template(name)
+[2025-10-05 20:10:32] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 132, in get_template
+[2025-10-05 20:10:32] [STDERR]     return self.env.get_template(name)
+[2025-10-05 20:10:32] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 1016, in get_template
+[2025-10-05 20:10:32] [STDERR]     return self._load_template(name, globals)
+[2025-10-05 20:10:32] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 975, in _load_template
+[2025-10-05 20:10:32] [STDERR]     template = self.loader.load(self, name, self.make_globals(globals))
+[2025-10-05 20:10:32] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+[2025-10-05 20:10:32] [STDERR]     source, filename, uptodate = self.get_source(environment, name)
+[2025-10-05 20:10:32] [STDERR]                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:32] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 209, in get_source
+[2025-10-05 20:10:32] [STDERR]     raise TemplateNotFound(
+[2025-10-05 20:10:32] [STDERR] jinja2.exceptions.TemplateNotFound: 'task_detail.html' not found in search path: '/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates'
+[2025-10-05 20:10:38] [STDERR] ERROR:    Exception in ASGI application
+[2025-10-05 20:10:38] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-10-05 20:10:38] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 77, in collapse_excgroups
+[2025-10-05 20:10:38] [STDERR]   |     yield
+[2025-10-05 20:10:38] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 183, in __call__
+[2025-10-05 20:10:38] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-10-05 20:10:38] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-10-05 20:10:38] [STDERR]   |     raise BaseExceptionGroup(
+[2025-10-05 20:10:38] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-10-05 20:10:38] [STDERR]   +-+---------------- 1 ----------------
+[2025-10-05 20:10:38] [STDERR]     | Traceback (most recent call last):
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-10-05 20:10:38] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-10-05 20:10:38] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     raise exc
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     with recv_stream, send_stream, collapse_excgroups():
+[2025-10-05 20:10:38] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-10-05 20:10:38] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-10-05 20:10:38] [STDERR]     |     raise exc
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-10-05 20:10:38] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 78, in add_no_cache_headers
+[2025-10-05 20:10:38] [STDERR]     |     response = await call_next(request)
+[2025-10-05 20:10:38] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-10-05 20:10:38] [STDERR]     |     raise app_exc
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-10-05 20:10:38] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:38] [STDERR]     |     raise exc
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:38] [STDERR]     |     await app(scope, receive, sender)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-10-05 20:10:38] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-10-05 20:10:38] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-10-05 20:10:38] [STDERR]     |     await self.app(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-10-05 20:10:38] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:38] [STDERR]     |     raise exc
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:38] [STDERR]     |     await app(scope, receive, sender)
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-10-05 20:10:38] [STDERR]     |     response = await f(request)
+[2025-10-05 20:10:38] [STDERR]     |                ^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-10-05 20:10:38] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-10-05 20:10:38] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-10-05 20:10:38] [STDERR]     |     return await dependant.call(**values)
+[2025-10-05 20:10:38] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 161, in task_detail
+[2025-10-05 20:10:38] [STDERR]     |     return templates.TemplateResponse("task_detail.html", context)
+[2025-10-05 20:10:38] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 209, in TemplateResponse
+[2025-10-05 20:10:38] [STDERR]     |     template = self.get_template(name)
+[2025-10-05 20:10:38] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 132, in get_template
+[2025-10-05 20:10:38] [STDERR]     |     return self.env.get_template(name)
+[2025-10-05 20:10:38] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 1016, in get_template
+[2025-10-05 20:10:38] [STDERR]     |     return self._load_template(name, globals)
+[2025-10-05 20:10:38] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 975, in _load_template
+[2025-10-05 20:10:38] [STDERR]     |     template = self.loader.load(self, name, self.make_globals(globals))
+[2025-10-05 20:10:38] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+[2025-10-05 20:10:38] [STDERR]     |     source, filename, uptodate = self.get_source(environment, name)
+[2025-10-05 20:10:38] [STDERR]     |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 209, in get_source
+[2025-10-05 20:10:38] [STDERR]     |     raise TemplateNotFound(
+[2025-10-05 20:10:38] [STDERR]     | jinja2.exceptions.TemplateNotFound: 'task_detail.html' not found in search path: '/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates'
+[2025-10-05 20:10:38] [STDERR]     +------------------------------------
+[2025-10-05 20:10:38] [STDERR] 
+[2025-10-05 20:10:38] [STDERR] During handling of the above exception, another exception occurred:
+[2025-10-05 20:10:38] [STDERR] 
+[2025-10-05 20:10:38] [STDERR] Traceback (most recent call last):
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-10-05 20:10:38] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-10-05 20:10:38] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-10-05 20:10:38] [STDERR]     return await self.app(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-10-05 20:10:38] [STDERR]     await super().__call__(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-10-05 20:10:38] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-10-05 20:10:38] [STDERR]     raise exc
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-10-05 20:10:38] [STDERR]     await self.app(scope, receive, _send)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-10-05 20:10:38] [STDERR]     with recv_stream, send_stream, collapse_excgroups():
+[2025-10-05 20:10:38] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-10-05 20:10:38] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-10-05 20:10:38] [STDERR]     raise exc
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-10-05 20:10:38] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-10-05 20:10:38] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 78, in add_no_cache_headers
+[2025-10-05 20:10:38] [STDERR]     response = await call_next(request)
+[2025-10-05 20:10:38] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-10-05 20:10:38] [STDERR]     raise app_exc
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-10-05 20:10:38] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-10-05 20:10:38] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:38] [STDERR]     raise exc
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:38] [STDERR]     await app(scope, receive, sender)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-10-05 20:10:38] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-10-05 20:10:38] [STDERR]     await route.handle(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-10-05 20:10:38] [STDERR]     await self.app(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-10-05 20:10:38] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:38] [STDERR]     raise exc
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:38] [STDERR]     await app(scope, receive, sender)
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-10-05 20:10:38] [STDERR]     response = await f(request)
+[2025-10-05 20:10:38] [STDERR]                ^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-10-05 20:10:38] [STDERR]     raw_response = await run_endpoint_function(
+[2025-10-05 20:10:38] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-10-05 20:10:38] [STDERR]     return await dependant.call(**values)
+[2025-10-05 20:10:38] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 161, in task_detail
+[2025-10-05 20:10:38] [STDERR]     return templates.TemplateResponse("task_detail.html", context)
+[2025-10-05 20:10:38] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 209, in TemplateResponse
+[2025-10-05 20:10:38] [STDERR]     template = self.get_template(name)
+[2025-10-05 20:10:38] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 132, in get_template
+[2025-10-05 20:10:38] [STDERR]     return self.env.get_template(name)
+[2025-10-05 20:10:38] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 1016, in get_template
+[2025-10-05 20:10:38] [STDERR]     return self._load_template(name, globals)
+[2025-10-05 20:10:38] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 975, in _load_template
+[2025-10-05 20:10:38] [STDERR]     template = self.loader.load(self, name, self.make_globals(globals))
+[2025-10-05 20:10:38] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+[2025-10-05 20:10:38] [STDERR]     source, filename, uptodate = self.get_source(environment, name)
+[2025-10-05 20:10:38] [STDERR]                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:38] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 209, in get_source
+[2025-10-05 20:10:38] [STDERR]     raise TemplateNotFound(
+[2025-10-05 20:10:38] [STDERR] jinja2.exceptions.TemplateNotFound: 'task_detail.html' not found in search path: '/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates'
+[2025-10-05 20:10:42] [STDERR] ERROR:    Exception in ASGI application
+[2025-10-05 20:10:42] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-10-05 20:10:42] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 77, in collapse_excgroups
+[2025-10-05 20:10:42] [STDERR]   |     yield
+[2025-10-05 20:10:42] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 183, in __call__
+[2025-10-05 20:10:42] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-10-05 20:10:42] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-10-05 20:10:42] [STDERR]   |     raise BaseExceptionGroup(
+[2025-10-05 20:10:42] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-10-05 20:10:42] [STDERR]   +-+---------------- 1 ----------------
+[2025-10-05 20:10:42] [STDERR]     | Traceback (most recent call last):
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-10-05 20:10:42] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-10-05 20:10:42] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     raise exc
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     with recv_stream, send_stream, collapse_excgroups():
+[2025-10-05 20:10:42] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-10-05 20:10:42] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-10-05 20:10:42] [STDERR]     |     raise exc
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-10-05 20:10:42] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 78, in add_no_cache_headers
+[2025-10-05 20:10:42] [STDERR]     |     response = await call_next(request)
+[2025-10-05 20:10:42] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-10-05 20:10:42] [STDERR]     |     raise app_exc
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-10-05 20:10:42] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:42] [STDERR]     |     raise exc
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:42] [STDERR]     |     await app(scope, receive, sender)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-10-05 20:10:42] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-10-05 20:10:42] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-10-05 20:10:42] [STDERR]     |     await self.app(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-10-05 20:10:42] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:42] [STDERR]     |     raise exc
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:42] [STDERR]     |     await app(scope, receive, sender)
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-10-05 20:10:42] [STDERR]     |     response = await f(request)
+[2025-10-05 20:10:42] [STDERR]     |                ^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-10-05 20:10:42] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-10-05 20:10:42] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-10-05 20:10:42] [STDERR]     |     return await dependant.call(**values)
+[2025-10-05 20:10:42] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 153, in workflow_detail
+[2025-10-05 20:10:42] [STDERR]     |     return templates.TemplateResponse("workflow_detail.html", context)
+[2025-10-05 20:10:42] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 209, in TemplateResponse
+[2025-10-05 20:10:42] [STDERR]     |     template = self.get_template(name)
+[2025-10-05 20:10:42] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 132, in get_template
+[2025-10-05 20:10:42] [STDERR]     |     return self.env.get_template(name)
+[2025-10-05 20:10:42] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 1016, in get_template
+[2025-10-05 20:10:42] [STDERR]     |     return self._load_template(name, globals)
+[2025-10-05 20:10:42] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 975, in _load_template
+[2025-10-05 20:10:42] [STDERR]     |     template = self.loader.load(self, name, self.make_globals(globals))
+[2025-10-05 20:10:42] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+[2025-10-05 20:10:42] [STDERR]     |     source, filename, uptodate = self.get_source(environment, name)
+[2025-10-05 20:10:42] [STDERR]     |                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 209, in get_source
+[2025-10-05 20:10:42] [STDERR]     |     raise TemplateNotFound(
+[2025-10-05 20:10:42] [STDERR]     | jinja2.exceptions.TemplateNotFound: 'workflow_detail.html' not found in search path: '/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates'
+[2025-10-05 20:10:42] [STDERR]     +------------------------------------
+[2025-10-05 20:10:42] [STDERR] 
+[2025-10-05 20:10:42] [STDERR] During handling of the above exception, another exception occurred:
+[2025-10-05 20:10:42] [STDERR] 
+[2025-10-05 20:10:42] [STDERR] Traceback (most recent call last):
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-10-05 20:10:42] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-10-05 20:10:42] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-10-05 20:10:42] [STDERR]     return await self.app(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-10-05 20:10:42] [STDERR]     await super().__call__(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-10-05 20:10:42] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-10-05 20:10:42] [STDERR]     raise exc
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-10-05 20:10:42] [STDERR]     await self.app(scope, receive, _send)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-10-05 20:10:42] [STDERR]     with recv_stream, send_stream, collapse_excgroups():
+[2025-10-05 20:10:42] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-10-05 20:10:42] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-10-05 20:10:42] [STDERR]     raise exc
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-10-05 20:10:42] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-10-05 20:10:42] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 78, in add_no_cache_headers
+[2025-10-05 20:10:42] [STDERR]     response = await call_next(request)
+[2025-10-05 20:10:42] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-10-05 20:10:42] [STDERR]     raise app_exc
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-10-05 20:10:42] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-10-05 20:10:42] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:42] [STDERR]     raise exc
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:42] [STDERR]     await app(scope, receive, sender)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-10-05 20:10:42] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-10-05 20:10:42] [STDERR]     await route.handle(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-10-05 20:10:42] [STDERR]     await self.app(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-10-05 20:10:42] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-10-05 20:10:42] [STDERR]     raise exc
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-10-05 20:10:42] [STDERR]     await app(scope, receive, sender)
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-10-05 20:10:42] [STDERR]     response = await f(request)
+[2025-10-05 20:10:42] [STDERR]                ^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-10-05 20:10:42] [STDERR]     raw_response = await run_endpoint_function(
+[2025-10-05 20:10:42] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-10-05 20:10:42] [STDERR]     return await dependant.call(**values)
+[2025-10-05 20:10:42] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 153, in workflow_detail
+[2025-10-05 20:10:42] [STDERR]     return templates.TemplateResponse("workflow_detail.html", context)
+[2025-10-05 20:10:42] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 209, in TemplateResponse
+[2025-10-05 20:10:42] [STDERR]     template = self.get_template(name)
+[2025-10-05 20:10:42] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/templating.py", line 132, in get_template
+[2025-10-05 20:10:42] [STDERR]     return self.env.get_template(name)
+[2025-10-05 20:10:42] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 1016, in get_template
+[2025-10-05 20:10:42] [STDERR]     return self._load_template(name, globals)
+[2025-10-05 20:10:42] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/environment.py", line 975, in _load_template
+[2025-10-05 20:10:42] [STDERR]     template = self.loader.load(self, name, self.make_globals(globals))
+[2025-10-05 20:10:42] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+[2025-10-05 20:10:42] [STDERR]     source, filename, uptodate = self.get_source(environment, name)
+[2025-10-05 20:10:42] [STDERR]                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 20:10:42] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/jinja2/loaders.py", line 209, in get_source
+[2025-10-05 20:10:42] [STDERR]     raise TemplateNotFound(
+[2025-10-05 20:10:42] [STDERR] jinja2.exceptions.TemplateNotFound: 'workflow_detail.html' not found in search path: '/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates'

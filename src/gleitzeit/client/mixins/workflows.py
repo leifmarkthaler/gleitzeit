@@ -58,6 +58,58 @@ class WorkflowMixin:
         """
         Submit a workflow for execution.
 
+        Result Chaining:
+            Gleitzeit automatically injects task results into the 'inputs' dict for tasks
+            with dependencies. Results are keyed by task UUID (not task name).
+
+            Example workflow with result chaining:
+                ```python
+                workflow = {
+                    "name": "example",
+                    "tasks": [
+                        {
+                            "name": "generate",
+                            "protocol": "python/v1",
+                            "method": "python/execute",
+                            "params": {
+                                "code": "result = {'number': 42, 'message': 'Hello'}"
+                            }
+                        },
+                        {
+                            "name": "process",
+                            "protocol": "python/v1",
+                            "method": "python/execute",
+                            "params": {
+                                "code": '''
+                                # Results auto-injected into 'inputs' dict by dependency worker
+                                # Keys are task UUIDs, values are result dicts
+                                for key, value in inputs.items():
+                                    if isinstance(value, dict) and 'number' in value:
+                                        number = value['number']
+                                        result = {'doubled': number * 2}
+                                        break
+                                '''
+                            },
+                            "dependencies": ["generate"]
+                        }
+                    ]
+                }
+                ```
+
+            For simpler result chaining, consider using the Easy Client which provides
+            a high-level API with automatic variable creation:
+                ```python
+                from gleitzeit.easy import t, w
+
+                gen = t("generate", "python/v1:execute").with_(
+                    code="result = {'number': 42}"
+                )
+                proc = t("process", "python/v1:execute").input(gen).with_(
+                    code="result = {'doubled': generate['number'] * 2}"
+                )
+                workflow = w(gen).sequential(proc)
+                ```
+
         Args:
             workflow: Workflow definition
             workflow_id: Optional workflow ID (generated if not provided)

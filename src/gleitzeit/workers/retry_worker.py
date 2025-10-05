@@ -124,6 +124,13 @@ class RetryWorker(BaseWorker):
 
         except Exception as e:
             logger.error(f"Error processing retry message: {e}", exc_info=True)
+            # Log to Redis for queryability
+            await self.log_worker_error(
+                "process_message",
+                e,
+                stream=stream,
+                message_id=msg_id
+            )
             return False  # Don't ACK, retry later
 
     async def _handle_task_failure(self, data: Dict[str, str]) -> bool:
@@ -143,6 +150,12 @@ class RetryWorker(BaseWorker):
 
         if not task_id or not workflow_id:
             logger.error("Missing task_id or workflow_id in failure message")
+            # Log validation error to Redis
+            await self.log_worker_error(
+                "_handle_task_failure",
+                ValueError("Missing task_id or workflow_id in failure message"),
+                data=str(data)
+            )
             return True  # ACK invalid message
 
         try:
@@ -200,6 +213,14 @@ class RetryWorker(BaseWorker):
 
         except Exception as e:
             logger.error(f"Error handling task failure: {e}", exc_info=True)
+            # Log to Redis for queryability
+            await self.log_worker_error(
+                "_handle_task_failure",
+                e,
+                workflow_id=workflow_id if 'workflow_id' in locals() else None,
+                task_id=task_id if 'task_id' in locals() else None,
+                error_msg=error_msg if 'error_msg' in locals() else None
+            )
             return False
 
     async def _schedule_retry(

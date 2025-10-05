@@ -1,0 +1,23 @@
+[2025-10-05 21:07:18] [STDERR] INFO:     Started server process [29430]
+[2025-10-05 21:07:18] [STDERR] INFO:     Waiting for application startup.
+[2025-10-05 21:07:18] [STDERR] INFO:     Application startup complete.
+[2025-10-05 21:07:18] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-05 21:07:53] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-05 21:07:53] [STDOUT] INFO:     127.0.0.1:51975 - "POST /workflows/validate HTTP/1.1" 200 OK
+[2025-10-05 21:07:58] [STDOUT] INFO:     127.0.0.1:51975 - "POST /workflows/validate HTTP/1.1" 200 OK
+[2025-10-05 21:08:01] [STDOUT] INFO:     127.0.0.1:51975 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-05 21:08:34] [STDERR] INFO:     127.0.0.1:52020 - "WebSocket /ws/events" [accepted]
+[2025-10-05 21:08:34] [STDERR] INFO:     connection open
+[2025-10-05 21:08:34] [STDOUT] INFO:     127.0.0.1:52022 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 21:08:37] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 21:08:37] [STDERR] INFO:     connection closed
+[2025-10-05 21:08:43] [STDOUT] INFO:     127.0.0.1:52046 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:08:45] [STDOUT] INFO:     127.0.0.1:52062 - "GET /system/resources HTTP/1.1" 200 OK
+[2025-10-05 21:08:45] [STDOUT] INFO:     127.0.0.1:52056 - "GET /system/metrics/workflows?time_range=24h HTTP/1.1" 200 OK
+[2025-10-05 21:08:45] [STDOUT] INFO:     127.0.0.1:52063 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:08:45] [STDOUT] INFO:     127.0.0.1:52057 - "GET /system/metrics/tasks?time_range=24h HTTP/1.1" 200 OK
+[2025-10-05 21:08:45] [STDOUT] INFO:     127.0.0.1:52046 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-10-05 21:08:45] [STDOUT] INFO:     127.0.0.1:52061 - "GET /system/queues HTTP/1.1" 200 OK
+[2025-10-05 21:08:49] [STDERR] INFO:     127.0.0.1:52082 - "WebSocket /ws/events" [accepted]
+[2025-10-05 21:08:49] [STDERR] INFO:     connection open
+[2025-10-05 21:08:49] [STDOUT] INFO:     127.0.0.1:52046 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK

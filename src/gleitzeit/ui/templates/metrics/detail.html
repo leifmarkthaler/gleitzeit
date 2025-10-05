@@ -1,0 +1,673 @@
+{% extends "base.html" %}
+
+{% block title %}Metrics - Gleitzeit{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="page-title">System Metrics</h1>
+
+    <!-- Time Range Selector -->
+    <div class="section">
+        <div class="button-group">
+            <button class="btn btn-sm" id="time-1h" onclick="setTimeRange('1h')">1 Hour</button>
+            <button class="btn btn-sm" id="time-6h" onclick="setTimeRange('6h')">6 Hours</button>
+            <button class="btn btn-sm btn-primary" id="time-24h" onclick="setTimeRange('24h')">24 Hours</button>
+            <button class="btn btn-sm" id="time-7d" onclick="setTimeRange('7d')">7 Days</button>
+        </div>
+    </div>
+
+    <!-- Overall Metrics Summary -->
+    <div class="section">
+        <h2 class="section-title">Overall Metrics</h2>
+        <div id="overall-metrics" class="metrics-grid">
+            <div class="loading-spinner">Loading metrics...</div>
+        </div>
+    </div>
+
+    <!-- Workflow Metrics -->
+    <div class="section">
+        <h2 class="section-title">Workflow Metrics</h2>
+        <div id="workflow-metrics" class="metrics-detail">
+            <div class="loading-spinner">Loading workflow metrics...</div>
+        </div>
+    </div>
+
+    <!-- Task Metrics -->
+    <div class="section">
+        <h2 class="section-title">Task Metrics</h2>
+        <div id="task-metrics" class="metrics-detail">
+            <div class="loading-spinner">Loading task metrics...</div>
+        </div>
+    </div>
+
+    <!-- Queue Depths Chart -->
+    <div class="section">
+        <h2 class="section-title">Queue Depths</h2>
+        <div id="queue-metrics" class="queue-grid">
+            <div class="loading-spinner">Loading queue data...</div>
+        </div>
+    </div>
+
+    <!-- Resource Metrics -->
+    <div class="section">
+        <h2 class="section-title">Resource Usage</h2>
+        <div id="resource-metrics" class="resource-grid">
+            <div class="loading-spinner">Loading resource data...</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.metric-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.metric-card h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0;
+}
+
+.metric-value.success {
+    color: #28a745;
+}
+
+.metric-value.info {
+    color: #17a2b8;
+}
+
+.metric-value.warning {
+    color: #ffc107;
+}
+
+.metric-value.danger {
+    color: #dc3545;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    color: #999;
+}
+
+.metrics-detail {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+.status-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.status-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.status-item .count {
+    font-size: 2rem;
+    font-weight: 700;
+    display: block;
+}
+
+.status-item .label {
+    font-size: 0.875rem;
+    color: #666;
+    text-transform: capitalize;
+}
+
+.protocol-breakdown {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #dee2e6;
+}
+
+.protocol-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.protocol-badge {
+    padding: 0.5rem 1rem;
+    background: #e9ecef;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.protocol-badge .count {
+    font-weight: 700;
+    margin-left: 0.5rem;
+    color: #495057;
+}
+
+.queue-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.queue-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.queue-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.queue-depth {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 1rem 0;
+}
+
+.queue-depth.normal {
+    color: #28a745;
+}
+
+.queue-depth.warning {
+    color: #ffc107;
+}
+
+.queue-depth.critical {
+    color: #dc3545;
+}
+
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.resource-card {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.resource-card h3 {
+    margin: 0 0 1rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.resource-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.resource-label {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.resource-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+}
+
+.progress-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.progress-fill.normal {
+    background: #28a745;
+}
+
+.progress-fill.warning {
+    background: #ffc107;
+}
+
+.progress-fill.critical {
+    background: #dc3545;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.button-group {
+    display: flex;
+    gap: 0.5rem;
+}
+</style>
+
+<script>
+let currentTimeRange = '24h';
+
+function setTimeRange(range) {
+    currentTimeRange = range;
+
+    // Update button states
+    ['1h', '6h', '24h', '7d'].forEach(r => {
+        const btn = document.getElementById(`time-${r}`);
+        if (r === range) {
+            btn.classList.add('btn-primary');
+            btn.classList.remove('btn-secondary');
+        } else {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-secondary');
+        }
+    });
+
+    // Reload all metrics with new time range
+    loadAllMetrics();
+}
+
+function loadAllMetrics() {
+    loadOverallMetrics();
+    loadWorkflowMetrics();
+    loadTaskMetrics();
+    loadQueueMetrics();
+    loadResourceMetrics();
+}
+
+function loadOverallMetrics() {
+    fetch('/api/system/metrics')
+        .then(response => response.json())
+        .then(data => {
+            renderOverallMetrics(data);
+        })
+        .catch(error => {
+            console.error('Error loading overall metrics:', error);
+            document.getElementById('overall-metrics').innerHTML =
+                '<div class="alert alert-danger">Failed to load metrics</div>';
+        });
+}
+
+function renderOverallMetrics(data) {
+    const container = document.getElementById('overall-metrics');
+
+    if (!data) {
+        container.innerHTML = '<div class="alert alert-warning">No metrics data available</div>';
+        return;
+    }
+
+    let html = '';
+
+    // Workflow metrics
+    if (data.workflows) {
+        html += `
+            <div class="metric-card">
+                <h3>Total Workflows</h3>
+                <div class="metric-value info">${data.workflows.total || 0}</div>
+                <div class="metric-label">All time</div>
+            </div>
+            <div class="metric-card">
+                <h3>Running Workflows</h3>
+                <div class="metric-value warning">${data.workflows.running || 0}</div>
+                <div class="metric-label">Currently active</div>
+            </div>
+            <div class="metric-card">
+                <h3>Completed Workflows</h3>
+                <div class="metric-value success">${data.workflows.completed || 0}</div>
+                <div class="metric-label">Successfully finished</div>
+            </div>
+            <div class="metric-card">
+                <h3>Failed Workflows</h3>
+                <div class="metric-value danger">${data.workflows.failed || 0}</div>
+                <div class="metric-label">With errors</div>
+            </div>
+        `;
+    }
+
+    // Task metrics
+    if (data.tasks) {
+        html += `
+            <div class="metric-card">
+                <h3>Total Tasks</h3>
+                <div class="metric-value info">${data.tasks.total || 0}</div>
+                <div class="metric-label">All time</div>
+            </div>
+            <div class="metric-card">
+                <h3>Pending Tasks</h3>
+                <div class="metric-value">${data.tasks.pending || 0}</div>
+                <div class="metric-label">Waiting to execute</div>
+            </div>
+            <div class="metric-card">
+                <h3>Running Tasks</h3>
+                <div class="metric-value warning">${data.tasks.running || 0}</div>
+                <div class="metric-label">Currently executing</div>
+            </div>
+            <div class="metric-card">
+                <h3>Completed Tasks</h3>
+                <div class="metric-value success">${data.tasks.completed || 0}</div>
+                <div class="metric-label">Successfully finished</div>
+            </div>
+            <div class="metric-card">
+                <h3>Failed Tasks</h3>
+                <div class="metric-value danger">${data.tasks.failed || 0}</div>
+                <div class="metric-label">With errors</div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html || '<div class="alert alert-info">No metrics available</div>';
+}
+
+function loadWorkflowMetrics() {
+    fetch(`/api/system/metrics/workflows?time_range=${currentTimeRange}`)
+        .then(response => response.json())
+        .then(data => {
+            renderWorkflowMetrics(data);
+        })
+        .catch(error => {
+            console.error('Error loading workflow metrics:', error);
+            document.getElementById('workflow-metrics').innerHTML =
+                '<div class="alert alert-danger">Failed to load workflow metrics</div>';
+        });
+}
+
+function renderWorkflowMetrics(data) {
+    const container = document.getElementById('workflow-metrics');
+
+    if (!data) {
+        container.innerHTML = '<div class="alert alert-warning">No workflow metrics available</div>';
+        return;
+    }
+
+    let html = `
+        <div style="margin-bottom: 1rem;">
+            <h3 style="margin: 0;">Time Range: ${data.time_range}</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666;">Total Workflows: ${data.total_workflows || 0}</p>
+        </div>
+
+        <div class="status-breakdown">
+    `;
+
+    if (data.by_status) {
+        for (const [status, count] of Object.entries(data.by_status)) {
+            html += `
+                <div class="status-item">
+                    <span class="count">${count}</span>
+                    <span class="label">${status}</span>
+                </div>
+            `;
+        }
+    } else {
+        html += '<div class="alert alert-info">No status data available</div>';
+    }
+
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+function loadTaskMetrics() {
+    fetch(`/api/system/metrics/tasks?time_range=${currentTimeRange}`)
+        .then(response => response.json())
+        .then(data => {
+            renderTaskMetrics(data);
+        })
+        .catch(error => {
+            console.error('Error loading task metrics:', error);
+            document.getElementById('task-metrics').innerHTML =
+                '<div class="alert alert-danger">Failed to load task metrics</div>';
+        });
+}
+
+function renderTaskMetrics(data) {
+    const container = document.getElementById('task-metrics');
+
+    if (!data) {
+        container.innerHTML = '<div class="alert alert-warning">No task metrics available</div>';
+        return;
+    }
+
+    let html = `
+        <div style="margin-bottom: 1rem;">
+            <h3 style="margin: 0;">Time Range: ${data.time_range}</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666;">Total Tasks: ${data.total_tasks || 0}</p>
+        </div>
+
+        <div class="status-breakdown">
+    `;
+
+    if (data.by_status) {
+        for (const [status, count] of Object.entries(data.by_status)) {
+            html += `
+                <div class="status-item">
+                    <span class="count">${count}</span>
+                    <span class="label">${status}</span>
+                </div>
+            `;
+        }
+    } else {
+        html += '<div class="alert alert-info">No status data available</div>';
+    }
+
+    html += '</div>';
+
+    // Protocol breakdown
+    if (data.by_protocol && Object.keys(data.by_protocol).length > 0) {
+        html += `
+            <div class="protocol-breakdown">
+                <h4 style="margin: 0 0 1rem 0;">By Protocol</h4>
+                <div class="protocol-list">
+        `;
+
+        for (const [protocol, count] of Object.entries(data.by_protocol)) {
+            html += `
+                <div class="protocol-badge">
+                    <span>${protocol}</span>
+                    <span class="count">${count}</span>
+                </div>
+            `;
+        }
+
+        html += '</div></div>';
+    }
+
+    container.innerHTML = html;
+}
+
+function loadQueueMetrics() {
+    fetch('/api/system/queues')
+        .then(response => response.json())
+        .then(data => {
+            renderQueueMetrics(data);
+        })
+        .catch(error => {
+            console.error('Error loading queue metrics:', error);
+            document.getElementById('queue-metrics').innerHTML =
+                '<div class="alert alert-danger">Failed to load queue data</div>';
+        });
+}
+
+function renderQueueMetrics(data) {
+    const container = document.getElementById('queue-metrics');
+
+    if (!data || !data.queues) {
+        container.innerHTML = '<div class="alert alert-warning">No queue data available</div>';
+        return;
+    }
+
+    const queues = data.queues;
+    let html = '';
+
+    for (const [queueName, depth] of Object.entries(queues)) {
+        let statusClass = 'normal';
+        if (depth > 200) statusClass = 'critical';
+        else if (depth > 50) statusClass = 'warning';
+
+        html += `
+            <div class="queue-card">
+                <h3>${queueName.replace(/:/g, ' › ')}</h3>
+                <div class="queue-depth ${statusClass}">${depth}</div>
+                <div class="progress-bar">
+                    <div class="progress-fill ${statusClass}" style="width: ${Math.min(100, (depth / 300) * 100)}%"></div>
+                </div>
+                <div style="margin-top: 0.5rem; font-size: 0.75rem; color: #666;">
+                    ${depth === 0 ? 'Empty' : depth < 50 ? 'Normal' : depth < 200 ? 'Elevated' : 'High'}
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html || '<div class="alert alert-info">No queues available</div>';
+}
+
+function loadResourceMetrics() {
+    fetch('/api/system/resources')
+        .then(response => response.json())
+        .then(data => {
+            renderResourceMetrics(data);
+        })
+        .catch(error => {
+            console.error('Error loading resource metrics:', error);
+            document.getElementById('resource-metrics').innerHTML =
+                '<div class="alert alert-danger">Failed to load resource data</div>';
+        });
+}
+
+function renderResourceMetrics(data) {
+    const container = document.getElementById('resource-metrics');
+
+    if (!data) {
+        container.innerHTML = '<div class="alert alert-warning">No resource data available</div>';
+        return;
+    }
+
+    let html = '';
+
+    // CPU Usage
+    if (data.cpu !== undefined) {
+        const cpuPercent = parseFloat(data.cpu);
+        const cpuClass = cpuPercent > 90 ? 'critical' : cpuPercent > 70 ? 'warning' : 'normal';
+
+        html += `
+            <div class="resource-card">
+                <h3>CPU Usage</h3>
+                <div class="resource-stat">
+                    <span class="resource-label">Usage</span>
+                    <span class="resource-value">${cpuPercent.toFixed(1)}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill ${cpuClass}" style="width: ${cpuPercent}%"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Memory Usage
+    if (data.memory !== undefined) {
+        const memPercent = data.memory.percent || 0;
+        const memClass = memPercent > 90 ? 'critical' : memPercent > 70 ? 'warning' : 'normal';
+        const memUsed = (data.memory.used / 1024 / 1024 / 1024).toFixed(2);
+        const memTotal = (data.memory.total / 1024 / 1024 / 1024).toFixed(2);
+
+        html += `
+            <div class="resource-card">
+                <h3>Memory Usage</h3>
+                <div class="resource-stat">
+                    <span class="resource-label">${memUsed} GB / ${memTotal} GB</span>
+                    <span class="resource-value">${memPercent.toFixed(1)}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill ${memClass}" style="width: ${memPercent}%"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Redis Memory
+    if (data.redis_memory !== undefined) {
+        const redisMB = (data.redis_memory / 1024 / 1024).toFixed(2);
+
+        html += `
+            <div class="resource-card">
+                <h3>Redis Memory</h3>
+                <div class="resource-stat">
+                    <span class="resource-label">Used</span>
+                    <span class="resource-value">${redisMB} MB</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // Connection Pool
+    if (data.connections !== undefined) {
+        const connPercent = (data.connections.active / data.connections.max * 100).toFixed(1);
+        const connClass = connPercent > 90 ? 'critical' : connPercent > 70 ? 'warning' : 'normal';
+
+        html += `
+            <div class="resource-card">
+                <h3>Connection Pool</h3>
+                <div class="resource-stat">
+                    <span class="resource-label">${data.connections.active} / ${data.connections.max}</span>
+                    <span class="resource-value">${connPercent}%</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill ${connClass}" style="width: ${connPercent}%"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html || '<div class="alert alert-info">Resource monitoring not available</div>';
+}
+
+// Load all metrics on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadAllMetrics();
+
+    // Auto-refresh every 10 seconds
+    setInterval(() => {
+        loadAllMetrics();
+    }, 10000);
+});
+</script>
+{% endblock %}

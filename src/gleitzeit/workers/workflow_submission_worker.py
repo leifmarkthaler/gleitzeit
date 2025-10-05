@@ -95,6 +95,15 @@ class WorkflowSubmissionWorker(BaseWorker):
                 exc_info=True,
                 extra={'message_id': message_id, 'stream': stream}
             )
+            # Log to Redis for queryability
+            await self.log_worker_error(
+                "process_workflow_submission",
+                e,
+                workflow_id=parent_workflow_id if 'parent_workflow_id' in locals() else None,
+                child_workflow_id=child_workflow_id if 'child_workflow_id' in locals() else None,
+                stream=stream,
+                message_id=message_id
+            )
             # Don't raise - let message be reprocessed later
     
     async def _register_parent_child(

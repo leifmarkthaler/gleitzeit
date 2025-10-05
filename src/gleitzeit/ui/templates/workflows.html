@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflows - Gleitzeit</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        .table th { background: var(--bg-secondary); padding: 0.75rem; text-align: left; border-bottom: 2px solid var(--border-color); }
+        .table td { padding: 0.75rem; border-bottom: 1px solid var(--border-color); }
+        .table tr:hover { background: var(--bg-secondary); }
+        .badge { padding: 0.25rem 0.5rem; font-size: 0.75rem; border-radius: 0.25rem; font-weight: 600; text-transform: uppercase; }
+        .badge-completed { background: rgba(34, 197, 94, 0.1); color: var(--success-color); }
+        .badge-running, .badge-submitted { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
+        .badge-failed { background: rgba(239, 68, 68, 0.1); color: var(--error-color); }
+        .loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/" class="brand-link">
+                    <span class="brand-icon">🚀</span>
+                    <span>Gleitzeit</span>
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/workflows" class="nav-link active">Workflows</a>
+                <a href="/tasks" class="nav-link">Tasks</a>
+                <a href="/submit" class="nav-link">Submit</a>
+                <a href="/logs" class="nav-link">Logs</a>
+                <a href="/metrics" class="nav-link">Metrics</a>
+                <a href="/processes" class="nav-link">Processes</a>
+                <a href="/handlers" class="nav-link">Handlers</a>
+                <div class="nav-divider"></div>
+                <span class="nav-status">
+                    <span class="status-indicator" id="api-status"></span>
+                    API Status
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <h1 class="page-title">Workflows</h1>
+
+            <div class="section">
+                <div id="workflows-container">
+                    <div class="loading">Loading workflows...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let ws = null;
+        let wsReconnectTimeout = null;
+
+        async function loadWorkflows() {
+            try {
+                const response = await fetch('/api/workflows/list?limit=100');
+                const data = await response.json();
+
+                const container = document.getElementById('workflows-container');
+
+                if (!data.workflows || data.workflows.length === 0) {
+                    container.innerHTML = '<div class="loading">No workflows found</div>';
+                    return;
+                }
+
+                let html = '<table class="table"><thead><tr>';
+                html += '<th>ID</th><th>Name</th><th>Status</th><th>Tasks</th><th>Created</th><th>Actions</th>';
+                html += '</tr></thead><tbody>';
+
+                data.workflows.forEach(workflow => {
+                    const id = workflow.workflow_id || workflow.id || '';
+                    const name = workflow.name || 'Unnamed';
+                    const status = workflow.status || 'unknown';
+                    const taskCount = workflow.task_count || workflow.tasks?.length || 0;
+                    const created = workflow.created_at || workflow.submitted_at || '-';
+
+                    html += '<tr>';
+                    html += `<td><code>${id.substring(0, 12)}...</code></td>`;
+                    html += `<td>${name}</td>`;
+                    html += `<td><span class="badge badge-${status}">${status}</span></td>`;
+                    html += `<td>${taskCount}</td>`;
+                    html += `<td>${created.substring(0, 19).replace('T', ' ')}</td>`;
+                    html += `<td><a href="/workflows/${id}" class="btn btn-primary btn-sm">View</a></td>`;
+                    html += '</tr>';
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading workflows:', error);
+                document.getElementById('workflows-container').innerHTML =
+                    '<div class="loading">Error loading workflows: ' + error.message + '</div>';
+            }
+        }
+
+        function connectWebSocket() {
+            // Don't reconnect if already connected
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                return;
+            }
+
+            // Connect to API WebSocket at port 8000
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//localhost:8000/ws/events`;
+
+            console.log('Connecting to API WebSocket:', wsUrl);
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('WebSocket connected');
+                // Clear any pending reconnect
+                if (wsReconnectTimeout) {
+                    clearTimeout(wsReconnectTimeout);
+                    wsReconnectTimeout = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    console.log('WebSocket message:', message);
+
+                    if (message.type === 'workflow_event') {
+                        // Reload workflows when workflow event received
+                        loadWorkflows();
+                    } else if (message.type === 'log_event') {
+                        // Handle error/warning log events
+                        showLogEvent(message);
+                    } else if (message.type === 'connected') {
+                        console.log('WebSocket connection confirmed:', message.message);
+                    } else if (message.type === 'ping') {
+                        // Respond to ping with pong
+                        ws.send(JSON.stringify({action: 'ping'}));
+                    }
+                } catch (error) {
+                    console.error('Error handling WebSocket message:', error);
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('WebSocket disconnected');
+                // Attempt to reconnect after 5 seconds
+                wsReconnectTimeout = setTimeout(connectWebSocket, 5000);
+            };
+        }
+
+        // Show log event (ERROR, WARNING, CRITICAL)
+        function showLogEvent(log) {
+            // Log to console for debugging
+            if (log.level === 'ERROR' || log.level === 'CRITICAL') {
+                console.error(`[${log.component}] ${log.message}`, log.metadata);
+                showErrorBanner(log);
+            } else if (log.level === 'WARNING') {
+                console.warn(`[${log.component}] ${log.message}`, log.metadata);
+                showWarningBanner(log);
+            }
+        }
+
+        // Show error banner
+        function showErrorBanner(log) {
+            const banner = document.createElement('div');
+            banner.className = 'error-banner';
+            banner.innerHTML = `
+                <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+                <strong>${log.level}:</strong> ${escapeHtml(log.message)}
+                ${log.workflow_id ? `<br><small>Workflow: ${escapeHtml(log.workflow_id)}</small>` : ''}
+                ${log.task_id ? `<br><small>Task: ${escapeHtml(log.task_id)}</small>` : ''}
+                <br><small>Component: ${escapeHtml(log.component)}</small>
+                ${log.error_type ? `<br><small>Type: ${escapeHtml(log.error_type)}</small>` : ''}
+            `;
+            document.body.prepend(banner);
+            setTimeout(() => banner.remove(), 15000);
+        }
+
+        // Show warning banner
+        function showWarningBanner(log) {
+            const banner = document.createElement('div');
+            banner.className = 'warning-banner';
+            banner.innerHTML = `
+                <button class="close-btn" onclick="this.parentElement.remove()">×</button>
+                <strong>WARNING:</strong> ${escapeHtml(log.message)}
+                ${log.workflow_id ? `<br><small>Workflow: ${escapeHtml(log.workflow_id)}</small>` : ''}
+                ${log.task_id ? `<br><small>Task: ${escapeHtml(log.task_id)}</small>` : ''}
+                <br><small>Component: ${escapeHtml(log.component)}</small>
+            `;
+            document.body.prepend(banner);
+            setTimeout(() => banner.remove(), 10000);
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Load workflows when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            loadWorkflows();
+            connectWebSocket();
+        });
+
+        // Clean up WebSocket on page unload
+        window.addEventListener('beforeunload', () => {
+            if (ws) {
+                ws.close();
+            }
+        });
+    </script>
+    <style>
+        .error-banner {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px 40px 12px 20px;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin: 10px;
+            position: relative;
+            animation: slideDown 0.3s ease-out;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .warning-banner {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 12px 40px 12px 20px;
+            border: 1px solid #ffeeba;
+            border-radius: 4px;
+            margin: 10px;
+            position: relative;
+            animation: slideDown 0.3s ease-out;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .error-banner .close-btn, .warning-banner .close-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: inherit;
+            padding: 0;
+            width: 25px;
+            height: 25px;
+            line-height: 1;
+        }
+
+        .error-banner .close-btn:hover, .warning-banner .close-btn:hover {
+            opacity: 0.7;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateY(-100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</body>
+</html>

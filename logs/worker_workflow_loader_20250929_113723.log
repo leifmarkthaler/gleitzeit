@@ -1,0 +1,101 @@
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,049 - __main__ - INFO - Loading configuration from Redis key: worker:config:workflow_loader-async:97a86785
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,052 - __main__ - INFO - Loaded config for worker workflow_loader-async
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,052 - __main__ - INFO - Worker workflow_loader-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,052 - gleitzeit.core.cache - INFO - Created workflow cache with max_size=1000, ttl=3600
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,052 - gleitzeit.handlers.registry - INFO - Registered handler FileHandler for protocol file/v1
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,110 - gleitzeit.handlers.registry - INFO - Registered handler HttpHandler for protocol http/v1
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,111 - gleitzeit.handlers.registry - INFO - Registered handler OllamaHandler for protocol ollama/v1
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,111 - gleitzeit.handlers.registry - INFO - Registered handler PythonHandler for protocol python/v1
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,111 - gleitzeit.handlers.registry - INFO - Registered handler SignalHandler for protocol signal/v1
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.handlers.registry - INFO - Registered handler TimerHandler for protocol timer/v1
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.handlers - WARNING - Could not import handler module gleitzeit.handlers.validation: No module named 'simpleeval'
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.handlers.registry - INFO - Registered handler WorkflowHandler for protocol workflow/v1
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.handlers - INFO - Auto-discovered 7 handler modules: file, http, ollama, python, signal, timer, workflow
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.handlers - WARNING - Failed to import 1 modules: [('gleitzeit.handlers.validation', "No module named 'simpleeval'")]
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Built protocol mappings for 20 task types
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - WorkflowLoaderWorkerV2 initialized with max tasks: 10000
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow cache configured: size=1000, ttl=3600s
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,112 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Available protocols: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'workflow/v1']
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,114 - workflow_loader.workflow_loader-async - INFO - Worker workflow_loader-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,114 - __main__ - INFO - Worker workflow_loader-async started successfully
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,114 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-29 11:37:24] [STDERR] 2025-09-29 11:37:24,114 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_loader-async
+[2025-09-29 11:38:34] [STDERR] 2025-09-29 11:38:34,364 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow_d75aa41e340a from test_python.yaml
+[2025-09-29 11:38:34] [STDERR] 2025-09-29 11:38:34,366 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-29 11:38:34] [STDERR]   "name": "test-python-execution",
+[2025-09-29 11:38:34] [STDERR]   "description": "Test Python handler execution mode",
+[2025-09-29 11:38:34] [STDERR]   "tasks": [
+[2025-09-29 11:38:34] [STDERR]     {
+[2025-09-29 11:38:34] [STDERR]       "id": "simple_calculation",
+[2025-09-29 11:38:34] [STDERR]       "name": "Simple Math",
+[2025-09-29 11:38:34] [STDERR]       "type": "python",
+[2025-09-29 11:38:34] [STDERR]       "params": {
+[2025-09-29 11:38:34] [STDERR]         "code": "import sys\nimport os\nprint(f\"Python version: {sys.version}\")\nprint(f\"Running in PID: {os.getpid()}\")\nprint(f\"Environment: {os.environ.get('CONTAINER_RUNTIME', 'native')}\")\nresult = 2 + 2\nprint(f\"Calculation result: {result}\")\n"
+[2025-09-29 11:38:34] [STDERR]       }
+[2025-09-29 11:38:34] [STDERR]     },
+[2025-09-29 11:38:34] [STDERR]     {
+[2025-09-29 11:38:34] [STDERR]       "id": "check_docker",
+[2025-09-29 11:38:34] [STDERR]       "name": "Check Docker Environment",
+[2025-09-29 11:38:34] [STDERR]       "type": "python",
+[2025-09-29 11:38:34] [STDERR]       "params": {
+[2025-09-29 11:38:34] [STDERR]         "code": "import os\nimport socket\nhostname = socket.gethostname()\nprint(f\"Hostname: {hostname}\")\nprint(f\"Working directory: {os.getcwd()}\")\n\n# Check if running in Docker\nis_docker = os.path.exists('/.dockerenv')\nprint(f\"Running in Docker: {is_docker}\")\n\nresult = f\"Environment check complete - Docker: {is_docker}\""
+[2025-09-29 11:38:34] [STDERR]       }
+[2025-09-29 11:38:34] [STDERR]     }
+[2025-09-29 11:38:34] [STDERR]   ]
+[2025-09-29 11:38:34] [STDERR] }
+[2025-09-29 11:38:34] [STDERR] 2025-09-29 11:38:34,366 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-29 11:38:34] [STDERR]   "id": "workflow_d75aa41e340a",
+[2025-09-29 11:38:34] [STDERR]   "name": "test-python-execution",
+[2025-09-29 11:38:34] [STDERR]   "description": "Test Python handler execution mode",
+[2025-09-29 11:38:34] [STDERR]   "version": "1.0.0",
+[2025-09-29 11:38:34] [STDERR]   "created_at": "2025-09-29T09:38:34.366639",
+[2025-09-29 11:38:34] [STDERR]   "tasks": [
+[2025-09-29 11:38:34] [STDERR]     {
+[2025-09-29 11:38:34] [STDERR]       "id": "21382077-3ada-491e-bb25-afdd8b40a4b7",
+[2025-09-29 11:38:34] [STDERR]       "workflow_id": "workflow_d75aa41e340a",
+[2025-09-29 11:38:34] [STDERR]       "name": "Simple Math",
+[2025-09-29 11:38:34] [STDERR]       "description": "",
+[2025-09-29 11:38:34] [STDERR]       "protocol": "python/v1",
+[2025-09-29 11:38:34] [STDERR]       "method": "python/execute",
+[2025-09-29 11:38:34] [STDERR]       "params": {
+[2025-09-29 11:38:34] [STDERR]         "code": "import sys\nimport os\nprint(f\"Python version: {sys.version}\")\nprint(f\"Running in PID: {os.getpid()}\")\nprint(f\"Environment: {os.environ.get('CONTAINER_RUNTIME', 'native')}\")\nresult = 2 + 2\nprint(f\"Calculation result: {result}\")\n"
+[2025-09-29 11:38:34] [STDERR]       },
+[2025-09-29 11:38:34] [STDERR]       "dependencies": [],
+[2025-09-29 11:38:34] [STDERR]       "timeout": 300,
+[2025-09-29 11:38:34] [STDERR]       "retry": {
+[2025-09-29 11:38:34] [STDERR]         "max_retries": 2,
+[2025-09-29 11:38:34] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-29 11:38:34] [STDERR]         "base_delay": 1.0,
+[2025-09-29 11:38:34] [STDERR]         "max_delay": 30.0,
+[2025-09-29 11:38:34] [STDERR]         "jitter": true,
+[2025-09-29 11:38:34] [STDERR]         "multiplier": 2.0
+[2025-09-29 11:38:34] [STDERR]       }
+[2025-09-29 11:38:34] [STDERR]     },
+[2025-09-29 11:38:34] [STDERR]     {
+[2025-09-29 11:38:34] [STDERR]       "id": "296aad7a-25ff-4ac1-a154-bdeb16940002",
+[2025-09-29 11:38:34] [STDERR]       "workflow_id": "workflow_d75aa41e340a",
+[2025-09-29 11:38:34] [STDERR]       "name": "Check Docker Environment",
+[2025-09-29 11:38:34] [STDERR]       "description": "",
+[2025-09-29 11:38:34] [STDERR]       "protocol": "python/v1",
+[2025-09-29 11:38:34] [STDERR]       "method": "python/execute",
+[2025-09-29 11:38:34] [STDERR]       "params": {
+[2025-09-29 11:38:34] [STDERR]         "code": "import os\nimport socket\nhostname = socket.gethostname()\nprint(f\"Hostname: {hostname}\")\nprint(f\"Working directory: {os.getcwd()}\")\n\n# Check if running in Docker\nis_docker = os.path.exists('/.dockerenv')\nprint(f\"Running in Docker: {is_docker}\")\n\nresult = f\"Environment check complete - Docker: {is_docker}\""
+[2025-09-29 11:38:34] [STDERR]       },
+[2025-09-29 11:38:34] [STDERR]       "dependencies": [],
+[2025-09-29 11:38:34] [STDERR]       "timeout": 300,
+[2025-09-29 11:38:34] [STDERR]       "retry": {
+[2025-09-29 11:38:34] [STDERR]         "max_retries": 2,
+[2025-09-29 11:38:34] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-29 11:38:34] [STDERR]         "base_delay": 1.0,
+[2025-09-29 11:38:34] [STDERR]         "max_delay": 30.0,
+[2025-09-29 11:38:34] [STDERR]         "jitter": true,
+[2025-09-29 11:38:34] [STDERR]         "multiplier": 2.0
+[2025-09-29 11:38:34] [STDERR]       }
+[2025-09-29 11:38:34] [STDERR]     }
+[2025-09-29 11:38:34] [STDERR]   ]
+[2025-09-29 11:38:34] [STDERR] }
+[2025-09-29 11:38:34] [STDERR] 2025-09-29 11:38:34,368 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow_d75aa41e340a loaded and submitted to shard 1 with indexes
+[2025-09-29 11:41:03] [STDERR] 2025-09-29 11:41:03,669 - workflow_loader.workflow_loader-async - INFO - Shutdown signal received for workflow_loader-async
+[2025-09-29 11:41:05] [STDERR] 2025-09-29 11:41:05,826 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-09-29 11:41:05] [STDERR] 2025-09-29 11:41:05,826 - workflow_loader.workflow_loader-async - INFO - Worker workflow_loader-async cleaned up

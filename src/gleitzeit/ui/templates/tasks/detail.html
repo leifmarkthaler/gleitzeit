@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}Task {{ task.task_id[:8] }} - Gleitzeit{% endblock %}
+{% block title %}Task {{ task['task_id'][:8] }} - Gleitzeit{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="page-header">
         <h1>📋 Task Details</h1>
-        <code class="task-id">{{ task.task_id }}</code>
+        <code class="task-id">{{ task['task_id'] }}</code>
     </div>
 
     <!-- Task Overview -->
@@ -18,42 +18,42 @@
             <div class="info-grid">
                 <div class="info-item">
                     <span class="info-label">Status:</span>
-                    <span class="badge badge-{{ task.state.status }}">{{ task.state.status }}</span>
+                    <span class="badge badge-{{ task.get('state', {}).get('status', 'unknown') }}">{{ task.get('state', {}).get('status', 'unknown') }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Type:</span>
-                    <span class="info-value">{{ task.task_type|default("Unknown") }}</span>
+                    <span class="info-value">{{ task.get('task_type', 'Unknown') }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Workflow ID:</span>
-                    {% if task.workflow_id %}
-                    <code>{{ task.workflow_id[:12] }}...</code>
+                    {% if task.get('workflow_id') %}
+                    <code>{{ task['workflow_id'][:12] }}...</code>
                     {% else %}
                     <span class="info-value">-</span>
                     {% endif %}
                 </div>
                 <div class="info-item">
                     <span class="info-label">Created:</span>
-                    <span class="info-value">{{ task.created_at|default("-") }}</span>
+                    <span class="info-value">{{ task.get('created_at', '-') }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Started:</span>
-                    <span class="info-value">{{ task.state.executed_at|default("-") }}</span>
+                    <span class="info-value">{{ task.get('state', {}).get('executed_at', '-') }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Completed:</span>
-                    <span class="info-value">{{ task.state.completed_at|default("-") }}</span>
+                    <span class="info-value">{{ task.get('state', {}).get('completed_at', '-') }}</span>
                 </div>
-                {% if task.retry_count %}
+                {% if task.get('retry_count') %}
                 <div class="info-item">
                     <span class="info-label">Retries:</span>
-                    <span class="info-value">{{ task.retry_count }}</span>
+                    <span class="info-value">{{ task['retry_count'] }}</span>
                 </div>
                 {% endif %}
-                {% if task.worker_id %}
+                {% if task.get('worker_id') %}
                 <div class="info-item">
                     <span class="info-label">Worker:</span>
-                    <code>{{ task.worker_id[:12] }}...</code>
+                    <code>{{ task['worker_id'][:12] }}...</code>
                 </div>
                 {% endif %}
             </div>
@@ -61,71 +61,95 @@
     </div>
 
     <!-- Task Configuration -->
-    {% if task.config %}
+    {% if task.get('config') %}
     <div class="card mb-4">
         <div class="card-header">
             <h3>⚙️ Configuration</h3>
         </div>
         <div class="card-body">
-            <pre class="code-block">{{ task.config | tojson(indent=2) }}</pre>
+            <pre class="code-block">{{ task['config'] | tojson(indent=2) }}</pre>
         </div>
     </div>
     {% endif %}
 
     <!-- Task Input -->
-    {% if task.input %}
+    {% if task.get('input') %}
     <div class="card mb-4">
         <div class="card-header">
             <h3>📥 Input</h3>
         </div>
         <div class="card-body">
-            <pre class="code-block">{{ task.input | tojson(indent=2) }}</pre>
+            <pre class="code-block">{{ task['input'] | tojson(indent=2) }}</pre>
         </div>
     </div>
     {% endif %}
 
     <!-- Task Result -->
-    {% if task.state.result %}
+    {% if task.get('state', {}).get('result') %}
     <div class="card mb-4">
         <div class="card-header">
             <h3>✅ Result</h3>
         </div>
         <div class="card-body">
-            <pre class="code-block success">{{ task.state.result | tojson(indent=2) }}</pre>
+            <pre class="code-block success">{{ task['state']['result'] | tojson(indent=2) }}</pre>
         </div>
     </div>
     {% endif %}
 
     <!-- Task Error -->
-    {% if task.state.error %}
+    {% if task.get('state', {}).get('error') %}
     <div class="card mb-4">
         <div class="card-header">
             <h3>❌ Error</h3>
         </div>
         <div class="card-body">
             <div class="error-details">
-                {% if task.state.error.message %}
+                {% if task['state']['error'].get('message') %}
                 <div class="error-message">
-                    <strong>Message:</strong> {{ task.state.error.message }}
+                    <strong>Message:</strong> {{ task['state']['error']['message'] }}
                 </div>
                 {% endif %}
-                {% if task.state.error.type %}
+                {% if task['state']['error'].get('type') %}
                 <div class="error-type">
-                    <strong>Type:</strong> {{ task.state.error.type }}
+                    <strong>Type:</strong> {{ task['state']['error']['type'] }}
                 </div>
                 {% endif %}
-                {% if task.state.error.traceback %}
+                {% if task['state']['error'].get('traceback') %}
                 <div class="error-traceback">
                     <strong>Traceback:</strong>
-                    <pre class="code-block error">{{ task.state.error.traceback }}</pre>
+                    <pre class="code-block error">{{ task['state']['error']['traceback'] }}</pre>
                 </div>
-                {% elif task.state.error %}
-                <pre class="code-block error">{{ task.state.error | tojson(indent=2) }}</pre>
+                {% elif task['state']['error'] %}
+                <pre class="code-block error">{{ task['state']['error'] | tojson(indent=2) }}</pre>
                 {% endif %}
             </div>
         </div>
     </div>
     {% endif %}
+
+    <!-- Task Logs -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3>📋 Task Logs</h3>
+        </div>
+        <div class="card-body">
+            <table class="table log-table">
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Level</th>
+                        <th>Component</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody id="task-logs-tbody">
+                    <tr>
+                        <td colspan="4" class="text-center">Loading logs...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
 
     <!-- Task Timeline -->
     <div class="card mb-4">
@@ -141,14 +165,14 @@
     </div>
 
     <!-- Dependencies -->
-    {% if task.dependencies %}
+    {% if task.get('dependencies') %}
     <div class="card mb-4">
         <div class="card-header">
             <h3>🔗 Dependencies</h3>
         </div>
         <div class="card-body">
             <ul class="dependency-list">
-                {% for dep in task.dependencies %}
+                {% for dep in task['dependencies'] %}
                 <li>
                     <a href="/tasks/{{ dep }}" class="task-link">{{ dep[:12] }}...</a>
                 </li>
@@ -163,16 +187,16 @@
         <div class="card-body">
             <div class="button-group">
                 <button class="btn btn-secondary" onclick="window.history.back()">← Back</button>
-                {% if task.state.status == "failed" %}
+                {% if task.get('state', {}).get('status') == "failed" %}
                 <button class="btn btn-warning"
-                        hx-post="/api/tasks/{{ task.task_id }}/retry"
+                        hx-post="/api/tasks/{{ task['task_id'] }}/retry"
                         hx-trigger="click"
                         hx-confirm="Retry this task?">
                     🔄 Retry Task
                 </button>
                 {% endif %}
                 <button class="btn btn-primary"
-                        hx-get="/tasks/{{ task.task_id }}"
+                        hx-get="/tasks/{{ task['task_id'] }}"
                         hx-target="body"
                         hx-trigger="click">
                     🔄 Refresh
@@ -509,12 +533,91 @@
     background: #ffc107;
     color: #212529;
 }
+
+.log-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.log-table th {
+    background: var(--bg-secondary, #f8f9fa);
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #666;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.log-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.text-center {
+    text-align: center;
+    color: #666;
+}
+
+.badge-debug {
+    background: #e3e3e3;
+    color: #666;
+}
+
+.badge-info {
+    background: #cfe2ff;
+    color: #084298;
+}
+
+.badge-warning {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.badge-error {
+    background: #f8d7da;
+    color: #721c24;
+}
 </style>
 
 <script>
+const taskId = '{{ task['task_id'] }}';
+
+// Load task logs
+function loadTaskLogs() {
+    fetch(`/api/tasks/${taskId}/logs`)
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('task-logs-tbody');
+            tbody.innerHTML = '';
+
+            if (!data.logs || data.logs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center">No logs found</td></tr>';
+                return;
+            }
+
+            data.logs.forEach(log => {
+                const row = document.createElement('tr');
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                row.innerHTML = `
+                    <td style="font-family: monospace; font-size: 0.75rem;">${timestamp}</td>
+                    <td><span class="badge badge-${log.level.toLowerCase()}">${log.level}</span></td>
+                    <td>${log.component}</td>
+                    <td>${log.message}</td>
+                `;
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading task logs:', error);
+            document.getElementById('task-logs-tbody').innerHTML =
+                '<tr><td colspan="4" class="text-center">Error loading logs</td></tr>';
+        });
+}
+
 // Load task timeline
 function loadTaskTimeline() {
-    fetch('/api/tasks/{{ task.task_id }}/events')
+    fetch('/api/tasks/{{ task['task_id'] }}/events')
         .then(response => response.json())
         .then(data => {
             renderTimeline(data.events || []);
@@ -607,13 +710,16 @@ function renderTimeline(events) {
     timelineDiv.innerHTML = timelineHTML;
 }
 
-// Load timeline on page load
-document.addEventListener('DOMContentLoaded', loadTaskTimeline);
+// Load timeline and logs on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadTaskLogs();
+    loadTaskTimeline();
+});
 
 // Auto-refresh every 3 seconds if task is still running
-{% if task.state.status == "running" or task.state.status == "pending" %}
+{% if task.get('state', {}).get('status') == "running" or task.get('state', {}).get('status') == "pending" %}
 setInterval(() => {
-    htmx.trigger(document.querySelector('[hx-get="/tasks/{{ task.task_id }}"]'), 'click');
+    htmx.trigger(document.querySelector('[hx-get="/tasks/{{ task['task_id'] }}"]'), 'click');
     loadTaskTimeline(); // Also reload timeline
 }, 3000);
 {% endif %}

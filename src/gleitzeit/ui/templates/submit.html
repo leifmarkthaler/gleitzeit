@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Workflow - Gleitzeit</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .submit-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .submit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 1.5rem;
+        }
+
+        .editor-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .format-toggle {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .format-btn {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .format-btn.active {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+
+        .editor-textarea {
+            width: 100%;
+            height: 500px;
+            padding: 1rem;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            resize: vertical;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.8;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            opacity: 0.8;
+        }
+
+        .examples-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .example-card {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .example-card:hover {
+            background: var(--bg-primary);
+            border-color: var(--primary-color);
+        }
+
+        .example-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .example-description {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .result-panel {
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .result-success {
+            border-color: var(--success-color);
+            background: rgba(34, 197, 94, 0.1);
+        }
+
+        .result-error {
+            border-color: var(--error-color);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .result-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-success .result-title {
+            color: var(--success-color);
+        }
+
+        .result-error .result-title {
+            color: var(--error-color);
+        }
+
+        .result-content {
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 0.875rem;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .result-link {
+            margin-top: 1rem;
+        }
+
+        .result-link a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .result-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/" class="brand-link">
+                    <span class="brand-icon">🚀</span>
+                    <span>Gleitzeit</span>
+                </a>
+            </div>
+            <div class="nav-menu">
+                <a href="/" class="nav-link">Dashboard</a>
+                <a href="/workflows" class="nav-link">Workflows</a>
+                <a href="/tasks" class="nav-link">Tasks</a>
+                <a href="/submit" class="nav-link active">Submit</a>
+                <a href="/logs" class="nav-link">Logs</a>
+                <a href="/metrics" class="nav-link">Metrics</a>
+                <a href="/processes" class="nav-link">Processes</a>
+                <a href="/handlers" class="nav-link">Handlers</a>
+                <div class="nav-divider"></div>
+                <span class="nav-status">
+                    <span class="status-indicator" id="api-status"></span>
+                    API Status
+                </span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="submit-container">
+            <h1 class="page-title">Submit Workflow</h1>
+
+            <div class="submit-grid">
+                <!-- Editor Panel -->
+                <div class="editor-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Workflow Definition</h2>
+                        <div class="format-toggle">
+                            <button class="format-btn active" id="yaml-btn" onclick="setFormat('yaml')">YAML</button>
+                            <button class="format-btn" id="json-btn" onclick="setFormat('json')">JSON</button>
+                        </div>
+                    </div>
+
+                    <textarea id="workflow-editor" class="editor-textarea" placeholder="Enter your workflow definition here..."></textarea>
+
+                    <div class="editor-actions">
+                        <button class="btn btn-primary" onclick="submitWorkflow()">Submit Workflow</button>
+                        <button class="btn btn-secondary" onclick="validateWorkflow()">Validate</button>
+                        <button class="btn btn-secondary" onclick="clearEditor()">Clear</button>
+                    </div>
+
+                    <div id="result-panel" style="display: none;"></div>
+                </div>
+
+                <!-- Examples Panel -->
+                <div class="examples-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Examples</h2>
+                    </div>
+
+                    <div class="examples-list">
+                        <div class="example-card" onclick="loadExample('simple')">
+                            <div class="example-title">Simple Python Task</div>
+                            <div class="example-description">Basic workflow with a single Python task</div>
+                        </div>
+
+                        <div class="example-card" onclick="loadExample('sequential')">
+                            <div class="example-title">Sequential Tasks</div>
+                            <div class="example-description">Multiple tasks with dependencies</div>
+                        </div>
+
+                        <div class="example-card" onclick="loadExample('parallel')">
+                            <div class="example-title">Parallel Execution</div>
+                            <div class="example-description">Tasks that run in parallel</div>
+                        </div>
+
+                        <div class="example-card" onclick="loadExample('http')">
+                            <div class="example-title">HTTP Request</div>
+                            <div class="example-description">Make HTTP API calls</div>
+                        </div>
+
+                        <div class="example-card" onclick="loadExample('timer')">
+                            <div class="example-title">Timer & Wait</div>
+                            <div class="example-description">Delay execution with timers</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        let currentFormat = 'yaml';
+
+        const examples = {
+            simple: `name: Simple Python Task
+tasks:
+  - id: hello
+    type: python
+    params:
+      code: |
+        print("Hello from Gleitzeit!")
+        return {"message": "Success"}`,
+
+            sequential: `name: Sequential Tasks
+tasks:
+  - id: task1
+    type: python
+    params:
+      code: |
+        print("Task 1 starting")
+        return {"data": "from task 1"}
+
+  - id: task2
+    type: python
+    depends_on: [task1]
+    params:
+      code: |
+        print("Task 2 starting")
+        return {"data": "from task 2"}
+
+  - id: task3
+    type: python
+    depends_on: [task2]
+    params:
+      code: |
+        print("Task 3 starting")
+        return {"result": "All tasks completed"}`,
+
+            parallel: `name: Parallel Execution
+tasks:
+  - id: parallel1
+    type: python
+    params:
+      code: |
+        import time
+        time.sleep(1)
+        print("Parallel task 1")
+        return {"result": "Task 1 done"}
+
+  - id: parallel2
+    type: python
+    params:
+      code: |
+        import time
+        time.sleep(1)
+        print("Parallel task 2")
+        return {"result": "Task 2 done"}
+
+  - id: parallel3
+    type: python
+    params:
+      code: |
+        import time
+        time.sleep(1)
+        print("Parallel task 3")
+        return {"result": "Task 3 done"}
+
+  - id: final
+    type: python
+    depends_on: [parallel1, parallel2, parallel3]
+    params:
+      code: |
+        print("All parallel tasks completed!")
+        return {"status": "complete"}`,
+
+            http: `name: HTTP Request Example
+tasks:
+  - id: fetch_data
+    type: http
+    params:
+      url: https://api.github.com/repos/python/cpython
+      method: GET
+      headers:
+        Accept: application/json
+
+  - id: process
+    type: python
+    depends_on: [fetch_data]
+    params:
+      code: |
+        print("Processing HTTP response")
+        return {"processed": True}`,
+
+            timer: `name: Timer Example
+tasks:
+  - id: start
+    type: python
+    params:
+      code: |
+        print("Starting workflow")
+        return {"started": True}
+
+  - id: wait
+    type: timer
+    depends_on: [start]
+    params:
+      duration: 5
+
+  - id: finish
+    type: python
+    depends_on: [wait]
+    params:
+      code: |
+        print("Workflow completed after delay")
+        return {"completed": True}`
+        };
+
+        function setFormat(format) {
+            currentFormat = format;
+            document.getElementById('yaml-btn').classList.toggle('active', format === 'yaml');
+            document.getElementById('json-btn').classList.toggle('active', format === 'json');
+        }
+
+        function loadExample(exampleId) {
+            const example = examples[exampleId];
+            if (example) {
+                document.getElementById('workflow-editor').value = example;
+            }
+        }
+
+        function clearEditor() {
+            document.getElementById('workflow-editor').value = '';
+            hideResult();
+        }
+
+        function showResult(success, title, content, workflowId = null) {
+            const panel = document.getElementById('result-panel');
+            panel.style.display = 'block';
+            panel.className = 'result-panel ' + (success ? 'result-success' : 'result-error');
+
+            let html = `
+                <div class="result-title">${title}</div>
+                <div class="result-content">${content}</div>
+            `;
+
+            if (workflowId) {
+                html += `
+                    <div class="result-link">
+                        <a href="/workflows/${workflowId}">View Workflow →</a>
+                    </div>
+                `;
+            }
+
+            panel.innerHTML = html;
+        }
+
+        function hideResult() {
+            document.getElementById('result-panel').style.display = 'none';
+        }
+
+        async function validateWorkflow() {
+            const content = document.getElementById('workflow-editor').value.trim();
+            if (!content) {
+                showResult(false, 'Validation Error', 'Workflow definition cannot be empty');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/workflows/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': currentFormat === 'yaml' ? 'application/x-yaml' : 'application/json'
+                    },
+                    body: content
+                });
+
+                const data = await response.json();
+
+                if (data.valid) {
+                    let message = data.message || 'Workflow validation passed';
+                    if (data.summary) {
+                        message += `\n\nWorkflow: ${data.summary.name}`;
+                        message += `\nTasks: ${data.summary.task_count}`;
+                        message += `\nDependencies: ${data.summary.has_dependencies ? 'Yes' : 'No'}`;
+                    }
+                    showResult(true, 'Validation Passed ✓', message);
+                } else {
+                    const errors = data.errors || ['Unknown validation error'];
+                    showResult(
+                        false,
+                        'Validation Failed ✗',
+                        errors.join('\n')
+                    );
+                }
+            } catch (error) {
+                showResult(
+                    false,
+                    'Validation Error',
+                    `Failed to validate workflow: ${error.message}`
+                );
+            }
+        }
+
+        async function submitWorkflow() {
+            const content = document.getElementById('workflow-editor').value.trim();
+            if (!content) {
+                showResult(false, 'Submission Error', 'Workflow definition cannot be empty');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/workflows/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': currentFormat === 'yaml' ? 'application/x-yaml' : 'application/json'
+                    },
+                    body: content
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const workflowId = data.workflow_id || data.id;
+                    showResult(
+                        true,
+                        'Workflow Submitted Successfully!',
+                        `Workflow ID: ${workflowId}\nStatus: ${data.status || 'submitted'}`,
+                        workflowId
+                    );
+                } else {
+                    showResult(
+                        false,
+                        'Submission Failed',
+                        data.error || data.detail || 'Unknown error occurred'
+                    );
+                }
+            } catch (error) {
+                showResult(
+                    false,
+                    'Submission Error',
+                    `Failed to submit workflow: ${error.message}`
+                );
+            }
+        }
+
+        // Load simple example by default
+        window.addEventListener('DOMContentLoaded', () => {
+            loadExample('simple');
+        });
+    </script>
+
+    <!-- Custom JavaScript for API status -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

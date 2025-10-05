@@ -275,17 +275,13 @@ async def get_task_logs(
 
     async with client_pool.acquire_connection(user.id) as conn:
         # Logs are optional; they may be stored under {shard}:task:logs:{task_id}
-        pattern = f"*task:logs:{task_id}".encode()
-        cursor = b"0"
+        pattern = f"*task:logs:{task_id}"
         logs = []
 
-        while True:
-            cursor, keys = await conn.redis.scan(cursor, match=pattern, count=100)
-            if keys:
-                logs = await conn.redis.lrange(keys[0], 0, -1)
-                break
-            if cursor == b"0":
-                break
+        # Use scan_iter instead of manual scan loop
+        async for key in conn.redis.scan_iter(match=pattern, count=100):
+            logs = await conn.redis.lrange(key, 0, -1)
+            break  # Only need first match
 
         if not logs:
             return {"task_id": task_id, "logs": []}

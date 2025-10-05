@@ -1,0 +1,43 @@
+[2025-09-30 23:15:42] [STDERR] INFO:     Started server process [15112]
+[2025-09-30 23:15:42] [STDERR] INFO:     Waiting for application startup.
+[2025-09-30 23:15:42] [STDERR] INFO:     Application startup complete.
+[2025-09-30 23:15:42] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-09-30 23:15:55] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 23:15:55] [STDOUT] INFO:     127.0.0.1:58436 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:15:55] [STDOUT] INFO:     127.0.0.1:58436 - "GET /system/logs/errors?limit=5&offset=0&level=ERROR HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58462 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58462 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58462 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58464 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58464 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58466 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58466 - "GET /system/workers HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58468 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58468 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58470 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58470 - "GET /system/metrics/workflows?time_range=1h HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58472 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58472 - "GET /system/metrics/tasks?time_range=1h HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58474 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58474 - "GET /system/queues HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58476 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58476 - "GET /system/redis/info HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58478 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58478 - "GET /system/resources HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58480 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58480 - "GET / HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58482 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58482 - "GET /system/config HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58484 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58484 - "GET /auth/rate-limit HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58486 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58486 - "GET /system/audit/logs?limit=10&offset=0 HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58488 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58488 - "GET /system/logs/errors?limit=5&offset=0&level=ERROR HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58490 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:16:02] [STDOUT] INFO:     127.0.0.1:58490 - "POST /system/workers/health-check HTTP/1.1" 200 OK
+[2025-09-30 23:36:20] [STDOUT] INFO:     127.0.0.1:59066 - "POST /workflows/submit HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 23:36:36] [STDOUT] INFO:     127.0.0.1:59110 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:36:41] [STDOUT] INFO:     127.0.0.1:59117 - "GET /workflows/aaaffe29-ac4c-46b3-8c3b-d9199c489689/status HTTP/1.1" 404 Not Found
+[2025-09-30 23:36:41] [STDOUT] INFO:     127.0.0.1:59117 - "GET /system/logs/errors HTTP/1.1" 200 OK
+[2025-09-30 23:36:41] [STDOUT] INFO:     127.0.0.1:59117 - "GET /system/logs/errors?workflow_id=aaaffe29-ac4c-46b3-8c3b-d9199c489689 HTTP/1.1" 200 OK

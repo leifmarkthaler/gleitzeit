@@ -1,0 +1,103 @@
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,788 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:297283e7
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,791 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,791 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,791 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,791 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,791 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,793 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,793 - __main__ - INFO - Worker dependency-async started successfully
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,793 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-30 20:48:33] [STDERR] 2025-09-30 20:48:33,793 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-09-30 20:48:54] [STDERR] 2025-09-30 20:48:54,405 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-cad0c37f
+[2025-09-30 20:48:54] [STDERR] 2025-09-30 20:48:54,406 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 83f21066-f36f-4d89-b77d-c1d4f18439e3 to shard 8
+[2025-09-30 20:48:54] [STDERR] 2025-09-30 20:48:54,427 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 83f21066-f36f-4d89-b77d-c1d4f18439e3 from workflow easy-workflow-cad0c37f
+[2025-09-30 20:48:54] [STDERR] 2025-09-30 20:48:54,428 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-cad0c37f failed with 1 failed tasks
+[2025-09-30 20:49:00] [STDERR] 2025-09-30 20:49:00,569 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-832703fa
+[2025-09-30 20:49:00] [STDERR] 2025-09-30 20:49:00,570 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task b9c551dd-3773-4620-b24f-e7b8ba62f3f2 to shard 5
+[2025-09-30 20:49:00] [STDERR] 2025-09-30 20:49:00,571 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task f179ff0f-966d-4f13-82e7-b415bfe9c472 to shard 5
+[2025-09-30 20:49:00] [STDERR] 2025-09-30 20:49:00,585 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: b9c551dd-3773-4620-b24f-e7b8ba62f3f2 from workflow easy-workflow-832703fa
+[2025-09-30 20:49:00] [STDERR] 2025-09-30 20:49:00,597 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: f179ff0f-966d-4f13-82e7-b415bfe9c472 from workflow easy-workflow-832703fa
+[2025-09-30 20:49:00] [STDERR] 2025-09-30 20:49:00,598 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-832703fa failed with 2 failed tasks
+[2025-09-30 20:49:06] [STDERR] 2025-09-30 20:49:06,041 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-71490e92
+[2025-09-30 20:49:06] [STDERR] 2025-09-30 20:49:06,043 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 75ea18e8-bc9c-49dc-87f7-33de72b5d1fe to shard 10
+[2025-09-30 20:49:06] [STDERR] 2025-09-30 20:49:06,044 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 5503e1bb-3f35-4a88-81ae-2398587d5b24 to shard 10
+[2025-09-30 20:49:06] [STDERR] 2025-09-30 20:49:06,547 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 75ea18e8-bc9c-49dc-87f7-33de72b5d1fe from workflow easy-workflow-71490e92
+[2025-09-30 20:49:06] [STDERR] 2025-09-30 20:49:06,560 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 5503e1bb-3f35-4a88-81ae-2398587d5b24 from workflow easy-workflow-71490e92
+[2025-09-30 20:50:58] [STDERR] 2025-09-30 20:50:58,105 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-d9f83cc9
+[2025-09-30 20:50:58] [STDERR] 2025-09-30 20:50:58,107 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 7f60e09f-ffcd-4219-90e7-c05dc2925477 to shard 8
+[2025-09-30 20:51:03] [STDERR] 2025-09-30 20:51:03,048 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-c16547e1
+[2025-09-30 20:51:03] [STDERR] 2025-09-30 20:51:03,050 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 6cec4d61-e61e-4834-92da-1e39c6bf3d2f to shard 15
+[2025-09-30 20:51:03] [STDERR] 2025-09-30 20:51:03,051 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 3fd47d83-e968-42f1-9298-94a393bffcc7 to shard 15
+[2025-09-30 20:51:06] [STDERR] 2025-09-30 20:51:06,797 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-284dc43c
+[2025-09-30 20:51:06] [STDERR] 2025-09-30 20:51:06,798 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 89a15ec4-0bb0-4aff-933f-962870c89161 to shard 2
+[2025-09-30 20:51:06] [STDERR] 2025-09-30 20:51:06,799 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 1bb7ee62-6ae6-4cab-a8e2-c7f058c4683e to shard 2
+[2025-09-30 20:51:13] [STDERR] 2025-09-30 20:51:13,626 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 7f60e09f-ffcd-4219-90e7-c05dc2925477 from workflow easy-workflow-d9f83cc9
+[2025-09-30 20:51:13] [STDERR] 2025-09-30 20:51:13,631 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-d9f83cc9 completed successfully!
+[2025-09-30 20:51:13] [STDERR] 2025-09-30 20:51:13,955 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 1bb7ee62-6ae6-4cab-a8e2-c7f058c4683e from workflow easy-workflow-284dc43c
+[2025-09-30 20:51:13] [STDERR] 2025-09-30 20:51:13,962 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task 501efaad-4583-41cb-b205-5309432547d5 to shard 2
+[2025-09-30 20:51:14] [STDERR] 2025-09-30 20:51:14,332 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 89a15ec4-0bb0-4aff-933f-962870c89161 from workflow easy-workflow-284dc43c
+[2025-09-30 20:51:15] [STDERR] 2025-09-30 20:51:15,228 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 6cec4d61-e61e-4834-92da-1e39c6bf3d2f from workflow easy-workflow-c16547e1
+[2025-09-30 20:51:15] [STDERR] 2025-09-30 20:51:15,396 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 3fd47d83-e968-42f1-9298-94a393bffcc7 from workflow easy-workflow-c16547e1
+[2025-09-30 20:51:15] [STDERR] 2025-09-30 20:51:15,399 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-c16547e1 completed successfully!
+[2025-09-30 20:51:15] [STDERR] 2025-09-30 20:51:15,731 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 501efaad-4583-41cb-b205-5309432547d5 from workflow easy-workflow-284dc43c
+[2025-09-30 20:51:15] [STDERR] 2025-09-30 20:51:15,733 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-284dc43c completed successfully!
+[2025-09-30 20:53:58] [STDERR] 2025-09-30 20:53:58,499 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-3a6be71a
+[2025-09-30 20:53:58] [STDERR] 2025-09-30 20:53:58,502 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 85228ec1-7d3e-4d75-993b-b33a2ac8b0bb to shard 5
+[2025-09-30 20:53:58] [STDERR] 2025-09-30 20:53:58,502 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 1c7b35c0-14c7-4652-a2cb-dd7203920163 to shard 5
+[2025-09-30 20:53:58] [STDERR] 2025-09-30 20:53:58,932 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 85228ec1-7d3e-4d75-993b-b33a2ac8b0bb from workflow easy-workflow-3a6be71a
+[2025-09-30 20:53:59] [STDERR] 2025-09-30 20:53:59,226 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 1c7b35c0-14c7-4652-a2cb-dd7203920163 from workflow easy-workflow-3a6be71a
+[2025-09-30 20:53:59] [STDERR] 2025-09-30 20:53:59,228 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-3a6be71a failed with 1 failed tasks
+[2025-09-30 20:54:03] [STDERR] 2025-09-30 20:54:03,840 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-0db08266
+[2025-09-30 20:54:03] [STDERR] 2025-09-30 20:54:03,842 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task a896a397-dadf-4fcb-b618-0b3bb1f7e6d5 to shard 9
+[2025-09-30 20:54:03] [STDERR] 2025-09-30 20:54:03,843 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 48036a83-7c8c-4a3c-8f94-c9dccc5e6936 to shard 9
+[2025-09-30 20:54:03] [STDERR] 2025-09-30 20:54:03,844 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task d121fc5c-84d7-4ecd-beea-be895f9be7cd to shard 9
+[2025-09-30 20:54:04] [STDERR] 2025-09-30 20:54:04,181 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: a896a397-dadf-4fcb-b618-0b3bb1f7e6d5 from workflow easy-workflow-0db08266
+[2025-09-30 20:54:04] [STDERR] 2025-09-30 20:54:04,733 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: d121fc5c-84d7-4ecd-beea-be895f9be7cd from workflow easy-workflow-0db08266
+[2025-09-30 20:54:08] [STDERR] 2025-09-30 20:54:08,880 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-1eb6db62
+[2025-09-30 20:54:08] [STDERR] 2025-09-30 20:54:08,883 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 030e96bc-5032-4018-82fe-c17d9e150f29 to shard 3
+[2025-09-30 20:54:10] [STDERR] 2025-09-30 20:54:10,718 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 48036a83-7c8c-4a3c-8f94-c9dccc5e6936 from workflow easy-workflow-0db08266
+[2025-09-30 20:54:10] [STDERR] 2025-09-30 20:54:10,722 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-0db08266 failed with 1 failed tasks
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,093 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 030e96bc-5032-4018-82fe-c17d9e150f29 from workflow easy-workflow-1eb6db62
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,098 - gleitzeit.workers.dependency_worker - WARNING - Referenced task source not found or has no result
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,098 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task edde757d-f231-4afa-91dc-a457e60deebe to shard 3
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,099 - gleitzeit.workers.dependency_worker - WARNING - Referenced task source not found or has no result
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,099 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task d291a2b8-4ec0-4d9d-bcd6-ece91f2c7eea to shard 3
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,099 - gleitzeit.workers.dependency_worker - WARNING - Referenced task source not found or has no result
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,100 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task 16fe8019-e500-4bc9-a538-930c947a38a7 to shard 3
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,362 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: edde757d-f231-4afa-91dc-a457e60deebe from workflow easy-workflow-1eb6db62
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,787 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: d291a2b8-4ec0-4d9d-bcd6-ece91f2c7eea from workflow easy-workflow-1eb6db62
+[2025-09-30 20:54:11] [STDERR] 2025-09-30 20:54:11,879 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 16fe8019-e500-4bc9-a538-930c947a38a7 from workflow easy-workflow-1eb6db62
+[2025-09-30 20:54:13] [STDERR] 2025-09-30 20:54:13,275 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-78d9b4db
+[2025-09-30 20:54:13] [STDERR] 2025-09-30 20:54:13,277 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task b9df7dc2-eb74-4a73-a719-916be53e96e1 to shard 5
+[2025-09-30 20:54:13] [STDERR] 2025-09-30 20:54:13,278 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task a65a674d-5f58-4d42-ae42-e2a47b0c3b80 to shard 5
+[2025-09-30 20:54:13] [STDERR] 2025-09-30 20:54:13,278 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 97ad9795-0b83-42f1-9343-e09d72c4d45e to shard 5
+[2025-09-30 20:54:13] [STDERR] 2025-09-30 20:54:13,567 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: b9df7dc2-eb74-4a73-a719-916be53e96e1 from workflow easy-workflow-78d9b4db
+[2025-09-30 20:54:13] [STDERR] 2025-09-30 20:54:13,866 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 97ad9795-0b83-42f1-9343-e09d72c4d45e from workflow easy-workflow-78d9b4db
+[2025-09-30 20:54:14] [STDERR] 2025-09-30 20:54:14,805 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: a65a674d-5f58-4d42-ae42-e2a47b0c3b80 from workflow easy-workflow-78d9b4db
+[2025-09-30 20:54:14] [STDERR] 2025-09-30 20:54:14,808 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-78d9b4db failed with 1 failed tasks
+[2025-09-30 20:58:39] [STDERR] 2025-09-30 20:58:39,787 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-a167a006
+[2025-09-30 20:58:39] [STDERR] 2025-09-30 20:58:39,789 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 31ddb557-7a3e-46ba-a352-3ef6bfa51e16 to shard 6
+[2025-09-30 20:58:39] [STDERR] 2025-09-30 20:58:39,790 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 2f0aa078-e63c-4e68-9257-ed9b26120577 to shard 6
+[2025-09-30 20:58:40] [STDERR] 2025-09-30 20:58:40,261 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 31ddb557-7a3e-46ba-a352-3ef6bfa51e16 from workflow easy-workflow-a167a006
+[2025-09-30 20:58:40] [STDERR] 2025-09-30 20:58:40,563 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 2f0aa078-e63c-4e68-9257-ed9b26120577 from workflow easy-workflow-a167a006
+[2025-09-30 20:58:40] [STDERR] 2025-09-30 20:58:40,565 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-a167a006 failed with 1 failed tasks
+[2025-09-30 20:58:44] [STDERR] 2025-09-30 20:58:44,740 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-b380f59a
+[2025-09-30 20:58:44] [STDERR] 2025-09-30 20:58:44,743 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task d343b2b7-bad5-4e61-9916-3907397f979b to shard 2
+[2025-09-30 20:58:44] [STDERR] 2025-09-30 20:58:44,743 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task d10b7cce-2054-4427-bdee-aaf73781592f to shard 2
+[2025-09-30 20:58:44] [STDERR] 2025-09-30 20:58:44,744 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 8cbe76f0-0f01-4070-afa5-d543bd09a78c to shard 2
+[2025-09-30 20:58:45] [STDERR] 2025-09-30 20:58:45,051 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: d343b2b7-bad5-4e61-9916-3907397f979b from workflow easy-workflow-b380f59a
+[2025-09-30 20:58:45] [STDERR] 2025-09-30 20:58:45,418 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 8cbe76f0-0f01-4070-afa5-d543bd09a78c from workflow easy-workflow-b380f59a
+[2025-09-30 20:58:46] [STDERR] 2025-09-30 20:58:46,094 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: d10b7cce-2054-4427-bdee-aaf73781592f from workflow easy-workflow-b380f59a
+[2025-09-30 20:58:46] [STDERR] 2025-09-30 20:58:46,097 - gleitzeit.workers.dependency_worker - INFO - Workflow easy-workflow-b380f59a failed with 1 failed tasks
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,339 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: easy-workflow-aedcccb8
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,342 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 641d039e-9983-4227-b437-8263dd043f5d to shard 13
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,676 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 641d039e-9983-4227-b437-8263dd043f5d from workflow easy-workflow-aedcccb8
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,679 - gleitzeit.workers.dependency_worker - WARNING - Referenced task source not found or has no result
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,680 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task 550c5676-d7d5-4a5b-9201-819159080da2 to shard 13
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,680 - gleitzeit.workers.dependency_worker - WARNING - Referenced task source not found or has no result
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,681 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task a8bc92e5-c7da-4a58-a9d3-35b09668327d to shard 13
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,681 - gleitzeit.workers.dependency_worker - WARNING - Referenced task source not found or has no result
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,681 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task 69a21ebe-70eb-4c01-9338-9448737fbc1e to shard 13
+[2025-09-30 20:58:50] [STDERR] 2025-09-30 20:58:50,979 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 550c5676-d7d5-4a5b-9201-819159080da2 from workflow easy-workflow-aedcccb8
+[2025-09-30 20:58:51] [STDERR] 2025-09-30 20:58:51,479 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 69a21ebe-70eb-4c01-9338-9448737fbc1e from workflow easy-workflow-aedcccb8
+[2025-09-30 20:58:51] [STDERR] 2025-09-30 20:58:51,514 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: a8bc92e5-c7da-4a58-a9d3-35b09668327d from workflow easy-workflow-aedcccb8

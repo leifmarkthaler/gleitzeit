@@ -29,6 +29,9 @@
                 <a href="/" class="nav-link {% if request.url.path == '/' %}active{% endif %}">Dashboard</a>
                 <a href="/workflows" class="nav-link {% if 'workflows' in request.url.path %}active{% endif %}">Workflows</a>
                 <a href="/tasks" class="nav-link {% if 'tasks' in request.url.path %}active{% endif %}">Tasks</a>
+                <a href="/submit" class="nav-link {% if 'submit' in request.url.path %}active{% endif %}">Submit</a>
+                <a href="/logs" class="nav-link {% if 'logs' in request.url.path %}active{% endif %}">Logs</a>
+                <a href="/metrics" class="nav-link {% if 'metrics' in request.url.path %}active{% endif %}">Metrics</a>
                 <a href="/processes" class="nav-link {% if 'processes' in request.url.path %}active{% endif %}">Processes</a>
                 <a href="/handlers" class="nav-link {% if 'handlers' in request.url.path %}active{% endif %}">Handlers</a>
                 <div class="nav-divider"></div>

@@ -154,8 +154,19 @@ class SmartProcessManager:
             }
         }
 
-        # Merge with config
-        worker_configs = self.config.get('workers', {})
+        # Handle both list and dict formats for workers config
+        worker_configs = self.config.get('workers', [])
+
+        # If it's a list (as in our gleitzeit.yaml), convert to dict
+        if isinstance(worker_configs, list):
+            configs_dict = {}
+            for worker_config in worker_configs:
+                worker_type = worker_config.get('worker_type')
+                if worker_type:
+                    configs_dict[worker_type] = worker_config
+            worker_configs = configs_dict
+
+        # Merge with defaults
         for worker_type, config in worker_configs.items():
             if worker_type in default_configs:
                 default_configs[worker_type].update(config)
@@ -1249,3 +1260,66 @@ class SmartProcessManager:
             topology["total_instances"] += len(instance_ids)
 
         return topology
+
+    async def register_service(self, name: str, info: Dict):
+        """Add persistent service registration with shorter TTL for heartbeat"""
+        if not self.redis:
+            await self.initialize()
+
+        key = f"service:registry:{name}"
+        await self.redis.hset(key, mapping=info)
+        # Set TTL to 60 seconds - services will need to heartbeat to refresh
+        await self.redis.expire(key, 60)
+        logger.info(f"Registered service {name} in registry with 60s TTL")
+
+    async def get_registered_services(self) -> Dict:
+        """Get all registered services"""
+        if not self.redis:
+            await self.initialize()
+
+        services = {}
+
+        # Use scan_iter for simpler iteration
+        try:
+            async for key in self.redis.scan_iter(match="service:registry:*"):
+                # Decode key if it's bytes
+                key_str = key.decode() if isinstance(key, bytes) else key
+                service_name = key_str.split(":")[-1]
+
+                # Get service info as a hash
+                info_raw = await self.redis.hgetall(key_str)
+
+                # Decode the info dictionary (redis-py returns bytes)
+                info = {}
+                for field, value in info_raw.items():
+                    field_str = field.decode() if isinstance(field, bytes) else field
+                    value_str = value.decode() if isinstance(value, bytes) else value
+                    info[field_str] = value_str
+
+                # Check if process is still running
+                if 'pid' in info:
+                    try:
+                        pid = int(info['pid'])
+                        # Check if process exists
+                        os.kill(pid, 0)
+                        services[service_name] = info
+                    except (OSError, ValueError):
+                        # Process is dead, clean up registry
+                        logger.info(f"Cleaning up dead service {service_name} from registry")
+                        await self.redis.delete(key_str)
+                else:
+                    services[service_name] = info
+
+        except Exception as e:
+            logger.error(f"Error scanning service registry: {e}")
+
+        return services
+
+    async def unregister_service(self, name: str):
+        """Remove service from registry"""
+        if not self.redis:
+            await self.initialize()
+
+        key = f"service:registry:{name}"
+        await self.redis.delete(key)
+        logger.info(f"Unregistered service {name} from registry")

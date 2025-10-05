@@ -42,6 +42,11 @@ from .serve_v3 import serve_v3
 from .serve_unified import serve_unified
 from .serve_docker import serve_with_docker, DockerOrchestrator
 from .process_commands import add_process_commands
+from .logs_command import logs
+from .scale_command import scale
+from .stop_command import stop
+from .clean_command import clean
+from .ps_command import ps as ps_new
 
 # Setup logging
 logging.basicConfig(
@@ -329,10 +334,10 @@ def submit(ctx, workflow_files, file_format, auto_start, pattern):
     asyncio.run(check_and_submit())
 
 
-@cli.command('stop')
+@cli.command('stop-legacy')
 @click.option('--graceful/--force', default=True, help='Graceful or forced shutdown')
 @click.pass_context
-def stop(ctx, graceful):
+def stop_legacy(ctx, graceful):
     """Stop Gleitzeit"""
     async def shutdown():
         import os
@@ -825,26 +830,17 @@ def show_metrics(ctx):
 
 # Add the serve command to the CLI group (using v3 with Layered Architecture)
 cli.add_command(serve_unified, name='serve')
+cli.add_command(logs)
+cli.add_command(scale)
+cli.add_command(stop)
+cli.add_command(clean)
+cli.add_command(ps_new, name='ps')
 
 # Add process monitoring commands
 add_process_commands(cli)
 
-# Add top-level ps command as shortcut to process ps
-@cli.command('ps')
-@click.option('--json', 'output_json', is_flag=True, help='Output as JSON')
-@click.option('--watch', is_flag=True, help='Auto-refresh display')
-@click.option('--interval', default=2, help='Refresh interval in seconds')
-@click.option('--instance', help='Filter by instance name or ID')
-@click.option('--machine', help='Filter by machine ID or hostname')
-@click.option('--all-machines', is_flag=True, help='Show processes from all machines')
-@click.pass_context
-def ps_shortcut(ctx, output_json, watch, interval, instance, machine, all_machines):
-    """List all Gleitzeit processes (shortcut for 'process ps')"""
-    from .process_commands import ps
-    # Call the actual ps command from process_commands
-    ctx.invoke(ps, output_json=output_json, watch=watch, interval=interval,
-               instance=instance, machine=machine, all_machines=all_machines,
-               redis_url=ctx.obj.get('redis_url', 'redis://localhost:6379'))
+# The new ps command from ps_command.py replaces this old one
+# It provides better mode detection and unified Docker/native support
 
 
 def main():

@@ -9,19 +9,65 @@ import os
 import sys
 import subprocess
 import shutil
+import socket
 from pathlib import Path
 import click
 import yaml
 import json
 import time
+import hashlib
+import uuid
+
+
+def check_redis_running(config: dict) -> tuple[bool, str, int]:
+    """Check if Redis is running based on gleitzeit.yaml config
+
+    Returns:
+        tuple: (is_running, host, port)
+    """
+    redis_config = config.get("redis", {})
+    if not redis_config:
+        raise ValueError("Redis configuration missing from gleitzeit.yaml")
+
+    if redis_config.get("mode") == "single":
+        single_node = redis_config.get("single_node", {})
+        if not single_node:
+            raise ValueError("Redis single_node configuration missing from gleitzeit.yaml")
+
+        redis_host = single_node.get("host")
+        redis_port = single_node.get("port")
+
+        if not redis_host or not redis_port:
+            raise ValueError("Redis host or port missing from gleitzeit.yaml redis.single_node configuration")
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                sock.settimeout(1)
+                result = sock.connect_ex((redis_host, redis_port))
+                return result == 0, redis_host, redis_port
+        except (socket.error, socket.gaierror):
+            return False, redis_host, redis_port
+    else:
+        raise ValueError(f"Unsupported Redis mode '{redis_config.get('mode')}' in gleitzeit.yaml. Only 'single' mode is supported.")
+
+
+def generate_instance_id() -> str:
+    """Generate a unique instance ID using UUID"""
+    # Simple UUID-based naming for true uniqueness
+    return str(uuid.uuid4())[:8]
 
 
 class DockerOrchestrator:
     """Orchestrates Gleitzeit services using Docker Compose"""
 
-    def __init__(self, project_root: Path = None):
+    def __init__(self, project_root: Path = None, instance_id: str = None):
         self.project_root = project_root or Path.cwd()
-        self.compose_file = self.project_root / "docker-compose-proper.yml"
+        self.instance_id = instance_id or "default"
+        # Generate instance-specific compose file name
+        if self.instance_id == "default":
+            self.compose_file = self.project_root / "docker-compose-gleitzeit.yml"
+        else:
+            self.compose_file = self.project_root / f"docker-compose-gleitzeit-{self.instance_id}.yml"
 
     def check_docker(self) -> bool:
         """Check if Docker is available and running"""
@@ -48,8 +94,12 @@ class DockerOrchestrator:
         """Check if docker-compose file exists"""
         return self.compose_file.exists()
 
-    def generate_compose_file(self, config: dict) -> None:
+    def generate_compose_file(self, config: dict, api_only: bool = False, workers_only: bool = False, redis_url: str = None) -> None:
         """Generate docker-compose-proper.yml from gleitzeit.yaml config"""
+        # Import ConfigurationManager for proper Redis URL handling
+        from ..core.config_manager import ConfigurationManager
+        config_manager = ConfigurationManager(str(self.project_root / "gleitzeit.yaml"), {})
+
         compose = {
             "version": "3.8",
             "networks": {
@@ -65,66 +115,75 @@ class DockerOrchestrator:
             "services": {}
         }
 
-        # Redis service
-        compose["services"]["redis"] = {
-            "image": "redis:7-alpine",
-            "container_name": "gleitzeit_redis",
-            "ports": ["6379:6379"],
-            "networks": ["gleitzeit"],
-            "healthcheck": {
-                "test": ["CMD", "redis-cli", "ping"],
-                "interval": "10s",
-                "timeout": "3s",
-                "retries": 3
-            },
-            "restart": "unless-stopped",
-            "volumes": ["redis-data:/data"],
-            "command": "redis-server --appendonly yes"
-        }
+        # External Redis support - use ConfigurationManager for proper URL handling
+        if redis_url:
+            redis_connection = redis_url
+        else:
+            # Get Redis URL using ConfigurationManager's new method
+            redis_connection = config_manager.get_redis_url()
 
-        # API service
-        api_config = config.get("serve", {}).get("api", {})
-        compose["services"]["api"] = {
-            "build": {
-                "context": ".",
-                "dockerfile": "Dockerfile.api"
-            },
-            "container_name": "gleitzeit_api",
-            "ports": [f"{api_config.get('port', 8000)}:8000"],
-            "environment": [
-                "REDIS_URL=redis://redis:6379",
-                "REDIS_CLUSTER_NODES=redis:6379",  # Critical for workers!
-                "LOG_LEVEL=INFO",
-                "GLEITZEIT_AUTO_LOGIN=true"
-            ],
-            "depends_on": {
-                "redis": {"condition": "service_healthy"}
-            },
-            "networks": ["gleitzeit"],
-            "restart": "unless-stopped",
-            "volumes": [
-                "logs:/app/logs",
-                "./gleitzeit.yaml:/app/gleitzeit.yaml:ro"
-            ]
-        }
+            # Parse the URL to check if we need to adjust for Docker
+            import urllib.parse
+            parsed = urllib.parse.urlparse(redis_connection)
+            redis_host = parsed.hostname
+            redis_port = parsed.port or 6379
+            redis_path = parsed.path or '/'
 
-        # UI service if enabled
-        ui_config = config.get("serve", {}).get("ui", {})
-        if ui_config.get("enabled", True):
-            compose["services"]["ui"] = {
+            # If Redis is on localhost, we need to handle it differently for Docker
+            if redis_host in ['localhost', '127.0.0.1']:
+                # Check if we're creating a Redis container or using external Redis
+                redis_running, _, _ = check_redis_running(config)
+                if redis_running:
+                    # External Redis on host machine - use host.docker.internal
+                    redis_connection = f"redis://host.docker.internal:{redis_port}{redis_path}"
+                    click.echo(f"🔗 Converting localhost Redis to host.docker.internal for Docker containers")
+                else:
+                    # Will create Redis container - use container name
+                    redis_connection = f"redis://redis:{redis_port}{redis_path}"
+
+        # Only create Redis container if using internal Redis
+        if not redis_url:
+            # Check if external Redis is running
+            redis_running, redis_host, redis_port = check_redis_running(config)
+
+            if not redis_running:
+                # Need to create Redis container
+                compose["services"]["redis"] = {
+                "image": "redis:7-alpine",
+                "container_name": "gleitzeit_redis",
+                "ports": [f"{redis_port}:{redis_port}"],
+                "networks": ["gleitzeit"],
+                "healthcheck": {
+                    "test": ["CMD", "redis-cli", "ping"],
+                    "interval": "10s",
+                    "timeout": "3s",
+                    "retries": 3
+                },
+                "restart": "unless-stopped",
+                "volumes": ["redis-data:/data"],
+                "command": f"redis-server --port {redis_port} --appendonly yes"
+            }
+
+        # API/UI services (skip if workers-only)
+        if not workers_only:
+            api_config = config.get("serve", {}).get("api", {})
+            api_port = api_config.get("port", 8000)
+
+            compose["services"]["api"] = {
                 "build": {
                     "context": ".",
-                    "dockerfile": "Dockerfile.ui"
+                    "dockerfile": "Dockerfile.api"
                 },
-                "container_name": "gleitzeit_ui",
-                "ports": [f"{ui_config.get('port', 8004)}:8004"],
+                "container_name": "gleitzeit_api",
+                "hostname": "gleitzeit-api",  # Consistent hostname for service discovery
+                "ports": [f"{api_port}:{api_port}"],
                 "environment": [
-                    "REDIS_URL=redis://redis:6379",
-                    "REDIS_CLUSTER_NODES=redis:6379",
-                    "API_URL=http://api:8000",
-                    "LOG_LEVEL=INFO"
+                    f"REDIS_URL={redis_connection}",
+                    "SERVICE_TYPE=api",
+                    f"PORT={api_port}",
+                    "LOG_LEVEL=INFO",
+                    "GLEITZEIT_AUTO_LOGIN=true"
                 ],
-                "depends_on": ["api"],
                 "networks": ["gleitzeit"],
                 "restart": "unless-stopped",
                 "volumes": [
@@ -133,39 +192,32 @@ class DockerOrchestrator:
                 ]
             }
 
-        # Add workers from config
-        workers = config.get("workers", [])
-        for idx, worker_config in enumerate(workers):
-            worker_type = worker_config.get("worker_type")
-            worker_class = worker_config.get("worker_class")
-            count = worker_config.get("count", 1)
+            # Add depends_on only if we're creating a Redis container
+            if "redis" in compose["services"]:
+                compose["services"]["api"]["depends_on"] = {
+                    "redis": {"condition": "service_healthy"}
+                }
 
-            for i in range(count):
-                service_name = f"worker-{worker_type}-{i+1}"
-                compose["services"][service_name] = {
+            # UI service if enabled
+            ui_config = config.get("serve", {}).get("ui", {})
+            if ui_config.get("enabled", True):
+                ui_port = ui_config.get("port", 8004)
+
+                compose["services"]["ui"] = {
                     "build": {
                         "context": ".",
-                        "dockerfile": "Dockerfile.worker"
+                        "dockerfile": "Dockerfile.ui"
                     },
-                    "command": [
-                        "python", "-m", "gleitzeit.workers.runner",
-                        "--worker-class", worker_class,
-                        "--worker-id", f"{worker_type}-{i+1}",
-                        "--worker-type", worker_type,
-                        "--redis-url", "redis://redis:6379",
-                        "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
-                        "--max-concurrent", str(worker_config.get("max_concurrent", 10)),
-                        "--batch-size", str(worker_config.get("batch_size", 10)),
-                        "--block-timeout", str(worker_config.get("block_timeout", 5000))
-                    ],
+                    "container_name": "gleitzeit_ui",
+                    "hostname": "gleitzeit-ui",
+                    "ports": [f"{ui_port}:{ui_port}"],
                     "environment": [
-                        "REDIS_URL=redis://redis:6379",
-                        "REDIS_CLUSTER_NODES=redis:6379",  # CRITICAL!
-                        "LOG_LEVEL=INFO"
+                        f"REDIS_URL={redis_connection}",
+                        "SERVICE_TYPE=ui",
+                        f"PORT={ui_port}",
+                        f"API_URL=http://gleitzeit-api:{api_port}"
                     ],
-                    "depends_on": {
-                        "redis": {"condition": "service_healthy"}
-                    },
+                    "depends_on": ["api"],
                     "networks": ["gleitzeit"],
                     "restart": "unless-stopped",
                     "volumes": [
@@ -173,6 +225,52 @@ class DockerOrchestrator:
                         "./gleitzeit.yaml:/app/gleitzeit.yaml:ro"
                     ]
                 }
+
+        # Worker services (skip if api-only)
+        if not api_only:
+            workers = config.get("workers", [])
+            for idx, worker_config in enumerate(workers):
+                worker_type = worker_config.get("worker_type")
+                worker_class = worker_config.get("worker_class")
+                count = worker_config.get("count", 1)
+
+                for i in range(count):
+                    service_name = f"worker-{worker_type}-{i+1}"
+                    compose["services"][service_name] = {
+                        "build": {
+                            "context": ".",
+                            "dockerfile": "Dockerfile.worker"
+                        },
+                        "hostname": f"gleitzeit-{service_name}",
+                        "command": [
+                            "python", "-m", "gleitzeit.workers.runner",
+                            "--worker-class", worker_class,
+                            "--worker-id", f"{worker_type}-{i+1}",
+                            "--worker-type", worker_type,
+                            "--redis-url", redis_connection,
+                            "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+                            "--max-concurrent", str(worker_config.get("max_concurrent", 10)),
+                            "--batch-size", str(worker_config.get("batch_size", 10)),
+                            "--block-timeout", str(worker_config.get("block_timeout", 5000))
+                        ],
+                        "environment": [
+                            f"REDIS_URL={redis_connection}",
+                            f"SERVICE_TYPE={service_name}",
+                            "LOG_LEVEL=INFO"
+                        ],
+                        "networks": ["gleitzeit"],
+                        "restart": "unless-stopped",
+                        "volumes": [
+                            "logs:/app/logs",
+                            "./gleitzeit.yaml:/app/gleitzeit.yaml:ro"
+                        ]
+                    }
+
+                    # Add depends_on only if we're creating a Redis container
+                    if "redis" in compose["services"]:
+                        compose["services"][service_name]["depends_on"] = {
+                            "redis": {"condition": "service_healthy"}
+                        }
 
         # Write compose file
         with open(self.compose_file, 'w') as f:
@@ -254,11 +352,19 @@ def serve_with_docker(
     dev_mode: bool = False,
     restart: bool = False,
     build: bool = False,
-    no_ui: bool = False
+    no_ui: bool = False,
+    # NEW HORIZONTAL SCALING PARAMETERS
+    api_only: bool = False,
+    workers_only: bool = False,
+    redis_url: str = None,
+    config_url: str = None
 ) -> None:
     """Start Gleitzeit services using Docker"""
 
-    orchestrator = DockerOrchestrator()
+    # Generate unique instance ID
+    instance_id = generate_instance_id()
+
+    orchestrator = DockerOrchestrator(instance_id=instance_id)
 
     # Check Docker availability
     if not orchestrator.check_docker():
@@ -276,6 +382,26 @@ def serve_with_docker(
         click.echo(f"⚠️  Config file {config_file} not found, using defaults")
         config = {}
 
+    # Auto-detect external Redis if not explicitly provided
+    if not redis_url:
+        # Use ConfigurationManager to get proper Redis configuration
+        from ..core.config_manager import ConfigurationManager
+        config_manager = ConfigurationManager(str(config_path), {})
+
+        redis_running, redis_host, redis_port = check_redis_running(config)
+        if redis_running:
+            # For Docker containers accessing host Redis, we'll handle conversion in generate_compose_file
+            click.echo(f"🔍 Detected running Redis at {redis_host}:{redis_port}")
+            if redis_host in ['localhost', '127.0.0.1']:
+                click.echo(f"🔗 Will use host.docker.internal:{redis_port} for Docker containers")
+            else:
+                click.echo(f"🔗 Using external Redis: redis://{redis_host}:{redis_port}")
+        else:
+            click.echo(f"🚫 No Redis detected at {redis_host}:{redis_port}")
+            click.echo("📦 Will create Redis container with persistent storage")
+            click.echo("💾 Redis data will persist in Docker volume 'gleitzeit_redis_data'")
+            click.echo("ℹ️  For production scaling, consider external Redis")
+
     # Override ports if specified
     if api_port:
         config.setdefault("serve", {}).setdefault("api", {})["port"] = api_port
@@ -287,7 +413,7 @@ def serve_with_docker(
     # Generate or check compose file
     if not orchestrator.check_compose_file() or restart:
         click.echo("📝 Generating docker-compose configuration...")
-        orchestrator.generate_compose_file(config)
+        orchestrator.generate_compose_file(config, api_only, workers_only, redis_url)
 
     # Stop existing services if restart requested
     if restart:
@@ -297,8 +423,10 @@ def serve_with_docker(
     # Start services
     if orchestrator.start_services(detached=True, build=build):
         click.echo("\n✨ Gleitzeit is running with Docker!")
-        click.echo("\nTo view logs: docker-compose -f docker-compose-proper.yml logs -f")
-        click.echo("To stop: docker-compose -f docker-compose-proper.yml down")
+        click.echo(f"   Instance: {instance_id}")
+        click.echo(f"\nTo view logs: docker-compose -f {orchestrator.compose_file.name} logs -f")
+        click.echo(f"To stop: docker-compose -f {orchestrator.compose_file.name} down")
+        click.echo(f"Or use: gleitzeit stop")
     else:
         sys.exit(1)
 

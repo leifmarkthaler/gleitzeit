@@ -1,0 +1,31 @@
+[2025-10-05 21:12:28] [STDERR] INFO:     Started server process [33503]
+[2025-10-05 21:12:28] [STDERR] INFO:     Waiting for application startup.
+[2025-10-05 21:12:28] [STDERR] INFO:     Application startup complete.
+[2025-10-05 21:12:28] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-05 21:12:30] [STDERR] INFO:     127.0.0.1:52403 - "WebSocket /ws/events" [accepted]
+[2025-10-05 21:12:30] [STDERR] INFO:     connection open
+[2025-10-05 21:12:42] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-05 21:12:42] [STDOUT] INFO:     127.0.0.1:52431 - "GET /workflows/edf44bb0-2c98-40d3-846c-14304a8fc5a6 HTTP/1.1" 200 OK
+[2025-10-05 21:13:02] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 21:13:02] [STDERR] INFO:     connection closed
+[2025-10-05 21:13:02] [STDOUT] INFO:     127.0.0.1:52458 - "GET /workflows/edf44bb0-2c98-40d3-846c-14304a8fc5a6 HTTP/1.1" 200 OK
+[2025-10-05 21:13:02] [STDOUT] INFO:     127.0.0.1:52458 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=edf44bb0-2c98-40d3-846c-14304a8fc5a6 HTTP/1.1" 200 OK
+[2025-10-05 21:13:02] [STDOUT] INFO:     127.0.0.1:52461 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:13:12] [STDOUT] INFO:     127.0.0.1:52464 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:13:22] [STDOUT] INFO:     127.0.0.1:52490 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:13:32] [STDOUT] INFO:     127.0.0.1:52494 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:13:42] [STDOUT] INFO:     127.0.0.1:52505 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:13:52] [STDOUT] INFO:     127.0.0.1:52575 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:14:02] [STDOUT] INFO:     127.0.0.1:52645 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:14:12] [STDOUT] INFO:     127.0.0.1:52712 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:14:22] [STDOUT] INFO:     127.0.0.1:52729 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:14:32] [STDOUT] INFO:     127.0.0.1:52741 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:14:43] [STDOUT] INFO:     127.0.0.1:52749 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:14:54] [STDOUT] INFO:     127.0.0.1:52752 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:15:05] [STDOUT] INFO:     127.0.0.1:52760 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:15:16] [STDOUT] INFO:     127.0.0.1:52763 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:15:27] [STDOUT] INFO:     127.0.0.1:52790 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:15:38] [STDOUT] INFO:     127.0.0.1:52807 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:15:49] [STDOUT] INFO:     127.0.0.1:52818 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:16:00] [STDOUT] INFO:     127.0.0.1:52825 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 21:16:11] [STDOUT] INFO:     127.0.0.1:52837 - "GET /health/detailed HTTP/1.1" 200 OK

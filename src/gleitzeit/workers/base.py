@@ -16,6 +16,7 @@ import uuid
 
 from ..core.redis_cluster import GleitzeitRedisCluster, RedisConfig
 from .pending_recovery import PendingRecoveryMixin
+from ..core.logging_mixin import LoggingMixin
 
 logger = logging.getLogger(__name__)
 
@@ -33,8 +34,42 @@ class WorkerConfig:
     block_timeout: int = 5000  # milliseconds
     heartbeat_interval: int = 30  # seconds
 
+    # Handler configuration support (NEW)
+    handler_configs: Dict[str, Dict[str, Any]] = None
+    enabled_task_types: List[str] = None
 
-class BaseWorker(ABC, PendingRecoveryMixin):
+    # Extensibility for additional configs
+    extra: Dict[str, Any] = None
+
+    def __post_init__(self):
+        """Initialize optional fields"""
+        if self.handler_configs is None:
+            self.handler_configs = {}
+        if self.enabled_task_types is None:
+            self.enabled_task_types = ['all']
+        if self.extra is None:
+            self.extra = {}
+        if self.assigned_shards is None:
+            self.assigned_shards = []
+
+    def get_handler_config(self, protocol: str) -> Dict[str, Any]:
+        """Get configuration for a specific handler protocol"""
+        return self.handler_configs.get(protocol, {})
+
+    def __getattr__(self, name):
+        """Allow access to extra config as attributes for backward compatibility"""
+        if name == '__dict__':
+            # Prevent infinite recursion
+            raise AttributeError(name)
+        if hasattr(self, 'extra') and self.extra and name in self.extra:
+            return self.extra[name]
+        # For backward compatibility with existing code that accesses __dict__
+        if hasattr(self, '__dict__') and name in self.__dict__:
+            return self.__dict__[name]
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
+
+class BaseWorker(ABC, LoggingMixin, PendingRecoveryMixin):
     """
     Base class for all Gleitzeit workers - Redis Cluster optimized.
 
@@ -44,9 +79,11 @@ class BaseWorker(ABC, PendingRecoveryMixin):
     - Concurrent processing with semaphore
     - Health monitoring and heartbeat
     - Graceful shutdown
+    - Structured error logging to Redis via LoggingMixin
     """
 
     def __init__(self, config: WorkerConfig):
+        super().__init__()  # Initialize LoggingMixin
         self.config = config
         self.logger = logging.getLogger(f"{config.worker_type}.{config.worker_id}")
         self.redis: Optional[GleitzeitRedisCluster] = None
@@ -68,7 +105,8 @@ class BaseWorker(ABC, PendingRecoveryMixin):
     async def initialize(self):
         """Initialize worker with Redis Cluster"""
         # Initialize Redis Cluster connection with pooling
-        self.redis = GleitzeitRedisCluster()
+        # Pass redis_url from config if available
+        self.redis = GleitzeitRedisCluster(redis_url=self.config.redis_url)
         await self.redis.initialize()
 
         # Custom initialization for specific worker types
@@ -91,6 +129,184 @@ class BaseWorker(ABC, PendingRecoveryMixin):
         Example: ["task:ready", "task:retry"]
         """
         pass
+
+    async def log_worker_error(
+        self,
+        operation: str,
+        error: Exception,
+        workflow_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+        **extra_metadata
+    ):
+        """
+        Log worker error to Redis with full context.
+
+        This is a convenience method that wraps StatelessLogService.log_error()
+        with automatic worker context extraction.
+
+        Args:
+            operation: Name of the operation that failed (e.g., "process_dependency")
+            error: The exception that occurred
+            workflow_id: Optional workflow ID
+            task_id: Optional task ID
+            **extra_metadata: Additional metadata to include in the log
+
+        Example:
+            try:
+                await self.resolve_dependency(task_id, workflow_id)
+            except Exception as e:
+                await self.log_worker_error(
+                    "resolve_dependency",
+                    e,
+                    workflow_id=workflow_id,
+                    task_id=task_id,
+                    dependency_name=dep_name
+                )
+        """
+        from ..core.stateless_log_service import StatelessLogService
+        import traceback
+
+        error_type = type(error).__name__
+        stack_trace = ''.join(traceback.format_exception(
+            type(error), error, error.__traceback__
+        ))
+
+        # Build metadata with worker context
+        metadata = {
+            'worker_id': self.config.worker_id,
+            'worker_type': self.config.worker_type,
+            'operation': operation,
+            'error_message': str(error),
+            **extra_metadata
+        }
+
+        try:
+            await StatelessLogService.log_error(
+                redis=self.redis,
+                message=f"{self.__class__.__name__}.{operation} failed: {str(error)}",
+                workflow_id=workflow_id,
+                task_id=task_id,
+                component=self.__class__.__name__,
+                error_type=error_type,
+                stack_trace=stack_trace,
+                metadata=metadata
+            )
+        except Exception as log_err:
+            # Fallback to standard logging if Redis logging fails
+            logger.error(f"Failed to log error to Redis: {log_err}")
+            logger.error(f"{operation} failed: {error}", exc_info=True)
+
+    async def log_worker_info(
+        self,
+        operation: str,
+        message: str,
+        workflow_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+        **metadata
+    ) -> None:
+        """
+        Log worker info event to Redis.
+
+        Args:
+            operation: Name of the operation (e.g., "task_execution_started")
+            message: Info message
+            workflow_id: Optional workflow ID
+            task_id: Optional task ID
+            **metadata: Additional metadata to include
+        """
+        from ..core.stateless_log_service import StatelessLogService
+
+        try:
+            await StatelessLogService.log_info(
+                redis=self.redis,
+                message=f"{self.config.worker_type}.{operation}: {message}",
+                workflow_id=workflow_id,
+                task_id=task_id,
+                component=self.config.worker_type,
+                operation=operation,
+                metadata={
+                    'worker_id': self.config.worker_id,
+                    'shard': self.config.assigned_shards[0] if self.config.assigned_shards else None,
+                    **metadata
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log worker info: {e}")
+
+    async def log_worker_debug(
+        self,
+        operation: str,
+        message: str,
+        workflow_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+        **metadata
+    ) -> None:
+        """
+        Log worker debug event to Redis (with sampling).
+
+        Args:
+            operation: Name of the operation
+            message: Debug message
+            workflow_id: Optional workflow ID
+            task_id: Optional task ID
+            **metadata: Additional metadata to include
+        """
+        from ..core.stateless_log_service import StatelessLogService
+
+        try:
+            await StatelessLogService.log_debug(
+                redis=self.redis,
+                message=f"{self.config.worker_type}.{operation}: {message}",
+                workflow_id=workflow_id,
+                task_id=task_id,
+                component=self.config.worker_type,
+                operation=operation,
+                metadata={
+                    'worker_id': self.config.worker_id,
+                    'shard': self.config.assigned_shards[0] if self.config.assigned_shards else None,
+                    **metadata
+                },
+                sample_rate=0.1  # 10% sampling for debug logs
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log worker debug: {e}")
+
+    async def log_worker_warning(
+        self,
+        operation: str,
+        message: str,
+        workflow_id: Optional[str] = None,
+        task_id: Optional[str] = None,
+        **metadata
+    ) -> None:
+        """
+        Log worker warning to Redis.
+
+        Args:
+            operation: Name of the operation
+            message: Warning message
+            workflow_id: Optional workflow ID
+            task_id: Optional task ID
+            **metadata: Additional metadata to include
+        """
+        from ..core.stateless_log_service import StatelessLogService
+
+        try:
+            await StatelessLogService.log_warning(
+                redis=self.redis,
+                message=f"{self.config.worker_type}.{operation}: {message}",
+                workflow_id=workflow_id,
+                task_id=task_id,
+                component=self.config.worker_type,
+                warning_type=operation,
+                metadata={
+                    'worker_id': self.config.worker_id,
+                    'shard': self.config.assigned_shards[0] if self.config.assigned_shards else None,
+                    **metadata
+                }
+            )
+        except Exception as e:
+            logger.warning(f"Failed to log worker warning: {e}")
 
     @abstractmethod
     async def process_message(self, stream: str, message_id: str, data: Dict) -> bool:
@@ -269,19 +485,46 @@ class BaseWorker(ABC, PendingRecoveryMixin):
         await self.redis.expire(key.encode(), 60)
 
     async def _heartbeat_loop(self):
-        """Send periodic heartbeats"""
+        """Send periodic heartbeats with enhanced metrics"""
         while self._running:
             try:
                 await self._register_worker()  # Refresh registration
 
+                # Calculate metrics
+                uptime = (datetime.utcnow() - self.started_at).total_seconds()
+                processing_rate = self.messages_processed / uptime if uptime > 0 else 0
+                error_rate = self.messages_failed / self.messages_processed if self.messages_processed > 0 else 0
+
+                # Collect system stats if enabled
+                system_stats = {}
+                try:
+                    import psutil
+                    process = psutil.Process()
+                    system_stats = {
+                        b"memory_mb": str(round(process.memory_info().rss / 1024 / 1024, 2)).encode(),
+                        b"cpu_percent": str(round(process.cpu_percent(interval=0.1), 2)).encode(),
+                        b"num_threads": str(process.num_threads()).encode()
+                    }
+                except ImportError:
+                    self.logger.debug("psutil not available, skipping system stats")
+                except Exception as e:
+                    self.logger.debug(f"Failed to collect system stats: {e}")
+
                 # Update metrics (also on shard 0)
                 metrics_key = f"{{shard:0}}:worker:metrics:{self.config.worker_id}"
-                await self.redis.hset(metrics_key.encode(), mapping={
+                metrics_data = {
                     b"processed": str(self.messages_processed).encode(),
                     b"failed": str(self.messages_failed).encode(),
-                    b"uptime": str((datetime.utcnow() - self.started_at).total_seconds()).encode(),
-                    b"last_heartbeat": datetime.utcnow().isoformat().encode()
-                })
+                    b"uptime": str(round(uptime, 2)).encode(),
+                    b"last_heartbeat": datetime.utcnow().isoformat().encode(),
+                    b"processing_rate": str(round(processing_rate, 4)).encode(),
+                    b"error_rate": str(round(error_rate, 4)).encode()
+                }
+
+                # Add system stats if available
+                metrics_data.update(system_stats)
+
+                await self.redis.hset(metrics_key.encode(), mapping=metrics_data)
 
                 await asyncio.sleep(self.config.heartbeat_interval)
 

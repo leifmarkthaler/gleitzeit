@@ -1,0 +1,308 @@
+[2025-09-30 22:48:43] [STDERR] INFO:     Started server process [4836]
+[2025-09-30 22:48:43] [STDERR] INFO:     Waiting for application startup.
+[2025-09-30 22:48:43] [STDERR] INFO:     Application startup complete.
+[2025-09-30 22:48:43] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-09-30 22:48:51] [STDOUT] INFO:     127.0.0.1:56090 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-30 22:48:56] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 22:48:56] [STDOUT] INFO:     127.0.0.1:56108 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:48:56] [STDOUT] INFO:     127.0.0.1:56110 - "GET /system/sessions HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56125 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56127 - "GET /system/status HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56129 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56131 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56133 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56135 - "GET /system/workers HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56137 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56139 - "GET /system/metrics/workflows?time_range=1h HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56141 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56143 - "GET /system/metrics/tasks?time_range=1h HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56145 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56147 - "GET /system/redis/info HTTP/1.1" 200 OK
+[2025-09-30 22:49:01] [STDOUT] INFO:     127.0.0.1:56149 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56151 - "GET /system/queues HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56153 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56155 - "GET /system/config HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56157 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56159 - "GET /system/resources HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56161 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56163 - "POST /system/workers/health-check HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56165 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:02] [STDOUT] INFO:     127.0.0.1:56167 - "GET /system/sessions HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56182 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56184 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56184 - "POST /auth/session/validate?session_id=22975ad1-c419-43e1-b155-059ec007511d HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56186 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56186 - "POST /auth/session/destroy?session_id=92848591-9aa9-4b11-afc4-61e962e15eea HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56188 - "POST /auth/token HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56190 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56190 - "GET /auth/me HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56192 - "GET /auth/rate-limit HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56194 - "GET / HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56196 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56198 - "GET /health/ready HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56200 - "GET /health/live HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56202 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56204 - "GET /health/cluster HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56206 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56208 - "GET /system/status HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56210 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56212 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56214 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56216 - "GET /system/workers HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56218 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56220 - "GET /system/metrics/workflows?time_range=1h HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56222 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56224 - "GET /system/metrics/tasks?time_range=1h HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56226 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56228 - "GET /system/redis/info HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56230 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56232 - "GET /system/queues HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56234 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:07] [STDOUT] INFO:     127.0.0.1:56236 - "GET /system/config HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56238 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56240 - "GET /system/resources HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56242 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56244 - "POST /system/workers/health-check HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56246 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56248 - "GET /system/sessions HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56250 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56252 - "GET /tasks/list?limit=10 HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56255 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:08] [STDOUT] INFO:     127.0.0.1:56257 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:10] [STDOUT] INFO:     127.0.0.1:56262 - "GET /workflows/8858adda-d512-41d2-af00-a6899e3d5e00/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:49:10] [STDOUT] INFO:     127.0.0.1:56262 - "GET /tasks/55fb7f46-db8d-44ae-8c0a-075efd89eac2 HTTP/1.1" 200 OK
+[2025-09-30 22:49:10] [STDOUT] INFO:     127.0.0.1:56264 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:10] [STDOUT] INFO:     127.0.0.1:56266 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:12] [STDOUT] INFO:     127.0.0.1:56271 - "GET /workflows/18520c6a-0d79-491b-9668-a7fa853ed7e5/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:49:12] [STDOUT] INFO:     127.0.0.1:56271 - "POST /tasks/ HTTP/1.1" 200 OK
+[2025-09-30 22:49:12] [STDOUT] INFO:     127.0.0.1:56273 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:12] [STDOUT] INFO:     127.0.0.1:56275 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:15] [STDOUT] INFO:     127.0.0.1:56281 - "GET /workflows/9be89b9b-0bb5-43d1-b4c0-1de1e68b539f/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:49:15] [STDOUT] INFO:     127.0.0.1:56281 - "GET /tasks/296e8629-3f9c-4be7-b588-4c3c9e5b0798/logs HTTP/1.1" 200 OK
+[2025-09-30 22:49:15] [STDOUT] INFO:     127.0.0.1:56283 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:15] [STDOUT] INFO:     127.0.0.1:56285 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:19] [STDOUT] INFO:     127.0.0.1:56291 - "GET /workflows/39946eec-18e5-41f7-b678-0d7e03c03ab2/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:49:19] [STDERR] Direct key lookup failed: 'ClusterShardingStrategy' object has no attribute 'get_shard_id'
+[2025-09-30 22:49:19] [STDOUT] INFO:     127.0.0.1:56291 - "GET /tasks/e06fac05-f237-4ea5-8dde-b2380863fb0f/events HTTP/1.1" 200 OK
+[2025-09-30 22:49:19] [STDOUT] INFO:     127.0.0.1:56293 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:19] [STDOUT] INFO:     127.0.0.1:56295 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:24] [STDOUT] INFO:     127.0.0.1:56303 - "GET /workflows/c4b8b819-623b-470a-ba3e-f3a036efac31/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:49:24] [STDOUT] INFO:     127.0.0.1:56305 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:24] [STDOUT] INFO:     127.0.0.1:56307 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:24] [STDOUT] INFO:     127.0.0.1:56311 - "GET /workflows/f3c404be-c3f7-49aa-91f6-a4577f908fa0/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:49:24] [STDOUT] INFO:     127.0.0.1:56311 - "POST /tasks/37f8879c-8d66-4215-a9a1-04e351db7245/cancel HTTP/1.1" 400 Bad Request
+[2025-09-30 22:49:24] [STDOUT] INFO:     127.0.0.1:56313 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:25] [STDOUT] INFO:     127.0.0.1:56315 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:25] [STDOUT] INFO:     127.0.0.1:56318 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:25] [STDOUT] INFO:     127.0.0.1:56320 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:25] [STDOUT] INFO:     127.0.0.1:56322 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:26] [STDOUT] INFO:     127.0.0.1:56326 - "GET /workflows/841ba344-cb85-41d8-8c67-d917b19c7d93 HTTP/1.1" 200 OK
+[2025-09-30 22:49:26] [STDOUT] INFO:     127.0.0.1:56330 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:26] [STDOUT] INFO:     127.0.0.1:56332 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:26] [STDOUT] INFO:     127.0.0.1:56334 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:28] [STDOUT] INFO:     127.0.0.1:56339 - "GET /workflows/28e29ae2-b467-48e0-b489-b6f37374f28b/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:49:28] [STDOUT] INFO:     127.0.0.1:56342 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:28] [STDOUT] INFO:     127.0.0.1:56344 - "GET /workflows/list?limit=10 HTTP/1.1" 200 OK
+[2025-09-30 22:49:28] [STDOUT] INFO:     127.0.0.1:56347 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:28] [STDOUT] INFO:     127.0.0.1:56349 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:28] [STDOUT] INFO:     127.0.0.1:56351 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:29] [STDOUT] INFO:     127.0.0.1:56354 - "POST /workflows/ HTTP/1.1" 200 OK
+[2025-09-30 22:49:29] [STDOUT] INFO:     127.0.0.1:56357 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:29] [STDOUT] INFO:     127.0.0.1:56359 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:29] [STDOUT] INFO:     127.0.0.1:56361 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:29] [STDOUT] INFO:     127.0.0.1:56365 - "POST /workflows/f27057c9-e391-4475-abb9-4b6fd11d5bdc/cancel HTTP/1.1" 200 OK
+[2025-09-30 22:49:29] [STDOUT] INFO:     127.0.0.1:56368 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:49:30] [STDOUT] INFO:     127.0.0.1:56370 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:49:32] [STDOUT] INFO:     127.0.0.1:56370 - "GET /workflows/5605243f-7959-4ce7-b2f7-3fab54b4b61f HTTP/1.1" 200 OK
+[2025-09-30 22:49:32] [STDOUT] INFO:     127.0.0.1:56370 - "GET /workflows/5605243f-7959-4ce7-b2f7-3fab54b4b61f/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:52:00] [STDOUT] INFO:     127.0.0.1:56483 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:52:00] [STDOUT] INFO:     127.0.0.1:56485 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:52:00] [STDOUT] INFO:     127.0.0.1:56485 - "POST /auth/session/validate?session_id=e1966ece-c038-4185-80fb-5e150ea8ee1e HTTP/1.1" 200 OK
+[2025-09-30 22:52:00] [STDOUT] INFO:     127.0.0.1:56487 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:52:00] [STDOUT] INFO:     127.0.0.1:56487 - "POST /auth/session/destroy?session_id=52583764-a7dc-49b7-91f2-b7ebaa216537 HTTP/1.1" 200 OK
+[2025-09-30 22:52:00] [STDOUT] INFO:     127.0.0.1:56489 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:52:00] [STDOUT] INFO:     127.0.0.1:56491 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:01] [STDOUT] INFO:     127.0.0.1:56491 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:03] [STDOUT] INFO:     127.0.0.1:56491 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:03] [STDOUT] INFO:     127.0.0.1:56491 - "GET /auth/me HTTP/1.1" 200 OK
+[2025-09-30 22:52:03] [STDOUT] INFO:     127.0.0.1:56496 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:52:08] [STDOUT] INFO:     127.0.0.1:56511 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:09] [STDOUT] INFO:     127.0.0.1:56511 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:10] [STDOUT] INFO:     127.0.0.1:56511 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:11] [STDOUT] INFO:     127.0.0.1:56511 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:11] [STDOUT] INFO:     127.0.0.1:56516 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:11] [STDOUT] INFO:     127.0.0.1:56516 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:12] [STDOUT] INFO:     127.0.0.1:56516 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:13] [STDOUT] INFO:     127.0.0.1:56516 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:13] [STDOUT] INFO:     127.0.0.1:56519 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:14] [STDOUT] INFO:     127.0.0.1:56519 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:15] [STDOUT] INFO:     127.0.0.1:56519 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:15] [STDOUT] INFO:     127.0.0.1:56519 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:16] [STDOUT] INFO:     127.0.0.1:56519 - "GET /workflows/workflow-5df35955-b366-41cd-9cf3-126850041267 HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:52:16] [STDOUT] INFO:     127.0.0.1:56524 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:17] [STDOUT] INFO:     127.0.0.1:56519 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:18] [STDOUT] INFO:     127.0.0.1:56524 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:18] [STDOUT] INFO:     127.0.0.1:56528 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:20] [STDOUT] INFO:     127.0.0.1:56528 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:21] [STDOUT] INFO:     127.0.0.1:56528 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:21] [STDOUT] INFO:     127.0.0.1:56528 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:22] [STDOUT] INFO:     127.0.0.1:56528 - "GET /workflows/workflow-0005bfdf-34f4-4581-a79a-e3784f51b87e/tasks HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:52:22] [STDOUT] INFO:     127.0.0.1:56533 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:24] [STDOUT] INFO:     127.0.0.1:56528 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:25] [STDOUT] INFO:     127.0.0.1:56533 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:25] [STDOUT] INFO:     127.0.0.1:56538 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:26] [STDOUT] INFO:     127.0.0.1:56538 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:27] [STDOUT] INFO:     127.0.0.1:56538 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:27] [STDOUT] INFO:     127.0.0.1:56538 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:27] [STDOUT] INFO:     127.0.0.1:56538 - "GET /workflows/workflow-9aed6cf5-9f4f-4710-b878-ecc3b7d36293 HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:52:27] [STDOUT] INFO:     127.0.0.1:56541 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:28] [STDOUT] INFO:     127.0.0.1:56538 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:31] [STDOUT] INFO:     127.0.0.1:56541 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:31] [STDOUT] INFO:     127.0.0.1:56546 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:32] [STDOUT] INFO:     127.0.0.1:56546 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:33] [STDOUT] INFO:     127.0.0.1:56546 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:33] [STDOUT] INFO:     127.0.0.1:56546 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:33] [STDOUT] INFO:     127.0.0.1:56546 - "GET /workflows/workflow-cf14b4ce-3081-4924-9d21-5b4a7cab4a2b HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:52:33] [STDOUT] INFO:     127.0.0.1:56550 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:34] [STDOUT] INFO:     127.0.0.1:56546 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:36] [STDOUT] INFO:     127.0.0.1:56550 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:36] [STDOUT] INFO:     127.0.0.1:56554 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:37] [STDOUT] INFO:     127.0.0.1:56554 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:38] [STDOUT] INFO:     127.0.0.1:56554 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:38] [STDOUT] INFO:     127.0.0.1:56554 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:39] [STDOUT] INFO:     127.0.0.1:56554 - "POST /workflows/workflow-21f9a862-1b56-44c9-b804-0a5242acc2d7/cancel HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:52:39] [STDOUT] INFO:     127.0.0.1:56558 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:40] [STDOUT] INFO:     127.0.0.1:56554 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:41] [STDOUT] INFO:     127.0.0.1:56558 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:41] [STDOUT] INFO:     127.0.0.1:56563 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:43] [STDOUT] INFO:     127.0.0.1:56563 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:45] [STDOUT] INFO:     127.0.0.1:56563 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:45] [STDOUT] INFO:     127.0.0.1:56563 - "GET /workflows/list?limit=10&offset=0 HTTP/1.1" 200 OK
+[2025-09-30 22:52:45] [STDOUT] INFO:     127.0.0.1:56563 - "GET /workflows/list?limit=5&offset=0 HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:52:45] [STDOUT] INFO:     127.0.0.1:56568 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:46] [STDOUT] INFO:     127.0.0.1:56563 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:49] [STDOUT] INFO:     127.0.0.1:56568 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:49] [STDOUT] INFO:     127.0.0.1:56573 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:50] [STDOUT] INFO:     127.0.0.1:56573 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:52] [STDOUT] INFO:     127.0.0.1:56573 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:52] [STDOUT] INFO:     127.0.0.1:56573 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:52] [STDOUT] INFO:     127.0.0.1:56577 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:52:52] [STDOUT] INFO:     127.0.0.1:56573 - "POST /workflows/submit HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:52:52] [STDOUT] INFO:     127.0.0.1:56577 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:53] [STDOUT] INFO:     127.0.0.1:56573 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:52:54] [STDOUT] INFO:     127.0.0.1:56577 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:53:02] [STDOUT] INFO:     127.0.0.1:56593 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:53:03] [STDOUT] INFO:     127.0.0.1:56593 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:53:05] [STDOUT] INFO:     127.0.0.1:56593 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:53:05] [STDOUT] INFO:     127.0.0.1:56593 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:53:06] [STDOUT] INFO:     127.0.0.1:56593 - "GET /workflows/workflow-bdfe72ab-d141-47ee-bd90-8ec4e4399730 HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:53:06] [STDOUT] INFO:     127.0.0.1:56597 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:53:07] [STDOUT] INFO:     127.0.0.1:56593 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:53:09] [STDOUT] INFO:     127.0.0.1:56597 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:25] [STDOUT] INFO:     127.0.0.1:56697 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:26] [STDOUT] INFO:     127.0.0.1:56697 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:28] [STDOUT] INFO:     127.0.0.1:56697 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:28] [STDOUT] INFO:     127.0.0.1:56697 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:56:28] [STDOUT] INFO:     127.0.0.1:56701 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:28] [STDOUT] INFO:     127.0.0.1:56701 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:30] [STDOUT] INFO:     127.0.0.1:56701 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:30] [STDOUT] INFO:     127.0.0.1:56701 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:56:30] [STDOUT] INFO:     127.0.0.1:56705 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:31] [STDOUT] INFO:     127.0.0.1:56705 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:33] [STDOUT] INFO:     127.0.0.1:56705 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:33] [STDOUT] INFO:     127.0.0.1:56705 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:56:34] [STDOUT] INFO:     127.0.0.1:56705 - "GET /workflows/workflow-66b49b3a-461a-470d-9215-90b3dfef03b8 HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:56:34] [STDOUT] INFO:     127.0.0.1:56710 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:35] [STDOUT] INFO:     127.0.0.1:56705 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:37] [STDOUT] INFO:     127.0.0.1:56710 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:37] [STDOUT] INFO:     127.0.0.1:56714 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:38] [STDOUT] INFO:     127.0.0.1:56714 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:41] [STDOUT] INFO:     127.0.0.1:56714 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:41] [STDOUT] INFO:     127.0.0.1:56714 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:56:42] [STDOUT] INFO:     127.0.0.1:56714 - "GET /workflows/workflow-dca14d82-7e85-4492-9485-eecd0e7d2ccb/tasks HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:56:42] [STDOUT] INFO:     127.0.0.1:56720 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:43] [STDOUT] INFO:     127.0.0.1:56714 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:45] [STDOUT] INFO:     127.0.0.1:56720 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:45] [STDOUT] INFO:     127.0.0.1:56725 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:45] [STDOUT] INFO:     127.0.0.1:56725 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:47] [STDOUT] INFO:     127.0.0.1:56725 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:47] [STDOUT] INFO:     127.0.0.1:56725 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:56:47] [STDOUT] INFO:     127.0.0.1:56725 - "GET /workflows/workflow-9b53cea6-1961-47d5-aa59-376a074fc091 HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:56:47] [STDOUT] INFO:     127.0.0.1:56729 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:49] [STDOUT] INFO:     127.0.0.1:56725 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:50] [STDOUT] INFO:     127.0.0.1:56729 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:50] [STDOUT] INFO:     127.0.0.1:56734 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:51] [STDOUT] INFO:     127.0.0.1:56734 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:53] [STDOUT] INFO:     127.0.0.1:56734 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:53] [STDOUT] INFO:     127.0.0.1:56734 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:56:53] [STDOUT] INFO:     127.0.0.1:56734 - "GET /workflows/workflow-de2b3380-3e6a-416b-b209-962b726c6da4 HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:56:53] [STDOUT] INFO:     127.0.0.1:56737 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:54] [STDOUT] INFO:     127.0.0.1:56734 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:56] [STDOUT] INFO:     127.0.0.1:56737 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:56] [STDOUT] INFO:     127.0.0.1:56742 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:56:57] [STDOUT] INFO:     127.0.0.1:56742 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:00] [STDOUT] INFO:     127.0.0.1:56742 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:00] [STDOUT] INFO:     127.0.0.1:56742 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:57:00] [STDOUT] INFO:     127.0.0.1:56742 - "POST /workflows/workflow-53e449bc-9748-46a3-9c76-4a6f3b79a1d7/cancel HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:57:00] [STDOUT] INFO:     127.0.0.1:56748 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:01] [STDOUT] INFO:     127.0.0.1:56742 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:04] [STDOUT] INFO:     127.0.0.1:56748 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:04] [STDOUT] INFO:     127.0.0.1:56753 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:05] [STDOUT] INFO:     127.0.0.1:56753 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:08] [STDOUT] INFO:     127.0.0.1:56753 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:08] [STDOUT] INFO:     127.0.0.1:56753 - "GET /workflows/list?limit=10&offset=0 HTTP/1.1" 200 OK
+[2025-09-30 22:57:08] [STDOUT] INFO:     127.0.0.1:56753 - "GET /workflows/list?limit=5&offset=0 HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:57:08] [STDOUT] INFO:     127.0.0.1:56758 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:09] [STDOUT] INFO:     127.0.0.1:56753 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:10] [STDOUT] INFO:     127.0.0.1:56758 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:10] [STDOUT] INFO:     127.0.0.1:56762 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:11] [STDOUT] INFO:     127.0.0.1:56762 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:13] [STDOUT] INFO:     127.0.0.1:56762 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:13] [STDOUT] INFO:     127.0.0.1:56762 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:57:13] [STDOUT] INFO:     127.0.0.1:56767 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:57:13] [STDOUT] INFO:     127.0.0.1:56762 - "POST /workflows/submit HTTP/1.1" 401 Unauthorized
+[2025-09-30 22:57:13] [STDOUT] INFO:     127.0.0.1:56767 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:14] [STDOUT] INFO:     127.0.0.1:56762 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:57:16] [STDOUT] INFO:     127.0.0.1:56767 - "POST /auth/session/create HTTP/1.1" 422 Unprocessable Entity
+[2025-09-30 22:58:54] [STDOUT] INFO:     127.0.0.1:56898 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:58:54] [STDOUT] INFO:     127.0.0.1:56898 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:58:55] [STDOUT] INFO:     127.0.0.1:56898 - "GET /workflows/workflow-7441fdcd-bf88-4c5d-a870-eeff9bb06326 HTTP/1.1" 200 OK
+[2025-09-30 22:59:01] [STDOUT] INFO:     127.0.0.1:56921 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:01] [STDOUT] INFO:     127.0.0.1:56921 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:01] [STDOUT] INFO:     127.0.0.1:56924 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:01] [STDOUT] INFO:     127.0.0.1:56924 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:01] [STDOUT] INFO:     127.0.0.1:56927 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:01] [STDOUT] INFO:     127.0.0.1:56927 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:02] [STDOUT] INFO:     127.0.0.1:56927 - "GET /workflows/workflow-912b156d-efea-4706-8684-d541a7c660c2 HTTP/1.1" 200 OK
+[2025-09-30 22:59:02] [STDOUT] INFO:     127.0.0.1:56930 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:03] [STDOUT] INFO:     127.0.0.1:56930 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:04] [STDOUT] INFO:     127.0.0.1:56930 - "GET /workflows/workflow-e6de9bd6-8bf3-4049-bbdb-3d3fde0b3a2a/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:59:04] [STDOUT] INFO:     127.0.0.1:56934 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:04] [STDOUT] INFO:     127.0.0.1:56934 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:04] [STDOUT] INFO:     127.0.0.1:56934 - "GET /workflows/workflow-baa8b58b-6e95-45bd-9ea0-4a1f83f497db HTTP/1.1" 200 OK
+[2025-09-30 22:59:06] [STDOUT] INFO:     127.0.0.1:56934 - "GET /workflows/workflow-baa8b58b-6e95-45bd-9ea0-4a1f83f497db HTTP/1.1" 200 OK
+[2025-09-30 22:59:06] [STDOUT] INFO:     127.0.0.1:56939 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:06] [STDOUT] INFO:     127.0.0.1:56939 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:06] [STDOUT] INFO:     127.0.0.1:56939 - "GET /workflows/workflow-53a1f073-fc5c-492e-b633-d87e401895a6 HTTP/1.1" 200 OK
+[2025-09-30 22:59:08] [STDOUT] INFO:     127.0.0.1:56939 - "GET /workflows/workflow-53a1f073-fc5c-492e-b633-d87e401895a6 HTTP/1.1" 200 OK
+[2025-09-30 22:59:08] [STDOUT] INFO:     127.0.0.1:56939 - "GET /workflows/workflow-53a1f073-fc5c-492e-b633-d87e401895a6/tasks HTTP/1.1" 200 OK
+[2025-09-30 22:59:08] [STDOUT] INFO:     127.0.0.1:56945 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:08] [STDOUT] INFO:     127.0.0.1:56945 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:08] [STDOUT] INFO:     127.0.0.1:56945 - "POST /workflows/workflow-926e2aa7-5af3-4db2-a1b1-959fcd79dc06/cancel HTTP/1.1" 200 OK
+[2025-09-30 22:59:08] [STDOUT] INFO:     127.0.0.1:56948 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:09] [STDOUT] INFO:     127.0.0.1:56948 - "GET /workflows/list?limit=10&offset=0 HTTP/1.1" 200 OK
+[2025-09-30 22:59:09] [STDOUT] INFO:     127.0.0.1:56948 - "GET /workflows/list?limit=5&offset=0 HTTP/1.1" 200 OK
+[2025-09-30 22:59:09] [STDOUT] INFO:     127.0.0.1:56951 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:09] [STDOUT] INFO:     127.0.0.1:56952 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:09] [STDOUT] INFO:     127.0.0.1:56951 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:09] [STDOUT] INFO:     127.0.0.1:56952 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:52] [STDOUT] INFO:     127.0.0.1:57003 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:59:52] [STDOUT] INFO:     127.0.0.1:57003 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 22:59:54] [STDOUT] INFO:     127.0.0.1:57003 - "GET /workflows/workflow-6bf85edc-4e45-41b8-adfe-96d4dba97072/tasks HTTP/1.1" 200 OK
+[2025-09-30 23:03:52] [STDOUT] INFO:     127.0.0.1:57284 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:03:52] [STDOUT] INFO:     127.0.0.1:57284 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:03:54] [STDOUT] INFO:     127.0.0.1:57284 - "GET /workflows/workflow-233ca62d-cfb8-437f-b78a-788a1dcfce92/tasks HTTP/1.1" 200 OK
+[2025-09-30 23:06:15] [STDERR] INFO:     Shutting down
+[2025-09-30 23:06:15] [STDERR] INFO:     Waiting for application shutdown.
+[2025-09-30 23:06:15] [STDERR] INFO:     Application shutdown complete.
+[2025-09-30 23:06:15] [STDERR] INFO:     Finished server process [4836]

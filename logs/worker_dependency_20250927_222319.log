@@ -1,9 +1,0 @@
-[2025-09-27 22:23:19] [STDERR] 2025-09-27 22:23:19,710 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
-[2025-09-27 22:23:19] [STDERR] 2025-09-27 22:23:19,710 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
-[2025-09-27 22:23:19] [STDERR] 2025-09-27 22:23:19,710 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
-[2025-09-27 22:23:19] [STDERR] 2025-09-27 22:23:19,713 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-[2025-09-27 22:23:19] [STDERR] 2025-09-27 22:23:19,713 - __main__ - INFO - Worker dependency-async started with config: WorkerConfig(worker_type='dependency', worker_id='dependency-async', consumer_group='dependency-group', redis_url='redis://localhost:6379', assigned_shards=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], max_concurrent=10, batch_size=10, block_timeout=5000, heartbeat_interval=30)
-[2025-09-27 22:23:19] [STDERR] 2025-09-27 22:23:19,713 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
-[2025-09-27 22:23:33] [STDERR] 2025-09-27 22:23:33,346 - dependency.dependency-async - INFO - Shutdown signal received for dependency-async
-[2025-09-27 22:23:34] [STDERR] 2025-09-27 22:23:34,845 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
-[2025-09-27 22:23:34] [STDERR] 2025-09-27 22:23:34,845 - dependency.dependency-async - INFO - Worker dependency-async cleaned up

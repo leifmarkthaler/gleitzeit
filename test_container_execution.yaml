@@ -1,0 +1,66 @@
+workflow:
+  id: test-container-execution
+  name: Test Container Execution
+  description: Test Python handler with Docker container execution
+  tasks:
+    - id: check-environment
+      type: python
+      params:
+        code: |
+          import sys
+          import platform
+          import os
+          import socket
+
+          result = {
+              'python_version': sys.version,
+              'platform': platform.platform(),
+              'hostname': socket.gethostname(),
+              'in_container': os.path.exists('/.dockerenv'),
+              'cwd': os.getcwd(),
+              'user': os.environ.get('USER', 'unknown'),
+              'execution_context': 'container' if os.path.exists('/.dockerenv') else 'native'
+          }
+          print(f"Execution environment: {result}")
+
+    - id: test-with-inputs
+      type: python
+      params:
+        inputs:
+          numbers: [1, 2, 3, 4, 5]
+          message: "Hello from container"
+        code: |
+          # Inputs are available as variables
+          squared = [n**2 for n in numbers]
+          result = {
+              'message_received': message,
+              'squared_numbers': squared,
+              'sum': sum(squared)
+          }
+          print(f"Result: {result}")
+      depends_on:
+        - check-environment
+
+    - id: test-package-availability
+      type: python
+      params:
+        code: |
+          import importlib.util
+
+          packages = ['numpy', 'pandas', 'requests', 'docker']
+          available = {}
+
+          for pkg in packages:
+              spec = importlib.util.find_spec(pkg)
+              available[pkg] = spec is not None
+
+          result = {
+              'packages_checked': packages,
+              'availability': available
+          }
+          print(f"Package availability: {result}")
+      depends_on:
+        - test-with-inputs
+
+schedule:
+  type: once

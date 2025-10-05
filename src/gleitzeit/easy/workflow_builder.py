@@ -457,3 +457,282 @@ class WorkflowBuilder:
                 "completed_at": final_status.completed_at,
                 "error": final_status.error
             }
+
+    # DAG Pattern Helpers
+
+    def pipeline(self, *tasks: TaskBuilder) -> 'WorkflowBuilder':
+        """
+        Create a sequential pipeline where each task depends on the previous.
+
+        This is an alias for sequential() with clearer semantics.
+
+        Example:
+            workflow = w().pipeline(
+                t("fetch", "http/v1:request"),
+                t("process", "python/v1:execute"),
+                t("analyze", "ollama/v1:generate"),
+                t("save", "python/v1:execute")
+            )
+            # Creates: fetch → process → analyze → save
+
+        Args:
+            *tasks: Tasks to chain sequentially
+
+        Returns:
+            Self for chaining
+        """
+        return self.sequential(*tasks)
+
+    def fan_out(self, source: Union[str, TaskBuilder], *consumers: TaskBuilder) -> 'WorkflowBuilder':
+        """
+        Create a fan-out pattern: one producer feeds multiple consumers.
+
+        All consumer tasks will depend on the source task and can run in parallel.
+
+        Example:
+            workflow = w(
+                t("fetch", "http/v1:request").with_(url="...")
+            ).fan_out("fetch",
+                t("process1", "python/v1:execute"),
+                t("process2", "python/v1:execute"),
+                t("process3", "python/v1:execute")
+            )
+            # Creates: fetch → [process1, process2, process3] (parallel)
+
+        Args:
+            source: Source task ID or TaskBuilder
+            *consumers: Consumer tasks that depend on source
+
+        Returns:
+            Self for chaining
+
+        Raises:
+            WorkflowBuilderError: If source task not found
+        """
+        # Get source task ID
+        if isinstance(source, TaskBuilder):
+            source_id = source.task_id
+            # Make sure source is in the workflow
+            if source not in self.tasks:
+                self.add_task(source)
+        else:
+            source_id = source
+            # Verify source exists
+            if not any(t.task_id == source_id for t in self.tasks):
+                raise WorkflowBuilderError(f"Source task '{source_id}' not found in workflow")
+
+        # Add consumers with dependency on source
+        for consumer in consumers:
+            if source_id not in consumer.dependencies:
+                consumer.needs(source_id)
+            self.add_task(consumer)
+
+        return self
+
+    def fan_in(self, *sources: Union[str, TaskBuilder], aggregator: TaskBuilder) -> 'WorkflowBuilder':
+        """
+        Create a fan-in pattern: multiple producers feed one consumer.
+
+        The aggregator task will depend on all source tasks.
+
+        Example:
+            workflow = w(
+                t("fetch1", "http/v1:request"),
+                t("fetch2", "http/v1:request"),
+                t("fetch3", "http/v1:request")
+            ).fan_in("fetch1", "fetch2", "fetch3",
+                aggregator=t("merge", "python/v1:execute")
+            )
+            # Creates: [fetch1, fetch2, fetch3] → merge
+
+        Args:
+            *sources: Source task IDs or TaskBuilders
+            aggregator: Consumer task that depends on all sources
+
+        Returns:
+            Self for chaining
+
+        Raises:
+            WorkflowBuilderError: If source tasks not found
+        """
+        source_ids = []
+
+        for source in sources:
+            if isinstance(source, TaskBuilder):
+                source_id = source.task_id
+                # Make sure source is in the workflow
+                if source not in self.tasks:
+                    self.add_task(source)
+            else:
+                source_id = source
+                # Verify source exists
+                if not any(t.task_id == source_id for t in self.tasks):
+                    raise WorkflowBuilderError(f"Source task '{source_id}' not found in workflow")
+
+            source_ids.append(source_id)
+
+        # Add all sources as dependencies for aggregator
+        for source_id in source_ids:
+            if source_id not in aggregator.dependencies:
+                aggregator.needs(source_id)
+
+        self.add_task(aggregator)
+        return self
+
+    def diamond(
+        self,
+        source: Union[str, TaskBuilder],
+        *middle_tasks: TaskBuilder,
+        aggregator: TaskBuilder
+    ) -> 'WorkflowBuilder':
+        """
+        Create a diamond pattern: fan-out then fan-in.
+
+        One source task feeds multiple middle tasks, which all feed into one aggregator.
+
+        Example:
+            workflow = w(
+                t("fetch", "http/v1:request")
+            ).diamond("fetch",
+                t("process1", "python/v1:execute"),
+                t("process2", "python/v1:execute"),
+                t("process3", "python/v1:execute"),
+                aggregator=t("merge", "python/v1:execute")
+            )
+            # Creates:
+            #        process1
+            #       /         \\
+            # fetch - process2 - merge
+            #       \\         /
+            #        process3
+
+        Args:
+            source: Source task ID or TaskBuilder
+            *middle_tasks: Tasks that depend on source
+            aggregator: Final task that depends on all middle tasks
+
+        Returns:
+            Self for chaining
+
+        Raises:
+            WorkflowBuilderError: If pattern cannot be created
+        """
+        # Fan out from source to middle tasks
+        self.fan_out(source, *middle_tasks)
+
+        # Fan in from middle tasks to aggregator
+        middle_ids = [task.task_id for task in middle_tasks]
+        self.fan_in(*middle_ids, aggregator=aggregator)
+
+        return self
+
+    def broadcast(
+        self,
+        source: Union[str, TaskBuilder],
+        *consumers: TaskBuilder
+    ) -> 'WorkflowBuilder':
+        """
+        Broadcast pattern: alias for fan_out with clearer semantics.
+
+        One task broadcasts its output to multiple consumers.
+
+        Example:
+            workflow = w(
+                t("load_config", "python/v1:execute")
+            ).broadcast("load_config",
+                t("service1", "python/v1:execute"),
+                t("service2", "python/v1:execute"),
+                t("service3", "python/v1:execute")
+            )
+
+        Args:
+            source: Source task
+            *consumers: Consumer tasks
+
+        Returns:
+            Self for chaining
+        """
+        return self.fan_out(source, *consumers)
+
+    def aggregate(
+        self,
+        *sources: Union[str, TaskBuilder],
+        aggregator: TaskBuilder
+    ) -> 'WorkflowBuilder':
+        """
+        Aggregation pattern: alias for fan_in with clearer semantics.
+
+        Multiple tasks feed their outputs into one aggregator.
+
+        Example:
+            workflow = w(
+                t("query1", "http/v1:request"),
+                t("query2", "http/v1:request"),
+                t("query3", "http/v1:request")
+            ).aggregate("query1", "query2", "query3",
+                aggregator=t("combine", "python/v1:execute")
+            )
+
+        Args:
+            *sources: Source tasks
+            aggregator: Aggregator task
+
+        Returns:
+            Self for chaining
+        """
+        return self.fan_in(*sources, aggregator=aggregator)
+
+    def print_dag(self):
+        """
+        Print a visual representation of the workflow DAG.
+
+        Shows task dependencies in an ASCII tree structure.
+
+        Example output:
+            Workflow DAG: Data Pipeline
+
+            fetch (no dependencies)
+              └─> process1
+                    └─> analyze
+                          └─> save
+              └─> process2
+                    └─> analyze
+        """
+        print(f"Workflow DAG: {self.workflow_name or 'Unnamed'}")
+        print()
+
+        # Build dependency map
+        dependents = {}  # task_id -> list of tasks that depend on it
+        for task in self.tasks:
+            for dep in task.dependencies:
+                if dep not in dependents:
+                    dependents[dep] = []
+                dependents[dep].append(task.task_id)
+
+        # Find root tasks (no dependencies)
+        roots = [task.task_id for task in self.tasks if not task.dependencies]
+
+        # Print tree recursively
+        def print_tree(task_id: str, prefix: str = "", is_last: bool = True):
+            # Get task info
+            task = self.get_task(task_id)
+            if not task:
+                return
+
+            # Print current task
+            connector = "└─> " if is_last else "├─> "
+            dep_info = f" (depends on: {', '.join(task.dependencies)})" if task.dependencies else " (no dependencies)"
+            print(f"{prefix}{connector if prefix else ''}{task_id}{dep_info if not prefix else ''}")
+
+            # Print dependents
+            children = dependents.get(task_id, [])
+            for i, child_id in enumerate(children):
+                is_last_child = (i == len(children) - 1)
+                extension = "    " if is_last else "│   "
+                print_tree(child_id, prefix + extension, is_last_child)
+
+        # Print all root tasks
+        for i, root_id in enumerate(roots):
+            print_tree(root_id, "", i == len(roots) - 1)
+            if i < len(roots) - 1:
+                print()

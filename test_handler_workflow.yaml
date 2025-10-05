@@ -1,0 +1,40 @@
+workflow:
+  id: test-handler-configs
+  name: Test Handler Configurations
+  description: Test that handlers are using configurations from gleitzeit.yaml
+
+tasks:
+  - id: test-python
+    type: python
+    code: |
+      import os
+      # The Python handler should be using subprocess pool with configured settings
+      print("Python handler is executing with configured settings")
+      print(f"Running in subprocess pool: PID {os.getpid()}")
+      return {"message": "Python handler working with config!", "pid": os.getpid()}
+
+  - id: test-timer
+    type: timer
+    delay: 2
+    dependencies: [test-python]
+    params:
+      message: "Timer handler using configured backend"
+
+  - id: test-signal
+    type: signal
+    action: send
+    signal_name: test_config
+    dependencies: [test-timer]
+    params:
+      payload:
+        message: "Signal handler with configured delivery mode"
+
+  - id: final-python
+    type: python
+    dependencies: [test-signal]
+    code: |
+      print("All handlers executed with their configurations!")
+      return {"status": "complete", "handlers_tested": ["python", "timer", "signal"]}
+
+schedule:
+  type: once

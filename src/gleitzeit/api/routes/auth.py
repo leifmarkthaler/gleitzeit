@@ -9,7 +9,8 @@ from pydantic import BaseModel
 import redis.asyncio as aioredis
 
 from ..auth.models import User, UserRole, Token, LoginRequest
-from ..auth.dependencies import ClientSessionAuth, jwt_manager, init_auth, get_current_user as get_current_user_dep
+from ..auth import dependencies as auth_deps
+from ..auth.dependencies import ClientSessionAuth, init_auth, get_current_user as get_current_user_dep
 from ..dependencies import get_redis
 
 router = APIRouter()
@@ -34,7 +35,7 @@ async def create_session(
     """
 
     # Initialize auth if needed
-    if not jwt_manager:
+    if not auth_deps.jwt_manager:
         init_auth(redis)
 
     # Create user (in production, this would validate credentials)
@@ -104,7 +105,7 @@ async def create_token(
     """
 
     # Initialize auth if needed
-    if not jwt_manager:
+    if not auth_deps.jwt_manager:
         init_auth(redis)
 
     # Create user (in production, validate credentials)
@@ -115,7 +116,7 @@ async def create_token(
     )
 
     # Create JWT token
-    return jwt_manager.create_access_token(user)
+    return auth_deps.jwt_manager.create_access_token(user)
 
 
 @router.post("/token/refresh")
@@ -125,10 +126,10 @@ async def refresh_token(
 ):
     """Refresh access token using refresh token"""
 
-    if not jwt_manager:
+    if not auth_deps.jwt_manager:
         init_auth(redis)
 
-    new_token = jwt_manager.refresh_access_token(refresh_token)
+    new_token = auth_deps.jwt_manager.refresh_access_token(refresh_token)
 
     if not new_token:
         raise HTTPException(

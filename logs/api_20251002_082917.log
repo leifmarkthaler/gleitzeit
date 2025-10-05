@@ -1,0 +1,37 @@
+[2025-10-02 08:29:17] [STDERR] INFO:     Started server process [10097]
+[2025-10-02 08:29:17] [STDERR] INFO:     Waiting for application startup.
+[2025-10-02 08:29:17] [STDERR] INFO:     Application startup complete.
+[2025-10-02 08:29:17] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-02 08:29:21] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:21] [STDOUT] INFO:     127.0.0.1:60943 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:22] [STDOUT] INFO:     127.0.0.1:60950 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:22] [STDOUT] INFO:     127.0.0.1:60952 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:23] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:23] [STDOUT] INFO:     127.0.0.1:60956 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:23] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:23] [STDOUT] INFO:     127.0.0.1:60960 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:27] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:27] [STDOUT] INFO:     127.0.0.1:60964 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:31] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:31] [STDOUT] INFO:     127.0.0.1:60964 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:31] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:31] [STDOUT] INFO:     127.0.0.1:60969 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:32] [STDOUT] INFO:     127.0.0.1:60973 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:32] [STDOUT] INFO:     127.0.0.1:60975 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:33] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:33] [STDOUT] INFO:     127.0.0.1:60979 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:33] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:33] [STDOUT] INFO:     127.0.0.1:60983 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:36] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-02 08:29:36] [STDOUT] INFO:     127.0.0.1:60973 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-10-02 08:29:36] [STDOUT] INFO:     127.0.0.1:60973 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-10-02 08:29:36] [STDOUT] INFO:     127.0.0.1:60973 - "GET /system/status HTTP/1.1" 200 OK
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:60973 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:61005 - "GET /system/resources HTTP/1.1" 200 OK
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:61006 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:60941 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:61004 - "GET /system/logs/errors?start_time=1759382977128&limit=1000 HTTP/1.1" 200 OK
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:61011 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:61013 - "GET /health/ HTTP/1.1" 200 OK
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:60973 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-10-02 08:29:37] [STDOUT] INFO:     127.0.0.1:61000 - "GET /system/queues HTTP/1.1" 200 OK

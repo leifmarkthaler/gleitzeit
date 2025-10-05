@@ -1,0 +1,193 @@
+[2025-09-30 22:33:59] [STDERR] INFO:     Started server process [98189]
+[2025-09-30 22:33:59] [STDERR] INFO:     Waiting for application startup.
+[2025-09-30 22:33:59] [STDERR] INFO:     Application startup complete.
+[2025-09-30 22:33:59] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-09-30 22:34:10] [STDOUT] INFO:     127.0.0.1:54468 - "GET /health/ HTTP/1.1" 200 OK
+[2025-09-30 22:34:14] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54484 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:34:14] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54486 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54486 - "POST /auth/session/validate?session_id=48445d51-1b70-4f25-a51d-94ab148f9881 HTTP/1.1" 200 OK
+[2025-09-30 22:34:14] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54488 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54488 - "POST /auth/session/destroy?session_id=d0c0e4c5-693e-47c1-b843-394698cf48f1 HTTP/1.1" 200 OK
+[2025-09-30 22:34:14] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54490 - "POST /auth/token HTTP/1.1" 500 Internal Server Error
+[2025-09-30 22:34:14] [STDERR] ERROR:    Exception in ASGI application
+[2025-09-30 22:34:14] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-09-30 22:34:14] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 77, in collapse_excgroups
+[2025-09-30 22:34:14] [STDERR]   |     yield
+[2025-09-30 22:34:14] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 183, in __call__
+[2025-09-30 22:34:14] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-09-30 22:34:14] [STDERR]   |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-09-30 22:34:14] [STDERR]   |     raise BaseExceptionGroup(
+[2025-09-30 22:34:14] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-09-30 22:34:14] [STDERR]   +-+---------------- 1 ----------------
+[2025-09-30 22:34:14] [STDERR]     | Traceback (most recent call last):
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-09-30 22:34:14] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-09-30 22:34:14] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     raise exc
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     with recv_stream, send_stream, collapse_excgroups():
+[2025-09-30 22:34:14] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-09-30 22:34:14] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-09-30 22:34:14] [STDERR]     |     raise exc
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-09-30 22:34:14] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/api/middleware/security.py", line 127, in dispatch
+[2025-09-30 22:34:14] [STDERR]     |     response = await call_next(request)
+[2025-09-30 22:34:14] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-09-30 22:34:14] [STDERR]     |     raise app_exc
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-09-30 22:34:14] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     with recv_stream, send_stream, collapse_excgroups():
+[2025-09-30 22:34:14] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-09-30 22:34:14] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-09-30 22:34:14] [STDERR]     |     raise exc
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-09-30 22:34:14] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/api/middleware/security.py", line 151, in dispatch
+[2025-09-30 22:34:14] [STDERR]     |     response = await call_next(request)
+[2025-09-30 22:34:14] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-09-30 22:34:14] [STDERR]     |     raise app_exc
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-09-30 22:34:14] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/cors.py", line 85, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     await self.app(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-09-30 22:34:14] [STDERR]     |     raise exc
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-09-30 22:34:14] [STDERR]     |     await app(scope, receive, sender)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-09-30 22:34:14] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-09-30 22:34:14] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-09-30 22:34:14] [STDERR]     |     await self.app(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-09-30 22:34:14] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-09-30 22:34:14] [STDERR]     |     raise exc
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-09-30 22:34:14] [STDERR]     |     await app(scope, receive, sender)
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-09-30 22:34:14] [STDERR]     |     response = await f(request)
+[2025-09-30 22:34:14] [STDERR]     |                ^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-09-30 22:34:14] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-09-30 22:34:14] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-09-30 22:34:14] [STDERR]     |     return await dependant.call(**values)
+[2025-09-30 22:34:14] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/api/routes/auth.py", line 118, in create_token
+[2025-09-30 22:34:14] [STDERR]     |     return jwt_manager.create_access_token(user)
+[2025-09-30 22:34:14] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]     | AttributeError: 'NoneType' object has no attribute 'create_access_token'
+[2025-09-30 22:34:14] [STDERR]     +------------------------------------
+[2025-09-30 22:34:14] [STDERR] 
+[2025-09-30 22:34:14] [STDERR] During handling of the above exception, another exception occurred:
+[2025-09-30 22:34:14] [STDERR] 
+[2025-09-30 22:34:14] [STDERR] Traceback (most recent call last):
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 403, in run_asgi
+[2025-09-30 22:34:14] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-09-30 22:34:14] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-09-30 22:34:14] [STDERR]     return await self.app(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-09-30 22:34:14] [STDERR]     await super().__call__(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/applications.py", line 113, in __call__
+[2025-09-30 22:34:14] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-09-30 22:34:14] [STDERR]     raise exc
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-09-30 22:34:14] [STDERR]     await self.app(scope, receive, _send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-09-30 22:34:14] [STDERR]     with recv_stream, send_stream, collapse_excgroups():
+[2025-09-30 22:34:14] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-09-30 22:34:14] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-09-30 22:34:14] [STDERR]     raise exc
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-09-30 22:34:14] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-09-30 22:34:14] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/api/middleware/security.py", line 127, in dispatch
+[2025-09-30 22:34:14] [STDERR]     response = await call_next(request)
+[2025-09-30 22:34:14] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-09-30 22:34:14] [STDERR]     raise app_exc
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-09-30 22:34:14] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 182, in __call__
+[2025-09-30 22:34:14] [STDERR]     with recv_stream, send_stream, collapse_excgroups():
+[2025-09-30 22:34:14] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-09-30 22:34:14] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_utils.py", line 83, in collapse_excgroups
+[2025-09-30 22:34:14] [STDERR]     raise exc
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 184, in __call__
+[2025-09-30 22:34:14] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-09-30 22:34:14] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/api/middleware/security.py", line 151, in dispatch
+[2025-09-30 22:34:14] [STDERR]     response = await call_next(request)
+[2025-09-30 22:34:14] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 159, in call_next
+[2025-09-30 22:34:14] [STDERR]     raise app_exc
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/base.py", line 144, in coro
+[2025-09-30 22:34:14] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/cors.py", line 85, in __call__
+[2025-09-30 22:34:14] [STDERR]     await self.app(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 63, in __call__
+[2025-09-30 22:34:14] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-09-30 22:34:14] [STDERR]     raise exc
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-09-30 22:34:14] [STDERR]     await app(scope, receive, sender)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 716, in __call__
+[2025-09-30 22:34:14] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 736, in app
+[2025-09-30 22:34:14] [STDERR]     await route.handle(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 290, in handle
+[2025-09-30 22:34:14] [STDERR]     await self.app(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 78, in app
+[2025-09-30 22:34:14] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-09-30 22:34:14] [STDERR]     raise exc
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 42, in wrapped_app
+[2025-09-30 22:34:14] [STDERR]     await app(scope, receive, sender)
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/starlette/routing.py", line 75, in app
+[2025-09-30 22:34:14] [STDERR]     response = await f(request)
+[2025-09-30 22:34:14] [STDERR]                ^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 302, in app
+[2025-09-30 22:34:14] [STDERR]     raw_response = await run_endpoint_function(
+[2025-09-30 22:34:14] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 213, in run_endpoint_function
+[2025-09-30 22:34:14] [STDERR]     return await dependant.call(**values)
+[2025-09-30 22:34:14] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/api/routes/auth.py", line 118, in create_token
+[2025-09-30 22:34:14] [STDERR]     return jwt_manager.create_access_token(user)
+[2025-09-30 22:34:14] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-09-30 22:34:14] [STDERR] AttributeError: 'NoneType' object has no attribute 'create_access_token'
+[2025-09-30 22:34:14] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54492 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54492 - "GET /auth/me HTTP/1.1" 200 OK
+[2025-09-30 22:34:14] [STDOUT] INFO:     127.0.0.1:54494 - "GET /auth/rate-limit HTTP/1.1" 200 OK

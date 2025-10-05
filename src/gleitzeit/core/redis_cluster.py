@@ -31,9 +31,33 @@ class RedisConfig:
 
     @classmethod
     def from_env(cls) -> 'RedisConfig':
-        """Create config from environment variables"""
-        # Default to single Redis instance for testing/dev
-        nodes_str = os.getenv("REDIS_CLUSTER_NODES", "localhost:6379")
+        """Create config from environment variables or ConfigurationManager"""
+        # First try environment variables (NO FALLBACK)
+        nodes_str = os.getenv("REDIS_CLUSTER_NODES")
+        if not nodes_str:
+            # Try REDIS_URL format from environment
+            redis_url = os.getenv("REDIS_URL")
+            if redis_url:
+                # Parse redis://host:port/db format
+                import urllib.parse
+                parsed = urllib.parse.urlparse(redis_url)
+                if parsed.hostname and parsed.port:
+                    nodes_str = f"{parsed.hostname}:{parsed.port}"
+
+        # If still no config from environment, use ConfigurationManager
+        if not nodes_str:
+            from ..core.config_manager import ConfigurationManager
+            config_manager = ConfigurationManager(os.environ.get('GLEITZEIT_CONFIG', 'gleitzeit.yaml'), {})
+            redis_url = config_manager.get_redis_url()
+
+            # Parse the URL from ConfigurationManager
+            import urllib.parse
+            parsed = urllib.parse.urlparse(redis_url)
+            if parsed.hostname and parsed.port:
+                nodes_str = f"{parsed.hostname}:{parsed.port}"
+            else:
+                raise ValueError(f"Invalid Redis URL from configuration: {redis_url}")
+
         nodes = []
         for node_str in nodes_str.split(","):
             if ":" in node_str:
@@ -58,14 +82,32 @@ class GleitzeitRedisCluster:
     - Enables atomic operations, pipelines, and Lua scripts
     """
 
-    def __init__(self, config: RedisConfig = None):
+    def __init__(self, config: RedisConfig = None, redis_url: str = None):
         """
         Initialize Redis Cluster client.
+        ALWAYS uses ConfigurationManager for configuration.
 
         Args:
-            config: Redis configuration (uses env vars if not provided)
+            config: Redis configuration (optional override)
+            redis_url: Redis URL to use (optional override, e.g. from environment)
         """
-        self.config = config or RedisConfig.from_env()
+        if redis_url:
+            # Parse redis_url to create config
+            import urllib.parse
+            parsed = urllib.parse.urlparse(redis_url)
+            if parsed.hostname and parsed.port:
+                self.config = RedisConfig(
+                    cluster_nodes=[{"host": parsed.hostname, "port": parsed.port}],
+                    decode_responses=False
+                )
+            else:
+                raise ValueError(f"Invalid redis_url: {redis_url}")
+        elif config:
+            self.config = config
+        else:
+            # ALWAYS use from_env which uses ConfigurationManager
+            self.config = RedisConfig.from_env()
+
         self.client: Optional[RedisCluster] = None
         self._initialized = False
 

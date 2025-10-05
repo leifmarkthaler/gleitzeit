@@ -9,6 +9,7 @@ import asyncio
 import logging
 import json
 import signal
+import uuid
 from typing import Dict, List, Optional, Any, Set
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -44,6 +45,10 @@ class WorkerSpec:
     max_replicas: int = 10
     scale_threshold_high: int = 100  # Queue depth per worker to scale up
     scale_threshold_low: int = 10   # Queue depth per worker to scale down
+
+    # Handler configuration support (NEW)
+    handler_configs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
+    enabled_task_types: List[str] = field(default_factory=lambda: ['all'])
 
 
 @dataclass
@@ -114,6 +119,9 @@ class ComponentOrchestrator:
             i: [] for i in range(self.num_shards)
         }
 
+        # Load handler configurations (NEW)
+        self.handler_configs = self._load_handler_configs()
+
     async def initialize(self):
         """Initialize orchestrator and core infrastructure"""
         logger.info("Initializing ComponentOrchestrator")
@@ -133,6 +141,26 @@ class ComponentOrchestrator:
             loop.add_signal_handler(sig, self._handle_shutdown)
 
         logger.info("ComponentOrchestrator initialized")
+
+    def _load_handler_configs(self) -> Dict[str, Dict[str, Any]]:
+        """Load handler configurations from gleitzeit.yaml"""
+        handler_configs = {}
+
+        # Load from handlers section
+        handlers_section = self.config.get('handlers', {})
+        for handler_name, handler_config in handlers_section.items():
+            if handler_name == 'global':
+                continue  # Skip global config
+
+            protocol = f"{handler_name}/v1"
+            handler_configs[protocol] = handler_config.get('config', {})
+
+            # Add execution mode if specified
+            if 'execution' in handler_config:
+                handler_configs[protocol]['execution_mode'] = handler_config['execution']['mode']
+
+        logger.info(f"Loaded handler configs for: {list(handler_configs.keys())}")
+        return handler_configs
 
     def load_worker_specs(self):
         """Load worker specifications from config"""
@@ -168,10 +196,28 @@ class ComponentOrchestrator:
 
         # Use config specs or defaults
         specs = self.config.get('workers', default_specs)
-        for spec in specs:
-            if isinstance(spec, dict):
-                spec = WorkerSpec(**spec)
+        for spec_data in specs:
+            if isinstance(spec_data, dict):
+                # Merge global handler configs with worker-specific ones
+                worker_handler_configs = self.handler_configs.copy()
+
+                # Override with worker-specific handler configs if provided
+                if 'handler_configs' in spec_data:
+                    worker_handler_configs.update(spec_data['handler_configs'])
+
+                # Add handler configs to spec
+                spec_data['handler_configs'] = worker_handler_configs
+
+                # Get enabled task types if specified
+                spec_data['enabled_task_types'] = spec_data.get('enabled_task_types', ['all'])
+
+                spec = WorkerSpec(**spec_data)
+            else:
+                spec = spec_data
+
             self.worker_specs[spec.worker_type] = spec
+
+        logger.info(f"Loaded {len(self.worker_specs)} worker specifications")
 
     async def start(self):
         """Start the orchestrator and all managed components"""
@@ -240,6 +286,34 @@ class ComponentOrchestrator:
         """Start a single worker process"""
         logger.info(f"Starting worker {worker_id} with shards {assigned_shards}")
 
+        # Get worker spec for handler configs
+        spec = self.worker_specs.get(worker_type)
+
+        # Build complete configuration
+        config_data = {
+            'worker_type': worker_type,
+            'worker_id': worker_id,
+            'worker_class': worker_class,
+            'consumer_group': f"{worker_type}-group",
+            'redis_url': self.redis_url,
+            'assigned_shards': assigned_shards,
+            'max_concurrent': max_concurrent,
+            'batch_size': batch_size,
+            'block_timeout': block_timeout,
+            'handler_configs': spec.handler_configs if spec else {},
+            'enabled_task_types': spec.enabled_task_types if spec else ['all']
+        }
+
+        # Store configuration in Redis with unique key
+        config_key = f"worker:config:{worker_id}:{uuid.uuid4().hex[:8]}"
+        await self.redis.setex(
+            config_key.encode(),
+            3600,  # 1 hour TTL
+            json.dumps(config_data).encode()
+        )
+
+        logger.info(f"Stored config for {worker_id} at key: {config_key}")
+
         # Create managed worker entry
         managed_worker = ManagedWorker(
             worker_id=worker_id,
@@ -249,16 +323,11 @@ class ComponentOrchestrator:
             started_at=datetime.utcnow()
         )
 
-        # Start worker as subprocess
+        # Start worker with config reference
         cmd = [
             "python", "-m", "gleitzeit.workers.runner",
-            "--worker-class", worker_class,
-            "--worker-id", worker_id,
-            "--redis-url", self.redis_url,
-            "--shards", ",".join(map(str, assigned_shards)),
-            "--max-concurrent", str(max_concurrent),
-            "--batch-size", str(batch_size),
-            "--block-timeout", str(block_timeout)
+            "--config-key", config_key,
+            "--redis-url", self.redis_url
         ]
 
         try:
@@ -289,6 +358,8 @@ class ComponentOrchestrator:
         except Exception as e:
             logger.error(f"Failed to start worker {worker_id}: {e}")
             managed_worker.state = WorkerState.STOPPED
+            # Clean up config key on failure
+            await self.redis.delete(config_key.encode())
 
         self.managed_workers[worker_id] = managed_worker
 

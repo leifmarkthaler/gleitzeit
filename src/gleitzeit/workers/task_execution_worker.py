@@ -39,7 +39,8 @@ class TaskExecutionWorker(BaseWorker):
         super().__init__(config)
 
         # Get enabled task types from config
-        self.enabled_types = config.__dict__.get('enabled_task_types', ['all'])
+        # Use the proper dataclass attribute
+        self.enabled_types = config.enabled_task_types if hasattr(config, 'enabled_task_types') else ['all']
 
         # Initialize handlers
         self.handlers = {}
@@ -68,15 +69,40 @@ class TaskExecutionWorker(BaseWorker):
                 # Map protocol to handler
                 self.protocol_to_handler[protocol] = handler_class
 
+        # Get handler configs - with backward compatibility
+        handler_configs = {}
+        if hasattr(self.config, 'handler_configs'):
+            # New WorkerConfig with handler_configs attribute
+            handler_configs = self.config.handler_configs
+        elif hasattr(self.config, 'get_handler_config'):
+            # Has the method but need to extract all configs
+            handler_configs = getattr(self.config, 'handler_configs', {})
+        elif hasattr(self.config, '__dict__') and 'handler_configs' in self.config.__dict__:
+            # Old style - handler_configs in __dict__
+            handler_configs = self.config.__dict__.get('handler_configs', {})
+
+        # Log what we found
+        if handler_configs:
+            logger.info(f"Found handler configurations for: {list(handler_configs.keys())}")
+        else:
+            logger.info("No handler configurations found, using defaults")
+
         # Initialize handlers based on enabled types
         if 'all' in self.enabled_types:
             # Load all handlers
             for protocol, handler_class in self.protocol_to_handler.items():
                 # Get handler-specific config if available
-                handler_config = self.config.__dict__.get('handler_configs', {}).get(protocol, {})
+                handler_config = handler_configs.get(protocol, {})
+
+                # Add worker metadata to handler config
+                if hasattr(self.config, 'worker_id'):
+                    handler_config['worker_id'] = self.config.worker_id
+
                 handler_instance = handler_class(config=handler_config)
                 self.handlers[protocol] = handler_instance
                 logger.info(f"Loaded handler for protocol {protocol}: {handler_class.__name__} (ID: {handler_instance.handler_id[:8]})")
+                if handler_config:
+                    logger.info(f"  Handler config keys: {list(handler_config.keys())}")
         else:
             # Load only specified types
             loaded_protocols = set()
@@ -84,11 +110,18 @@ class TaskExecutionWorker(BaseWorker):
                 if task_type in type_to_handler:
                     protocol, handler_class = type_to_handler[task_type]
                     if protocol not in loaded_protocols:
-                        handler_config = self.config.__dict__.get('handler_configs', {}).get(protocol, {})
+                        handler_config = handler_configs.get(protocol, {})
+
+                        # Add worker metadata to handler config
+                        if hasattr(self.config, 'worker_id'):
+                            handler_config['worker_id'] = self.config.worker_id
+
                         handler_instance = handler_class(config=handler_config)
                         self.handlers[protocol] = handler_instance
                         loaded_protocols.add(protocol)
                         logger.info(f"Loaded handler for type {task_type} -> protocol {protocol} (ID: {handler_instance.handler_id[:8]})")
+                        if handler_config:
+                            logger.info(f"  Handler config keys: {list(handler_config.keys())}")
 
         logger.info(f"Worker initialized with {len(self.handlers)} handlers: {list(self.handlers.keys())}")
 
@@ -162,6 +195,15 @@ class TaskExecutionWorker(BaseWorker):
             return True  # ACK it to remove from stream
 
         logger.info(f"Processing task {task_id} from workflow {workflow_id}")
+
+        # Log INFO: Task execution started
+        await self.log_worker_info(
+            "task_execution_started",
+            f"Starting execution of task {task_id}",
+            workflow_id=workflow_id,
+            task_id=task_id,
+            stream=stream
+        )
 
         try:
             # Check if task has been cancelled before starting execution
@@ -280,7 +322,31 @@ class TaskExecutionWorker(BaseWorker):
 
             # Execute task
             logger.info(f"Executing task {task_id} with handler {handler.__class__.__name__}")
+
+            # Log DEBUG: Handler selected
+            await self.log_worker_debug(
+                "handler_selected",
+                f"Using handler {handler.__class__.__name__}",
+                workflow_id=workflow_id,
+                task_id=task_id,
+                handler_type=handler.__class__.__name__,
+                protocol=task.protocol
+            )
+
+            start_time = datetime.utcnow()
             result = await handler.execute(task)
+            duration = (datetime.utcnow() - start_time).total_seconds()
+
+            # WARNING: Slow execution
+            if duration > 30:
+                await self.log_worker_warning(
+                    "slow_task_execution",
+                    f"Task {task_id} took {duration:.2f}s to execute",
+                    workflow_id=workflow_id,
+                    task_id=task_id,
+                    duration=duration,
+                    handler_type=handler.__class__.__name__
+                )
 
             # Handle result based on status
             success = await self.handle_execution_result(
@@ -313,6 +379,16 @@ class TaskExecutionWorker(BaseWorker):
         """
 
         if result.status == TaskStatus.COMPLETED:
+            # Log INFO: Task completed successfully
+            await self.log_worker_info(
+                "task_execution_completed",
+                f"Task {task_id} completed successfully",
+                workflow_id=workflow_id,
+                task_id=task_id,
+                status=result.status.value,
+                duration=result.duration_seconds if hasattr(result, 'duration_seconds') else None
+            )
+
             # Normal completion - pass protocol for handler tracking
             await self.emit_task_completed(task_id, workflow_id, result, protocol)
             return True
@@ -571,6 +647,34 @@ class TaskExecutionWorker(BaseWorker):
         """Handle task execution failure - emit to retry worker for centralized handling"""
         logger.error(f"Task {task_id} failed: {error}")
 
+        # Use provided error_type or extract from error string if possible
+        if not error_type:
+            error_type = "Exception"  # Default
+            if ":" in error:
+                # Try to extract error type from format "ErrorType: message"
+                potential_type = error.split(":")[0].strip()
+                if len(potential_type) < 50:  # Reasonable length for error type
+                    error_type = potential_type
+
+        # Log error to Redis via StatelessLogService
+        from ..core.stateless_log_service import StatelessLogService
+        try:
+            await StatelessLogService.log_error(
+                redis=self.redis,
+                message=f"Task {task_id} execution failed: {error}",
+                workflow_id=workflow_id,
+                task_id=task_id,
+                component="TaskExecutionWorker",
+                error_type=error_type,
+                stack_trace=None,  # Would need to pass this from the except block
+                metadata={
+                    'worker_id': self.config.worker_id,
+                    'error': error
+                }
+            )
+        except Exception as log_err:
+            logger.warning(f"Failed to log error to Redis: {log_err}")
+
         # Emit task failed event
         await self.event_store.store_event(
             event_type=EventType.TASK_FAILED,
@@ -582,15 +686,6 @@ class TaskExecutionWorker(BaseWorker):
                 'worker_id': self.config.worker_id
             }
         )
-
-        # Use provided error_type or extract from error string if possible
-        if not error_type:
-            error_type = "Exception"  # Default
-            if ":" in error:
-                # Try to extract error type from format "ErrorType: message"
-                potential_type = error.split(":")[0].strip()
-                if len(potential_type) < 50:  # Reasonable length for error type
-                    error_type = potential_type
 
         # Emit to retry worker stream for centralized retry handling
         # RetryWorker is now the ONLY retry mechanism

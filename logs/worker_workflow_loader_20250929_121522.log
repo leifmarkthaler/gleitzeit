@@ -1,0 +1,136 @@
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,845 - __main__ - INFO - Loading configuration from Redis key: worker:config:workflow_loader-async:ceb66cef
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,849 - __main__ - INFO - Loaded config for worker workflow_loader-async
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,849 - __main__ - INFO - Worker workflow_loader-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,849 - gleitzeit.core.cache - INFO - Created workflow cache with max_size=1000, ttl=3600
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,849 - gleitzeit.handlers.registry - INFO - Registered handler FileHandler for protocol file/v1
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,905 - gleitzeit.handlers.registry - INFO - Registered handler HttpHandler for protocol http/v1
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,906 - gleitzeit.handlers.registry - INFO - Registered handler OllamaHandler for protocol ollama/v1
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,906 - gleitzeit.handlers.registry - INFO - Registered handler PythonHandler for protocol python/v1
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,906 - gleitzeit.handlers.registry - INFO - Registered handler SignalHandler for protocol signal/v1
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.handlers.registry - INFO - Registered handler TimerHandler for protocol timer/v1
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.handlers - WARNING - Could not import handler module gleitzeit.handlers.validation: No module named 'simpleeval'
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.handlers.registry - INFO - Registered handler WorkflowHandler for protocol workflow/v1
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.handlers - INFO - Auto-discovered 7 handler modules: file, http, ollama, python, signal, timer, workflow
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.handlers - WARNING - Failed to import 1 modules: [('gleitzeit.handlers.validation', "No module named 'simpleeval'")]
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Built protocol mappings for 20 task types
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - WorkflowLoaderWorkerV2 initialized with max tasks: 10000
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow cache configured: size=1000, ttl=3600s
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,907 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Available protocols: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'workflow/v1']
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,909 - workflow_loader.workflow_loader-async - INFO - Worker workflow_loader-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,909 - __main__ - INFO - Worker workflow_loader-async started successfully
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,909 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-29 12:15:22] [STDERR] 2025-09-29 12:15:22,909 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_loader-async
+[2025-09-29 12:18:53] [STDERR] 2025-09-29 12:18:53,819 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow_fab38e5e57b2 from test_mixed_mode.yaml
+[2025-09-29 12:18:53] [STDERR] 2025-09-29 12:18:53,821 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-29 12:18:53] [STDERR]   "name": "test_mixed_mode",
+[2025-09-29 12:18:53] [STDERR]   "version": "1.0",
+[2025-09-29 12:18:53] [STDERR]   "triggers": [
+[2025-09-29 12:18:53] [STDERR]     {
+[2025-09-29 12:18:53] [STDERR]       "type": "manual"
+[2025-09-29 12:18:53] [STDERR]     }
+[2025-09-29 12:18:53] [STDERR]   ],
+[2025-09-29 12:18:53] [STDERR]   "tasks": [
+[2025-09-29 12:18:53] [STDERR]     {
+[2025-09-29 12:18:53] [STDERR]       "id": "python_task",
+[2025-09-29 12:18:53] [STDERR]       "type": "python",
+[2025-09-29 12:18:53] [STDERR]       "config": {
+[2025-09-29 12:18:53] [STDERR]         "code": "import os\nimport socket\n\n# Check if we're in a Docker container\nis_docker = os.path.exists('/.dockerenv') or os.environ.get('CONTAINER') == 'docker'\n\nprint(f\"Python execution environment:\")\nprint(f\"  In Docker: {is_docker}\")\nprint(f\"  Hostname: {socket.gethostname()}\")\nprint(f\"  Python path: {os.sys.executable}\")\n\nreturn {\n    \"in_docker\": is_docker,\n    \"hostname\": socket.gethostname(),\n    \"python_path\": os.sys.executable\n}\n"
+[2025-09-29 12:18:53] [STDERR]       }
+[2025-09-29 12:18:53] [STDERR]     },
+[2025-09-29 12:18:53] [STDERR]     {
+[2025-09-29 12:18:53] [STDERR]       "id": "timer_task",
+[2025-09-29 12:18:53] [STDERR]       "type": "timer",
+[2025-09-29 12:18:53] [STDERR]       "config": {
+[2025-09-29 12:18:53] [STDERR]         "duration": 1
+[2025-09-29 12:18:53] [STDERR]       },
+[2025-09-29 12:18:53] [STDERR]       "dependencies": [
+[2025-09-29 12:18:53] [STDERR]         "python_task"
+[2025-09-29 12:18:53] [STDERR]       ]
+[2025-09-29 12:18:53] [STDERR]     },
+[2025-09-29 12:18:53] [STDERR]     {
+[2025-09-29 12:18:53] [STDERR]       "id": "signal_task",
+[2025-09-29 12:18:53] [STDERR]       "type": "signal",
+[2025-09-29 12:18:53] [STDERR]       "config": {
+[2025-09-29 12:18:53] [STDERR]         "signal": "test_signal"
+[2025-09-29 12:18:53] [STDERR]       },
+[2025-09-29 12:18:53] [STDERR]       "dependencies": [
+[2025-09-29 12:18:53] [STDERR]         "timer_task"
+[2025-09-29 12:18:53] [STDERR]       ]
+[2025-09-29 12:18:53] [STDERR]     }
+[2025-09-29 12:18:53] [STDERR]   ]
+[2025-09-29 12:18:53] [STDERR] }
+[2025-09-29 12:18:53] [STDERR] 2025-09-29 12:18:53,821 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-29 12:18:53] [STDERR]   "id": "workflow_fab38e5e57b2",
+[2025-09-29 12:18:53] [STDERR]   "name": "test_mixed_mode",
+[2025-09-29 12:18:53] [STDERR]   "description": "",
+[2025-09-29 12:18:53] [STDERR]   "version": "1.0",
+[2025-09-29 12:18:53] [STDERR]   "created_at": "2025-09-29T10:18:53.821473",
+[2025-09-29 12:18:53] [STDERR]   "tasks": [
+[2025-09-29 12:18:53] [STDERR]     {
+[2025-09-29 12:18:53] [STDERR]       "id": "0b37441c-b972-4bb2-9435-3ffe5c188965",
+[2025-09-29 12:18:53] [STDERR]       "workflow_id": "workflow_fab38e5e57b2",
+[2025-09-29 12:18:53] [STDERR]       "name": "0b37441c-b972-4bb2-9435-3ffe5c188965",
+[2025-09-29 12:18:53] [STDERR]       "description": "",
+[2025-09-29 12:18:53] [STDERR]       "protocol": "python/v1",
+[2025-09-29 12:18:53] [STDERR]       "method": "python/execute",
+[2025-09-29 12:18:53] [STDERR]       "params": {},
+[2025-09-29 12:18:53] [STDERR]       "dependencies": [],
+[2025-09-29 12:18:53] [STDERR]       "timeout": 300,
+[2025-09-29 12:18:53] [STDERR]       "retry": {
+[2025-09-29 12:18:53] [STDERR]         "max_retries": 2,
+[2025-09-29 12:18:53] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-29 12:18:53] [STDERR]         "base_delay": 1.0,
+[2025-09-29 12:18:53] [STDERR]         "max_delay": 30.0,
+[2025-09-29 12:18:53] [STDERR]         "jitter": true,
+[2025-09-29 12:18:53] [STDERR]         "multiplier": 2.0
+[2025-09-29 12:18:53] [STDERR]       }
+[2025-09-29 12:18:53] [STDERR]     },
+[2025-09-29 12:18:53] [STDERR]     {
+[2025-09-29 12:18:53] [STDERR]       "id": "bba844d1-0c6e-4a51-bdb0-914b59d88f46",
+[2025-09-29 12:18:53] [STDERR]       "workflow_id": "workflow_fab38e5e57b2",
+[2025-09-29 12:18:53] [STDERR]       "name": "bba844d1-0c6e-4a51-bdb0-914b59d88f46",
+[2025-09-29 12:18:53] [STDERR]       "description": "",
+[2025-09-29 12:18:53] [STDERR]       "protocol": "timer/v1",
+[2025-09-29 12:18:53] [STDERR]       "method": "timer/sleep",
+[2025-09-29 12:18:53] [STDERR]       "params": {},
+[2025-09-29 12:18:53] [STDERR]       "dependencies": [
+[2025-09-29 12:18:53] [STDERR]         "python_task"
+[2025-09-29 12:18:53] [STDERR]       ],
+[2025-09-29 12:18:53] [STDERR]       "timeout": 300,
+[2025-09-29 12:18:53] [STDERR]       "retry": {
+[2025-09-29 12:18:53] [STDERR]         "max_retries": 2,
+[2025-09-29 12:18:53] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-29 12:18:53] [STDERR]         "base_delay": 1.0,
+[2025-09-29 12:18:53] [STDERR]         "max_delay": 30.0,
+[2025-09-29 12:18:53] [STDERR]         "jitter": true,
+[2025-09-29 12:18:53] [STDERR]         "multiplier": 2.0
+[2025-09-29 12:18:53] [STDERR]       }
+[2025-09-29 12:18:53] [STDERR]     },
+[2025-09-29 12:18:53] [STDERR]     {
+[2025-09-29 12:18:53] [STDERR]       "id": "86bea4e2-0fab-4e39-b5a5-51e696b56b9a",
+[2025-09-29 12:18:53] [STDERR]       "workflow_id": "workflow_fab38e5e57b2",
+[2025-09-29 12:18:53] [STDERR]       "name": "86bea4e2-0fab-4e39-b5a5-51e696b56b9a",
+[2025-09-29 12:18:53] [STDERR]       "description": "",
+[2025-09-29 12:18:53] [STDERR]       "protocol": "signal/v1",
+[2025-09-29 12:18:53] [STDERR]       "method": "signal/wait",
+[2025-09-29 12:18:53] [STDERR]       "params": {},
+[2025-09-29 12:18:53] [STDERR]       "dependencies": [
+[2025-09-29 12:18:53] [STDERR]         "timer_task"
+[2025-09-29 12:18:53] [STDERR]       ],
+[2025-09-29 12:18:53] [STDERR]       "timeout": 300,
+[2025-09-29 12:18:53] [STDERR]       "retry": {
+[2025-09-29 12:18:53] [STDERR]         "max_retries": 2,
+[2025-09-29 12:18:53] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-29 12:18:53] [STDERR]         "base_delay": 1.0,
+[2025-09-29 12:18:53] [STDERR]         "max_delay": 30.0,
+[2025-09-29 12:18:53] [STDERR]         "jitter": true,
+[2025-09-29 12:18:53] [STDERR]         "multiplier": 2.0
+[2025-09-29 12:18:53] [STDERR]       }
+[2025-09-29 12:18:53] [STDERR]     }
+[2025-09-29 12:18:53] [STDERR]   ]
+[2025-09-29 12:18:53] [STDERR] }
+[2025-09-29 12:18:53] [STDERR] 2025-09-29 12:18:53,821 - gleitzeit.workers.workflow_loader_worker_v2 - ERROR - Workflow validation/configuration failed: [WORKFLOW_VALIDATION_FAILED] Workflow validation failed: Task 0b37441c-b972-4bb2-9435-3ffe5c188965: method 'python/execute' requires parameter 'code', Task bba844d1-0c6e-4a51-bdb0-914b59d88f46 has unknown dependency: python_task, Task bba844d1-0c6e-4a51-bdb0-914b59d88f46: method 'timer/sleep' requires parameter 'duration', Task 86bea4e2-0fab-4e39-b5a5-51e696b56b9a has unknown dependency: timer_task, Task 86bea4e2-0fab-4e39-b5a5-51e696b56b9a: method 'signal/wait' requires parameter 'signal_name'
+[2025-09-29 12:25:55] [STDERR] 2025-09-29 12:25:55,880 - workflow_loader.workflow_loader-async - INFO - Shutdown signal received for workflow_loader-async
+[2025-09-29 12:25:57] [STDERR] 2025-09-29 12:25:57,645 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-09-29 12:25:57] [STDERR] 2025-09-29 12:25:57,646 - workflow_loader.workflow_loader-async - INFO - Worker workflow_loader-async cleaned up

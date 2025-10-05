@@ -17,7 +17,7 @@ import uuid
 
 from .base import BaseWorker, WorkerConfig
 from ..core.sharding import default_sharding
-from ..core.errors import WorkflowValidationError, ConfigurationError, GleitzeitError
+from ..core.errors import WorkflowValidationError, ConfigurationError, GleitzeitError, ResourceLimitError
 from ..core.cache import get_workflow_cache
 from ..core.file_operations import get_workflow_file_operations
 from ..handlers import handler_loader
@@ -79,15 +79,16 @@ class WorkflowLoaderWorkerV2(BaseWorker):
         # Build protocol mappings from handler registry
         self._build_protocol_mappings()
 
+        logger.info(f"Built protocol mappings from handler registry with {len(self.type_to_protocol)} task types")
+        logger.debug(f"Protocol mappings: {self.type_to_protocol}")
+
     def _build_protocol_mappings(self):
         """Build protocol mappings from handler registry"""
-        # Get all handler capabilities
         capabilities = handler_loader.get_all_capabilities()
 
-        # Build type to protocol mapping
         self.type_to_protocol = {}
         self.supported_methods = {}
-        self.method_requirements = {}  # Track required params for each method
+        self.method_requirements = {}
 
         for protocol, caps in capabilities.items():
             # Map task types to protocols
@@ -95,7 +96,7 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                 if task_type not in self.type_to_protocol:
                     self.type_to_protocol[task_type] = protocol
 
-            # Track supported methods and their requirements
+            # Track supported methods
             self.supported_methods[protocol] = list(caps.get('methods', {}).keys())
 
             # Track required params for each method
@@ -105,9 +106,6 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                         'required': method_info.get('required', []),
                         'optional': method_info.get('optional', [])
                     }
-
-        logger.info(f"Built protocol mappings for {len(self.type_to_protocol)} task types")
-        logger.debug(f"Protocol mappings: {self.type_to_protocol}")
 
     async def on_initialize(self):
         """Initialize workflow loader resources"""
@@ -136,9 +134,25 @@ class WorkflowLoaderWorkerV2(BaseWorker):
 
         if not workflow_path and not data.get('workflow'):
             logger.error(f"Missing workflow path or inline workflow in message {message_id}")
+            # Log validation error to Redis
+            await self.log_worker_error(
+                "process_message",
+                ValueError("Missing workflow path or inline workflow in message"),
+                stream=stream,
+                message_id=message_id
+            )
             return True  # Malformed message, ACK to remove
 
         logger.info(f"Loading workflow {workflow_id} from {workflow_path or 'inline'}")
+
+        # Log INFO: Workflow loading started
+        await self.log_worker_info(
+            "workflow_loading_started",
+            f"Starting to load workflow {workflow_id}",
+            workflow_id=workflow_id,
+            source=workflow_path or "inline",
+            stream=stream
+        )
 
         raw_workflow = None  # Initialize to handle failures
         try:
@@ -179,6 +193,15 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                     workflow_id=workflow_id,
                     validation_errors=validation_errors
                 )
+
+            # Log DEBUG: Validation details
+            await self.log_worker_debug(
+                "workflow_validation_passed",
+                f"Workflow {workflow_id} passed validation",
+                workflow_id=workflow_id,
+                task_count=len(workflow.get('tasks', [])),
+                has_dependencies=any(t.get('dependencies') for t in workflow.get('tasks', []))
+            )
 
             # Store workflow definition only (state is handled separately)
             await self.redis.hset(
@@ -235,12 +258,54 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                         workflow_id.encode()
                     )
 
+            # Log WARNING: Large workflows
+            task_count = len(workflow.get('tasks', []))
+            if task_count > 100:
+                await self.log_worker_warning(
+                    "large_workflow_detected",
+                    f"Workflow {workflow_id} has {task_count} tasks (>100)",
+                    workflow_id=workflow_id,
+                    task_count=task_count
+                )
+
+            # Log WARNING: Complex dependency graphs
+            total_dependencies = sum(len(t.get('dependencies', [])) for t in workflow.get('tasks', []))
+            avg_dependencies = total_dependencies / task_count if task_count > 0 else 0
+            if avg_dependencies > 3:
+                await self.log_worker_warning(
+                    "complex_dependency_graph",
+                    f"Workflow {workflow_id} has complex dependencies (avg {avg_dependencies:.1f} per task)",
+                    workflow_id=workflow_id,
+                    task_count=task_count,
+                    total_dependencies=total_dependencies,
+                    avg_dependencies=avg_dependencies
+                )
+
+            # Log INFO: Workflow loaded successfully
+            await self.log_worker_info(
+                "workflow_loaded_successfully",
+                f"Workflow {workflow_id} loaded with {task_count} tasks",
+                workflow_id=workflow_id,
+                task_count=task_count,
+                shard=shard,
+                workflow_name=workflow.get('name', 'unnamed')
+            )
+
             logger.info(f"Workflow {workflow_id} loaded and submitted to shard {shard} with indexes")
             return True  # Successfully processed
 
-        except (WorkflowValidationError, ConfigurationError) as e:
-            # Validation/configuration errors are unretryable
-            logger.error(f"Workflow validation/configuration failed: {e}")
+        except (WorkflowValidationError, ConfigurationError, ResourceLimitError) as e:
+            # Validation/configuration/resource limit errors are unretryable
+            logger.error(f"Workflow validation/configuration/resource limit failed: {e}")
+            # Log to Redis for queryability
+            await self.log_worker_error(
+                "process_message",
+                e,
+                workflow_id=workflow_id,
+                workflow_path=workflow_path,
+                stream=stream,
+                message_id=message_id
+            )
 
             # Extract safe basic metadata from raw workflow (if available)
             workflow_name = "unnamed"
@@ -282,6 +347,15 @@ class WorkflowLoaderWorkerV2(BaseWorker):
         except Exception as e:
             # Other errors might be retryable (network issues, etc.)
             logger.error(f"Failed to load workflow: {e}", exc_info=True)
+            # Log to Redis for queryability
+            await self.log_worker_error(
+                "process_message",
+                e,
+                workflow_id=workflow_id,
+                workflow_path=workflow_path,
+                stream=stream,
+                message_id=message_id
+            )
 
             # Emit failure event
             await self.redis.xadd(
@@ -375,9 +449,10 @@ class WorkflowLoaderWorkerV2(BaseWorker):
         raw_tasks = raw_workflow.get('tasks', [])
 
         if len(raw_tasks) > self.loader_config.MAX_TASKS_PER_WORKFLOW:
-            raise WorkflowValidationError(
-                f"Too many tasks: {len(raw_tasks)} "
-                f"(max: {self.loader_config.MAX_TASKS_PER_WORKFLOW})"
+            raise ResourceLimitError(
+                resource_type="workflow_tasks",
+                current_value=len(raw_tasks),
+                limit=self.loader_config.MAX_TASKS_PER_WORKFLOW
             )
 
         # First pass: transform tasks and build name-to-ID mapping
@@ -387,10 +462,10 @@ class WorkflowLoaderWorkerV2(BaseWorker):
         for raw_task in raw_tasks:
             task = await self.transform_task(raw_task, workflow_id)
             transformed_tasks.append(task)
-            # Map task name to generated ID
-            task_name = raw_task.get('name')
-            if task_name:
-                name_to_id_map[task_name] = task['id']
+            # Map task id/name to generated ID
+            task_identifier = raw_task.get('id') or raw_task.get('name')
+            if task_identifier:
+                name_to_id_map[task_identifier] = task['id']
 
         # Second pass: update dependencies to use IDs instead of names
         for task in transformed_tasks:
@@ -510,7 +585,9 @@ class WorkflowLoaderWorkerV2(BaseWorker):
         return raw_task.get('params', {})
 
     def validate_workflow(self, workflow: Dict) -> List[str]:
-        """Validate workflow structure"""
+        """
+        Validate workflow structure and task parameters.
+        """
         errors = []
 
         # Check required fields
@@ -521,48 +598,52 @@ class WorkflowLoaderWorkerV2(BaseWorker):
         tasks = workflow.get('tasks', [])
         if not tasks:
             errors.append("Workflow must have at least one task")
+            return errors
 
         task_ids = set()
-        for task in tasks:
+        for idx, task in enumerate(tasks):
             task_id = task.get('id')
             if not task_id:
-                errors.append(f"Task must have an 'id' field")
-            elif task_id in task_ids:
+                errors.append(f"Task at index {idx} must have an 'id' field")
+                continue
+
+            if task_id in task_ids:
                 errors.append(f"Duplicate task ID: {task_id}")
             else:
                 task_ids.add(task_id)
 
-            # Check protocol
+            # Validate task type/protocol
+            task_type = task.get('type')
             protocol = task.get('protocol')
-            if not protocol:
-                errors.append(f"Task {task_id} must have a 'protocol' field")
-            else:
-                # Validate protocol is supported
-                if protocol not in self.supported_methods and protocol not in self.type_to_protocol.values():
-                    errors.append(f"Task {task_id} has unsupported protocol: {protocol}")
 
-            # Check method
+            if task_type:
+                # Map type to protocol
+                protocol = self.type_to_protocol.get(task_type)
+                if not protocol:
+                    errors.append(f"Task {task_id}: unsupported type '{task_type}'")
+            elif not protocol:
+                errors.append(f"Task {task_id} must have either 'type' or 'protocol' field")
+
+            # Validate method and required parameters
             method = task.get('method')
-            if not method:
-                errors.append(f"Task {task_id} must have a 'method' field")
-            else:
-                # Validate method is supported by protocol
-                if protocol in self.supported_methods:
-                    if method not in self.supported_methods[protocol]:
-                        errors.append(f"Task {task_id}: method '{method}' not supported by protocol '{protocol}'. Available methods: {', '.join(self.supported_methods[protocol])}")
+            if method and method in self.method_requirements:
+                params = task.get('params', {})
+                required_params = self.method_requirements[method].get('required', [])
 
-            # Validate dependencies
-            for dep in task.get('dependencies', []):
+                for param in required_params:
+                    if param not in params:
+                        errors.append(f"Task {task_id}: missing required parameter '{param}' for method '{method}'")
+
+        # Validate dependencies reference existing tasks
+        for task in tasks:
+            task_id = task.get('id')
+            if not task_id:
+                continue  # Already reported as error in first loop
+
+            dependencies = task.get('dependencies', [])
+            for dep in dependencies:
                 if dep not in task_ids:
                     errors.append(f"Task {task_id} has unknown dependency: {dep}")
-
-            # Validate required params based on method requirements from handler
-            params = task.get('params', {})
-            if method in self.method_requirements:
-                required_params = self.method_requirements[method].get('required', [])
-                for required_param in required_params:
-                    if required_param not in params:
-                        errors.append(f"Task {task_id}: method '{method}' requires parameter '{required_param}'")
 
         return errors
 

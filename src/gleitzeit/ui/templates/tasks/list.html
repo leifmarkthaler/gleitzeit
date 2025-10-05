@@ -26,43 +26,43 @@
                 {% for task in tasks %}
                 <tr>
                     <td>
-                        <a href="/tasks/{{ task.task_id }}" class="task-link">
-                            <code>{{ task.task_id[:12] }}...</code>
+                        <a href="/tasks/{{ task['task_id'] }}" class="task-link">
+                            <code>{{ task['task_id'][:12] }}...</code>
                         </a>
                     </td>
                     <td>
-                        {% if task.workflow_id %}
-                        <a href="/workflows/{{ task.workflow_id }}">
-                            <code>{{ task.workflow_id[:12] }}...</code>
+                        {% if task.get('workflow_id') %}
+                        <a href="/workflows/{{ task['workflow_id'] }}">
+                            <code>{{ task['workflow_id'][:12] }}...</code>
                         </a>
                         {% else %}
                         -
                         {% endif %}
                     </td>
                     <td>
-                        <span class="badge badge-{{ task.status.replace(' ', '-') }}">
-                            {{ task.status }}
+                        <span class="badge badge-{{ task['status'].replace(' ', '-') if task.get('status') else 'unknown' }}">
+                            {{ task.get('status', 'unknown') }}
                         </span>
                     </td>
-                    <td>{{ task.provider or '-' }}</td>
+                    <td>{{ task.get('provider', '-') }}</td>
                     <td>
-                        {% if task.executed_at %}
-                            {{ task.executed_at[:19].replace('T', ' ') }}
+                        {% if task.get('executed_at') %}
+                            {{ task['executed_at'][:19].replace('T', ' ') }}
                         {% else %}
                             -
                         {% endif %}
                     </td>
                     <td>
-                        {% if task.completed_at %}
-                            {{ task.completed_at[:19].replace('T', ' ') }}
+                        {% if task.get('completed_at') %}
+                            {{ task['completed_at'][:19].replace('T', ' ') }}
                         {% else %}
                             -
                         {% endif %}
                     </td>
                     <td>
-                        <a href="/tasks/{{ task.task_id }}" class="btn btn-sm btn-primary">View</a>
-                        {% if task.status in ['failed'] %}
-                        <button onclick="retryTask('{{ task.task_id }}')" class="btn btn-sm btn-secondary">Retry</button>
+                        <a href="/tasks/{{ task['task_id'] }}" class="btn btn-sm btn-primary">View</a>
+                        {% if task.get('status') in ['failed'] %}
+                        <button onclick="retryTask('{{ task['task_id'] }}')" class="btn btn-sm btn-secondary">Retry</button>
                         {% endif %}
                     </td>
                 </tr>

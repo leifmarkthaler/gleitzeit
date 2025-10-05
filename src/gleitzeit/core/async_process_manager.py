@@ -15,6 +15,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from datetime import datetime
 import json
+import yaml
+import uuid
+import socket
+import redis
 
 logger = logging.getLogger(__name__)
 
@@ -221,28 +225,68 @@ class AsyncProcessManager:
         status = {}
 
         for name, info in list(self.processes.items()):
-            returncode = info.process.returncode
-
-            if returncode is None:
-                # Still running
-                status[name] = {
-                    'status': 'running',
-                    'pid': info.pid,
-                    'uptime': (datetime.now() - info.started_at).total_seconds(),
-                    'port': info.port
-                }
+            # Handle attached processes (no subprocess object)
+            if info.process is None:
+                # Check if process is still running via PID
+                try:
+                    import psutil
+                    if psutil.pid_exists(info.pid):
+                        proc = psutil.Process(info.pid)
+                        if proc.is_running() and proc.status() != psutil.STATUS_ZOMBIE:
+                            status[name] = {
+                                'status': 'running',
+                                'pid': info.pid,
+                                'uptime': (datetime.now() - info.started_at).total_seconds(),
+                                'port': info.port
+                            }
+                        else:
+                            status[name] = {
+                                'status': 'dead',
+                                'exit_code': -1,
+                                'died_at': datetime.now().isoformat()
+                            }
+                            logger.error(f"Attached process {name} is dead/zombie")
+                            del self.processes[name]
+                    else:
+                        status[name] = {
+                            'status': 'dead',
+                            'exit_code': -1,
+                            'died_at': datetime.now().isoformat()
+                        }
+                        logger.error(f"Attached process {name} no longer exists")
+                        del self.processes[name]
+                except Exception:
+                    # If we can't check, assume running
+                    status[name] = {
+                        'status': 'running',
+                        'pid': info.pid,
+                        'uptime': (datetime.now() - info.started_at).total_seconds(),
+                        'port': info.port
+                    }
             else:
-                # Process died
-                status[name] = {
-                    'status': 'dead',
-                    'exit_code': returncode,
-                    'died_at': datetime.now().isoformat()
-                }
+                # Handle normal subprocess objects
+                returncode = info.process.returncode
 
-                logger.error(f"Process {name} died with code {returncode}")
+                if returncode is None:
+                    # Still running
+                    status[name] = {
+                        'status': 'running',
+                        'pid': info.pid,
+                        'uptime': (datetime.now() - info.started_at).total_seconds(),
+                        'port': info.port
+                    }
+                else:
+                    # Process died
+                    status[name] = {
+                        'status': 'dead',
+                        'exit_code': returncode,
+                        'died_at': datetime.now().isoformat()
+                    }
 
-                # Clean up
-                del self.processes[name]
+                    logger.error(f"Process {name} died with code {returncode}")
+
+                    # Clean up
+                    del self.processes[name]
 
         return status
 
@@ -279,13 +323,177 @@ class AsyncProcessManager:
 class AsyncServiceManager:
     """High-level service management using AsyncProcessManager"""
 
-    def __init__(self, config: dict = None, log_dir: Path = None):
+    def __init__(self, config: dict = None, log_dir: Path = None, config_file: str = None, redis_url: str = None, port_offset: int = 0):
         self.config = config or {}
+        self.config_file = config_file or 'gleitzeit.yaml'
+        self.redis_url = redis_url or os.environ.get('REDIS_URL', 'redis://localhost:6379')
+        self.port_offset = port_offset
         self.process_manager = AsyncProcessManager(log_dir)
         self.python_path = sys.executable
 
+        # Use ConfigurationManager as per the plan!
+        from .config_manager import ConfigurationManager
+        self.config_manager = ConfigurationManager(
+            config_file=self.config_file,
+            cli_args={}  # Could be populated from CLI
+        )
+
+        # Load handler configurations using ConfigurationManager
+        self.handler_configs = {}
+        if Path(self.config_file).exists():
+            self._load_handler_configs()
+
+        # Initialize Redis client for config storage
+        self.redis_client = None
+        self._init_redis()
+
+        # Initialize SmartProcessManager for service registry
+        self.smart_manager = None
+        self.existing_services = {}
+
+    def _init_redis(self):
+        """Initialize Redis client for configuration storage"""
+        try:
+            self.redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
+            self.redis_client.ping()
+        except Exception as e:
+            logger.warning(f"Failed to connect to Redis: {e}")
+            self.redis_client = None
+
+    def _get_network_hostname(self, bind_host: str) -> str:
+        """Get network-accessible hostname for service registration"""
+        # If explicitly binding to localhost/127.0.0.1, use that
+        if bind_host in ['127.0.0.1', 'localhost']:
+            return bind_host
+
+        # If binding to 0.0.0.0, determine the best network address
+        if bind_host == '0.0.0.0':
+            try:
+                # Try to get the hostname that other machines can use to reach us
+                hostname = socket.gethostname()
+                # Verify it resolves to a real IP
+                socket.gethostbyname(hostname)
+                return hostname
+            except (socket.gaierror, OSError):
+                try:
+                    # Fallback: get local IP by connecting to a remote address
+                    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+                        s.connect(('8.8.8.8', 80))
+                        local_ip = s.getsockname()[0]
+                        return local_ip
+                except OSError:
+                    # Final fallback
+                    return 'localhost'
+
+        # For any other specific IP, use as-is
+        return bind_host
+
+    async def _init_smart_manager(self):
+        """Initialize SmartProcessManager for service registry"""
+        from .process_manager import SmartProcessManager
+        from .instance import initialize_instance, get_current_instance
+
+        try:
+            # Initialize instance if not already done
+            if not get_current_instance():
+                initialize_instance(
+                    instance_name="gleitzeit-native",
+                    role="standalone",
+                    port_offset=0
+                )
+                logger.info("Initialized instance identity for service registry")
+
+            self.smart_manager = SmartProcessManager(config=self.config, redis_url=self.redis_url)
+            await self.smart_manager.initialize()
+            # Check for existing services
+            registered_services = await self.smart_manager.get_registered_services()
+
+            # Validate that registered services are actually still running
+            self.existing_services = {}
+            if registered_services:
+                logger.info(f"Found {len(registered_services)} services in registry, checking health...")
+                import psutil
+
+                for service_name, service_info in registered_services.items():
+                    try:
+                        pid = int(service_info.get('pid', 0))
+                        if pid and psutil.pid_exists(pid):
+                            # Check if process is actually running
+                            proc = psutil.Process(pid)
+                            if proc.is_running() and proc.status() != psutil.STATUS_ZOMBIE:
+                                self.existing_services[service_name] = service_info
+                                logger.info(f"  ✅ {service_name} (PID: {pid}) is healthy")
+                            else:
+                                logger.info(f"  ❌ {service_name} (PID: {pid}) is zombie/dead, removing from registry")
+                                await self.smart_manager.unregister_service(service_name)
+                        else:
+                            logger.info(f"  ❌ {service_name} has invalid/missing PID, removing from registry")
+                            await self.smart_manager.unregister_service(service_name)
+                    except (psutil.NoSuchProcess, ValueError) as e:
+                        logger.info(f"  ❌ {service_name} process not found, removing from registry")
+                        await self.smart_manager.unregister_service(service_name)
+
+                if self.existing_services:
+                    logger.info(f"Found {len(self.existing_services)} healthy existing services")
+                for name, info in self.existing_services.items():
+                    logger.info(f"  - {name}: PID={info.get('pid')}, Port={info.get('port')}")
+        except Exception as e:
+            import traceback
+            logger.warning(f"Failed to initialize SmartProcessManager: {e}")
+            logger.warning(f"Traceback: {traceback.format_exc()}")
+            self.smart_manager = None
+
+    def _load_handler_configs(self):
+        """Load handler configurations from gleitzeit.yaml"""
+        try:
+            with open(self.config_file, 'r') as f:
+                full_config = yaml.safe_load(f)
+
+            # Extract handler configurations
+            handlers_section = full_config.get('handlers', {})
+
+            for handler_name, handler_config in handlers_section.items():
+                if handler_name == 'global':
+                    continue
+
+                protocol = f"{handler_name}/v1"
+                # Store the FULL handler configuration, not just the 'config' section
+                # This includes 'execution', 'config', and any other sections
+                self.handler_configs[protocol] = handler_config.copy()
+
+                # For backward compatibility, if there's a config section, merge it at the top level
+                if 'config' in handler_config:
+                    # Merge config section keys into top level for backward compatibility
+                    config_section = handler_config['config']
+                    for key, value in config_section.items():
+                        # Don't override execution or other top-level sections
+                        if key not in self.handler_configs[protocol]:
+                            self.handler_configs[protocol][key] = value
+
+            if self.handler_configs:
+                logger.info(f"Loaded handler configs for: {list(self.handler_configs.keys())}")
+            else:
+                logger.info("No handler configurations found in config file")
+
+        except Exception as e:
+            logger.warning(f"Failed to load handler configs from {self.config_file}: {e}")
+            self.handler_configs = {}
+
     async def start_api(self, host: str = "0.0.0.0", port: int = 8000, dev_mode: bool = False):
         """Start API service"""
+        # Check if already running in registry
+        if "api" in self.existing_services:
+            existing = self.existing_services["api"]
+            logger.info(f"API service already running (PID: {existing.get('pid')}, Port: {existing.get('port')})")
+            return ProcessInfo(
+                pid=int(existing.get('pid')),
+                name="api",
+                command=[],
+                process=None,
+                port=int(existing.get('port', port)),
+                started_at=datetime.now()
+            )
+
         command = [
             self.python_path, "-m", "uvicorn",
             "gleitzeit.api.main:app",
@@ -298,17 +506,43 @@ class AsyncServiceManager:
             command.append("--reload")
 
         env = {
-            'REDIS_URL': 'redis://localhost:6379',
-            'REDIS_CLUSTER_NODES': 'localhost:6379',
+            'REDIS_URL': self.redis_url,
+            'REDIS_CLUSTER_NODES': self.redis_url.replace('redis://', '').replace('/', ''),
             'GLEITZEIT_AUTO_LOGIN': 'true'
         }
 
-        return await self.process_manager.start_process(
+        result = await self.process_manager.start_process(
             "api", command, env=env, port=port
         )
 
+        # Register in service registry
+        if result and self.smart_manager:
+            network_host = self._get_network_hostname(host)
+            await self.smart_manager.register_service("api", {
+                "pid": str(result.pid),
+                "port": str(port),
+                "host": network_host,
+                "started_at": datetime.now().isoformat(),
+                "mode": "native"
+            })
+
+        return result
+
     async def start_ui(self, host: str = "0.0.0.0", port: int = 8004, api_port: int = 8000, dev_mode: bool = False):
         """Start UI service"""
+        # Check if already running in registry
+        if "ui" in self.existing_services:
+            existing = self.existing_services["ui"]
+            logger.info(f"UI service already running (PID: {existing.get('pid')}, Port: {existing.get('port')})")
+            return ProcessInfo(
+                pid=int(existing.get('pid')),
+                name="ui",
+                command=[],
+                process=None,
+                port=int(existing.get('port', port)),
+                started_at=datetime.now()
+            )
+
         command = [
             self.python_path, "-m", "uvicorn",
             "gleitzeit.ui.api.app:app",
@@ -321,14 +555,27 @@ class AsyncServiceManager:
             command.append("--reload")
 
         env = {
-            'REDIS_URL': 'redis://localhost:6379',
-            'REDIS_CLUSTER_NODES': 'localhost:6379',
+            'REDIS_URL': self.redis_url,
+            'REDIS_CLUSTER_NODES': self.redis_url.replace('redis://', '').replace('/', ''),
             'API_URL': f'http://localhost:{api_port}'
         }
 
-        return await self.process_manager.start_process(
+        result = await self.process_manager.start_process(
             "ui", command, env=env, port=port
         )
+
+        # Register in service registry
+        if result and self.smart_manager:
+            network_host = self._get_network_hostname(host)
+            await self.smart_manager.register_service("ui", {
+                "pid": str(result.pid),
+                "port": str(port),
+                "host": network_host,
+                "started_at": datetime.now().isoformat(),
+                "mode": "native"
+            })
+
+        return result
 
     async def start_worker(self, worker_config: dict):
         """Start a worker from configuration"""
@@ -336,27 +583,116 @@ class AsyncServiceManager:
         worker_class = worker_config.get('worker_class')
         worker_id = f"{worker_type}-async"
 
-        command = [
+        # Check if already running in registry
+        worker_name = f"worker_{worker_type}"
+        if worker_name in self.existing_services:
+            existing = self.existing_services[worker_name]
+            logger.info(f"Worker {worker_name} already running (PID: {existing.get('pid')})")
+            return ProcessInfo(
+                pid=int(existing.get('pid')),
+                name=worker_name,
+                command=[],
+                process=None,
+                port=None,
+                started_at=datetime.now()
+            )
+
+        # Build complete configuration including handler configs
+        full_config = {
+            'worker_type': worker_type,
+            'worker_class': worker_class,
+            'worker_id': worker_id,
+            'max_concurrent': worker_config.get('max_concurrent', 10),
+            'batch_size': worker_config.get('batch_size', 10),
+            'block_timeout': worker_config.get('block_timeout', 5000),
+            'shards': list(range(16)),  # All shards
+            'redis_url': 'redis://localhost:6379',
+            'redis_cluster_nodes': ['localhost:6379']
+        }
+
+        # Add handler configurations if available
+        if self.handler_configs:
+            # Deep copy to avoid modifying original
+            full_config['handler_configs'] = {
+                protocol: config.copy() for protocol, config in self.handler_configs.items()
+            }
+
+        # Merge worker-specific handler configs if present
+        if 'handler_configs' in worker_config:
+            if 'handler_configs' not in full_config:
+                full_config['handler_configs'] = {}
+            # Deep merge worker configs with global configs
+            for protocol, worker_handler_config in worker_config['handler_configs'].items():
+                if protocol in full_config['handler_configs']:
+                    # Merge worker config with global config (worker overrides specific keys)
+                    merged_config = full_config['handler_configs'][protocol].copy()
+                    merged_config.update(worker_handler_config)
+                    full_config['handler_configs'][protocol] = merged_config
+                else:
+                    # New protocol config from worker
+                    full_config['handler_configs'][protocol] = worker_handler_config
+
+        # Store configuration in Redis if available
+        if self.redis_client:
+            try:
+                config_key = f"worker:config:{worker_id}:{uuid.uuid4().hex[:8]}"
+                config_json = json.dumps(full_config)
+                self.redis_client.setex(config_key, 3600, config_json)  # 1 hour expiry
+
+                # Use config-key based startup (preferred)
+                command = [
+                    self.python_path, "-m", "gleitzeit.workers.runner",
+                    "--config-key", config_key,
+                    "--redis-url", self.redis_url
+                ]
+
+                logger.info(f"Starting worker {worker_id} with config key {config_key}")
+                if self.handler_configs:
+                    logger.info(f"  Handler configs included for: {list(self.handler_configs.keys())}")
+
+            except Exception as e:
+                logger.warning(f"Failed to store config in Redis: {e}, falling back to CLI args")
+                # Fall back to CLI arguments
+                command = self._build_fallback_command(worker_config, worker_class, worker_id)
+        else:
+            # No Redis available, use CLI arguments
+            command = self._build_fallback_command(worker_config, worker_class, worker_id)
+
+        env = {
+            'REDIS_URL': self.redis_url,
+            'REDIS_CLUSTER_NODES': self.redis_url.replace('redis://', '').replace('/', ''),
+            'LOG_LEVEL': 'INFO'
+        }
+
+        result = await self.process_manager.start_process(
+            f"worker_{worker_type}", command, env=env
+        )
+
+        # Register in service registry
+        if result and self.smart_manager:
+            await self.smart_manager.register_service(f"worker_{worker_type}", {
+                "pid": str(result.pid),
+                "worker_type": worker_type,
+                "worker_id": worker_id,
+                "started_at": datetime.now().isoformat(),
+                "mode": "native"
+            })
+
+        return result
+
+    def _build_fallback_command(self, worker_config, worker_class, worker_id):
+        """Build fallback command using CLI arguments"""
+        return [
             self.python_path, "-m", "gleitzeit.workers.runner",
             "--worker-class", worker_class,
             "--worker-id", worker_id,
-            "--worker-type", worker_type,
-            "--redis-url", "redis://localhost:6379",
+            "--worker-type", worker_config.get('worker_type'),
+            "--redis-url", self.redis_url,
             "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
             "--max-concurrent", str(worker_config.get('max_concurrent', 10)),
             "--batch-size", str(worker_config.get('batch_size', 10)),
             "--block-timeout", str(worker_config.get('block_timeout', 5000))
         ]
-
-        env = {
-            'REDIS_URL': 'redis://localhost:6379',
-            'REDIS_CLUSTER_NODES': 'localhost:6379',
-            'LOG_LEVEL': 'INFO'
-        }
-
-        return await self.process_manager.start_process(
-            f"worker_{worker_type}", command, env=env
-        )
 
     async def start_essential_workers(self):
         """Start only essential workers for native mode"""
@@ -373,20 +709,68 @@ class AsyncServiceManager:
             if worker_config.get('worker_type') in essential_types:
                 await self.start_worker(worker_config)
 
-    async def start_all(self, api_port: int = 8000, ui_port: int = 8004, no_ui: bool = False, dev_mode: bool = False):
+    async def start_all(self, api_port: int = 8000, ui_port: int = 8004, no_ui: bool = False, dev_mode: bool = False, restart: bool = False, no_workers: bool = False, no_api: bool = False):
         """Start all services"""
-        # Start API
-        await self.start_api(port=api_port, dev_mode=dev_mode)
+        # Initialize SmartProcessManager for service registry
+        await self._init_smart_manager()
 
-        # Wait for API to be ready
-        await asyncio.sleep(2)
+        # Track whether we're attaching to existing services or starting new ones
+        self.attached_mode = False
+
+        # If services exist and not restarting, attach to them
+        if self.existing_services and not restart:
+            logger.info(f"Found {len(self.existing_services)} existing services, attaching to them")
+            self.attached_mode = True
+
+            # Reconstruct ProcessInfo objects for existing services
+            for service_name, service_info in self.existing_services.items():
+                pid = int(service_info.get('pid', 0))
+                port = service_info.get('port')
+                if port:
+                    port = int(port)
+
+                # Create a ProcessInfo object for the existing service
+                info = ProcessInfo(
+                    pid=pid,
+                    name=service_name,
+                    command=[],  # Command not stored, but not needed for monitoring
+                    process=None,  # Can't attach to subprocess, but we can monitor via PID
+                    port=port,
+                    started_at=datetime.fromisoformat(service_info.get('started_at', datetime.now().isoformat()))
+                )
+                self.process_manager.processes[service_name] = info
+                logger.info(f"  Attached to {service_name} (PID: {pid}, Port: {port})")
+
+            # Return existing status
+            return await self.process_manager.monitor_processes()
+
+        # If restarting, stop existing services first
+        if restart and self.existing_services:
+            logger.info("Restarting services...")
+            await self.stop_all()
+            await asyncio.sleep(2)
+            self.existing_services = {}
+
+        # Start API if enabled
+        if not no_api:
+            # Use config ports if available, otherwise use provided defaults
+            config_api_port = self.config.get('api', {}).get('port', api_port)
+            actual_api_port = config_api_port + self.port_offset
+            await self.start_api(port=actual_api_port, dev_mode=dev_mode)
+
+            # Wait for API to be ready
+            await asyncio.sleep(2)
 
         # Start UI if enabled
-        if not no_ui:
-            await self.start_ui(port=ui_port, api_port=api_port, dev_mode=dev_mode)
+        if not no_ui and not no_api:
+            config_ui_port = self.config.get('ui', {}).get('port', ui_port)
+            actual_ui_port = config_ui_port + self.port_offset
+            actual_api_port = self.config.get('api', {}).get('port', api_port) + self.port_offset
+            await self.start_ui(port=actual_ui_port, api_port=actual_api_port, dev_mode=dev_mode)
 
-        # Start essential workers
-        await self.start_essential_workers()
+        # Start essential workers if enabled
+        if not no_workers:
+            await self.start_essential_workers()
 
         return await self.process_manager.monitor_processes()
 
@@ -394,47 +778,149 @@ class AsyncServiceManager:
         """Stop all services"""
         await self.process_manager.stop_all()
 
+        # Only unregister services if we started them (not if we attached)
+        if self.smart_manager and not getattr(self, 'attached_mode', False):
+            # Track which services we actually started vs attached to
+            started_services = set()
+            for name, info in self.process_manager.processes.items():
+                # Services with actual subprocess objects were started by us
+                if info.process is not None:
+                    started_services.add(name)
+
+            # Only unregister services we started
+            for service_name in started_services:
+                await self.smart_manager.unregister_service(service_name)
+                logger.info(f"Unregistered service {service_name} that we started")
+
+    async def _service_heartbeat_loop(self):
+        """
+        Periodically refresh service registrations to prevent expiry.
+
+        Uses circuit breaker pattern - never terminates, backs off on failures.
+        """
+        from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitOpenError
+
+        # Create circuit breaker for service heartbeat
+        circuit_breaker = CircuitBreaker(
+            "service_heartbeat",
+            CircuitBreakerConfig(
+                failure_threshold=10,
+                success_threshold=2,
+                reset_timeout=300  # 5 minutes
+            )
+        )
+
+        while True:  # Never exit - keep trying forever
+            try:
+                await asyncio.sleep(30)  # Heartbeat every 30 seconds
+
+                # Wrap the actual heartbeat work in circuit breaker
+                await circuit_breaker.call(self._refresh_service_registrations)
+
+            except CircuitOpenError as e:
+                # Circuit is open - back off longer
+                logger.warning(
+                    f"Service heartbeat circuit breaker is OPEN: {e}. "
+                    f"Backing off for {e.reset_timeout}s"
+                )
+                await asyncio.sleep(e.reset_timeout)
+
+            except asyncio.CancelledError:
+                # Allow graceful cancellation
+                logger.info("Service heartbeat loop cancelled")
+                raise
+
+            except Exception as e:
+                # Unexpected error - log and continue
+                logger.error(f"Unexpected error in service heartbeat loop: {e}", exc_info=True)
+                await asyncio.sleep(30)
+
+    async def _refresh_service_registrations(self):
+        """
+        Refresh service registrations (called through circuit breaker).
+
+        Raises:
+            Exception: On any failure (circuit breaker will track)
+        """
+        if not self.smart_manager:
+            logger.warning("No smart_manager available for service refresh")
+            return
+
+        # Re-register all running services
+        services_refreshed = 0
+        for name, info in self.process_manager.processes.items():
+            if info.process is not None or info.pid:  # Service is running
+                if name == "api" or name == "ui":
+                    # Re-register service with updated TTL
+                    service_data = await self.smart_manager.redis.hgetall(f"service:registry:{name}")
+                    if service_data:
+                        # Decode and refresh
+                        decoded_data = {}
+                        for k, v in service_data.items():
+                            key = k.decode() if isinstance(k, bytes) else k
+                            value = v.decode() if isinstance(v, bytes) else v
+                            decoded_data[key] = value
+
+                        # Re-register with fresh TTL
+                        await self.smart_manager.register_service(name, decoded_data)
+                        logger.debug(f"Refreshed registration for {name}")
+                        services_refreshed += 1
+
+        if services_refreshed == 0:
+            logger.debug("No services to refresh in this heartbeat cycle")
+
     async def monitor_loop(self, auto_restart=True):
         """Monitor services and restart if needed"""
         restart_attempts = {}
         max_restart_attempts = 3
 
-        while True:
-            status = await self.process_manager.monitor_processes()
+        # Start heartbeat task
+        heartbeat_task = asyncio.create_task(self._service_heartbeat_loop())
 
-            # Check for dead processes and restart if needed
-            for name, info in status.items():
-                if info.get('status') == 'dead':
-                    logger.error(f"Service {name} died with exit code {info.get('exit_code')}")
+        try:
+            while True:
+                status = await self.process_manager.monitor_processes()
 
-                    if auto_restart:
-                        # Track restart attempts
-                        if name not in restart_attempts:
+                # Check for dead processes and restart if needed
+                for name, info in status.items():
+                    if info.get('status') == 'dead':
+                        logger.error(f"Service {name} died with exit code {info.get('exit_code')}")
+
+                        if auto_restart:
+                            # Track restart attempts
+                            if name not in restart_attempts:
+                                restart_attempts[name] = 0
+
+                            if restart_attempts[name] < max_restart_attempts:
+                                restart_attempts[name] += 1
+                                logger.info(f"Attempting to restart {name} (attempt {restart_attempts[name]}/{max_restart_attempts})")
+
+                                # Try to restart the service
+                                if name == 'api':
+                                    await self.start_api(port=self.config.get('api_port', 8000))
+                                elif name == 'ui':
+                                    await self.start_ui(port=self.config.get('ui_port', 8004))
+                                elif name.startswith('worker_'):
+                                    worker_type = name.replace('worker_', '')
+                                    for worker_config in self.config.get('workers', []):
+                                        if worker_config.get('worker_type') == worker_type:
+                                            await self.start_worker(worker_config)
+                                            break
+                            else:
+                                logger.error(f"Max restart attempts reached for {name}, giving up")
+                    elif info.get('status') == 'running':
+                        # Reset restart counter for running processes
+                        if name in restart_attempts:
                             restart_attempts[name] = 0
 
-                        if restart_attempts[name] < max_restart_attempts:
-                            restart_attempts[name] += 1
-                            logger.info(f"Attempting to restart {name} (attempt {restart_attempts[name]}/{max_restart_attempts})")
-
-                            # Try to restart the service
-                            if name == 'api':
-                                await self.start_api(port=self.config.get('api_port', 8000))
-                            elif name == 'ui':
-                                await self.start_ui(port=self.config.get('ui_port', 8004))
-                            elif name.startswith('worker_'):
-                                worker_type = name.replace('worker_', '')
-                                for worker_config in self.config.get('workers', []):
-                                    if worker_config.get('worker_type') == worker_type:
-                                        await self.start_worker(worker_config)
-                                        break
-                        else:
-                            logger.error(f"Max restart attempts reached for {name}, giving up")
-                elif info.get('status') == 'running':
-                    # Reset restart counter for running processes
-                    if name in restart_attempts:
-                        restart_attempts[name] = 0
-
-            await asyncio.sleep(5)
+                await asyncio.sleep(5)
+        finally:
+            # Clean up heartbeat task
+            heartbeat_task.cancel()
+            try:
+                await heartbeat_task
+            except asyncio.CancelledError:
+                pass
 
 
 # Export for use in CLI

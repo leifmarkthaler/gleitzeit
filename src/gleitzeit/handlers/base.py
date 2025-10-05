@@ -11,6 +11,7 @@ import logging
 import uuid
 import platform
 import os
+import json
 from datetime import datetime
 
 from ..core.models import Task, TaskResult, TaskStatus
@@ -93,7 +94,7 @@ class BaseHandler(ABC):
             'memory_available_gb': memory_available_gb,
 
             # Configuration hash (for tracking config changes)
-            'config_hash': str(hash(frozenset(self.config.items()))) if self.config else None,
+            'config_hash': str(hash(json.dumps(self.config, sort_keys=True))) if self.config else None,
         }
 
         return metadata

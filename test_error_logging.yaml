@@ -1,0 +1,10 @@
+name: test_error_logging
+version: "1.0"
+description: Test workflow that generates an error to verify error logging
+
+tasks:
+  - name: failing_task
+    handler: python
+    params:
+      code: |
+        raise ValueError("This is a test error for logging verification")

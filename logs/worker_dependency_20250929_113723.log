@@ -1,0 +1,16 @@
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,531 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:a5a907c6
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,534 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,534 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,535 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,535 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,535 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,536 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,536 - __main__ - INFO - Worker dependency-async started successfully
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,536 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-29 11:37:23] [STDERR] 2025-09-29 11:37:23,536 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-09-29 11:38:34] [STDERR] 2025-09-29 11:38:34,373 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 21382077-3ada-491e-bb25-afdd8b40a4b7 from workflow workflow_d75aa41e340a
+[2025-09-29 11:38:34] [STDERR] 2025-09-29 11:38:34,386 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 296aad7a-25ff-4ac1-a154-bdeb16940002 from workflow workflow_d75aa41e340a
+[2025-09-29 11:38:34] [STDERR] 2025-09-29 11:38:34,388 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow_d75aa41e340a completed successfully!
+[2025-09-29 11:41:03] [STDERR] 2025-09-29 11:41:03,669 - dependency.dependency-async - INFO - Shutdown signal received for dependency-async
+[2025-09-29 11:41:06] [STDERR] 2025-09-29 11:41:06,028 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-09-29 11:41:06] [STDERR] 2025-09-29 11:41:06,028 - dependency.dependency-async - INFO - Worker dependency-async cleaned up

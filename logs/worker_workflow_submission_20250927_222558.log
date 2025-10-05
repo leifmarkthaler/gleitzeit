@@ -1,8 +1,0 @@
-[2025-09-27 22:25:58] [STDERR] 2025-09-27 22:25:58,842 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
-[2025-09-27 22:25:58] [STDERR] 2025-09-27 22:25:58,842 - gleitzeit.workers.workflow_submission_worker - INFO - WorkflowSubmissionWorker initialized with shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] monitoring streams: ['workflow:submit']
-[2025-09-27 22:25:58] [STDERR] 2025-09-27 22:25:58,846 - workflow_submission.workflow_submission-async - INFO - Worker workflow_submission-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-[2025-09-27 22:25:58] [STDERR] 2025-09-27 22:25:58,846 - __main__ - INFO - Worker workflow_submission-async started with config: WorkerConfig(worker_type='workflow_submission', worker_id='workflow_submission-async', consumer_group='workflow_submission-group', redis_url='redis://localhost:6379', assigned_shards=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15], max_concurrent=5, batch_size=5, block_timeout=5000, heartbeat_interval=30)
-[2025-09-27 22:25:58] [STDERR] 2025-09-27 22:25:58,846 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_submission-async
-[2025-09-27 22:34:09] [STDERR] 2025-09-27 22:34:09,865 - workflow_submission.workflow_submission-async - INFO - Shutdown signal received for workflow_submission-async
-[2025-09-27 22:34:13] [STDERR] 2025-09-27 22:34:13,218 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
-[2025-09-27 22:34:13] [STDERR] 2025-09-27 22:34:13,218 - workflow_submission.workflow_submission-async - INFO - Worker workflow_submission-async cleaned up

@@ -1,0 +1,65 @@
+[2025-09-30 23:39:00] [STDERR] INFO:     Started server process [23200]
+[2025-09-30 23:39:00] [STDERR] INFO:     Waiting for application startup.
+[2025-09-30 23:39:00] [STDERR] INFO:     Application startup complete.
+[2025-09-30 23:39:00] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-09-30 23:39:21] [STDERR] Using default JWT secret key. Change this in production!
+[2025-09-30 23:39:21] [STDOUT] INFO:     127.0.0.1:59430 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:26] [STDOUT] INFO:     127.0.0.1:59439 - "GET /workflows/7084cbd4-f2cf-4fc9-985f-b412a552a380/status HTTP/1.1" 404 Not Found
+[2025-09-30 23:39:26] [STDOUT] INFO:     127.0.0.1:59439 - "GET /system/logs/errors HTTP/1.1" 200 OK
+[2025-09-30 23:39:26] [STDOUT] INFO:     127.0.0.1:59439 - "GET /system/logs/errors?workflow_id=7084cbd4-f2cf-4fc9-985f-b412a552a380 HTTP/1.1" 200 OK
+[2025-09-30 23:39:37] [STDOUT] INFO:     127.0.0.1:59462 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:37] [STDOUT] INFO:     127.0.0.1:59462 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:37] [STDOUT] INFO:     127.0.0.1:59465 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:37] [STDOUT] INFO:     127.0.0.1:59465 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:37] [STDOUT] INFO:     127.0.0.1:59468 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:37] [STDOUT] INFO:     127.0.0.1:59468 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:38] [STDOUT] INFO:     127.0.0.1:59468 - "GET /workflows/workflow-28334868-07d7-408a-86db-cc94d9e66ee1 HTTP/1.1" 200 OK
+[2025-09-30 23:39:38] [STDOUT] INFO:     127.0.0.1:59471 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:39] [STDOUT] INFO:     127.0.0.1:59471 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:40] [STDOUT] INFO:     127.0.0.1:59471 - "GET /workflows/workflow-2f012933-b74d-4394-b60f-224e5ffc0e2b/tasks HTTP/1.1" 200 OK
+[2025-09-30 23:39:40] [STDOUT] INFO:     127.0.0.1:59475 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:40] [STDOUT] INFO:     127.0.0.1:59475 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:40] [STDOUT] INFO:     127.0.0.1:59475 - "GET /workflows/workflow-fc2ac1ed-1ae9-407c-a546-94ece7c06a07 HTTP/1.1" 200 OK
+[2025-09-30 23:39:42] [STDOUT] INFO:     127.0.0.1:59475 - "GET /workflows/workflow-fc2ac1ed-1ae9-407c-a546-94ece7c06a07 HTTP/1.1" 200 OK
+[2025-09-30 23:39:42] [STDOUT] INFO:     127.0.0.1:59480 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:42] [STDOUT] INFO:     127.0.0.1:59480 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:42] [STDOUT] INFO:     127.0.0.1:59480 - "GET /workflows/workflow-6446c991-0876-4463-99c7-fdc1d74bf06d HTTP/1.1" 200 OK
+[2025-09-30 23:39:44] [STDOUT] INFO:     127.0.0.1:59480 - "GET /workflows/workflow-6446c991-0876-4463-99c7-fdc1d74bf06d HTTP/1.1" 200 OK
+[2025-09-30 23:39:44] [STDOUT] INFO:     127.0.0.1:59480 - "GET /workflows/workflow-6446c991-0876-4463-99c7-fdc1d74bf06d/tasks HTTP/1.1" 200 OK
+[2025-09-30 23:39:44] [STDOUT] INFO:     127.0.0.1:59480 - "GET /tasks/31da5883-2d56-407f-8610-ff82f10a96c2 HTTP/1.1" 200 OK
+[2025-09-30 23:39:44] [STDOUT] INFO:     127.0.0.1:59485 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:44] [STDOUT] INFO:     127.0.0.1:59485 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:44] [STDOUT] INFO:     127.0.0.1:59485 - "POST /workflows/workflow-e49cfbff-593a-47c2-b23a-d435c855c3b9/cancel HTTP/1.1" 200 OK
+[2025-09-30 23:39:44] [STDOUT] INFO:     127.0.0.1:59489 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:45] [STDOUT] INFO:     127.0.0.1:59489 - "GET /workflows/list?limit=10&offset=0 HTTP/1.1" 200 OK
+[2025-09-30 23:39:45] [STDOUT] INFO:     127.0.0.1:59489 - "GET /workflows/list?limit=5&offset=0 HTTP/1.1" 200 OK
+[2025-09-30 23:39:45] [STDOUT] INFO:     127.0.0.1:59492 - "POST /auth/session/create HTTP/1.1" 200 OK
+[2025-09-30 23:39:45] [STDOUT] INFO:     127.0.0.1:59492 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:45] [STDOUT] INFO:     127.0.0.1:59493 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-09-30 23:39:45] [STDOUT] INFO:     127.0.0.1:59492 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-01 18:52:25] [STDOUT] INFO:     127.0.0.1:62661 - "POST /workflows HTTP/1.1" 307 Temporary Redirect
+[2025-10-01 18:52:25] [STDOUT] INFO:     127.0.0.1:62661 - "POST /workflows/ HTTP/1.1" 422 Unprocessable Entity
+[2025-10-01 18:52:31] [STDOUT] INFO:     127.0.0.1:62680 - "POST /workflows HTTP/1.1" 307 Temporary Redirect
+[2025-10-01 19:13:01] [STDOUT] INFO:     127.0.0.1:64362 - "GET /logs/errors?workflow_id=test_api_workflow_123&limit=10 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:01] [STDOUT] INFO:     127.0.0.1:64365 - "GET /logs?level=INFO&workflow_id=test_api_workflow_123 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:01] [STDOUT] INFO:     127.0.0.1:64367 - "GET /logs?level=INVALID HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:01] [STDOUT] INFO:     127.0.0.1:64370 - "GET /logs/workflow/test_api_workflow_123 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:02] [STDOUT] INFO:     127.0.0.1:64374 - "GET /logs/component/TestComponent?level=INFO HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:02] [STDOUT] INFO:     127.0.0.1:64377 - "GET /logs/stats?workflow_id=test_api_workflow_123&component=ComponentA HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:02] [STDOUT] INFO:     127.0.0.1:64379 - "GET /logs/errors?limit=10 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:02] [STDOUT] INFO:     127.0.0.1:64382 - "GET /logs?level=INFO&workflow_id=test_api_workflow_123&limit=5&offset=2 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:29] [STDOUT] INFO:     127.0.0.1:64447 - "GET /system/logs/errors?workflow_id=test_api_workflow_123&limit=10 HTTP/1.1" 200 OK
+[2025-10-01 19:13:35] [STDOUT] INFO:     127.0.0.1:64468 - "GET /system/logs/errors?workflow_id=test_api_workflow_123&limit=10 HTTP/1.1" 200 OK
+[2025-10-01 19:13:35] [STDOUT] INFO:     127.0.0.1:64471 - "GET /system/logs?level=INFO&workflow_id=test_api_workflow_123 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:35] [STDOUT] INFO:     127.0.0.1:64473 - "GET /system/logs?level=INVALID HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:35] [STDOUT] INFO:     127.0.0.1:64476 - "GET /system/logs/workflow/test_api_workflow_123 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:35] [STDOUT] INFO:     127.0.0.1:64479 - "GET /system/logs/component/TestComponent?level=INFO HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:35] [STDOUT] INFO:     127.0.0.1:64482 - "GET /system/logs/stats?workflow_id=test_api_workflow_123&component=ComponentA HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:35] [STDOUT] INFO:     127.0.0.1:64484 - "GET /system/logs/errors?limit=10 HTTP/1.1" 200 OK
+[2025-10-01 19:13:35] [STDOUT] INFO:     127.0.0.1:64487 - "GET /system/logs?level=INFO&workflow_id=test_api_workflow_123&limit=5&offset=2 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:53] [STDOUT] INFO:     127.0.0.1:64520 - "GET /system/logs?level=INFO&limit=5 HTTP/1.1" 404 Not Found
+[2025-10-01 19:13:58] [STDOUT] INFO:     127.0.0.1:64537 - "GET /openapi.json HTTP/1.1" 200 OK
+[2025-10-01 19:15:07] [STDOUT] INFO:     127.0.0.1:64639 - "GET /system/logs/errors?workflow_id=test_api_workflow_123&limit=10 HTTP/1.1" 200 OK
+[2025-10-01 19:15:07] [STDOUT] INFO:     127.0.0.1:64641 - "GET /system/logs/errors?limit=10 HTTP/1.1" 200 OK
+[2025-10-01 19:15:23] [STDOUT] INFO:     127.0.0.1:64677 - "GET /system/logs/errors?workflow_id=test_api_workflow_123&limit=10 HTTP/1.1" 200 OK
+[2025-10-01 19:15:23] [STDOUT] INFO:     127.0.0.1:64679 - "GET /system/logs/errors?limit=10 HTTP/1.1" 200 OK

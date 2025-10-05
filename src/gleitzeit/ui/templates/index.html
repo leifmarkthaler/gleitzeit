@@ -1,127 +1,391 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Gleitzeit</title>
+    <link rel="stylesheet" href="/static/css/main.css">
+    <style>
+        .health-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
 
-{% block title %}Dashboard - Gleitzeit{% endblock %}
+        .health-card {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+        }
 
-{% block content %}
-<div class="container">
-    <h1 class="page-title">Dashboard</h1>
+        .health-icon {
+            font-size: 2rem;
+        }
 
-    <!-- Metrics Grid -->
-    <div class="metrics-grid"
-         hx-get="/htmx/metrics"
-         hx-trigger="load, every 5s"
-         hx-swap="innerHTML">
-        {% include "components/metrics.html" %}
-    </div>
+        .health-info {
+            flex: 1;
+        }
 
-    <!-- System Status -->
-    <div class="section">
-        <h2 class="section-title">System Status</h2>
+        .health-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
 
-        {% if status %}
-        <div class="status-grid">
-            <!-- Orchestrator Status -->
-            <div class="status-card">
-                <h3>Orchestrator</h3>
-                {% if status.orchestrator %}
-                <div class="status-item">
-                    <span class="label">Status:</span>
-                    <span class="value">Running</span>
-                </div>
-                {% else %}
-                <div class="status-item">
-                    <span class="label">Status:</span>
-                    <span class="value error">Not Running</span>
-                </div>
-                {% endif %}
+        .health-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .health-value.healthy {
+            color: #22c55e;
+        }
+
+        .health-value.unhealthy {
+            color: #ef4444;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat-card {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .workflow-list {
+            margin-top: 1rem;
+        }
+
+        .workflow-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            margin-bottom: 0.5rem;
+            text-decoration: none;
+            color: inherit;
+            transition: background 0.2s;
+        }
+
+        .workflow-item:hover {
+            background: var(--bg-primary);
+        }
+
+        .workflow-name {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .workflow-meta {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.2s;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            opacity: 0.8;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 0.25rem;
+            text-transform: uppercase;
+        }
+
+        .badge-running, .badge-submitted {
+            background: rgba(245, 158, 11, 0.1);
+            color: #f59e0b;
+        }
+
+        .badge-completed {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+        }
+
+        .badge-failed, .badge-validation-failed {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        .section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="/" class="brand-link">
+                    <span class="brand-icon">🚀</span>
+                    <span>Gleitzeit</span>
+                </a>
             </div>
-
-            <!-- Workers Status -->
-            <div class="status-card">
-                <h3>Workers</h3>
-                <div class="status-item">
-                    <span class="label">Active:</span>
-                    <span class="value">{{ status.workers|length if status.workers else 0 }}</span>
-                </div>
-            </div>
-
-            <!-- Queue Status -->
-            <div class="status-card">
-                <h3>Queues</h3>
-                {% if status.queues %}
-                {% for queue, depth in status.queues.items() %}
-                <div class="status-item">
-                    <span class="label">{{ queue }}:</span>
-                    <span class="value">{{ depth }}</span>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="status-item">
-                    <span class="label">No queue data</span>
-                </div>
-                {% endif %}
+            <div class="nav-menu">
+                <a href="/" class="nav-link active">Dashboard</a>
+                <a href="/workflows" class="nav-link">Workflows</a>
+                <a href="/tasks" class="nav-link">Tasks</a>
+                <a href="/submit" class="nav-link">Submit</a>
+                <a href="/logs" class="nav-link">Logs</a>
+                <a href="/metrics" class="nav-link">Metrics</a>
+                <a href="/processes" class="nav-link">Processes</a>
+                <a href="/handlers" class="nav-link">Handlers</a>
+                <div class="nav-divider"></div>
+                <span class="nav-status">
+                    <span class="status-indicator" id="api-status"></span>
+                    API Status
+                </span>
             </div>
         </div>
-        {% else %}
-        <div class="alert alert-warning">
-            Unable to fetch system status. Is the API server running?
-        </div>
-        {% endif %}
-    </div>
+    </nav>
 
-    <!-- Quick Actions -->
-    <div class="section">
-        <h2 class="section-title">Quick Actions</h2>
-        <div class="button-group">
-            <button class="btn btn-primary" onclick="showSubmitWorkflowModal()">
-                Submit Workflow
-            </button>
-            <a href="/workflows" class="btn btn-secondary">
-                View Workflows
-            </a>
-            <a href="/tasks" class="btn btn-secondary">
-                View Tasks
-            </a>
-        </div>
-    </div>
-</div>
+    <main class="main-content">
+        <div class="container">
+            <h1 class="page-title">Dashboard</h1>
 
-<!-- Submit Workflow Modal -->
-<div id="submit-workflow-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <h2>Submit Workflow</h2>
-        <form hx-post="/api/workflows/submit"
-              hx-target="#workflow-result"
-              hx-swap="innerHTML">
-            <div class="form-group">
-                <label for="workflow-yaml">Workflow Definition (YAML/JSON):</label>
-                <textarea id="workflow-yaml" name="workflow" rows="15" class="form-control">
-name: example_workflow
-tasks:
-  - id: task1
-    type: python
-    handler: python
-    config:
-      code: |
-        result = "Hello from Gleitzeit!"
-                </textarea>
+            <!-- System Health Status -->
+            <div class="section">
+                <h2 class="section-title">System Health</h2>
+                <div id="health-status" class="health-grid">
+                    <div class="health-card">
+                        <div class="health-icon">🔄</div>
+                        <div class="health-info">
+                            <div class="health-label">API Status</div>
+                            <div id="api-health-detail" class="health-value">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="health-card">
+                        <div class="health-icon">📦</div>
+                        <div class="health-info">
+                            <div class="health-label">Redis</div>
+                            <div id="redis-status" class="health-value">Loading...</div>
+                        </div>
+                    </div>
+                    <div class="health-card">
+                        <div class="health-icon">⚡</div>
+                        <div class="health-info">
+                            <div class="health-label">Workers</div>
+                            <div id="workers-status" class="health-value">Loading...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="button-group">
-                <button type="submit" class="btn btn-primary">Submit</button>
-                <button type="button" class="btn btn-secondary" onclick="hideSubmitWorkflowModal()">Cancel</button>
+
+            <!-- Quick Stats -->
+            <div class="section">
+                <h2 class="section-title">Overview</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="total-workflows">-</div>
+                        <div class="stat-label">Total Workflows</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="running-workflows">-</div>
+                        <div class="stat-label">Running</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="completed-workflows">-</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="failed-workflows">-</div>
+                        <div class="stat-label">Failed</div>
+                    </div>
+                </div>
             </div>
-        </form>
-        <div id="workflow-result"></div>
-    </div>
-</div>
 
-<script>
-function showSubmitWorkflowModal() {
-    document.getElementById('submit-workflow-modal').style.display = 'block';
-}
+            <!-- Recent Activity -->
+            <div class="section">
+                <h2 class="section-title">Recent Workflows</h2>
+                <div id="recent-workflows" class="workflow-list">
+                    <div class="loading">Loading recent workflows...</div>
+                </div>
+            </div>
 
-function hideSubmitWorkflowModal() {
-    document.getElementById('submit-workflow-modal').style.display = 'none';
-}
-</script>
-{% endblock %}
+            <!-- Quick Actions -->
+            <div class="section">
+                <h2 class="section-title">Quick Actions</h2>
+                <div class="button-group">
+                    <a href="/workflows" class="btn btn-primary">View All Workflows</a>
+                    <a href="/tasks" class="btn btn-secondary">View All Tasks</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Load health status
+        async function loadHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+
+                // API Status
+                document.getElementById('api-health-detail').textContent = data.status === 'healthy' ? 'Healthy' : 'Degraded';
+                document.getElementById('api-health-detail').className = 'health-value ' + (data.status === 'healthy' ? 'healthy' : 'unhealthy');
+
+                // Redis Status
+                document.getElementById('redis-status').textContent = data.redis_connected ? 'Connected' : 'Disconnected';
+                document.getElementById('redis-status').className = 'health-value ' + (data.redis_connected ? 'healthy' : 'unhealthy');
+
+                // Worker Count
+                const workerCount = data.worker_count || 0;
+                document.getElementById('workers-status').textContent = `${workerCount} Active`;
+                document.getElementById('workers-status').className = 'health-value ' + (workerCount > 0 ? 'healthy' : 'unhealthy');
+            } catch (error) {
+                console.error('Failed to load health status:', error);
+                document.getElementById('api-health-detail').textContent = 'Error';
+                document.getElementById('api-health-detail').className = 'health-value unhealthy';
+                document.getElementById('redis-status').textContent = 'Error';
+                document.getElementById('redis-status').className = 'health-value unhealthy';
+                document.getElementById('workers-status').textContent = 'Error';
+                document.getElementById('workers-status').className = 'health-value unhealthy';
+            }
+        }
+
+        // Load workflow statistics
+        async function loadStats() {
+            try {
+                const response = await fetch('/api/workflows/list?limit=1000');
+                const data = await response.json();
+                const workflows = data.workflows || [];
+
+                document.getElementById('total-workflows').textContent = workflows.length;
+
+                const running = workflows.filter(w => w.status === 'running' || w.status === 'submitted').length;
+                document.getElementById('running-workflows').textContent = running;
+
+                const completed = workflows.filter(w => w.status === 'completed').length;
+                document.getElementById('completed-workflows').textContent = completed;
+
+                const failed = workflows.filter(w => w.status === 'failed' || w.status === 'validation_failed').length;
+                document.getElementById('failed-workflows').textContent = failed;
+            } catch (error) {
+                console.error('Failed to load stats:', error);
+            }
+        }
+
+        // Load recent workflows
+        async function loadRecentWorkflows() {
+            try {
+                const response = await fetch('/api/workflows/list?limit=5');
+                const data = await response.json();
+                const workflows = data.workflows || [];
+
+                const container = document.getElementById('recent-workflows');
+
+                if (workflows.length === 0) {
+                    container.innerHTML = '<div class="loading">No workflows found</div>';
+                    return;
+                }
+
+                container.innerHTML = workflows.map(workflow => `
+                    <a href="/workflows/${workflow.workflow_id}" class="workflow-item" style="display: block; text-decoration: none; color: inherit;">
+                        <div>
+                            <div class="workflow-name">${workflow.name || 'Unnamed Workflow'}</div>
+                            <div class="workflow-meta">
+                                ${workflow.workflow_id.substring(0, 12)}... •
+                                ${workflow.task_count || 0} tasks •
+                                ${workflow.created_at ? new Date(workflow.created_at).toLocaleString() : 'Unknown'}
+                            </div>
+                        </div>
+                        <span class="badge badge-${workflow.status?.replace(' ', '-') || 'unknown'}">${workflow.status || 'unknown'}</span>
+                    </a>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load recent workflows:', error);
+                document.getElementById('recent-workflows').innerHTML = '<div class="loading">Failed to load workflows</div>';
+            }
+        }
+
+        // Initialize dashboard
+        async function initDashboard() {
+            await Promise.all([
+                loadHealth(),
+                loadStats(),
+                loadRecentWorkflows()
+            ]);
+        }
+
+        // Load on page load
+        initDashboard();
+
+        // Refresh every 5 seconds
+        setInterval(initDashboard, 5000);
+    </script>
+
+    <!-- Custom JavaScript for API status -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

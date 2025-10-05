@@ -1,0 +1,12 @@
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,026 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:aa29fd70
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,029 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,029 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,030 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,030 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,030 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,031 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,031 - __main__ - INFO - Worker dependency-async started successfully
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,031 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 20:08:51] [STDERR] 2025-10-05 20:08:51,031 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-10-05 20:13:52] [STDERR] 2025-10-05 20:13:52,433 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: e25ffeeb-0ac8-4baa-bbed-ab86e8d845f3
+[2025-10-05 20:13:52] [STDERR] 2025-10-05 20:13:52,436 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 0d6df253-cd29-4e79-a276-9fe9155e07d1 to shard 15

@@ -189,6 +189,79 @@ async def get_workflows(
         }
 
 
+class WorkflowValidateRequest(BaseModel):
+    """Workflow validation request"""
+    workflow: Dict[str, Any] = Field(..., description="Workflow definition to validate")
+
+
+@router.post("/validate")
+async def validate_workflow(
+    request: WorkflowValidateRequest,
+    user: User = Depends(get_current_user_auto)
+):
+    """
+    Validate a workflow definition without submitting it.
+    Uses the actual WorkflowLoaderWorkerV2 transform and validation logic.
+    """
+    from ...workers.workflow_loader_worker_v2 import WorkflowLoaderWorkerV2
+    from ...workers.base import WorkerConfig
+    import uuid
+
+    try:
+        # Create minimal worker config for validation
+        # We don't need Redis connection for transform/validate
+        config = WorkerConfig(
+            worker_type="workflow_loader",
+            worker_id="validation_worker",
+            consumer_group="validation",
+            redis_url="redis://localhost:6379",  # Not used for validation
+            batch_size=1
+        )
+
+        # Create worker instance for validation
+        worker = WorkflowLoaderWorkerV2(config)
+
+        # Generate temporary workflow ID for validation
+        workflow_id = f"validation_{uuid.uuid4().hex[:12]}"
+
+        # Transform raw workflow (this is what the actual worker does)
+        transformed_workflow = await worker.transform_workflow(request.workflow, workflow_id)
+
+        # Validate transformed workflow (this is what the actual worker does)
+        validation_errors = worker.validate_workflow(transformed_workflow)
+
+        if validation_errors:
+            return {
+                "valid": False,
+                "errors": validation_errors
+            }
+
+        # Get workflow summary
+        tasks = transformed_workflow.get('tasks', [])
+        has_dependencies = any(
+            task.get('dependencies')
+            for task in tasks
+        )
+
+        summary = {
+            'name': transformed_workflow.get('name', 'Unnamed'),
+            'task_count': len(tasks),
+            'has_dependencies': has_dependencies
+        }
+
+        return {
+            "valid": True,
+            "message": "Workflow validation passed",
+            "summary": summary
+        }
+
+    except Exception as e:
+        return {
+            "valid": False,
+            "errors": [f"Validation error: {str(e)}"]
+        }
+
+
 @router.post("/submit", response_model=WorkflowSubmitResponse)
 async def submit_workflow(
     request: WorkflowSubmitRequest,
@@ -340,6 +413,21 @@ async def get_workflow_tasks(
         if not task_ids:
             return {"workflow_id": workflow_id, "tasks": []}
 
+        # Get workflow definition to look up task names
+        workflow_data_key = default_sharding.get_workflow_key("data", workflow_id)
+        workflow_data_raw = await conn.redis.hget(workflow_data_key.encode(), b"workflow")
+
+        task_id_to_name = {}
+        if workflow_data_raw:
+            try:
+                workflow_def = json.loads(workflow_data_raw.decode())
+                # Build map of task ID to task name
+                for task in workflow_def.get("tasks", []):
+                    if "id" in task and "name" in task:
+                        task_id_to_name[task["id"]] = task["name"]
+            except (json.JSONDecodeError, AttributeError):
+                pass
+
         # Get task details
         tasks = []
         for task_id_bytes in task_ids:
@@ -356,10 +444,15 @@ async def get_workflow_tasks(
                         except json.JSONDecodeError:
                             pass
 
-                tasks.append({
+                # Add task name from workflow definition if available
+                task_obj = {
                     "task_id": task_id,
                     **decoded
-                })
+                }
+                if task_id in task_id_to_name:
+                    task_obj["name"] = task_id_to_name[task_id]
+
+                tasks.append(task_obj)
 
         return {
             "workflow_id": workflow_id,

@@ -199,6 +199,36 @@ class ConfigurationManager:
 
         return redis_config
 
+    def get_redis_url(self) -> str:
+        """
+        Get Redis URL from configuration
+
+        Returns:
+            Redis URL string
+
+        Raises:
+            ValueError: If Redis configuration is missing or invalid
+        """
+        redis_config = self.get_redis_config()
+
+        # If URL is directly specified (e.g., from environment)
+        if redis_config.get('url'):
+            return redis_config['url']
+
+        # Build URL from config
+        if redis_config.get('mode') == 'single':
+            single_node = redis_config.get('single_node', {})
+            redis_host = single_node.get('host')
+            redis_port = single_node.get('port')
+            redis_db = single_node.get('db', 0)
+
+            if not redis_host or redis_port is None:
+                raise ValueError("Redis host and port must be specified in gleitzeit.yaml")
+
+            return f"redis://{redis_host}:{redis_port}/{redis_db}"
+
+        raise ValueError(f"Unsupported Redis mode: {redis_config.get('mode')}. Only 'single' mode is supported.")
+
     def validate(self) -> List[str]:
         """
         Validate configuration and return errors
@@ -234,6 +264,108 @@ class ConfigurationManager:
             errors.append("No Redis configuration found")
 
         return errors
+
+    def get_redis_health_config(self) -> Dict[str, Any]:
+        """
+        Get Redis health monitoring configuration.
+
+        Returns:
+            Dict with health monitoring settings:
+            - enabled: bool
+            - check_interval: int (seconds)
+            - warning_threshold: int (consecutive failures)
+            - critical_timeout: int (seconds)
+            - shutdown_timeout: int (seconds)
+        """
+        redis_config = self.yaml_config.get('redis', {})
+        health_config = redis_config.get('health', {})
+
+        return {
+            'enabled': health_config.get('enabled', True),
+            'check_interval': health_config.get('check_interval', 10),
+            'warning_threshold': health_config.get('warning_threshold', 3),
+            'critical_timeout': health_config.get('critical_timeout', 120),
+            'shutdown_timeout': health_config.get('shutdown_timeout', 300)
+        }
+
+    def get_redis_shutdown_config(self) -> Dict[str, Any]:
+        """
+        Get Redis shutdown configuration.
+
+        Returns:
+            Dict with shutdown settings:
+            - mode: str ('graceful' or 'immediate')
+            - grace_period: int (seconds)
+            - force_after: int (seconds)
+        """
+        redis_config = self.yaml_config.get('redis', {})
+        shutdown_config = redis_config.get('shutdown', {})
+
+        return {
+            'mode': shutdown_config.get('mode', 'graceful'),
+            'grace_period': shutdown_config.get('grace_period', 30),
+            'force_after': shutdown_config.get('force_after', 60)
+        }
+
+    def get_worker_monitoring_config(self) -> Dict[str, Any]:
+        """
+        Get worker monitoring configuration.
+
+        Returns:
+            Dict with worker monitoring settings
+        """
+        monitoring_config = self.yaml_config.get('monitoring', {})
+        worker_config = monitoring_config.get('worker', {})
+
+        return {
+            'heartbeat_interval': worker_config.get('heartbeat_interval', 30),
+            'heartbeat_timeout': worker_config.get('heartbeat_timeout', 60),
+            'max_health_failures': worker_config.get('max_health_failures', 3),
+            'include_metrics': worker_config.get('include_metrics', True),
+            'include_system_stats': worker_config.get('include_system_stats', True),
+            'health_thresholds': worker_config.get('health_thresholds', {
+                'max_memory_mb': 2048,
+                'min_processing_rate': 0.1,
+                'max_error_rate': 0.5,
+                'max_avg_processing_ms': 30000
+            })
+        }
+
+    def get_service_monitoring_config(self) -> Dict[str, Any]:
+        """
+        Get service monitoring configuration.
+
+        Returns:
+            Dict with service monitoring settings
+        """
+        monitoring_config = self.yaml_config.get('monitoring', {})
+        service_config = monitoring_config.get('service', {})
+
+        return {
+            'heartbeat_interval': service_config.get('heartbeat_interval', 30),
+            'registration_ttl': service_config.get('registration_ttl', 90),
+            'circuit_breaker': service_config.get('circuit_breaker', {
+                'enabled': True,
+                'failure_threshold': 10,
+                'reset_timeout': 300
+            })
+        }
+
+    def get_component_monitoring_config(self) -> Dict[str, Any]:
+        """
+        Get component monitoring configuration.
+
+        Returns:
+            Dict with component monitoring settings
+        """
+        monitoring_config = self.yaml_config.get('monitoring', {})
+        component_config = monitoring_config.get('component', {})
+
+        return {
+            'health_check_interval': component_config.get('health_check_interval', 10),
+            'enable_system_metrics': component_config.get('enable_system_metrics', True),
+            'enable_queue_metrics': component_config.get('enable_queue_metrics', True)
+        }
 
     def get_all_config(self) -> Dict[str, Any]:
         """Get all configuration with precedence applied"""

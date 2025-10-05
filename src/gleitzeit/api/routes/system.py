@@ -293,32 +293,244 @@ async def get_error_logs(
     limit: int = 100,
     offset: int = 0,
     level: str = "ERROR",
+    workflow_id: Optional[str] = None,
+    start_time: Optional[int] = None,
+    end_time: Optional[int] = None,
     redis: aioredis.Redis = Depends(get_redis)
 ):
-    """Get error logs from Redis"""
+    """Get error logs from Redis using StatelessLogService"""
+    from gleitzeit.core.stateless_log_service import StatelessLogService
 
-    # Check for error entries in Redis (would need proper error tracking)
-    error_pattern = b"*:error:*"
-    cursor = b"0"
-    error_keys = []
+    # Query errors using StatelessLogService
+    errors = await StatelessLogService.query_errors(
+        redis=redis,
+        workflow_id=workflow_id,
+        limit=limit,
+        offset=offset,
+        start_time=start_time,
+        end_time=end_time
+    )
 
-    while True:
-        cursor, keys = await redis.scan(cursor, match=error_pattern, count=100)
-        error_keys.extend(keys)
-        if cursor == b"0":
-            break
-
-    errors = []
-    for key in error_keys[offset:offset+limit]:
-        error_data = await redis.hgetall(key)
-        if error_data:
-            errors.append({k.decode(): v.decode() for k, v in error_data.items()})
+    # Get total count
+    total = await StatelessLogService.get_error_count(
+        redis=redis,
+        workflow_id=workflow_id,
+        start_time=start_time,
+        end_time=end_time
+    )
 
     return {
         "errors": errors,
-        "total": len(error_keys),
+        "total": total,
         "limit": limit,
         "offset": offset
+    }
+
+
+@router.get("/logs")
+async def get_logs(
+    level: str = "INFO",
+    workflow_id: Optional[str] = None,
+    component: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    start_time: Optional[int] = None,
+    end_time: Optional[int] = None,
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """
+    Query logs by level with optional filters.
+
+    Examples:
+    - GET /logs?level=INFO&workflow_id=abc123
+    - GET /logs?level=DEBUG&component=PythonHandler
+    - GET /logs?level=WARNING&start_time=1234567890000
+    """
+    from gleitzeit.core.stateless_log_service import StatelessLogService
+
+    # Validate level
+    valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+    if level.upper() not in valid_levels:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid log level. Must be one of: {valid_levels}"
+        )
+
+    # Query logs
+    logs = await StatelessLogService.query_logs(
+        redis=redis,
+        level=level.upper(),
+        workflow_id=workflow_id,
+        component=component,
+        limit=limit,
+        offset=offset,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    # Get total count
+    total = await StatelessLogService.get_log_count(
+        redis=redis,
+        level=level.upper(),
+        workflow_id=workflow_id,
+        component=component,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    return {
+        "logs": logs,
+        "level": level.upper(),
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+        "filters": {
+            "workflow_id": workflow_id,
+            "component": component,
+            "start_time": start_time,
+            "end_time": end_time
+        }
+    }
+
+
+@router.get("/logs/workflow/{workflow_id}")
+async def get_workflow_logs(
+    workflow_id: str,
+    level: Optional[str] = None,
+    limit: int = 100,
+    offset: int = 0,
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """
+    Get all logs for a specific workflow.
+
+    Returns logs from all levels (INFO, DEBUG, WARNING, ERROR)
+    in chronological order, or filtered by specific level.
+    """
+    from gleitzeit.core.stateless_log_service import StatelessLogService
+
+    if level:
+        # Single level
+        logs = await StatelessLogService.query_logs(
+            redis=redis,
+            level=level.upper(),
+            workflow_id=workflow_id,
+            limit=limit,
+            offset=offset
+        )
+        total = await StatelessLogService.get_log_count(
+            redis=redis,
+            level=level.upper(),
+            workflow_id=workflow_id
+        )
+    else:
+        # All levels - query each and merge
+        all_logs = []
+        for log_level in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+            level_logs = await StatelessLogService.query_logs(
+                redis=redis,
+                level=log_level,
+                workflow_id=workflow_id,
+                limit=1000  # Get many, we'll sort and limit below
+            )
+            all_logs.extend(level_logs)
+
+        # Sort by timestamp (newest first)
+        all_logs.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+
+        # Apply limit/offset
+        total = len(all_logs)
+        logs = all_logs[offset:offset + limit]
+
+    return {
+        "workflow_id": workflow_id,
+        "logs": logs,
+        "count": len(logs),
+        "total": total
+    }
+
+
+@router.get("/logs/component/{component}")
+async def get_component_logs(
+    component: str,
+    level: str = "INFO",
+    limit: int = 100,
+    offset: int = 0,
+    start_time: Optional[int] = None,
+    end_time: Optional[int] = None,
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """
+    Get logs for a specific component.
+
+    Example: GET /logs/component/PythonHandler?level=DEBUG
+    """
+    from gleitzeit.core.stateless_log_service import StatelessLogService
+
+    logs = await StatelessLogService.query_logs(
+        redis=redis,
+        level=level.upper(),
+        component=component,
+        limit=limit,
+        offset=offset,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    total = await StatelessLogService.get_log_count(
+        redis=redis,
+        level=level.upper(),
+        component=component,
+        start_time=start_time,
+        end_time=end_time
+    )
+
+    return {
+        "component": component,
+        "level": level.upper(),
+        "logs": logs,
+        "total": total,
+        "limit": limit,
+        "offset": offset
+    }
+
+
+@router.get("/logs/stats")
+async def get_log_statistics(
+    workflow_id: Optional[str] = None,
+    component: Optional[str] = None,
+    start_time: Optional[int] = None,
+    end_time: Optional[int] = None,
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """
+    Get log statistics by level.
+
+    Returns counts for DEBUG, INFO, WARNING, ERROR levels.
+    """
+    from gleitzeit.core.stateless_log_service import StatelessLogService
+
+    stats = {}
+    for level in ["DEBUG", "INFO", "WARNING", "ERROR"]:
+        count = await StatelessLogService.get_log_count(
+            redis=redis,
+            level=level,
+            workflow_id=workflow_id,
+            component=component,
+            start_time=start_time,
+            end_time=end_time
+        )
+        stats[level.lower()] = count
+
+    return {
+        "stats": stats,
+        "total": sum(stats.values()),
+        "filters": {
+            "workflow_id": workflow_id,
+            "component": component,
+            "start_time": start_time,
+            "end_time": end_time
+        }
     }
 
 
@@ -400,30 +612,25 @@ async def get_active_sessions(
 ):
     """Get active user sessions"""
 
-    # Find session keys
-    pattern = b"session:*"
-    cursor = b"0"
-    session_keys = []
-
-    while True:
-        cursor, keys = await redis.scan(cursor, match=pattern, count=100)
-        session_keys.extend(keys)
-        if cursor == b"0":
-            break
-
+    # Find session keys using scan_iter
+    pattern = "session:*"
     sessions = []
-    for key in session_keys[:100]:  # Limit for performance
-        session_data = await redis.hgetall(key)
-        if session_data:
-            sessions.append({
-                "session_id": key.decode().split(':')[-1],
-                "user": session_data.get(b"username", b"unknown").decode(),
-                "created_at": session_data.get(b"created_at", b"").decode()
-            })
+    session_count = 0
+
+    async for key in redis.scan_iter(match=pattern, count=100):
+        session_count += 1
+        if len(sessions) < 100:  # Limit details to first 100
+            session_data = await redis.hgetall(key)
+            if session_data:
+                sessions.append({
+                    "session_id": key.decode().split(':')[-1],
+                    "user": session_data.get(b"username", b"unknown").decode(),
+                    "created_at": session_data.get(b"created_at", b"").decode()
+                })
 
     return {
         "sessions": sessions,
-        "total": len(session_keys),
+        "total": session_count,
         "active": len(sessions)
     }
 

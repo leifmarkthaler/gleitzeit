@@ -28,7 +28,7 @@ import logging
 from .base import BaseHandler
 from .registry import HandlerRegistry
 from ..core.models import Task, TaskResult, TaskStatus
-from ..core.errors import GleitzeitError, ErrorCode
+from ..core.errors import GleitzeitError, ErrorCode, TaskTimeoutError
 from ..core.subprocess_pool import get_subprocess_pool, PythonSubprocessPool
 from ..core.file_operations import get_file_operations
 
@@ -266,10 +266,9 @@ class PythonHandler(BaseHandler):
                 return result
 
             except asyncio.TimeoutError:
-                raise GleitzeitError(
-                    f"Python execution timed out after {timeout}s",
-                    code=ErrorCode.TASK_EXECUTION_FAILED,
-                    data={'task_id': task.id, 'timeout': timeout}
+                raise TaskTimeoutError(
+                    task_id=task.id,
+                    timeout=timeout
                 )
             except GleitzeitError:
                 # Re-raise GleitzeitErrors (including HandlerExecutionError)

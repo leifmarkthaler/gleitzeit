@@ -90,7 +90,8 @@ class TaskMixin:
             Task result or None if not completed
         """
         task = await self.get_task(task_id, workflow_id)
-        return task.get("result")
+        # Result can be at top level or in state object
+        return task.get("result") or task.get("state", {}).get("result")
 
     async def retry_task(self, task_id: str, workflow_id: Optional[str] = None) -> Dict[str, Any]:
         """

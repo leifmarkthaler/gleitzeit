@@ -37,7 +37,7 @@ class JWTManager:
         payload = {
             "sub": user.id,  # Subject (user ID)
             "username": user.username,
-            "role": user.role,
+            "role": user.role.value if hasattr(user.role, 'value') else str(user.role),  # Convert enum to string
             "exp": expire,
             "iat": datetime.utcnow(),
             "type": "access"

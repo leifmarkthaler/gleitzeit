@@ -135,6 +135,24 @@ class EventStore:
             approximate=True  # Allow approximate trimming for performance
         )
 
+        # Publish to pub/sub channel for WebSocket broadcasting
+        try:
+            await self.redis.publish(
+                'gleitzeit:events',
+                json.dumps({
+                    'type': 'workflow_event',
+                    'workflow_id': workflow_id,
+                    'task_id': task_id,
+                    'event_type': event_type.value if hasattr(event_type, 'value') else str(event_type),
+                    'timestamp': event.timestamp,
+                    'level': level.value if hasattr(level, 'value') else str(level),
+                    'data': data or {}
+                })
+            )
+            logger.debug(f"Published event {event.event_id} to pub/sub channel")
+        except Exception as e:
+            logger.error(f"Failed to publish event to pub/sub: {e}")
+
         logger.debug(f"Stored event {event.event_id} for workflow {workflow_id}")
         return event.event_id
 

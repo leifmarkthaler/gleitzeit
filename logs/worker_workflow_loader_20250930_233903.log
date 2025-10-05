@@ -1,0 +1,561 @@
+[2025-09-30 23:39:03] [STDERR] 2025-09-30 23:39:03,968 - __main__ - INFO - Loading configuration from Redis key: worker:config:workflow_loader-async:9395ac92
+[2025-09-30 23:39:03] [STDERR] 2025-09-30 23:39:03,971 - __main__ - INFO - Loaded config for worker workflow_loader-async
+[2025-09-30 23:39:03] [STDERR] 2025-09-30 23:39:03,971 - __main__ - INFO - Worker workflow_loader-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-30 23:39:03] [STDERR] 2025-09-30 23:39:03,972 - gleitzeit.core.cache - INFO - Created workflow cache with max_size=1000, ttl=3600
+[2025-09-30 23:39:03] [STDERR] 2025-09-30 23:39:03,972 - gleitzeit.handlers.registry - INFO - Registered handler FileHandler for protocol file/v1
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,030 - gleitzeit.handlers.registry - INFO - Registered handler HttpHandler for protocol http/v1
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,031 - gleitzeit.handlers.registry - INFO - Registered handler OllamaHandler for protocol ollama/v1
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,032 - gleitzeit.handlers.registry - INFO - Registered handler PythonHandler for protocol python/v1
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,032 - gleitzeit.handlers.registry - INFO - Registered handler SignalHandler for protocol signal/v1
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,032 - gleitzeit.handlers.registry - INFO - Registered handler TimerHandler for protocol timer/v1
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,033 - gleitzeit.handlers.registry - INFO - Registered handler ValidationHandler for protocol validation/v1
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,033 - gleitzeit.handlers.registry - INFO - Registered handler WorkflowHandler for protocol workflow/v1
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,033 - gleitzeit.handlers - INFO - Auto-discovered 8 handler modules: file, http, ollama, python, signal, timer, validation, workflow
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,034 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Built protocol mappings for 24 task types
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,034 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,034 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - WorkflowLoaderWorkerV2 initialized with max tasks: 10000
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,034 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow cache configured: size=1000, ttl=3600s
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,034 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Available protocols: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,035 - workflow_loader.workflow_loader-async - INFO - Worker workflow_loader-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,035 - __main__ - INFO - Worker workflow_loader-async started successfully
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,035 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-09-30 23:39:04] [STDERR] 2025-09-30 23:39:04,035 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_loader-async
+[2025-09-30 23:39:21] [STDERR] 2025-09-30 23:39:21,844 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow 7084cbd4-f2cf-4fc9-985f-b412a552a380 from inline
+[2025-09-30 23:39:21] [STDERR] 2025-09-30 23:39:21,845 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:21] [STDERR]   "name": "test-error-logging",
+[2025-09-30 23:39:21] [STDERR]   "tasks": [
+[2025-09-30 23:39:21] [STDERR]     {
+[2025-09-30 23:39:21] [STDERR]       "name": "failing_task",
+[2025-09-30 23:39:21] [STDERR]       "handler": "python",
+[2025-09-30 23:39:21] [STDERR]       "params": {
+[2025-09-30 23:39:21] [STDERR]         "code": "raise ValueError(\"This is a test error for logging verification\")"
+[2025-09-30 23:39:21] [STDERR]       }
+[2025-09-30 23:39:21] [STDERR]     }
+[2025-09-30 23:39:21] [STDERR]   ],
+[2025-09-30 23:39:21] [STDERR]   "workflow_id": "7084cbd4-f2cf-4fc9-985f-b412a552a380"
+[2025-09-30 23:39:21] [STDERR] }
+[2025-09-30 23:39:21] [STDERR] 2025-09-30 23:39:21,845 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:21] [STDERR]   "id": "7084cbd4-f2cf-4fc9-985f-b412a552a380",
+[2025-09-30 23:39:21] [STDERR]   "name": "test-error-logging",
+[2025-09-30 23:39:21] [STDERR]   "description": "",
+[2025-09-30 23:39:21] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:21] [STDERR]   "created_at": "2025-09-30T21:39:21.845092",
+[2025-09-30 23:39:21] [STDERR]   "tasks": [
+[2025-09-30 23:39:21] [STDERR]     {
+[2025-09-30 23:39:21] [STDERR]       "id": "065e099c-def9-4a38-8074-d89011b2acb4",
+[2025-09-30 23:39:21] [STDERR]       "workflow_id": "7084cbd4-f2cf-4fc9-985f-b412a552a380",
+[2025-09-30 23:39:21] [STDERR]       "name": "failing_task",
+[2025-09-30 23:39:21] [STDERR]       "description": "",
+[2025-09-30 23:39:21] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:21] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:21] [STDERR]       "params": {
+[2025-09-30 23:39:21] [STDERR]         "code": "raise ValueError(\"This is a test error for logging verification\")"
+[2025-09-30 23:39:21] [STDERR]       },
+[2025-09-30 23:39:21] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:21] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:21] [STDERR]       "retry": {
+[2025-09-30 23:39:21] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:21] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:21] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:21] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:21] [STDERR]         "jitter": true,
+[2025-09-30 23:39:21] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:21] [STDERR]       }
+[2025-09-30 23:39:21] [STDERR]     }
+[2025-09-30 23:39:21] [STDERR]   ]
+[2025-09-30 23:39:21] [STDERR] }
+[2025-09-30 23:39:21] [STDERR] 2025-09-30 23:39:21,847 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow 7084cbd4-f2cf-4fc9-985f-b412a552a380 loaded and submitted to shard 4 with indexes
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,707 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-53d8d859-3beb-495e-b9f2-325cc8fcde59 from inline
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,707 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:37] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:37] [STDERR]   "tasks": [
+[2025-09-30 23:39:37] [STDERR]     {
+[2025-09-30 23:39:37] [STDERR]       "name": "hello",
+[2025-09-30 23:39:37] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:37] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:37] [STDERR]       "params": {
+[2025-09-30 23:39:37] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:37] [STDERR]       }
+[2025-09-30 23:39:37] [STDERR]     }
+[2025-09-30 23:39:37] [STDERR]   ],
+[2025-09-30 23:39:37] [STDERR]   "workflow_id": "workflow-53d8d859-3beb-495e-b9f2-325cc8fcde59"
+[2025-09-30 23:39:37] [STDERR] }
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,707 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:37] [STDERR]   "id": "workflow-53d8d859-3beb-495e-b9f2-325cc8fcde59",
+[2025-09-30 23:39:37] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:37] [STDERR]   "description": "",
+[2025-09-30 23:39:37] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:37] [STDERR]   "created_at": "2025-09-30T21:39:37.707295",
+[2025-09-30 23:39:37] [STDERR]   "tasks": [
+[2025-09-30 23:39:37] [STDERR]     {
+[2025-09-30 23:39:37] [STDERR]       "id": "44bc1be0-f348-451b-a20f-69eb37a46b68",
+[2025-09-30 23:39:37] [STDERR]       "workflow_id": "workflow-53d8d859-3beb-495e-b9f2-325cc8fcde59",
+[2025-09-30 23:39:37] [STDERR]       "name": "hello",
+[2025-09-30 23:39:37] [STDERR]       "description": "",
+[2025-09-30 23:39:37] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:37] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:37] [STDERR]       "params": {
+[2025-09-30 23:39:37] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:37] [STDERR]       },
+[2025-09-30 23:39:37] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:37] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:37] [STDERR]       "retry": {
+[2025-09-30 23:39:37] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:37] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:37] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:37] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:37] [STDERR]         "jitter": true,
+[2025-09-30 23:39:37] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:37] [STDERR]       }
+[2025-09-30 23:39:37] [STDERR]     }
+[2025-09-30 23:39:37] [STDERR]   ]
+[2025-09-30 23:39:37] [STDERR] }
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,709 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-53d8d859-3beb-495e-b9f2-325cc8fcde59 loaded and submitted to shard 8 with indexes
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,819 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow test-workflow-123 from inline
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,820 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:37] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:37] [STDERR]   "tasks": [
+[2025-09-30 23:39:37] [STDERR]     {
+[2025-09-30 23:39:37] [STDERR]       "name": "hello",
+[2025-09-30 23:39:37] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:37] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:37] [STDERR]       "params": {
+[2025-09-30 23:39:37] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:37] [STDERR]       }
+[2025-09-30 23:39:37] [STDERR]     }
+[2025-09-30 23:39:37] [STDERR]   ],
+[2025-09-30 23:39:37] [STDERR]   "workflow_id": "test-workflow-123"
+[2025-09-30 23:39:37] [STDERR] }
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,820 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:37] [STDERR]   "id": "test-workflow-123",
+[2025-09-30 23:39:37] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:37] [STDERR]   "description": "",
+[2025-09-30 23:39:37] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:37] [STDERR]   "created_at": "2025-09-30T21:39:37.820099",
+[2025-09-30 23:39:37] [STDERR]   "tasks": [
+[2025-09-30 23:39:37] [STDERR]     {
+[2025-09-30 23:39:37] [STDERR]       "id": "d930c741-bf2a-45ea-be74-7443953d2b7f",
+[2025-09-30 23:39:37] [STDERR]       "workflow_id": "test-workflow-123",
+[2025-09-30 23:39:37] [STDERR]       "name": "hello",
+[2025-09-30 23:39:37] [STDERR]       "description": "",
+[2025-09-30 23:39:37] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:37] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:37] [STDERR]       "params": {
+[2025-09-30 23:39:37] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:37] [STDERR]       },
+[2025-09-30 23:39:37] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:37] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:37] [STDERR]       "retry": {
+[2025-09-30 23:39:37] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:37] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:37] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:37] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:37] [STDERR]         "jitter": true,
+[2025-09-30 23:39:37] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:37] [STDERR]       }
+[2025-09-30 23:39:37] [STDERR]     }
+[2025-09-30 23:39:37] [STDERR]   ]
+[2025-09-30 23:39:37] [STDERR] }
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,822 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow test-workflow-123 loaded and submitted to shard 10 with indexes
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,930 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-28334868-07d7-408a-86db-cc94d9e66ee1 from inline
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,930 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:37] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:37] [STDERR]   "tasks": [
+[2025-09-30 23:39:37] [STDERR]     {
+[2025-09-30 23:39:37] [STDERR]       "name": "hello",
+[2025-09-30 23:39:37] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:37] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:37] [STDERR]       "params": {
+[2025-09-30 23:39:37] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:37] [STDERR]       }
+[2025-09-30 23:39:37] [STDERR]     }
+[2025-09-30 23:39:37] [STDERR]   ],
+[2025-09-30 23:39:37] [STDERR]   "workflow_id": "workflow-28334868-07d7-408a-86db-cc94d9e66ee1"
+[2025-09-30 23:39:37] [STDERR] }
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,930 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:37] [STDERR]   "id": "workflow-28334868-07d7-408a-86db-cc94d9e66ee1",
+[2025-09-30 23:39:37] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:37] [STDERR]   "description": "",
+[2025-09-30 23:39:37] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:37] [STDERR]   "created_at": "2025-09-30T21:39:37.930498",
+[2025-09-30 23:39:37] [STDERR]   "tasks": [
+[2025-09-30 23:39:37] [STDERR]     {
+[2025-09-30 23:39:37] [STDERR]       "id": "dc51deef-3532-4d18-bd56-e756d4623527",
+[2025-09-30 23:39:37] [STDERR]       "workflow_id": "workflow-28334868-07d7-408a-86db-cc94d9e66ee1",
+[2025-09-30 23:39:37] [STDERR]       "name": "hello",
+[2025-09-30 23:39:37] [STDERR]       "description": "",
+[2025-09-30 23:39:37] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:37] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:37] [STDERR]       "params": {
+[2025-09-30 23:39:37] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:37] [STDERR]       },
+[2025-09-30 23:39:37] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:37] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:37] [STDERR]       "retry": {
+[2025-09-30 23:39:37] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:37] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:37] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:37] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:37] [STDERR]         "jitter": true,
+[2025-09-30 23:39:37] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:37] [STDERR]       }
+[2025-09-30 23:39:37] [STDERR]     }
+[2025-09-30 23:39:37] [STDERR]   ]
+[2025-09-30 23:39:37] [STDERR] }
+[2025-09-30 23:39:37] [STDERR] 2025-09-30 23:39:37,933 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-28334868-07d7-408a-86db-cc94d9e66ee1 loaded and submitted to shard 2 with indexes
+[2025-09-30 23:39:39] [STDERR] 2025-09-30 23:39:39,045 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-2f012933-b74d-4394-b60f-224e5ffc0e2b from inline
+[2025-09-30 23:39:39] [STDERR] 2025-09-30 23:39:39,046 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:39] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:39] [STDERR]   "tasks": [
+[2025-09-30 23:39:39] [STDERR]     {
+[2025-09-30 23:39:39] [STDERR]       "name": "hello",
+[2025-09-30 23:39:39] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:39] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:39] [STDERR]       "params": {
+[2025-09-30 23:39:39] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:39] [STDERR]       }
+[2025-09-30 23:39:39] [STDERR]     }
+[2025-09-30 23:39:39] [STDERR]   ],
+[2025-09-30 23:39:39] [STDERR]   "workflow_id": "workflow-2f012933-b74d-4394-b60f-224e5ffc0e2b"
+[2025-09-30 23:39:39] [STDERR] }
+[2025-09-30 23:39:39] [STDERR] 2025-09-30 23:39:39,046 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:39] [STDERR]   "id": "workflow-2f012933-b74d-4394-b60f-224e5ffc0e2b",
+[2025-09-30 23:39:39] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:39] [STDERR]   "description": "",
+[2025-09-30 23:39:39] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:39] [STDERR]   "created_at": "2025-09-30T21:39:39.046058",
+[2025-09-30 23:39:39] [STDERR]   "tasks": [
+[2025-09-30 23:39:39] [STDERR]     {
+[2025-09-30 23:39:39] [STDERR]       "id": "eacefd50-d090-4c7f-841c-b79dfe587ce3",
+[2025-09-30 23:39:39] [STDERR]       "workflow_id": "workflow-2f012933-b74d-4394-b60f-224e5ffc0e2b",
+[2025-09-30 23:39:39] [STDERR]       "name": "hello",
+[2025-09-30 23:39:39] [STDERR]       "description": "",
+[2025-09-30 23:39:39] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:39] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:39] [STDERR]       "params": {
+[2025-09-30 23:39:39] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:39] [STDERR]       },
+[2025-09-30 23:39:39] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:39] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:39] [STDERR]       "retry": {
+[2025-09-30 23:39:39] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:39] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:39] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:39] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:39] [STDERR]         "jitter": true,
+[2025-09-30 23:39:39] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:39] [STDERR]       }
+[2025-09-30 23:39:39] [STDERR]     }
+[2025-09-30 23:39:39] [STDERR]   ]
+[2025-09-30 23:39:39] [STDERR] }
+[2025-09-30 23:39:39] [STDERR] 2025-09-30 23:39:39,048 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-2f012933-b74d-4394-b60f-224e5ffc0e2b loaded and submitted to shard 8 with indexes
+[2025-09-30 23:39:40] [STDERR] 2025-09-30 23:39:40,164 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-fc2ac1ed-1ae9-407c-a546-94ece7c06a07 from inline
+[2025-09-30 23:39:40] [STDERR] 2025-09-30 23:39:40,164 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:40] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:40] [STDERR]   "tasks": [
+[2025-09-30 23:39:40] [STDERR]     {
+[2025-09-30 23:39:40] [STDERR]       "name": "hello",
+[2025-09-30 23:39:40] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:40] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:40] [STDERR]       "params": {
+[2025-09-30 23:39:40] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:40] [STDERR]       }
+[2025-09-30 23:39:40] [STDERR]     }
+[2025-09-30 23:39:40] [STDERR]   ],
+[2025-09-30 23:39:40] [STDERR]   "workflow_id": "workflow-fc2ac1ed-1ae9-407c-a546-94ece7c06a07"
+[2025-09-30 23:39:40] [STDERR] }
+[2025-09-30 23:39:40] [STDERR] 2025-09-30 23:39:40,164 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:40] [STDERR]   "id": "workflow-fc2ac1ed-1ae9-407c-a546-94ece7c06a07",
+[2025-09-30 23:39:40] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:40] [STDERR]   "description": "",
+[2025-09-30 23:39:40] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:40] [STDERR]   "created_at": "2025-09-30T21:39:40.164629",
+[2025-09-30 23:39:40] [STDERR]   "tasks": [
+[2025-09-30 23:39:40] [STDERR]     {
+[2025-09-30 23:39:40] [STDERR]       "id": "a911665f-de44-4698-a5d4-108dcb65f3a5",
+[2025-09-30 23:39:40] [STDERR]       "workflow_id": "workflow-fc2ac1ed-1ae9-407c-a546-94ece7c06a07",
+[2025-09-30 23:39:40] [STDERR]       "name": "hello",
+[2025-09-30 23:39:40] [STDERR]       "description": "",
+[2025-09-30 23:39:40] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:40] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:40] [STDERR]       "params": {
+[2025-09-30 23:39:40] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:40] [STDERR]       },
+[2025-09-30 23:39:40] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:40] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:40] [STDERR]       "retry": {
+[2025-09-30 23:39:40] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:40] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:40] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:40] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:40] [STDERR]         "jitter": true,
+[2025-09-30 23:39:40] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:40] [STDERR]       }
+[2025-09-30 23:39:40] [STDERR]     }
+[2025-09-30 23:39:40] [STDERR]   ]
+[2025-09-30 23:39:40] [STDERR] }
+[2025-09-30 23:39:40] [STDERR] 2025-09-30 23:39:40,167 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-fc2ac1ed-1ae9-407c-a546-94ece7c06a07 loaded and submitted to shard 4 with indexes
+[2025-09-30 23:39:42] [STDERR] 2025-09-30 23:39:42,286 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-6446c991-0876-4463-99c7-fdc1d74bf06d from inline
+[2025-09-30 23:39:42] [STDERR] 2025-09-30 23:39:42,286 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:42] [STDERR]   "name": "test-chaining",
+[2025-09-30 23:39:42] [STDERR]   "tasks": [
+[2025-09-30 23:39:42] [STDERR]     {
+[2025-09-30 23:39:42] [STDERR]       "name": "generate",
+[2025-09-30 23:39:42] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:42] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:42] [STDERR]       "params": {
+[2025-09-30 23:39:42] [STDERR]         "code": "\nresult = {\n    'number': 42,\n    'message': 'Generated data'\n}\nprint(f'Generated: {result}')\n"
+[2025-09-30 23:39:42] [STDERR]       }
+[2025-09-30 23:39:42] [STDERR]     },
+[2025-09-30 23:39:42] [STDERR]     {
+[2025-09-30 23:39:42] [STDERR]       "name": "process",
+[2025-09-30 23:39:42] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:42] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:42] [STDERR]       "params": {
+[2025-09-30 23:39:42] [STDERR]         "code": "\nprint(f'Inputs: {inputs}')\nresult = None\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'number' in value:\n        number = value['number']\n        result = {'doubled': number * 2, 'processed': True}\n        break\nif result is None:\n    result = {'error': 'No input found'}\nprint(f'Result: {result}')\n"
+[2025-09-30 23:39:42] [STDERR]       },
+[2025-09-30 23:39:42] [STDERR]       "dependencies": [
+[2025-09-30 23:39:42] [STDERR]         "generate"
+[2025-09-30 23:39:42] [STDERR]       ]
+[2025-09-30 23:39:42] [STDERR]     }
+[2025-09-30 23:39:42] [STDERR]   ],
+[2025-09-30 23:39:42] [STDERR]   "workflow_id": "workflow-6446c991-0876-4463-99c7-fdc1d74bf06d"
+[2025-09-30 23:39:42] [STDERR] }
+[2025-09-30 23:39:42] [STDERR] 2025-09-30 23:39:42,287 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:42] [STDERR]   "id": "workflow-6446c991-0876-4463-99c7-fdc1d74bf06d",
+[2025-09-30 23:39:42] [STDERR]   "name": "test-chaining",
+[2025-09-30 23:39:42] [STDERR]   "description": "",
+[2025-09-30 23:39:42] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:42] [STDERR]   "created_at": "2025-09-30T21:39:42.286863",
+[2025-09-30 23:39:42] [STDERR]   "tasks": [
+[2025-09-30 23:39:42] [STDERR]     {
+[2025-09-30 23:39:42] [STDERR]       "id": "1a56b531-b287-4daf-b7bb-ffab4d4922c2",
+[2025-09-30 23:39:42] [STDERR]       "workflow_id": "workflow-6446c991-0876-4463-99c7-fdc1d74bf06d",
+[2025-09-30 23:39:42] [STDERR]       "name": "generate",
+[2025-09-30 23:39:42] [STDERR]       "description": "",
+[2025-09-30 23:39:42] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:42] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:42] [STDERR]       "params": {
+[2025-09-30 23:39:42] [STDERR]         "code": "\nresult = {\n    'number': 42,\n    'message': 'Generated data'\n}\nprint(f'Generated: {result}')\n"
+[2025-09-30 23:39:42] [STDERR]       },
+[2025-09-30 23:39:42] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:42] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:42] [STDERR]       "retry": {
+[2025-09-30 23:39:42] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:42] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:42] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:42] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:42] [STDERR]         "jitter": true,
+[2025-09-30 23:39:42] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:42] [STDERR]       }
+[2025-09-30 23:39:42] [STDERR]     },
+[2025-09-30 23:39:42] [STDERR]     {
+[2025-09-30 23:39:42] [STDERR]       "id": "31da5883-2d56-407f-8610-ff82f10a96c2",
+[2025-09-30 23:39:42] [STDERR]       "workflow_id": "workflow-6446c991-0876-4463-99c7-fdc1d74bf06d",
+[2025-09-30 23:39:42] [STDERR]       "name": "process",
+[2025-09-30 23:39:42] [STDERR]       "description": "",
+[2025-09-30 23:39:42] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:42] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:42] [STDERR]       "params": {
+[2025-09-30 23:39:42] [STDERR]         "code": "\nprint(f'Inputs: {inputs}')\nresult = None\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'number' in value:\n        number = value['number']\n        result = {'doubled': number * 2, 'processed': True}\n        break\nif result is None:\n    result = {'error': 'No input found'}\nprint(f'Result: {result}')\n"
+[2025-09-30 23:39:42] [STDERR]       },
+[2025-09-30 23:39:42] [STDERR]       "dependencies": [
+[2025-09-30 23:39:42] [STDERR]         "1a56b531-b287-4daf-b7bb-ffab4d4922c2"
+[2025-09-30 23:39:42] [STDERR]       ],
+[2025-09-30 23:39:42] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:42] [STDERR]       "retry": {
+[2025-09-30 23:39:42] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:42] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:42] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:42] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:42] [STDERR]         "jitter": true,
+[2025-09-30 23:39:42] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:42] [STDERR]       }
+[2025-09-30 23:39:42] [STDERR]     }
+[2025-09-30 23:39:42] [STDERR]   ]
+[2025-09-30 23:39:42] [STDERR] }
+[2025-09-30 23:39:42] [STDERR] 2025-09-30 23:39:42,289 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-6446c991-0876-4463-99c7-fdc1d74bf06d loaded and submitted to shard 6 with indexes
+[2025-09-30 23:39:44] [STDERR] 2025-09-30 23:39:44,415 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-e49cfbff-593a-47c2-b23a-d435c855c3b9 from inline
+[2025-09-30 23:39:44] [STDERR] 2025-09-30 23:39:44,415 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:44] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:44] [STDERR]   "tasks": [
+[2025-09-30 23:39:44] [STDERR]     {
+[2025-09-30 23:39:44] [STDERR]       "name": "hello",
+[2025-09-30 23:39:44] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:44] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:44] [STDERR]       "params": {
+[2025-09-30 23:39:44] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:44] [STDERR]       }
+[2025-09-30 23:39:44] [STDERR]     }
+[2025-09-30 23:39:44] [STDERR]   ],
+[2025-09-30 23:39:44] [STDERR]   "workflow_id": "workflow-e49cfbff-593a-47c2-b23a-d435c855c3b9"
+[2025-09-30 23:39:44] [STDERR] }
+[2025-09-30 23:39:44] [STDERR] 2025-09-30 23:39:44,415 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:44] [STDERR]   "id": "workflow-e49cfbff-593a-47c2-b23a-d435c855c3b9",
+[2025-09-30 23:39:44] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:44] [STDERR]   "description": "",
+[2025-09-30 23:39:44] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:44] [STDERR]   "created_at": "2025-09-30T21:39:44.415545",
+[2025-09-30 23:39:44] [STDERR]   "tasks": [
+[2025-09-30 23:39:44] [STDERR]     {
+[2025-09-30 23:39:44] [STDERR]       "id": "dae26c5d-77ef-4248-8945-5a273e60804d",
+[2025-09-30 23:39:44] [STDERR]       "workflow_id": "workflow-e49cfbff-593a-47c2-b23a-d435c855c3b9",
+[2025-09-30 23:39:44] [STDERR]       "name": "hello",
+[2025-09-30 23:39:44] [STDERR]       "description": "",
+[2025-09-30 23:39:44] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:44] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:44] [STDERR]       "params": {
+[2025-09-30 23:39:44] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:44] [STDERR]       },
+[2025-09-30 23:39:44] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:44] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:44] [STDERR]       "retry": {
+[2025-09-30 23:39:44] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:44] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:44] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:44] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:44] [STDERR]         "jitter": true,
+[2025-09-30 23:39:44] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:44] [STDERR]       }
+[2025-09-30 23:39:44] [STDERR]     }
+[2025-09-30 23:39:44] [STDERR]   ]
+[2025-09-30 23:39:44] [STDERR] }
+[2025-09-30 23:39:44] [STDERR] 2025-09-30 23:39:44,417 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-e49cfbff-593a-47c2-b23a-d435c855c3b9 loaded and submitted to shard 1 with indexes
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,180 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-4f373d19-b579-45f6-ad93-f847024717cd from inline
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,180 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:45] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:45] [STDERR]   "tasks": [
+[2025-09-30 23:39:45] [STDERR]     {
+[2025-09-30 23:39:45] [STDERR]       "name": "hello",
+[2025-09-30 23:39:45] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:45] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:45] [STDERR]       "params": {
+[2025-09-30 23:39:45] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:45] [STDERR]       }
+[2025-09-30 23:39:45] [STDERR]     }
+[2025-09-30 23:39:45] [STDERR]   ],
+[2025-09-30 23:39:45] [STDERR]   "workflow_id": "workflow-4f373d19-b579-45f6-ad93-f847024717cd"
+[2025-09-30 23:39:45] [STDERR] }
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,180 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:45] [STDERR]   "id": "workflow-4f373d19-b579-45f6-ad93-f847024717cd",
+[2025-09-30 23:39:45] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:45] [STDERR]   "description": "",
+[2025-09-30 23:39:45] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:45] [STDERR]   "created_at": "2025-09-30T21:39:45.180657",
+[2025-09-30 23:39:45] [STDERR]   "tasks": [
+[2025-09-30 23:39:45] [STDERR]     {
+[2025-09-30 23:39:45] [STDERR]       "id": "dffa2f1f-5c21-4078-9dd2-993e068b305f",
+[2025-09-30 23:39:45] [STDERR]       "workflow_id": "workflow-4f373d19-b579-45f6-ad93-f847024717cd",
+[2025-09-30 23:39:45] [STDERR]       "name": "hello",
+[2025-09-30 23:39:45] [STDERR]       "description": "",
+[2025-09-30 23:39:45] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:45] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:45] [STDERR]       "params": {
+[2025-09-30 23:39:45] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:45] [STDERR]       },
+[2025-09-30 23:39:45] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:45] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:45] [STDERR]       "retry": {
+[2025-09-30 23:39:45] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:45] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:45] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:45] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:45] [STDERR]         "jitter": true,
+[2025-09-30 23:39:45] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:45] [STDERR]       }
+[2025-09-30 23:39:45] [STDERR]     }
+[2025-09-30 23:39:45] [STDERR]   ]
+[2025-09-30 23:39:45] [STDERR] }
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,182 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-4f373d19-b579-45f6-ad93-f847024717cd loaded and submitted to shard 11 with indexes
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,188 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-6b1f1d71-ac84-48ec-abf0-c52f22429025 from inline
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,188 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:45] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:45] [STDERR]   "tasks": [
+[2025-09-30 23:39:45] [STDERR]     {
+[2025-09-30 23:39:45] [STDERR]       "name": "hello",
+[2025-09-30 23:39:45] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:45] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:45] [STDERR]       "params": {
+[2025-09-30 23:39:45] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:45] [STDERR]       }
+[2025-09-30 23:39:45] [STDERR]     }
+[2025-09-30 23:39:45] [STDERR]   ],
+[2025-09-30 23:39:45] [STDERR]   "workflow_id": "workflow-6b1f1d71-ac84-48ec-abf0-c52f22429025"
+[2025-09-30 23:39:45] [STDERR] }
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,188 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:45] [STDERR]   "id": "workflow-6b1f1d71-ac84-48ec-abf0-c52f22429025",
+[2025-09-30 23:39:45] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:45] [STDERR]   "description": "",
+[2025-09-30 23:39:45] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:45] [STDERR]   "created_at": "2025-09-30T21:39:45.188292",
+[2025-09-30 23:39:45] [STDERR]   "tasks": [
+[2025-09-30 23:39:45] [STDERR]     {
+[2025-09-30 23:39:45] [STDERR]       "id": "7b3a314b-a8eb-41ad-86b3-e941cd5e76fe",
+[2025-09-30 23:39:45] [STDERR]       "workflow_id": "workflow-6b1f1d71-ac84-48ec-abf0-c52f22429025",
+[2025-09-30 23:39:45] [STDERR]       "name": "hello",
+[2025-09-30 23:39:45] [STDERR]       "description": "",
+[2025-09-30 23:39:45] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:45] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:45] [STDERR]       "params": {
+[2025-09-30 23:39:45] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:45] [STDERR]       },
+[2025-09-30 23:39:45] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:45] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:45] [STDERR]       "retry": {
+[2025-09-30 23:39:45] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:45] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:45] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:45] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:45] [STDERR]         "jitter": true,
+[2025-09-30 23:39:45] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:45] [STDERR]       }
+[2025-09-30 23:39:45] [STDERR]     }
+[2025-09-30 23:39:45] [STDERR]   ]
+[2025-09-30 23:39:45] [STDERR] }
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,188 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-0bad1529-fce1-4718-b4ad-ecc5e9e298d4 from inline
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,188 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-09-30 23:39:45] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:45] [STDERR]   "tasks": [
+[2025-09-30 23:39:45] [STDERR]     {
+[2025-09-30 23:39:45] [STDERR]       "name": "hello",
+[2025-09-30 23:39:45] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:45] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:45] [STDERR]       "params": {
+[2025-09-30 23:39:45] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:45] [STDERR]       }
+[2025-09-30 23:39:45] [STDERR]     }
+[2025-09-30 23:39:45] [STDERR]   ],
+[2025-09-30 23:39:45] [STDERR]   "workflow_id": "workflow-0bad1529-fce1-4718-b4ad-ecc5e9e298d4"
+[2025-09-30 23:39:45] [STDERR] }
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,188 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-09-30 23:39:45] [STDERR]   "id": "workflow-0bad1529-fce1-4718-b4ad-ecc5e9e298d4",
+[2025-09-30 23:39:45] [STDERR]   "name": "test-workflow",
+[2025-09-30 23:39:45] [STDERR]   "description": "",
+[2025-09-30 23:39:45] [STDERR]   "version": "1.0.0",
+[2025-09-30 23:39:45] [STDERR]   "created_at": "2025-09-30T21:39:45.188448",
+[2025-09-30 23:39:45] [STDERR]   "tasks": [
+[2025-09-30 23:39:45] [STDERR]     {
+[2025-09-30 23:39:45] [STDERR]       "id": "edb2567f-6f64-4800-a1f2-27f0c23623d0",
+[2025-09-30 23:39:45] [STDERR]       "workflow_id": "workflow-0bad1529-fce1-4718-b4ad-ecc5e9e298d4",
+[2025-09-30 23:39:45] [STDERR]       "name": "hello",
+[2025-09-30 23:39:45] [STDERR]       "description": "",
+[2025-09-30 23:39:45] [STDERR]       "protocol": "python/v1",
+[2025-09-30 23:39:45] [STDERR]       "method": "python/execute",
+[2025-09-30 23:39:45] [STDERR]       "params": {
+[2025-09-30 23:39:45] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-09-30 23:39:45] [STDERR]       },
+[2025-09-30 23:39:45] [STDERR]       "dependencies": [],
+[2025-09-30 23:39:45] [STDERR]       "timeout": 300,
+[2025-09-30 23:39:45] [STDERR]       "retry": {
+[2025-09-30 23:39:45] [STDERR]         "max_retries": 2,
+[2025-09-30 23:39:45] [STDERR]         "strategy": "exponential_jitter",
+[2025-09-30 23:39:45] [STDERR]         "base_delay": 1.0,
+[2025-09-30 23:39:45] [STDERR]         "max_delay": 30.0,
+[2025-09-30 23:39:45] [STDERR]         "jitter": true,
+[2025-09-30 23:39:45] [STDERR]         "multiplier": 2.0
+[2025-09-30 23:39:45] [STDERR]       }
+[2025-09-30 23:39:45] [STDERR]     }
+[2025-09-30 23:39:45] [STDERR]   ]
+[2025-09-30 23:39:45] [STDERR] }
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,189 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-6b1f1d71-ac84-48ec-abf0-c52f22429025 loaded and submitted to shard 2 with indexes
+[2025-09-30 23:39:45] [STDERR] 2025-09-30 23:39:45,189 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-0bad1529-fce1-4718-b4ad-ecc5e9e298d4 loaded and submitted to shard 5 with indexes
