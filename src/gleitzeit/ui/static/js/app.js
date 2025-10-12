@@ -23,34 +23,36 @@ document.addEventListener('DOMContentLoaded', function() {
     checkAPIStatus();
     setInterval(checkAPIStatus, 10000); // Every 10 seconds
 
-    // Configure HTMX
-    htmx.config.defaultSwapStyle = 'innerHTML';
-    htmx.config.defaultSettleDelay = 100;
+    // Configure HTMX if available
+    if (typeof htmx !== 'undefined') {
+        htmx.config.defaultSwapStyle = 'innerHTML';
+        htmx.config.defaultSettleDelay = 100;
 
-    // Handle HTMX events
-    document.body.addEventListener('htmx:afterRequest', function(event) {
-        // Handle errors
-        if (event.detail.xhr.status >= 400) {
-            console.error('Request failed:', event.detail);
-        }
-    });
+        // Handle HTMX events
+        document.body.addEventListener('htmx:afterRequest', function(event) {
+            // Handle errors
+            if (event.detail.xhr.status >= 400) {
+                console.error('Request failed:', event.detail);
+            }
+        });
 
-    // Handle workflow submission
-    document.body.addEventListener('htmx:afterSwap', function(event) {
-        if (event.detail.target.id === 'workflow-result') {
-            // Check if submission was successful
-            const result = event.detail.target.innerText;
-            if (result.includes('workflow_id')) {
-                // Parse response and redirect
-                try {
-                    const data = JSON.parse(result);
-                    window.location.href = `/workflows/${data.workflow_id}`;
-                } catch (e) {
-                    console.log('Workflow submitted successfully');
+        // Handle workflow submission
+        document.body.addEventListener('htmx:afterSwap', function(event) {
+            if (event.detail.target.id === 'workflow-result') {
+                // Check if submission was successful
+                const result = event.detail.target.innerText;
+                if (result.includes('workflow_id')) {
+                    // Parse response and redirect
+                    try {
+                        const data = JSON.parse(result);
+                        window.location.href = `/workflows/${data.workflow_id}`;
+                    } catch (e) {
+                        console.log('Workflow submitted successfully');
+                    }
                 }
             }
-        }
-    });
+        });
+    }
 });
 
 // Utility functions

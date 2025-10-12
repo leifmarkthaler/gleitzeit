@@ -59,7 +59,9 @@
     <script>
         async function loadTasks() {
             try {
-                const response = await fetch('/api/tasks/list?limit=100');
+                const response = await fetch('/api/tasks/list?limit=100', {
+                    cache: 'no-cache'
+                });
                 const data = await response.json();
 
                 const container = document.getElementById('tasks-container');
@@ -70,20 +72,37 @@
                 }
 
                 let html = '<table class="table"><thead><tr>';
-                html += '<th>Task ID</th><th>Workflow ID</th><th>Status</th><th>Provider</th><th>Actions</th>';
+                html += '<th>Task ID</th><th>Type</th><th>Workflow ID</th><th>Status</th><th>Completed At</th><th>Actions</th>';
                 html += '</tr></thead><tbody>';
 
                 data.tasks.forEach(task => {
                     const taskId = task.task_id || task.id || '';
                     const workflowId = task.workflow_id || '-';
                     const status = task.state?.status || task.status || 'unknown';
-                    const provider = task.provider || task.type || task.state?.provider || '-';
+                    const taskType = task.task_type || 'unknown';
+
+                    // Get timestamp - prefer completed_at, then executed_at
+                    const completedAt = task.state?.completed_at || task.completed_at ||
+                                       task.state?.executed_at || task.executed_at || null;
+
+                    let timeStr = '-';
+                    if (completedAt) {
+                        const date = new Date(completedAt);
+                        timeStr = date.toLocaleString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        });
+                    }
 
                     html += '<tr>';
                     html += `<td><code>${taskId.substring(0, 12)}...</code></td>`;
+                    html += `<td><span style="font-size: 0.75rem; font-weight: 600; color: var(--primary-color);">${taskType}</span></td>`;
                     html += `<td>${workflowId !== '-' ? '<code>' + workflowId.substring(0, 12) + '...</code>' : '-'}</td>`;
                     html += `<td><span class="badge badge-${status}">${status}</span></td>`;
-                    html += `<td>${provider}</td>`;
+                    html += `<td style="font-size: 0.875rem; color: var(--text-secondary);">${timeStr}</td>`;
                     html += `<td><a href="/tasks/${taskId}" class="btn btn-primary btn-sm">View</a></td>`;
                     html += '</tr>';
                 });

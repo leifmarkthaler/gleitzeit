@@ -1,0 +1,19 @@
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,885 - __main__ - INFO - Loading configuration from Redis key: worker:config:retry-async:81616e2d
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,888 - __main__ - INFO - Loaded config for worker retry-async
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,890 - __main__ - INFO - Worker retry-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,890 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized with batch_size=10
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,890 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,890 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async event store initialized
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,892 - retry.retry-async - INFO - Worker retry-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,892 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized retry service
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,892 - __main__ - INFO - Worker retry-async started successfully
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,892 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-06 19:48:05] [STDERR] 2025-10-06 19:48:05,892 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for retry-async
+[2025-10-06 19:49:19] [STDERR] 2025-10-06 19:49:19,125 - gleitzeit.workers.retry_worker - INFO - Retry decision for 140e5bab-c298-49a8-b5cc-976daa227e72: skip (attempt 0)
+[2025-10-06 19:49:19] [STDERR] 2025-10-06 19:49:19,127 - gleitzeit.workers.retry_worker - WARNING - Task 140e5bab-c298-49a8-b5cc-976daa227e72 permanently failed: skip ({'reason': 'non_retryable_error'})
+[2025-10-06 19:49:19] [STDERR] 2025-10-06 19:49:19,128 - gleitzeit.workers.retry_worker - INFO - Retry decision for 140e5bab-c298-49a8-b5cc-976daa227e72: skip (attempt 0)
+[2025-10-06 19:49:19] [STDERR] 2025-10-06 19:49:19,130 - gleitzeit.workers.retry_worker - WARNING - Task 140e5bab-c298-49a8-b5cc-976daa227e72 permanently failed: skip ({'reason': 'non_retryable_error'})
+[2025-10-06 19:52:36] [STDERR] 2025-10-06 19:52:36,411 - gleitzeit.workers.retry_worker - INFO - Retry decision for 71c37f51-0ff0-44b7-ad4c-cbe59bd3e8c2: skip (attempt 0)
+[2025-10-06 19:52:36] [STDERR] 2025-10-06 19:52:36,413 - gleitzeit.workers.retry_worker - WARNING - Task 71c37f51-0ff0-44b7-ad4c-cbe59bd3e8c2 permanently failed: skip ({'reason': 'non_retryable_error'})
+[2025-10-06 19:52:36] [STDERR] 2025-10-06 19:52:36,413 - gleitzeit.workers.retry_worker - INFO - Retry decision for 71c37f51-0ff0-44b7-ad4c-cbe59bd3e8c2: skip (attempt 0)
+[2025-10-06 19:52:36] [STDERR] 2025-10-06 19:52:36,414 - gleitzeit.workers.retry_worker - WARNING - Task 71c37f51-0ff0-44b7-ad4c-cbe59bd3e8c2 permanently failed: skip ({'reason': 'non_retryable_error'})

@@ -1,0 +1,37 @@
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,334 - __main__ - INFO - Loading configuration from Redis key: worker:config:retry-async:c44df49b
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,337 - __main__ - INFO - Loaded config for worker retry-async
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,339 - __main__ - INFO - Worker retry-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,340 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized with batch_size=10
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,340 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,340 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async event store initialized
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,341 - retry.retry-async - INFO - Worker retry-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,341 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized retry service
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,341 - __main__ - INFO - Worker retry-async started successfully
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,341 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:01:51] [STDERR] 2025-10-05 22:01:51,341 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for retry-async
+[2025-10-05 22:01:59] [STDERR] 2025-10-05 22:01:59,504 - gleitzeit.workers.retry_worker - INFO - Retry decision for 668e7108-1878-4c27-b0ff-1f64fa779c4e: skip (attempt 0)
+[2025-10-05 22:01:59] [STDERR] 2025-10-05 22:01:59,505 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:01:59] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:01:59] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:01:59] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:01:59] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:01:59] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:01:59] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:01:59] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:01:59] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:01:59] [STDERR] AttributeError: ERROR
+[2025-10-05 22:01:59] [STDERR] 2025-10-05 22:01:59,509 - retry.retry-async - WARNING - Message 1759694519503-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:01:59] [STDERR] 2025-10-05 22:01:59,509 - retry.retry-async - INFO - Message 1759694519503-0 from {shard:8}:task:failed logged to dead letter queue
+[2025-10-05 22:01:59] [STDERR] 2025-10-05 22:01:59,516 - gleitzeit.workers.retry_worker - INFO - Retry decision for 668e7108-1878-4c27-b0ff-1f64fa779c4e: skip (attempt 0)
+[2025-10-05 22:01:59] [STDERR] 2025-10-05 22:01:59,517 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:01:59] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:01:59] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:01:59] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:01:59] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:01:59] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:01:59] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:01:59] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:01:59] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:01:59] [STDERR] AttributeError: ERROR
+[2025-10-05 22:01:59] [STDERR] 2025-10-05 22:01:59,518 - retry.retry-async - WARNING - Message 1759694519505-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:01:59] [STDERR] 2025-10-05 22:01:59,519 - retry.retry-async - INFO - Message 1759694519505-0 from {shard:8}:task:failed logged to dead letter queue

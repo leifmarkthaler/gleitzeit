@@ -1,0 +1,19 @@
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,432 - __main__ - INFO - Loading configuration from Redis key: worker:config:retry-async:1bf93e47
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,436 - __main__ - INFO - Loaded config for worker retry-async
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,440 - __main__ - INFO - Worker retry-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,440 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized with batch_size=10
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,440 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,440 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async event store initialized
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,442 - retry.retry-async - INFO - Worker retry-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,442 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized retry service
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,442 - __main__ - INFO - Worker retry-async started successfully
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,442 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 20:23:18] [STDERR] 2025-10-12 20:23:18,442 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for retry-async
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,047 - gleitzeit.workers.retry_worker - INFO - Retry decision for a62cb46b-1efa-40ae-83ac-4207aeda2116: retry (attempt 0)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,048 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for a62cb46b-1efa-40ae-83ac-4207aeda2116 in 0.06s (attempt 1)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,057 - gleitzeit.workers.retry_worker - INFO - Retry decision for a62cb46b-1efa-40ae-83ac-4207aeda2116: retry (attempt 1)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,057 - gleitzeit.workers.retry_worker - INFO - Retry decision for 30297775-df11-4ba9-b175-197130571e9c: retry (attempt 0)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,058 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for a62cb46b-1efa-40ae-83ac-4207aeda2116 in 0.33s (attempt 2)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,058 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for 30297775-df11-4ba9-b175-197130571e9c in 0.94s (attempt 1)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,066 - gleitzeit.workers.retry_worker - INFO - Retry decision for 30297775-df11-4ba9-b175-197130571e9c: retry (attempt 1)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,067 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for 30297775-df11-4ba9-b175-197130571e9c in 1.64s (attempt 2)

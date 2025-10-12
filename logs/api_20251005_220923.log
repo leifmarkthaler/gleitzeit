@@ -1,0 +1,6 @@
+[2025-10-05 22:09:24] [STDERR] INFO:     Started server process [72412]
+[2025-10-05 22:09:24] [STDERR] INFO:     Waiting for application startup.
+[2025-10-05 22:09:24] [STDERR] INFO:     Application startup complete.
+[2025-10-05 22:09:24] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-05 22:09:28] [STDERR] INFO:     127.0.0.1:57806 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:09:28] [STDERR] INFO:     connection open

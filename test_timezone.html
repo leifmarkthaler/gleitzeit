@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Timezone Test</title>
+</head>
+<body>
+    <h1>Timezone Conversion Test</h1>
+
+    <p>UTC Time: <span id="utc-time">2025-10-05T20:22:22.079808</span></p>
+    <p>Local Time: <span id="local-time"></span></p>
+    <p>Debug: <span id="debug"></span></p>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const utcTimeEl = document.getElementById('utc-time');
+            const localTimeEl = document.getElementById('local-time');
+            const debugEl = document.getElementById('debug');
+
+            const utcTime = utcTimeEl.textContent.trim();
+            debugEl.textContent = `Input: "${utcTime}"`;
+
+            if (utcTime && utcTime !== 'N/A') {
+                const date = new Date(utcTime);
+                debugEl.textContent += ` | Date object: ${date.toString()}`;
+
+                const formatted = date.toLocaleString('sv-SE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+
+                debugEl.textContent += ` | Formatted: "${formatted}"`;
+
+                const final = formatted.replace(',', '');
+                localTimeEl.textContent = final;
+                debugEl.textContent += ` | Final: "${final}"`;
+            }
+        });
+    </script>
+</body>
+</html>

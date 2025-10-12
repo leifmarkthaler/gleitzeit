@@ -1,0 +1,38 @@
+{
+  "name": "signal-test-fixed",
+  "tasks": [
+    {
+      "id": "task1",
+      "method": "python/v1",
+      "params": {
+        "code": "result = {'message': 'Starting workflow'}"
+      }
+    },
+    {
+      "id": "task2",
+      "method": "signal/v1",
+      "params": {
+        "signal_action": "wait",
+        "signal_name": "data-ready"
+      },
+      "depends_on": ["task1"]
+    },
+    {
+      "id": "task3",
+      "method": "python/v1",
+      "params": {
+        "code": "result = {'action': 'processing'}"
+      },
+      "depends_on": ["task2"]
+    },
+    {
+      "id": "task4",
+      "method": "signal/v1",
+      "params": {
+        "signal_action": "send",
+        "signal_name": "data-ready",
+        "payload": {"status": "ready"}
+      }
+    }
+  ]
+}

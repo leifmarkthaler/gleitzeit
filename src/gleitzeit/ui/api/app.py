@@ -4,12 +4,13 @@ Gleitzeit UI2 - Clean UI with WebSocket support
 import os
 import uuid
 import asyncio
+import json
 import logging
 from pathlib import Path
 from typing import Optional, Set
 
 import httpx
-from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Response
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -74,9 +75,12 @@ client = httpx.AsyncClient(
 
 @app.middleware("http")
 async def add_no_cache_headers(request: Request, call_next):
-    """Disable caching for all HTML responses"""
+    """Disable caching for all HTML and API responses"""
     response = await call_next(request)
-    if "text/html" in response.headers.get("content-type", ""):
+    content_type = response.headers.get("content-type", "")
+
+    # Add no-cache headers to HTML and API JSON responses
+    if "text/html" in content_type or (request.url.path.startswith("/api/") and "application/json" in content_type):
         response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -135,6 +139,73 @@ async def metrics_detail(request: Request):
 async def processes_list(request: Request):
     """Processes list page"""
     context = await get_base_context(request)
+
+    # Get running Gleitzeit processes
+    import psutil
+    import os
+
+    processes = []
+    current_pid = os.getpid()
+
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline', 'cpu_percent', 'memory_info', 'create_time']):
+        try:
+            cmdline = proc.info.get('cmdline', [])
+            if not cmdline:
+                continue
+
+            cmdline_str = ' '.join(cmdline)
+
+            # Check if this is a Gleitzeit process
+            if 'gleitzeit' in cmdline_str.lower():
+                process_type = "unknown"
+                process_name = "Gleitzeit Process"
+                port = None
+
+                # Determine process type
+                if 'uvicorn' in cmdline_str and 'ui.api.app' in cmdline_str:
+                    process_type = "ui_server"
+                    process_name = "UI Server"
+                    port = 8004
+                elif 'uvicorn' in cmdline_str and 'api.main' in cmdline_str:
+                    process_type = "api_server"
+                    process_name = "API Server"
+                    port = 8000
+                elif 'workers.runner' in cmdline_str:
+                    # Extract worker type from config key
+                    for part in cmdline:
+                        if 'worker:config:' in part:
+                            worker_type = part.split(':')[2].split('-')[0]
+                            process_type = f"worker_{worker_type}"
+                            process_name = f"{worker_type.replace('_', ' ').title()} Worker"
+                            break
+
+                # Calculate uptime
+                import time
+                uptime_seconds = int(time.time() - proc.info['create_time'])
+
+                # Get memory in MB
+                memory_mb = proc.info['memory_info'].rss / 1024 / 1024
+
+                processes.append({
+                    'pid': proc.info['pid'],
+                    'type': process_type,
+                    'name': process_name,
+                    'cpu_percent': proc.info.get('cpu_percent', 0),
+                    'memory_mb': memory_mb,
+                    'uptime_seconds': uptime_seconds,
+                    'port': port,
+                    'is_current': proc.info['pid'] == current_pid
+                })
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            continue
+
+    # Sort by process type and name
+    processes.sort(key=lambda p: (p['type'], p['name']))
+
+    context['processes'] = processes
+    context['total_memory'] = sum(p['memory_mb'] for p in processes)
+    context['process_count'] = len(processes)
+
     return templates.TemplateResponse("processes/list.html", context)
 
 
@@ -142,6 +213,82 @@ async def processes_list(request: Request):
 async def handlers_list(request: Request):
     """Handlers list page"""
     context = await get_base_context(request)
+
+    # Fetch metrics and system status from API
+    try:
+        # Get metrics (workflow/task counts)
+        metrics_response = await client.get("/system/metrics")
+        context["metrics"] = metrics_response.json()
+    except Exception as e:
+        logger.warning(f"Failed to fetch metrics: {e}")
+        context["metrics"] = None
+
+    try:
+        # Get system status (workers and queues)
+        status_response = await client.get("/system/status")
+        status_data = status_response.json()
+
+        # Get worker registry for additional info
+        workers_response = await client.get("/system/workers")
+        workers_data = workers_response.json()
+
+        # Merge worker metrics with registry data
+        workers_enriched = {}
+        for worker in workers_data.get("workers", []):
+            worker_id = worker.get("worker_id")
+            if worker_id:
+                # Start with registry data
+                workers_enriched[worker_id] = worker.copy()
+
+                # Merge in metrics from status
+                if worker_id in status_data.get("workers", {}):
+                    metrics = status_data["workers"][worker_id]
+                    workers_enriched[worker_id].update({
+                        "tasks_processed": int(metrics.get("processed", "0")),
+                        "errors": int(metrics.get("failed", "0")),
+                        "last_heartbeat": metrics.get("last_heartbeat"),
+                        "memory_mb": float(metrics.get("memory_mb", "0")),
+                        "cpu_percent": float(metrics.get("cpu_percent", "0"))
+                    })
+
+                # Determine health status based on last heartbeat
+                last_hb = workers_enriched[worker_id].get("last_heartbeat")
+                if last_hb:
+                    from datetime import datetime, timezone
+                    try:
+                        # Parse the ISO timestamp
+                        if last_hb.endswith('Z'):
+                            hb_time = datetime.fromisoformat(last_hb.replace('Z', '+00:00'))
+                        else:
+                            hb_time = datetime.fromisoformat(last_hb)
+
+                        # Make timezone-aware if needed
+                        if hb_time.tzinfo is None:
+                            hb_time = hb_time.replace(tzinfo=timezone.utc)
+
+                        # Calculate age
+                        now = datetime.now(timezone.utc)
+                        age = (now - hb_time).total_seconds()
+
+                        if age < 30:
+                            workers_enriched[worker_id]["status"] = "healthy"
+                        elif age < 60:
+                            workers_enriched[worker_id]["status"] = "degraded"
+                        else:
+                            workers_enriched[worker_id]["status"] = "unhealthy"
+                    except Exception as e:
+                        logger.warning(f"Failed to parse heartbeat time for {worker_id}: {e}")
+                        workers_enriched[worker_id]["status"] = "unknown"
+
+        context["workers"] = workers_enriched
+        context["queues"] = status_data.get("queues", {})
+        context["orchestrator"] = status_data.get("orchestrator", {})
+
+    except Exception as e:
+        logger.error(f"Failed to fetch system status: {e}")
+        context["workers"] = {}
+        context["queues"] = {}
+
     return templates.TemplateResponse("handlers/list.html", context)
 
 
@@ -158,10 +305,38 @@ async def workflow_detail(request: Request, workflow_id: str):
         logger.error(f"Failed to fetch workflow {workflow_id}: {e}")
         workflow_data = {"workflow_id": workflow_id, "error": str(e)}
 
-    # Extract tasks if available
+    # Extract tasks if available and enrich with execution state
     tasks = []
-    if "data" in workflow_data and "tasks" in workflow_data["data"]:
-        tasks = workflow_data["data"]["tasks"]
+    logger.info(f"Workflow data keys: {workflow_data.keys()}")
+    if "data" in workflow_data:
+        logger.info(f"Data keys: {workflow_data['data'].keys()}")
+        if "workflow" in workflow_data["data"]:
+            logger.info(f"Workflow keys: {workflow_data['data']['workflow'].keys()}")
+            if "tasks" in workflow_data["data"]["workflow"]:
+                task_definitions = workflow_data["data"]["workflow"]["tasks"]
+                logger.info(f"Found {len(task_definitions)} task definitions")
+
+                # Fetch execution state for each task
+                for task_def in task_definitions:
+                    task_id = task_def.get("id")
+                    try:
+                        # Fetch task execution state from API
+                        task_response = await client.get(f"/tasks/{task_id}")
+                        task_data = task_response.json()
+
+                        # Merge definition with execution state
+                        enriched_task = {**task_def}
+                        if "state" in task_data:
+                            enriched_task["status"] = task_data["state"].get("status", "pending")
+                        else:
+                            enriched_task["status"] = "pending"
+
+                        tasks.append(enriched_task)
+                    except Exception as task_error:
+                        # If we can't fetch state, just use the definition with pending status
+                        logger.warning(f"Failed to fetch state for task {task_id}: {task_error}")
+                        enriched_task = {**task_def, "status": "pending"}
+                        tasks.append(enriched_task)
 
     context["workflow"] = workflow_data
     context["tasks"] = tasks
@@ -177,6 +352,26 @@ async def task_detail(request: Request, task_id: str):
     try:
         response = await client.get(f"/tasks/{task_id}")
         task_data = response.json()
+
+        # Enrich task data with workflow information
+        workflow_id = task_data.get("workflow_id")
+        if workflow_id:
+            try:
+                wf_response = await client.get(f"/workflows/{workflow_id}")
+                wf_data = wf_response.json()
+
+                # Find task definition in workflow
+                workflow_def = wf_data.get("data", {}).get("workflow", {})
+                for task_def in workflow_def.get("tasks", []):
+                    if task_def.get("id") == task_id:
+                        # Add protocol/type and created_at from workflow
+                        task_data["task_type"] = task_def.get("protocol", "unknown").split("/")[0]
+                        task_data["created_at"] = workflow_def.get("created_at")
+                        task_data["protocol"] = task_def.get("protocol")
+                        break
+            except Exception as e:
+                logger.warning(f"Failed to enrich task with workflow data: {e}")
+
     except Exception as e:
         logger.error(f"Failed to fetch task {task_id}: {e}")
         task_data = {"task_id": task_id, "error": str(e)}
@@ -209,17 +404,40 @@ async def api_tasks_list(limit: int = 100):
     """Proxy to tasks API - fetches task IDs then gets full details"""
     try:
         # First get the task IDs
-        response = await client.get(f"/tasks/list?limit={limit}")
-        data = response.json()
+        api_response = await client.get(f"/tasks/list?limit={limit}")
+        data = api_response.json()
         task_ids = data.get("task_ids", [])
 
         # Fetch full details for each task
         tasks = []
+        workflows_cache = {}  # Cache workflow data to reduce API calls
+
         for task_id in task_ids[:limit]:  # Limit to requested number
             try:
                 task_response = await client.get(f"/tasks/{task_id}")
                 task_data = task_response.json()
-                if task_data and "error" not in task_data:
+                if task_data and "error" not in task_data and "detail" not in task_data:
+                    # Enrich with task type from workflow
+                    workflow_id = task_data.get("workflow_id")
+                    if workflow_id:
+                        # Check cache first
+                        if workflow_id not in workflows_cache:
+                            try:
+                                wf_response = await client.get(f"/workflows/{workflow_id}")
+                                workflows_cache[workflow_id] = wf_response.json()
+                            except Exception:
+                                workflows_cache[workflow_id] = None
+
+                        # Extract task type from workflow
+                        wf_data = workflows_cache.get(workflow_id)
+                        if wf_data:
+                            workflow_def = wf_data.get("data", {}).get("workflow", {})
+                            for task_def in workflow_def.get("tasks", []):
+                                if task_def.get("id") == task_id:
+                                    protocol = task_def.get("protocol", "unknown")
+                                    task_data["task_type"] = protocol.split("/")[0]
+                                    break
+
                     tasks.append(task_data)
             except Exception as task_error:
                 logger.warning(f"Failed to fetch task {task_id}: {task_error}")
@@ -254,6 +472,28 @@ async def api_task_detail(task_id: str):
     except Exception as e:
         logger.error(f"Failed to fetch task: {e}")
         return {"error": str(e)}
+
+
+@app.get("/api/tasks/{task_id}/logs")
+async def api_task_logs(task_id: str):
+    """Proxy to task logs API"""
+    try:
+        response = await client.get(f"/tasks/{task_id}/logs")
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to fetch task logs: {e}")
+        return {"task_id": task_id, "logs": []}
+
+
+@app.get("/api/tasks/{task_id}/events")
+async def api_task_events(task_id: str):
+    """Proxy to task events API"""
+    try:
+        response = await client.get(f"/tasks/{task_id}/events")
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to fetch task events: {e}")
+        return {"task_id": task_id, "events": []}
 
 
 @app.get("/api/health")

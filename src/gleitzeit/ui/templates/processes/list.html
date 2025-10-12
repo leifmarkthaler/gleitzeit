@@ -3,10 +3,61 @@
 {% block title %}Processes - Gleitzeit{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-header">
-        <h1>🖥️ Processes & Machines</h1>
-        <p class="subtitle">Multi-machine deployment overview</p>
+<div class="container processes-page">
+    <div class="page-header-modern">
+        <div>
+            <h1 class="page-title-modern">System Processes</h1>
+            <p class="page-subtitle">Running services and workers</p>
+        </div>
+        <button class="btn-refresh"
+                hx-get="/processes"
+                hx-target="body"
+                hx-trigger="click">
+            <span class="refresh-icon">↻</span> Refresh
+        </button>
+    </div>
+
+    <!-- Process Summary -->
+    <div class="metrics-section">
+        <div class="metric-card-modern metric-processes">
+            <div class="metric-icon">⚙️</div>
+            <div class="metric-content">
+                <div class="metric-label-modern">Total Processes</div>
+                <div class="metric-value-modern">{{ process_count|default(0) }}</div>
+                <div class="metric-sublabel">running</div>
+            </div>
+        </div>
+        <div class="metric-card-modern metric-memory">
+            <div class="metric-icon">💾</div>
+            <div class="metric-content">
+                <div class="metric-label-modern">Total Memory</div>
+                <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+                <div class="metric-sublabel">MB</div>
+            </div>
+        </div>
+        <div class="metric-card-modern metric-servers">
+            <div class="metric-icon">🌐</div>
+            <div class="metric-content">
+                <div class="metric-label-modern">Servers</div>
+                <div class="metric-value-modern">
+                    {% set server_count = processes|selectattr('type', 'in', ['api_server', 'ui_server'])|list|length %}
+                    {{ server_count }}
+                </div>
+                <div class="metric-sublabel">active</div>
+            </div>
+        </div>
+        <div class="metric-card-modern metric-workers">
+            <div class="metric-icon">👷</div>
+            <div class="metric-content">
+                <div class="metric-label-modern">Workers</div>
+                <div class="metric-value-modern">
+                    {% set worker_count = processes|reject('equalto', {'type': 'api_server'})|reject('equalto', {'type': 'ui_server'})|list|length %}
+                    {% set worker_count = processes|length - (processes|selectattr('type', 'in', ['api_server', 'ui_server'])|list|length) %}
+                    {{ worker_count }}
+                </div>
+                <div class="metric-sublabel">active</div>
+            </div>
+        </div>
     </div>
 
     <!-- Current Instance Info -->
@@ -88,132 +139,390 @@
     </div>
     {% endif %}
 
-    <!-- Machines Table -->
-    <div class="card">
-        <div class="card-header">
-            <h3>🖥️ All Machines</h3>
-            <button class="btn btn-sm btn-secondary"
-                    hx-get="/processes"
-                    hx-target="#machines-table"
-                    hx-trigger="click">
-                🔄 Refresh
-            </button>
+    <!-- Running Processes -->
+    <div class="section-modern">
+        <div class="section-header">
+            <h2 class="section-title">🖥️ Running Processes</h2>
         </div>
-        <div class="card-body" id="machines-table">
-            {% if machines %}
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Hostname</th>
-                        <th>IP Address</th>
-                        <th>Datacenter</th>
-                        <th>Rack</th>
-                        <th>Network Zone</th>
-                        <th>Instances</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for machine in machines %}
-                    <tr>
-                        <td>
-                            <strong>{{ machine.hostname }}</strong>
-                            <br>
-                            <small class="text-muted">{{ machine.machine_id[:12] }}...</small>
-                        </td>
-                        <td>{{ machine.primary_ip }}</td>
-                        <td>{{ machine.datacenter }}</td>
-                        <td>{{ machine.rack }}</td>
-                        <td>
-                            <span class="badge badge-secondary">{{ machine.network_zone }}</span>
-                        </td>
-                        <td>
-                            <span class="badge badge-primary">{{ machine.instance_count }}</span>
-                        </td>
-                        <td>
-                            <button class="btn btn-sm btn-info"
-                                    onclick="showMachineDetails('{{ machine.machine_id }}')">
-                                View Details
-                            </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">
-                <p>No machines found in the deployment</p>
+        {% if processes %}
+        <div class="processes-grid">
+            {% for process in processes %}
+            <div class="process-card {% if process.is_current %}process-current{% endif %} {% if process.type == 'api_server' or process.type == 'ui_server' %}process-server{% else %}process-worker{% endif %}">
+                <div class="process-header">
+                    <div class="process-icon">
+                        {% if process.type == 'api_server' %}🚀
+                        {% elif process.type == 'ui_server' %}🎨
+                        {% elif 'task_execution' in process.type %}⚡
+                        {% elif 'python_specialist' in process.type %}🐍
+                        {% elif 'dependency' in process.type %}🔗
+                        {% elif 'retry' in process.type %}🔄
+                        {% elif 'reconciliation' in process.type %}🔍
+                        {% elif 'workflow_loader' in process.type %}📥
+                        {% elif 'workflow_submission' in process.type %}📤
+                        {% elif 'timer' in process.type %}⏰
+                        {% else %}⚙️
+                        {% endif %}
+                    </div>
+                    <div class="process-status-badge">
+                        {% if process.is_current %}
+                        <span class="current-badge">Current</span>
+                        {% else %}
+                        <span class="running-badge">Running</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="process-name">{{ process.name }}</div>
+                <div class="process-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">PID</span>
+                        <span class="meta-value">{{ process.pid }}</span>
+                    </div>
+                    {% if process.port %}
+                    <div class="meta-item">
+                        <span class="meta-label">Port</span>
+                        <span class="meta-value">:{{ process.port }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="process-stats">
+                    <div class="process-stat">
+                        <div class="stat-value">{{ process.memory_mb|round(1) }} MB</div>
+                        <div class="stat-label">Memory</div>
+                    </div>
+                    <div class="process-stat">
+                        <div class="stat-value">{{ process.cpu_percent|round(1) }}%</div>
+                        <div class="stat-label">CPU</div>
+                    </div>
+                    <div class="process-stat">
+                        {% set hours = process.uptime_seconds // 3600 %}
+                        {% set minutes = (process.uptime_seconds % 3600) // 60 %}
+                        <div class="stat-value">
+                            {% if hours > 0 %}{{ hours }}h {% endif %}{{ minutes }}m
+                        </div>
+                        <div class="stat-label">Uptime</div>
+                    </div>
+                </div>
             </div>
-            {% endif %}
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No Gleitzeit processes found</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 
 <style>
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
+/* Modern Page Layout */
+.processes-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
 }
 
-.info-item {
+.page-header-modern {
     display: flex;
-    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e9ecef;
 }
 
-.info-label {
-    font-size: 0.875rem;
-    color: #666;
-    margin-bottom: 0.25rem;
+.page-title-modern {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
 }
 
-.info-value {
-    font-weight: 500;
+.page-subtitle {
+    color: #6c757d;
+    font-size: 1rem;
+    margin-top: 0.5rem;
 }
 
-.topology-tree {
-    padding: 1rem;
-}
-
-.datacenter-node {
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
-}
-
-.rack-node {
-    margin: 1rem 0 1rem 2rem;
-    padding: 0.75rem;
-    background: white;
-    border-left: 3px solid #dee2e6;
-}
-
-.machine-node {
-    margin: 0.75rem 0 0.75rem 2rem;
-    padding: 0.75rem;
-    background: #f8f9fa;
-    border-radius: 4px;
-}
-
-.machine-header {
+.btn-refresh {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     display: flex;
     align-items: center;
-    gap: 1rem;
-    margin-bottom: 0.5rem;
-}
-
-.instance-list {
-    display: flex;
-    flex-wrap: wrap;
     gap: 0.5rem;
 }
 
-.instance-badge {
-    padding: 0.25rem 0.5rem;
-    background: #e3f2fd;
-    border-radius: 4px;
+.btn-refresh:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.refresh-icon {
+    font-size: 1.2rem;
+    display: inline-block;
+}
+
+.btn-refresh:hover .refresh-icon {
+    animation: spin 0.6s ease;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Metrics Section */
+.metrics-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.metric-card-modern {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.metric-card-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.metric-processes::before { background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); }
+.metric-memory::before { background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%); }
+.metric-servers::before { background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); }
+.metric-workers::before { background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%); }
+
+.metric-icon {
+    font-size: 3rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-label-modern {
     font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value-modern {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    line-height: 1;
+}
+
+.metric-sublabel {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin-top: 0.5rem;
+}
+
+/* Section Modern */
+.section-modern {
+    margin-bottom: 3rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
+}
+
+/* Processes Grid */
+.processes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.process-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.process-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+}
+
+.process-server::before {
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.process-worker::before {
+    background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.process-current::before {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.process-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.process-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.process-icon {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.process-status-badge {
+    display: flex;
+    align-items: center;
+}
+
+.current-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.running-badge {
+    background: #f0fdf4;
+    color: #16a34a;
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.process-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+.process-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.meta-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.meta-value {
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.process-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+
+.process-stat {
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+.stat-value {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 .mb-4 {

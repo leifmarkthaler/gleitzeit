@@ -1,0 +1,9 @@
+[2025-10-05 22:01:50] [STDERR] INFO:     Started server process [67011]
+[2025-10-05 22:01:50] [STDERR] INFO:     Waiting for application startup.
+[2025-10-05 22:01:50] [STDERR] INFO:     Application startup complete.
+[2025-10-05 22:01:50] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-05 22:01:52] [STDOUT] INFO:     127.0.0.1:57064 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:01:58] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-05 22:01:58] [STDOUT] INFO:     127.0.0.1:57089 - "POST /workflows/validate HTTP/1.1" 200 OK
+[2025-10-05 22:01:59] [STDOUT] INFO:     127.0.0.1:57089 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-05 22:02:02] [STDOUT] INFO:     127.0.0.1:57089 - "GET /health/detailed HTTP/1.1" 200 OK

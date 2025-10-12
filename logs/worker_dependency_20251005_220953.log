@@ -1,0 +1,25 @@
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,207 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:bd618f66
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,210 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,210 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,211 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,211 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,211 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,223 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,223 - __main__ - INFO - Worker dependency-async started successfully
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,224 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:09:53] [STDERR] 2025-10-05 22:09:53,224 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,688 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: 162b14e4-59ec-42f6-9ead-9ff472857c97
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,694 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 88a07c76-91a4-4330-8776-071cdb2f29c1 to shard 9
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,713 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 88a07c76-91a4-4330-8776-071cdb2f29c1 from workflow 162b14e4-59ec-42f6-9ead-9ff472857c97
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,713 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 88a07c76-91a4-4330-8776-071cdb2f29c1 from workflow 162b14e4-59ec-42f6-9ead-9ff472857c97
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,713 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 88a07c76-91a4-4330-8776-071cdb2f29c1 from workflow 162b14e4-59ec-42f6-9ead-9ff472857c97
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,715 - gleitzeit.workers.dependency_worker - WARNING - Task 88a07c76-91a4-4330-8776-071cdb2f29c1 failed - applying HARD FAIL policy for workflow 162b14e4-59ec-42f6-9ead-9ff472857c97
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,715 - gleitzeit.workers.dependency_worker - WARNING - Task 88a07c76-91a4-4330-8776-071cdb2f29c1 failed - applying HARD FAIL policy for workflow 162b14e4-59ec-42f6-9ead-9ff472857c97
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,716 - gleitzeit.workers.dependency_worker - INFO - Workflow 162b14e4-59ec-42f6-9ead-9ff472857c97 marked as FAILED due to task 88a07c76-91a4-4330-8776-071cdb2f29c1 failure (hard fail policy)
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,717 - gleitzeit.workers.dependency_worker - INFO - Workflow 162b14e4-59ec-42f6-9ead-9ff472857c97 marked as FAILED due to task 88a07c76-91a4-4330-8776-071cdb2f29c1 failure (hard fail policy)
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,718 - gleitzeit.workers.dependency_worker - INFO - Workflow 162b14e4-59ec-42f6-9ead-9ff472857c97 failed with 1 failed tasks
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,731 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 88a07c76-91a4-4330-8776-071cdb2f29c1 from workflow 162b14e4-59ec-42f6-9ead-9ff472857c97
+[2025-10-05 22:10:14] [STDERR] 2025-10-05 22:10:14,732 - gleitzeit.workers.dependency_worker - INFO - Workflow 162b14e4-59ec-42f6-9ead-9ff472857c97 failed with 1 failed tasks
+[2025-10-05 22:13:15] [STDERR] 2025-10-05 22:13:15,382 - dependency.dependency-async - INFO - Shutdown signal received for dependency-async
+[2025-10-05 22:13:16] [STDERR] 2025-10-05 22:13:16,554 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-05 22:13:16] [STDERR] 2025-10-05 22:13:16,554 - dependency.dependency-async - INFO - Worker dependency-async cleaned up

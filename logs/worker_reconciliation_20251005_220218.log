@@ -1,0 +1,540 @@
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,307 - __main__ - INFO - Loading configuration from Redis key: worker:config:reconciliation-async:664641ee
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,310 - __main__ - INFO - Loaded config for worker reconciliation-async
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,311 - __main__ - INFO - Worker reconciliation-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,312 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,312 - gleitzeit.workers.reconciliation_worker - INFO - WorkflowReconciliationWorker initialized: scan_interval=60s, batch_size=100, shards=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,313 - reconciliation.reconciliation-async - INFO - Worker reconciliation-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,313 - __main__ - INFO - Worker reconciliation-async started successfully
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,313 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,313 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation worker run() method started
+[2025-10-05 22:02:18] [STDERR] 2025-10-05 22:02:18,313 - gleitzeit.workers.reconciliation_worker - INFO - Starting reconciliation loop with 5s initial delay
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,314 - gleitzeit.workers.reconciliation_worker - INFO - Initial delay complete, beginning first reconciliation scan
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,315 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() called with 16 shards
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,315 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 0
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,315 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 0
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,315 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 0, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,316 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 0
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,316 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 1
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,316 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 1
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,317 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 1, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,317 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 1
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,318 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 2
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,318 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 2
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,318 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 2, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,319 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 2
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,319 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 3
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,319 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 3
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,319 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 3, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,320 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 3
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,320 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 4
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,320 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 4
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,320 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 4, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,320 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 4
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,321 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 5
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,321 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 5
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,321 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 5, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,321 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 5
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,321 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 6
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,321 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 6
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,322 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 6, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,322 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 6
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,322 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 7
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,322 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 7
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,322 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 7, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,322 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 7
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,323 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 8
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,323 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 8
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,323 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 8, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,323 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 8
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,323 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 9
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,323 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 9
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,324 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 9, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,324 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 9
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,324 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 10
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,324 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 10
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,324 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 10, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,324 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 10
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,325 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 11
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,325 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 11
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,325 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 11, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,325 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 11
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,325 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 12
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,325 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 12
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,325 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 12, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,325 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 12
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,326 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 13
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,326 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 13
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,326 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 13, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,326 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 13
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,326 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 14
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,326 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 14
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,326 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 14, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,327 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 14
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,327 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 15
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,327 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 15
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,327 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 15, starting reconciliation
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,327 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 15
+[2025-10-05 22:02:23] [STDERR] 2025-10-05 22:02:23,327 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() completed
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,329 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() called with 16 shards
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,329 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 0
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,329 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 0
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,329 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 0, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,330 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 0
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,330 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 1
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,330 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 1
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,330 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 1, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,330 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 1
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,331 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 2
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,331 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 2
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,331 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 2, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,331 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 2
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,331 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 3
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,331 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 3
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,331 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 3, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,332 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 3
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,332 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 4
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,332 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 4
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,332 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 4, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,332 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 4
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,332 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 5
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,332 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 5
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,332 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 5, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,333 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 5
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,333 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 6
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,333 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 6
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,333 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 6, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,333 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 6
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,333 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 7
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,333 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 7
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,333 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 7, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,334 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 7
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,334 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 8
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,334 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 8
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,334 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 8, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,334 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 8
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,334 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 9
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,334 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 9
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,334 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 9, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,335 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 9
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,335 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 10
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,335 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 10
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,335 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 10, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,335 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 10
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,335 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 11
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,335 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 11
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,335 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 11, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,336 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 11
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,336 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 12
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,336 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 12
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,336 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 12, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,336 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 12
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,336 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 13
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,336 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 13
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,336 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 13, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,337 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 13
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,337 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 14
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,337 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 14
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,337 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 14, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,337 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 14
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,337 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 15
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,337 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 15
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,337 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 15, starting reconciliation
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,338 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 15
+[2025-10-05 22:03:23] [STDERR] 2025-10-05 22:03:23,338 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() completed
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,339 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() called with 16 shards
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,340 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 0
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,340 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 0
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,341 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 0, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,341 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 0
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,342 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 1
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,342 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 1
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,342 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 1, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,343 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 1
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,343 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 2
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,343 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 2
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,343 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 2, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,344 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 2
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,344 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 3
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,344 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 3
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,344 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 3, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,344 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 3
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,345 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 4
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,345 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 4
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,345 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 4, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,345 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 4
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,346 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 5
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,346 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 5
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,346 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 5, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,346 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 5
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,346 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 6
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,347 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 6
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,347 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 6, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,347 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 6
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,347 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 7
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,347 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 7
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,348 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 7, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,348 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 7
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,348 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 8
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,348 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 8
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,348 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 8, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,349 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 8
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,349 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 9
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,349 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 9
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,349 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 9, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,349 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 9
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,350 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 10
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,350 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 10
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,350 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 10, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,350 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 10
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,350 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 11
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,350 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 11
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,351 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 11, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,351 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 11
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,351 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 12
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,351 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 12
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,351 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 12, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,351 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 12
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,352 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 13
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,352 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 13
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,352 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 13, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,352 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 13
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,352 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 14
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,352 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 14
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,353 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 14, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,353 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 14
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,353 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 15
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,353 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 15
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,354 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 15, starting reconciliation
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,354 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 15
+[2025-10-05 22:04:23] [STDERR] 2025-10-05 22:04:23,354 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() completed
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,356 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() called with 16 shards
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,357 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 0
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,357 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 0
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,357 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 0, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,357 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 0
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,358 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 1
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,358 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 1
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,358 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 1, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,358 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 1
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,359 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 2
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,359 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 2
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,359 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 2, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,359 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 2
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,359 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 3
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,359 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 3
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,360 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 3, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,360 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 3
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,360 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 4
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,360 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 4
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,360 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 4, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,361 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 4
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,361 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 5
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,361 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 5
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,361 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 5, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,361 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 5
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,362 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 6
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,362 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 6
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,362 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 6, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,362 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 6
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,362 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 7
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,362 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 7
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,363 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 7, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,363 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 7
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,363 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 8
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,363 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 8
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,363 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 8, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,364 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 8
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,364 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 9
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,364 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 9
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,364 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 9, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,364 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 9
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,364 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 10
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,364 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 10
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,365 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 10, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,365 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 10
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,365 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 11
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,365 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 11
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,365 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 11, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,365 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 11
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,366 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 12
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,366 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 12
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,366 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 12, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,366 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 12
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,366 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 13
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,366 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 13
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,367 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 13, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,367 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 13
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,367 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 14
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,367 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 14
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,367 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 14, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,367 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 14
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,368 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 15
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,368 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 15
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,368 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 15, starting reconciliation
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,368 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 15
+[2025-10-05 22:05:23] [STDERR] 2025-10-05 22:05:23,368 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() completed
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,370 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() called with 16 shards
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,370 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 0
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,370 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 0
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,371 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 0, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,371 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 0
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,371 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 1
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,372 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 1
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,372 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 1, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,372 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 1
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,372 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 2
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,372 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 2
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,372 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 2, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,373 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 2
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,373 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 3
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,373 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 3
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,373 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 3, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,373 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 3
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,373 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 4
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,373 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 4
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,374 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 4, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,374 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 4
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,374 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 5
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,374 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 5
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,374 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 5, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,374 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 5
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,374 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 6
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,375 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 6
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,375 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 6, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,375 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 6
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,375 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 7
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,375 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 7
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,375 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 7, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,376 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 7
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,376 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 8
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,376 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 8
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,376 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 8, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,376 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 8
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,376 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 9
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,376 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 9
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,376 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 9, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 9
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 10
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 10
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 10, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 10
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 11
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 11
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 11, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,377 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 11
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,378 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 12
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,378 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 12
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,378 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 12, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,378 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 12
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,378 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 13
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,378 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 13
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,378 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 13, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,378 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 13
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,379 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 14
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,379 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 14
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,379 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 14, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,379 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 14
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,379 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 15
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,379 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 15
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,379 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 15, starting reconciliation
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,379 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 15
+[2025-10-05 22:06:23] [STDERR] 2025-10-05 22:06:23,380 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() completed
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,381 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() called with 16 shards
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,381 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 0
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,381 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 0
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,382 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 0, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,382 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 0
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,383 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 1
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,383 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 1
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,383 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 1, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,383 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 1
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,384 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 2
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,384 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 2
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,384 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 2, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,384 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 2
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,384 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 3
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,385 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 3
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,385 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 3, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,385 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 3
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,385 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 4
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,385 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 4
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,386 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 4, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,386 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 4
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,386 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 5
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,386 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 5
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,386 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 5, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,387 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 5
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,387 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 6
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,387 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 6
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,387 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 6, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,387 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 6
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,388 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 7
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,388 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 7
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,388 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 7, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,388 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 7
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,388 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 8
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,388 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 8
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,389 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 8, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,389 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 8
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,389 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 9
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,389 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 9
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,389 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 9, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,389 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 9
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,390 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 10
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,390 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 10
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,390 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 10, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,390 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 10
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,390 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 11
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,390 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 11
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,391 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 11, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,391 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 11
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,391 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 12
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,391 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 12
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,391 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 12, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,392 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 12
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,392 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 13
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,392 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 13
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,392 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 13, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,392 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 13
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,393 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 14
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,393 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 14
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,393 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 14, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,393 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 14
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,393 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 15
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,393 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 15
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,394 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 15, starting reconciliation
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,394 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 15
+[2025-10-05 22:07:23] [STDERR] 2025-10-05 22:07:23,394 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() completed
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,396 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() called with 16 shards
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,396 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 0
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,396 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 0
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,397 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 0, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,398 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 0
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,399 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 1
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,399 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 1
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,399 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 1, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,399 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 1
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,400 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 2
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,400 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 2
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,400 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 2, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,401 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 2
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,401 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 3
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,401 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 3
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,402 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 3, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,402 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 3
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,402 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 4
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,402 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 4
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,403 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 4, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,403 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 4
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,403 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 5
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,403 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 5
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,404 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 5, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,404 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 5
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,404 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 6
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,404 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 6
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,404 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 6, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,405 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 6
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,405 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 7
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,405 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 7
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,405 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 7, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,406 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 7
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,406 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 8
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,406 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 8
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,406 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 8, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,406 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 8
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,407 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 9
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,407 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 9
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,407 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 9, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,407 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 9
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,407 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 10
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,407 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 10
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,408 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 10, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,408 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 10
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,408 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 11
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,408 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 11
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,408 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 11, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,409 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 11
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,409 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 12
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,409 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 12
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,409 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 12, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,409 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 12
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,410 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 13
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,410 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 13
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,410 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 13, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,410 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 13
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,410 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 14
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,410 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 14
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,410 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 14, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,411 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 14
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,411 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 15
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,411 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 15
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,411 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 15, starting reconciliation
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,411 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 15
+[2025-10-05 22:08:23] [STDERR] 2025-10-05 22:08:23,412 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() completed
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,414 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() called with 16 shards
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,414 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 0
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,414 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 0
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,414 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 0, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,415 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 0
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,415 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 1
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,415 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 1
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,415 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 1, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,415 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 1
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,416 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 2
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,416 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 2
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,416 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 2, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,416 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 2
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,416 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 3
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,416 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 3
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,416 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 3, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,417 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 3
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,417 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 4
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,417 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 4
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,417 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 4, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,417 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 4
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,418 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 5
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,418 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 5
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,418 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 5, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,418 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 5
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,418 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 6
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,418 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 6
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - reconciliation.reconciliation-async - INFO - Shutdown signal received for reconciliation-async
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 6, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 6
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 7
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 7
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 7, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 7
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,420 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 8
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,420 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 8
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,420 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 8, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,420 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 8
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,420 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 9
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,420 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 9
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 9, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 9
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 10
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 10
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 10, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 10
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 11
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 11
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 11, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,421 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 11
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 12
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 12
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 12, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 12
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 13
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 13
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 13, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 13
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 14
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 14
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 14, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,422 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 14
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,423 - gleitzeit.workers.reconciliation_worker - INFO - Processing shard 15
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,423 - gleitzeit.workers.reconciliation_worker - INFO - Attempting to acquire lock for shard 15
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,423 - gleitzeit.workers.reconciliation_worker - INFO - Lock acquired for shard 15, starting reconciliation
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,423 - gleitzeit.workers.reconciliation_worker - INFO - Reconciliation complete for shard 15
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,423 - gleitzeit.workers.reconciliation_worker - INFO - reconcile_all_shards() completed

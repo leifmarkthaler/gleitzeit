@@ -179,6 +179,26 @@ workers:
     batch_size: 10
     block_timeout: 1000
 
+  - worker_type: signal
+    worker_class: gleitzeit.workers.signal_worker.SignalWorker
+    count: 1
+    max_concurrent: 10
+    batch_size: 10
+    block_timeout: 1000
+
+  # Workflow state reconciliation worker
+  - worker_type: reconciliation
+    worker_class: gleitzeit.workers.reconciliation_worker.WorkflowReconciliationWorker
+    count: 1
+    max_concurrent: 5
+    # Extra configuration for reconciliation worker
+    extra:
+      scan_interval: 60        # Seconds between reconciliation scans
+      batch_size: 100          # Workflows to process per batch
+      lock_ttl: 120           # Lock TTL in seconds
+      zombie_threshold: 600    # Seconds of inactivity before marking as zombie
+      max_concurrent: 5        # Max workflows to reconcile concurrently
+
 # Sharding configuration
 sharding:
   num_shards: 16

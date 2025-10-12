@@ -1,0 +1,245 @@
+[2025-10-05 22:13:43] [STDERR] INFO:     Started server process [75934]
+[2025-10-05 22:13:43] [STDERR] INFO:     Waiting for application startup.
+[2025-10-05 22:13:43] [STDERR] INFO:     Application startup complete.
+[2025-10-05 22:13:43] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-05 22:13:46] [STDERR] INFO:     127.0.0.1:58250 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:13:46] [STDERR] INFO:     connection open
+[2025-10-05 22:13:46] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-05 22:13:46] [STDOUT] INFO:     127.0.0.1:58252 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:13:49] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:13:49] [STDERR] INFO:     connection closed
+[2025-10-05 22:13:49] [STDERR] INFO:     127.0.0.1:58278 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:13:49] [STDERR] INFO:     connection open
+[2025-10-05 22:13:49] [STDOUT] INFO:     127.0.0.1:58252 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:13:54] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:13:54] [STDERR] INFO:     connection closed
+[2025-10-05 22:13:54] [STDERR] INFO:     127.0.0.1:58294 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:13:54] [STDERR] INFO:     connection open
+[2025-10-05 22:13:54] [STDOUT] INFO:     127.0.0.1:58252 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:14:03] [STDERR] INFO:     127.0.0.1:58313 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:14:03] [STDERR] INFO:     connection open
+[2025-10-05 22:14:03] [STDOUT] INFO:     127.0.0.1:58314 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58458 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58480 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58482 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58483 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58484 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58489 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58492 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58493 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58494 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58502 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58497 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58498 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58501 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58480 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58484 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58489 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58483 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58492 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58482 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58493 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:09] [STDOUT] INFO:     127.0.0.1:58494 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58480 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58483 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58482 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58484 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58489 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58492 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58494 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58493 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58501 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58502 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58498 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58497 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58483 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58480 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58482 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:11] [STDOUT] INFO:     127.0.0.1:58484 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:16] [STDOUT] INFO:     127.0.0.1:58523 - "GET /workflows/list?limit=5 HTTP/1.1" 200 OK
+[2025-10-05 22:17:22] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:17:22] [STDERR] INFO:     connection closed
+[2025-10-05 22:17:22] [STDERR] INFO:     127.0.0.1:58537 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:17:22] [STDERR] INFO:     connection open
+[2025-10-05 22:17:22] [STDOUT] INFO:     127.0.0.1:58539 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:23] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:17:23] [STDERR] INFO:     connection closed
+[2025-10-05 22:17:23] [STDERR] INFO:     127.0.0.1:58541 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:17:23] [STDERR] INFO:     connection open
+[2025-10-05 22:17:23] [STDOUT] INFO:     127.0.0.1:58539 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:24] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:17:24] [STDERR] INFO:     connection closed
+[2025-10-05 22:17:24] [STDERR] INFO:     127.0.0.1:58543 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:17:24] [STDERR] INFO:     connection open
+[2025-10-05 22:17:24] [STDOUT] INFO:     127.0.0.1:58539 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:17:25] [STDERR] INFO:     connection closed
+[2025-10-05 22:17:25] [STDERR] INFO:     127.0.0.1:58545 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:17:25] [STDERR] INFO:     connection open
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:17:25] [STDERR] INFO:     connection closed
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/c5609cbd-0cdf-4b38-851c-a94b78884c41 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/2becddda-b9a9-4f26-bf62-fa98f426b85e HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/32da5cb9-c92f-4327-a205-01afe3650673 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/20a6ce6c-0389-420e-8ee9-cc39ab32bb45 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/48154a3b-4eb0-4eef-895a-ea15eb5f4b0a HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/35b8c46e-0a55-4928-a06e-92c926c3ebd6 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/4efe4f58-b246-4651-9303-efd315761eb1 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/b9e7285f-ed66-4fda-8da5-5b29e0fa1253 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/534ee624-cea8-4ab5-b24e-4a72c9bc5ea8 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/37a15afe-ed42-4860-9f47-e343c32cfda2 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/2129adbc-3d25-4e81-862c-9fdfc3efb77a HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/45b360a8-b799-4765-9477-56bdb7901a61 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/c66a0fe9-04e3-44f0-85a7-aef881f4a032 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/65d4d33b-94e9-4c02-8385-3c7c0f42d989 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/4acf41e6-d4e1-4ce5-8257-d3d663bb9caf HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/d61d5bb6-90d5-468e-bd94-9aa73bd91990 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/c8e52783-d6da-48cb-b7d0-4f50963ef5b6 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/216ce9a6-e5fc-42c5-b158-8e63079a3ea5 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/fc991b8e-c02a-4270-bb80-337183e87301 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/1f827990-4e38-4828-919b-254db0d1d4d0 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/69b4d1ba-6a3b-4f0b-8721-cef2d60b77d2 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/30f547e0-c4a1-4ca9-b28a-889361bea455 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/96ee6fbf-bfce-4a3c-bb53-3fd680626c7c HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/e91ced6e-3674-429f-82bf-679914b6762b HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/83f21066-f36f-4d89-b77d-c1d4f18439e3 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/b9c551dd-3773-4620-b24f-e7b8ba62f3f2 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/f179ff0f-966d-4f13-82e7-b415bfe9c472 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/75ea18e8-bc9c-49dc-87f7-33de72b5d1fe HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/5503e1bb-3f35-4a88-81ae-2398587d5b24 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/94a4a0e3-221b-4d8a-904f-f3c188085ed6 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/7f60e09f-ffcd-4219-90e7-c05dc2925477 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/6cec4d61-e61e-4834-92da-1e39c6bf3d2f HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/3fd47d83-e968-42f1-9298-94a393bffcc7 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/89a15ec4-0bb0-4aff-933f-962870c89161 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/1bb7ee62-6ae6-4cab-a8e2-c7f058c4683e HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/501efaad-4583-41cb-b205-5309432547d5 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/85228ec1-7d3e-4d75-993b-b33a2ac8b0bb HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/1c7b35c0-14c7-4652-a2cb-dd7203920163 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/a896a397-dadf-4fcb-b618-0b3bb1f7e6d5 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/48036a83-7c8c-4a3c-8f94-c9dccc5e6936 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/d121fc5c-84d7-4ecd-beea-be895f9be7cd HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/030e96bc-5032-4018-82fe-c17d9e150f29 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/16fe8019-e500-4bc9-a538-930c947a38a7 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/d291a2b8-4ec0-4d9d-bcd6-ece91f2c7eea HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/edde757d-f231-4afa-91dc-a457e60deebe HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/6977e753-6a1f-4376-921e-13884dc433b0 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/b9df7dc2-eb74-4a73-a719-916be53e96e1 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/a65a674d-5f58-4d42-ae42-e2a47b0c3b80 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58548 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/97ad9795-0b83-42f1-9343-e09d72c4d45e HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/31ddb557-7a3e-46ba-a352-3ef6bfa51e16 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/2f0aa078-e63c-4e68-9257-ed9b26120577 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/d343b2b7-bad5-4e61-9916-3907397f979b HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/d10b7cce-2054-4427-bdee-aaf73781592f HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/8cbe76f0-0f01-4070-afa5-d543bd09a78c HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/641d039e-9983-4227-b437-8263dd043f5d HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/a8bc92e5-c7da-4a58-a9d3-35b09668327d HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/550c5676-d7d5-4a5b-9201-819159080da2 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/69a21ebe-70eb-4c01-9338-9448737fbc1e HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/3d9e5167-0ccb-4015-8d51-3e86c8de15ca HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/55cd1129-f1ba-495d-a3d4-e322639e87ba HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/e89448dc-6454-408b-8276-6a908f0761aa HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/4acc9f85-1fb5-490d-be64-c0b7875a43ca HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/43bed958-e438-4843-934e-244780fa2e18 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/afa88774-c111-4bd2-a443-47f748e89a78 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/9300b5ed-e6aa-4a9b-9bd3-e262568ef6fe HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/4062402b-3742-4b1b-b883-c220b8ac3662 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/19cc6409-9c39-4b65-97dc-79731931e7cb HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/aef5fade-ea47-471b-8b0a-90907490794d HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/6b070931-ee8a-43f4-9b50-830a8252db57 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/6caa8427-d210-483c-9752-bcbd912c4091 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/1473e43b-1ccb-4eb0-bb76-79b2be2a57c4 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/2e365649-e208-45c5-bdb1-02a75fd2e0a8 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/1210be4f-a8b8-4a1e-aed4-42daa1dd8923 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/c7336dec-517a-4882-85a5-92ad8a5f0a35 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/5cba1b53-711c-46f7-b36e-e4c06e79f2d6 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/f343932b-3828-40cf-b71b-fd64614feae1 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/b29892ee-e05b-4352-b851-5b0fd3cf57bd HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/9ac429e4-83c7-486c-9380-ac2fcb21fa5a HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/503350ca-070a-4c71-bb7d-b7a228c75bf6 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/edfec9fd-fac5-4046-9aa8-845c7a387baa HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/38998e68-fad0-48c1-b394-47cfe9980adf HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/e9e66cd7-fb6d-49ff-8ced-9740c35d1204 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/7957547c-eac7-46ef-9f50-1603a1d073c4 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/dd50acb5-4807-485d-8fd9-a87575ae8e0b HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/4c6ed5bb-0f65-4e1d-a6e6-fa61fd575380 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/33ec1bbe-e242-4360-be14-38fbfe81ef23 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/bf59ccaf-7ab4-4ea5-a4e5-3e5613aeb2e4 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/f9e124b1-7b74-48d3-a7c2-7ce2aa68f99d HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/07689835-416e-45d4-9bd9-0d8b3c2f0397 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/4d2c369c-e401-4480-a10b-d730cb3fa924 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/dad3d179-39b8-4e50-8ef0-b74dff10471e HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/ff162a66-8b5e-4292-8dcd-31622d4853b3 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/b1d9d3ee-84bf-4d49-8f2e-17202d619ea3 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/c6cebd19-8419-4644-a73d-8e8417882be7 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/189da011-089f-4711-8868-fed78460af5b HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/6c201cab-5909-455a-bb0f-f1cd3f02a092 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/bdee4fff-5e53-42c9-990e-76d07cd59868 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/ecd27e94-4258-4322-a850-d6cc611fbca2 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/fe92e0da-b266-43aa-9dfd-8b53a2ee23f4 HTTP/1.1" 200 OK
+[2025-10-05 22:17:25] [STDOUT] INFO:     127.0.0.1:58539 - "GET /tasks/7dbc11c6-cc64-4626-b409-f67f19e4cf63 HTTP/1.1" 200 OK
+[2025-10-05 22:17:26] [STDOUT] INFO:     127.0.0.1:58539 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:17:27] [STDERR] INFO:     127.0.0.1:58550 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:17:27] [STDERR] INFO:     connection open
+[2025-10-05 22:17:27] [STDOUT] INFO:     127.0.0.1:58539 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:17:27] [STDOUT] INFO:     127.0.0.1:58539 - "GET /workflows/list?limit=5 HTTP/1.1" 200 OK
+[2025-10-05 22:17:29] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:17:29] [STDERR] INFO:     connection closed
+[2025-10-05 22:17:29] [STDERR] INFO:     127.0.0.1:58568 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:17:29] [STDERR] INFO:     connection open
+[2025-10-05 22:17:29] [STDOUT] INFO:     127.0.0.1:58539 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:18:29] [STDOUT] INFO:     127.0.0.1:58647 - "GET /workflows/list?limit=10 HTTP/1.1" 200 OK
+[2025-10-05 22:20:35] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:20:35] [STDERR] INFO:     connection closed
+[2025-10-05 22:20:35] [STDERR] INFO:     127.0.0.1:58734 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:20:35] [STDERR] INFO:     connection open
+[2025-10-05 22:20:35] [STDOUT] INFO:     127.0.0.1:58736 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:36] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:20:36] [STDERR] INFO:     connection closed
+[2025-10-05 22:20:36] [STDERR] INFO:     127.0.0.1:58738 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:20:36] [STDERR] INFO:     connection open
+[2025-10-05 22:20:36] [STDOUT] INFO:     127.0.0.1:58736 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:36] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:20:36] [STDERR] INFO:     connection closed
+[2025-10-05 22:20:36] [STDERR] INFO:     127.0.0.1:58740 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:20:36] [STDERR] INFO:     connection open
+[2025-10-05 22:20:36] [STDOUT] INFO:     127.0.0.1:58736 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:37] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:20:37] [STDERR] INFO:     connection closed
+[2025-10-05 22:20:37] [STDERR] INFO:     127.0.0.1:58742 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:20:37] [STDERR] INFO:     connection open
+[2025-10-05 22:20:37] [STDOUT] INFO:     127.0.0.1:58736 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:38] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:20:38] [STDERR] INFO:     connection closed
+[2025-10-05 22:20:38] [STDERR] INFO:     127.0.0.1:58744 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:20:38] [STDERR] INFO:     connection open
+[2025-10-05 22:20:38] [STDOUT] INFO:     127.0.0.1:58736 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:43] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:20:43] [STDERR] INFO:     connection closed
+[2025-10-05 22:20:43] [STDOUT] INFO:     127.0.0.1:58748 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58748 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58748 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58754 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58759 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58760 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58748 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58754 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58748 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58748 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58754 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:44] [STDOUT] INFO:     127.0.0.1:58748 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:20:46] [STDOUT] INFO:     127.0.0.1:58748 - "GET /workflows/876c5398-d5a9-4939-a49a-7b3d756ed467 HTTP/1.1" 200 OK
+[2025-10-05 22:20:46] [STDOUT] INFO:     127.0.0.1:58748 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=876c5398-d5a9-4939-a49a-7b3d756ed467 HTTP/1.1" 200 OK
+[2025-10-05 22:20:46] [STDOUT] INFO:     127.0.0.1:58754 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:20:56] [STDOUT] INFO:     127.0.0.1:58765 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:21:06] [STDOUT] INFO:     127.0.0.1:58769 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:21:16] [STDOUT] INFO:     127.0.0.1:58799 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:21:18] [STDERR] INFO:     Shutting down
+[2025-10-05 22:21:18] [STDERR] Error processing WebSocket message: (1012, None)
+[2025-10-05 22:21:18] [STDERR] INFO:     connection closed
+[2025-10-05 22:21:18] [STDERR] INFO:     Waiting for application shutdown.
+[2025-10-05 22:21:18] [STDERR] INFO:     Application shutdown complete.
+[2025-10-05 22:21:18] [STDERR] INFO:     Finished server process [75934]

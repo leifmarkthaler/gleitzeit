@@ -634,3 +634,171 @@ async def get_active_sessions(
         "active": len(sessions)
     }
 
+
+@router.post("/workers/{worker_id}/restart")
+async def restart_worker(
+    worker_id: str,
+    reason: Optional[str] = None,
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """
+    Send restart command to a specific worker.
+
+    The worker will gracefully shutdown and be restarted by the process orchestrator.
+    """
+    import time
+
+    # Check if worker exists - search across all shards
+    worker_data = None
+
+    # Scan for worker with ID across all shards
+    pattern = f"{{shard:*}}:worker:registry:*"
+    async for key in redis.scan_iter(match=pattern.encode(), count=100):
+        data = await redis.hgetall(key)
+        if data:
+            # Check if this is our worker
+            stored_worker_id = data.get(b"worker_id")
+            if stored_worker_id and stored_worker_id.decode() == worker_id:
+                worker_data = data
+                break
+
+    if not worker_data:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Worker '{worker_id}' not found"
+        )
+
+    # Send restart command
+    command_key = f"{{shard:0}}:worker:command:{worker_id}"
+    command = {
+        "command": "restart",
+        "timestamp": time.time(),
+        "reason": reason or "API restart request"
+    }
+
+    # Set with 60 second expiry
+    await redis.setex(
+        command_key.encode(),
+        60,
+        json.dumps(command)
+    )
+
+    return {
+        "worker_id": worker_id,
+        "command": "restart",
+        "status": "sent",
+        "reason": command["reason"],
+        "timestamp": command["timestamp"]
+    }
+
+
+@router.post("/workers/{worker_id}/stop")
+async def stop_worker(
+    worker_id: str,
+    reason: Optional[str] = None,
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """
+    Send stop command to a specific worker.
+
+    The worker will gracefully shutdown (without restart).
+    """
+    import time
+
+    # Check if worker exists - search across all shards
+    worker_data = None
+
+    # Scan for worker with ID across all shards
+    pattern = f"{{shard:*}}:worker:registry:*"
+    async for key in redis.scan_iter(match=pattern.encode(), count=100):
+        data = await redis.hgetall(key)
+        if data:
+            # Check if this is our worker
+            stored_worker_id = data.get(b"worker_id")
+            if stored_worker_id and stored_worker_id.decode() == worker_id:
+                worker_data = data
+                break
+
+    if not worker_data:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Worker '{worker_id}' not found"
+        )
+
+    # Send stop command
+    command_key = f"{{shard:0}}:worker:command:{worker_id}"
+    command = {
+        "command": "stop",
+        "timestamp": time.time(),
+        "reason": reason or "API stop request"
+    }
+
+    # Set with 60 second expiry
+    await redis.setex(
+        command_key.encode(),
+        60,
+        json.dumps(command)
+    )
+
+    return {
+        "worker_id": worker_id,
+        "command": "stop",
+        "status": "sent",
+        "reason": command["reason"],
+        "timestamp": command["timestamp"]
+    }
+
+
+@router.post("/workers/{worker_id}/reload")
+async def reload_worker(
+    worker_id: str,
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """
+    Send reload command to a specific worker.
+
+    The worker will reload its configuration without restarting.
+    """
+    import time
+
+    # Check if worker exists - search across all shards
+    worker_data = None
+
+    # Scan for worker with ID across all shards
+    pattern = f"{{shard:*}}:worker:registry:*"
+    async for key in redis.scan_iter(match=pattern.encode(), count=100):
+        data = await redis.hgetall(key)
+        if data:
+            # Check if this is our worker
+            stored_worker_id = data.get(b"worker_id")
+            if stored_worker_id and stored_worker_id.decode() == worker_id:
+                worker_data = data
+                break
+
+    if not worker_data:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Worker '{worker_id}' not found"
+        )
+
+    # Send reload command
+    command_key = f"{{shard:0}}:worker:command:{worker_id}"
+    command = {
+        "command": "reload",
+        "timestamp": time.time()
+    }
+
+    # Set with 60 second expiry
+    await redis.setex(
+        command_key.encode(),
+        60,
+        json.dumps(command)
+    )
+
+    return {
+        "worker_id": worker_id,
+        "command": "reload",
+        "status": "sent",
+        "timestamp": command["timestamp"]
+    }
+

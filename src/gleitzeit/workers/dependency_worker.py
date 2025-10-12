@@ -227,6 +227,15 @@ class DependencyWorker(BaseWorker):
             task_id=task_id
         )
 
+        # Check if task is already completed to prevent duplicate processing
+        completed_key = default_sharding.get_workflow_key("tasks:completed", workflow_id)
+        was_added = await self.redis.sadd(completed_key.encode(), task_id.encode())
+
+        if not was_added:
+            # Task already processed, skip to avoid double-counting
+            logger.debug(f"Task {task_id} already completed, skipping duplicate processing")
+            return
+
         # Update completed tasks count in consolidated state
         await self.redis.hincrby(
             default_sharding.get_workflow_key("state", workflow_id).encode(),
@@ -253,10 +262,6 @@ class DependencyWorker(BaseWorker):
         dependency_graph = {}
         for tid, deps in raw_graph.items():
             dependency_graph[tid.decode()] = json.loads(deps.decode())
-
-        # Mark task as completed
-        completed_key = default_sharding.get_workflow_key("tasks:completed", workflow_id)
-        await self.redis.sadd(completed_key.encode(), task_id.encode())
 
         # Find newly ready tasks
         ready_tasks = await self.find_ready_tasks(

@@ -1,0 +1,18 @@
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,786 - __main__ - INFO - Loading configuration from Redis key: worker:config:timer-async:0c092db2
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,789 - __main__ - INFO - Loaded config for worker timer-async
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,790 - __main__ - INFO - Worker timer-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,791 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,791 - gleitzeit.workers.timer_worker - INFO - TimerWorker initialized with atomic leader election
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,793 - timer.timer-async - INFO - Worker timer-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,793 - __main__ - INFO - Worker timer-async started successfully
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,793 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,793 - gleitzeit.workers.timer_worker - INFO - Worker timer-async starting with consumer group timer-group
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,793 - gleitzeit.workers.timer_worker - INFO - Starting atomic leader election loop for timer-async
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,793 - gleitzeit.core.leader_election - INFO - Worker timer-async became leader for {shard:0}:global:timer:leader
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,793 - gleitzeit.workers.timer_worker - INFO - Worker timer-async became timer leader
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,271 - gleitzeit.workers.timer_worker - INFO - Processing 1 expired timers
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,271 - gleitzeit.workers.timer_worker - INFO - Retry timer expired for task 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 in workflow b6b4a7ad-01ca-475d-852f-064700bfc2e9
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,272 - gleitzeit.workers.timer_worker - INFO - Task 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 re-queued to task:ready stream
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,293 - gleitzeit.workers.timer_worker - INFO - Processing 1 expired timers
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,293 - gleitzeit.workers.timer_worker - INFO - Retry timer expired for task 26f687d0-2be1-480b-917f-5da25a92dcee in workflow f14475bc-6f6e-47f9-8e6a-6da7a254bf70
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,295 - gleitzeit.workers.timer_worker - INFO - Task 26f687d0-2be1-480b-917f-5da25a92dcee re-queued to task:ready stream

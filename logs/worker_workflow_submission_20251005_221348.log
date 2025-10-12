@@ -1,0 +1,12 @@
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,722 - __main__ - INFO - Loading configuration from Redis key: worker:config:workflow_submission-async:3a4ac926
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,725 - __main__ - INFO - Loaded config for worker workflow_submission-async
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,726 - __main__ - INFO - Worker workflow_submission-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,726 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,726 - gleitzeit.workers.workflow_submission_worker - INFO - WorkflowSubmissionWorker initialized with shards [] monitoring streams: ['workflow:submit']
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,727 - workflow_submission.workflow_submission-async - INFO - Worker workflow_submission-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,727 - __main__ - INFO - Worker workflow_submission-async started successfully
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,727 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:13:48] [STDERR] 2025-10-05 22:13:48,727 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_submission-async
+[2025-10-05 22:21:18] [STDERR] 2025-10-05 22:21:18,161 - workflow_submission.workflow_submission-async - INFO - Shutdown signal received for workflow_submission-async
+[2025-10-05 22:21:21] [STDERR] 2025-10-05 22:21:21,736 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-05 22:21:21] [STDERR] 2025-10-05 22:21:21,736 - workflow_submission.workflow_submission-async - INFO - Worker workflow_submission-async cleaned up

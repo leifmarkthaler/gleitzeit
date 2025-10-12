@@ -1,0 +1,36 @@
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,403 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:b751901a
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,406 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,406 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,407 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,407 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,407 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,408 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,408 - __main__ - INFO - Worker dependency-async started successfully
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,408 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 20:23:16] [STDERR] 2025-10-12 20:23:16,408 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,036 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: workflow_08237bdd0e70
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,039 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task a62cb46b-1efa-40ae-83ac-4207aeda2116 to shard 11
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,040 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 30297775-df11-4ba9-b175-197130571e9c to shard 11
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,055 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: a62cb46b-1efa-40ae-83ac-4207aeda2116 from workflow workflow_08237bdd0e70
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,055 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: a62cb46b-1efa-40ae-83ac-4207aeda2116 from workflow workflow_08237bdd0e70
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,055 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 30297775-df11-4ba9-b175-197130571e9c from workflow workflow_08237bdd0e70
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,057 - gleitzeit.workers.dependency_worker - WARNING - Task a62cb46b-1efa-40ae-83ac-4207aeda2116 failed - applying HARD FAIL policy for workflow workflow_08237bdd0e70
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,057 - gleitzeit.workers.dependency_worker - WARNING - Task a62cb46b-1efa-40ae-83ac-4207aeda2116 failed - applying HARD FAIL policy for workflow workflow_08237bdd0e70
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,057 - gleitzeit.workers.dependency_worker - WARNING - Task 30297775-df11-4ba9-b175-197130571e9c failed - applying HARD FAIL policy for workflow workflow_08237bdd0e70
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,058 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow_08237bdd0e70 marked as FAILED due to task a62cb46b-1efa-40ae-83ac-4207aeda2116 failure (hard fail policy)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,059 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow_08237bdd0e70 marked as FAILED due to task a62cb46b-1efa-40ae-83ac-4207aeda2116 failure (hard fail policy)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,059 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow_08237bdd0e70 marked as FAILED due to task 30297775-df11-4ba9-b175-197130571e9c failure (hard fail policy)
+[2025-10-12 20:23:40] [STDERR] 2025-10-12 20:23:40,068 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 30297775-df11-4ba9-b175-197130571e9c from workflow workflow_08237bdd0e70
+[2025-10-12 20:25:11] [STDERR] 2025-10-12 20:25:11,847 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: f4952965-a29b-4ba3-9ff5-b465bc1c2d07
+[2025-10-12 20:25:11] [STDERR] 2025-10-12 20:25:11,850 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 0933a956-343f-45ee-8842-a5a5921e3838 to shard 11
+[2025-10-12 20:25:11] [STDERR] 2025-10-12 20:25:11,861 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 0933a956-343f-45ee-8842-a5a5921e3838 from workflow f4952965-a29b-4ba3-9ff5-b465bc1c2d07
+[2025-10-12 20:25:11] [STDERR] 2025-10-12 20:25:11,861 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 0933a956-343f-45ee-8842-a5a5921e3838 from workflow f4952965-a29b-4ba3-9ff5-b465bc1c2d07
+[2025-10-12 20:25:11] [STDERR] 2025-10-12 20:25:11,864 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task 77a7e7e3-919e-4657-960b-04b016defc72 to shard 11
+[2025-10-12 20:25:11] [STDERR] 2025-10-12 20:25:11,874 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 77a7e7e3-919e-4657-960b-04b016defc72 from workflow f4952965-a29b-4ba3-9ff5-b465bc1c2d07
+[2025-10-12 20:25:11] [STDERR] 2025-10-12 20:25:11,874 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 77a7e7e3-919e-4657-960b-04b016defc72 from workflow f4952965-a29b-4ba3-9ff5-b465bc1c2d07
+[2025-10-12 20:25:11] [STDERR] 2025-10-12 20:25:11,877 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task c350c987-5750-429d-aab4-070f461de6f2 to shard 11
+[2025-10-12 20:25:12] [STDERR] 2025-10-12 20:25:12,031 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: c350c987-5750-429d-aab4-070f461de6f2 from workflow f4952965-a29b-4ba3-9ff5-b465bc1c2d07
+[2025-10-12 20:25:12] [STDERR] 2025-10-12 20:25:12,033 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task ffe2596f-f257-42b2-a406-22699f140739 to shard 11
+[2025-10-12 20:25:12] [STDERR] 2025-10-12 20:25:12,042 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: ffe2596f-f257-42b2-a406-22699f140739 from workflow f4952965-a29b-4ba3-9ff5-b465bc1c2d07
+[2025-10-12 20:25:12] [STDERR] 2025-10-12 20:25:12,042 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: ffe2596f-f257-42b2-a406-22699f140739 from workflow f4952965-a29b-4ba3-9ff5-b465bc1c2d07
+[2025-10-12 20:25:12] [STDERR] 2025-10-12 20:25:12,043 - gleitzeit.workers.dependency_worker - INFO - Workflow f4952965-a29b-4ba3-9ff5-b465bc1c2d07 completed successfully!

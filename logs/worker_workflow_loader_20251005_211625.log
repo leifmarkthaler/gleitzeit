@@ -289,3 +289,6 @@
 [2025-10-05 21:29:10] [STDERR]   ]
 [2025-10-05 21:29:10] [STDERR] }
 [2025-10-05 21:29:10] [STDERR] 2025-10-05 21:29:10,981 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow a7460c1a-5a15-4108-b843-698aa3d804b9 loaded and submitted to shard 13 with indexes
+[2025-10-05 21:43:10] [STDERR] 2025-10-05 21:43:10,280 - workflow_loader.workflow_loader-async - INFO - Shutdown signal received for workflow_loader-async
+[2025-10-05 21:43:15] [STDERR] 2025-10-05 21:43:15,170 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-05 21:43:15] [STDERR] 2025-10-05 21:43:15,170 - workflow_loader.workflow_loader-async - INFO - Worker workflow_loader-async cleaned up

@@ -198,6 +198,9 @@ async def list_task_ids(
 
                     task_ids.append(task_id)
 
+    # Reverse to show newest tasks first
+    task_ids.reverse()
+
     total = len(task_ids)
     paginated = task_ids[offset: offset + limit]
 
@@ -258,9 +261,17 @@ async def get_task(
         if not state_key or not state:
             raise HTTPException(status_code=404, detail="Task not found")
 
+        # Get workflow_id from state or from index if not in state
+        workflow_id = state.get("workflow_id")
+        if not workflow_id:
+            # Check the task->workflow index
+            workflow_id_bytes = await conn.redis.hget(b"{shard:0}:index:task_workflow", task_id.encode())
+            if workflow_id_bytes:
+                workflow_id = workflow_id_bytes.decode()
+
         return {
             "task_id": task_id,
-            "workflow_id": state.get("workflow_id"),
+            "workflow_id": workflow_id,
             "state": state,
         }
 

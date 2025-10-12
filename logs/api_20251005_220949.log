@@ -1,0 +1,25 @@
+[2025-10-05 22:09:49] [STDERR] INFO:     Started server process [72859]
+[2025-10-05 22:09:49] [STDERR] INFO:     Waiting for application startup.
+[2025-10-05 22:09:49] [STDERR] INFO:     Application startup complete.
+[2025-10-05 22:09:49] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-05 22:10:10] [STDERR] INFO:     127.0.0.1:57933 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:10:10] [STDERR] INFO:     connection open
+[2025-10-05 22:10:10] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-05 22:10:10] [STDOUT] INFO:     127.0.0.1:57935 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:10:12] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-05 22:10:12] [STDERR] INFO:     connection closed
+[2025-10-05 22:10:12] [STDOUT] INFO:     127.0.0.1:57935 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:10:14] [STDOUT] INFO:     127.0.0.1:57935 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-05 22:10:16] [STDOUT] INFO:     127.0.0.1:57935 - "GET /workflows/162b14e4-59ec-42f6-9ead-9ff472857c97 HTTP/1.1" 200 OK
+[2025-10-05 22:10:17] [STDOUT] INFO:     127.0.0.1:57935 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=162b14e4-59ec-42f6-9ead-9ff472857c97 HTTP/1.1" 200 OK
+[2025-10-05 22:10:17] [STDOUT] INFO:     127.0.0.1:57942 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-05 22:10:22] [STDERR] INFO:     127.0.0.1:57945 - "WebSocket /ws/events" [accepted]
+[2025-10-05 22:10:22] [STDERR] INFO:     connection open
+[2025-10-05 22:10:23] [STDOUT] INFO:     127.0.0.1:57947 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-05 22:11:19] [STDOUT] INFO:     127.0.0.1:57998 - "GET /workflows/list?limit=10 HTTP/1.1" 200 OK
+[2025-10-05 22:13:15] [STDERR] INFO:     Shutting down
+[2025-10-05 22:13:15] [STDERR] Error processing WebSocket message: (1012, None)
+[2025-10-05 22:13:15] [STDERR] INFO:     connection closed
+[2025-10-05 22:13:15] [STDERR] INFO:     Waiting for application shutdown.
+[2025-10-05 22:13:15] [STDERR] INFO:     Application shutdown complete.
+[2025-10-05 22:13:15] [STDERR] INFO:     Finished server process [72859]

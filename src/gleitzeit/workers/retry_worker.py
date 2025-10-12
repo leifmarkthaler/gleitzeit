@@ -325,7 +325,7 @@ class RetryWorker(BaseWorker):
                 event_type=EventType.TASK_FAILED,
                 workflow_id=workflow_id,
                 task_id=task_id,
-                level=EventLevel.ERROR,
+                level=EventLevel.CRITICAL,
                 data={
                     'error': error_msg,
                     'retry_decision': decision.value,

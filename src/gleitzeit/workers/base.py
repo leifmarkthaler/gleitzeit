@@ -490,6 +490,9 @@ class BaseWorker(ABC, LoggingMixin, PendingRecoveryMixin):
             try:
                 await self._register_worker()  # Refresh registration
 
+                # Check for worker commands
+                await self._check_worker_commands()
+
                 # Calculate metrics
                 uptime = (datetime.utcnow() - self.started_at).total_seconds()
                 processing_rate = self.messages_processed / uptime if uptime > 0 else 0
@@ -536,6 +539,140 @@ class BaseWorker(ABC, LoggingMixin, PendingRecoveryMixin):
         """Handle graceful shutdown"""
         self.logger.info(f"Shutdown signal received for {self.config.worker_id}")
         self._running = False
+
+    async def _check_worker_commands(self):
+        """
+        Check for worker management commands from API.
+
+        This method is called during each heartbeat to check if the API
+        has sent any commands to this worker (restart, stop, reload).
+
+        Commands are stored in Redis with a 60-second TTL and are deleted
+        immediately after processing to prevent duplicate execution.
+
+        Supported commands:
+        - restart: Graceful shutdown (orchestrator will restart)
+        - stop: Graceful shutdown without restart
+        - reload: Reload configuration from Redis
+        """
+        try:
+            command_key = f"{{shard:0}}:worker:command:{self.config.worker_id}"
+            command_data = await self.redis.get(command_key.encode())
+
+            if command_data:
+                command = json.loads(command_data.decode())
+                command_type = command.get('command')
+                timestamp = command.get('timestamp', 0)
+
+                # Only process commands that are less than 60 seconds old
+                import time
+                if time.time() - timestamp < 60:
+                    self.logger.info(f"Received command: {command_type}")
+
+                    # Delete command to prevent reprocessing
+                    await self.redis.delete(command_key.encode())
+
+                    # Handle command
+                    if command_type == 'stop':
+                        await self._handle_stop_command(command)
+                    elif command_type == 'restart':
+                        await self._handle_restart_command(command)
+                    elif command_type == 'reload':
+                        await self._handle_reload_command(command)
+                    else:
+                        self.logger.warning(f"Unknown command type: {command_type}")
+                else:
+                    # Command too old, delete it
+                    await self.redis.delete(command_key.encode())
+
+        except Exception as e:
+            self.logger.error(f"Error checking worker commands: {e}")
+
+    async def _handle_stop_command(self, command: Dict[str, Any]):
+        """
+        Handle stop command - graceful shutdown without restart.
+
+        Updates worker status to 'stopping' and triggers graceful shutdown
+        by setting self._running = False.
+
+        Args:
+            command: Command dict with 'reason' field
+        """
+        reason = command.get('reason', 'API stop command')
+        self.logger.info(f"Stopping worker: {reason}")
+
+        # Update status
+        worker_key = f"{{shard:0}}:worker:registry:{self.config.worker_id}"
+        await self.redis.hset(
+            worker_key.encode(),
+            b"status", b"stopping"
+        )
+
+        # Trigger shutdown
+        self._running = False
+
+    async def _handle_restart_command(self, command: Dict[str, Any]):
+        """
+        Handle restart command - graceful shutdown with restart by orchestrator.
+
+        Updates worker status to 'restarting', records restart reason and timestamp,
+        then triggers graceful shutdown. The process orchestrator will automatically
+        restart the worker process.
+
+        Args:
+            command: Command dict with 'reason' field
+
+        Example:
+            Via API: POST /system/workers/timer-async/restart?reason=Apply+fixes
+        """
+        reason = command.get('reason', 'API restart command')
+        self.logger.info(f"Restarting worker: {reason}")
+
+        # Mark for restart
+        worker_key = f"{{shard:0}}:worker:registry:{self.config.worker_id}"
+        await self.redis.hset(
+            worker_key.encode(),
+            mapping={
+                b"status": b"restarting",
+                b"restart_reason": reason.encode(),
+                b"restart_requested_at": datetime.utcnow().isoformat().encode()
+            }
+        )
+
+        # Trigger shutdown (process manager will restart if configured)
+        self._running = False
+
+    async def _handle_reload_command(self, command: Dict[str, Any]):
+        """
+        Handle reload command - hot reload configuration without restart.
+
+        Reloads worker configuration from Redis. Subclasses can override this
+        method to implement specific reload logic (e.g., reload handler configs,
+        update rate limits, etc.).
+
+        Args:
+            command: Command dict
+
+        Note:
+            Default implementation only logs. Subclasses should override for
+            actual reload functionality.
+        """
+        self.logger.info("Reloading worker configuration")
+
+        try:
+            # Reload configuration from Redis if available
+            config_key = f"{{shard:0}}:worker:config:{self.config.worker_id}"
+            config_data = await self.redis.hgetall(config_key.encode())
+
+            if config_data:
+                self.logger.info("Configuration reloaded successfully")
+                # Note: Actual config reload depends on worker implementation
+                # Subclasses can override this method for specific reload logic
+            else:
+                self.logger.warning("No configuration found to reload")
+
+        except Exception as e:
+            self.logger.error(f"Error reloading configuration: {e}")
 
     async def _emit_to_dead_letter_queue(self, stream: str, msg_id: str, data: Any, error: str = None):
         """Emit failed messages to dead letter queue (stateless - no tracking)"""

@@ -27,3 +27,6 @@
 [2025-10-05 21:29:11] [STDERR] 2025-10-05 21:29:11,489 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 329fb4d3-99db-48f1-a337-5184555d99a1 from workflow a7460c1a-5a15-4108-b843-698aa3d804b9
 [2025-10-05 21:29:11] [STDERR] 2025-10-05 21:29:11,491 - gleitzeit.workers.dependency_worker - WARNING - Task 329fb4d3-99db-48f1-a337-5184555d99a1 failed - applying HARD FAIL policy for workflow a7460c1a-5a15-4108-b843-698aa3d804b9
 [2025-10-05 21:29:11] [STDERR] 2025-10-05 21:29:11,492 - gleitzeit.workers.dependency_worker - INFO - Workflow a7460c1a-5a15-4108-b843-698aa3d804b9 marked as FAILED due to task 329fb4d3-99db-48f1-a337-5184555d99a1 failure (hard fail policy)
+[2025-10-05 21:43:10] [STDERR] 2025-10-05 21:43:10,280 - dependency.dependency-async - INFO - Shutdown signal received for dependency-async
+[2025-10-05 21:43:10] [STDERR] 2025-10-05 21:43:10,669 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-05 21:43:10] [STDERR] 2025-10-05 21:43:10,669 - dependency.dependency-async - INFO - Worker dependency-async cleaned up

@@ -34,15 +34,15 @@
                 </div>
                 <div class="info-item">
                     <span class="info-label">Created:</span>
-                    <span class="info-value">{{ task.get('created_at', '-') }}</span>
+                    <span class="info-value" id="task-created-time">{{ task.get('created_at', '-') }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Started:</span>
-                    <span class="info-value">{{ task.get('state', {}).get('executed_at', '-') }}</span>
+                    <span class="info-value" id="task-started-time">{{ task.get('state', {}).get('executed_at', '-') }}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Completed:</span>
-                    <span class="info-value">{{ task.get('state', {}).get('completed_at', '-') }}</span>
+                    <span class="info-value" id="task-completed-time">{{ task.get('state', {}).get('completed_at', '-') }}</span>
                 </div>
                 {% if task.get('retry_count') %}
                 <div class="info-item">
@@ -104,23 +104,30 @@
         </div>
         <div class="card-body">
             <div class="error-details">
-                {% if task['state']['error'].get('message') %}
-                <div class="error-message">
-                    <strong>Message:</strong> {{ task['state']['error']['message'] }}
-                </div>
-                {% endif %}
-                {% if task['state']['error'].get('type') %}
-                <div class="error-type">
-                    <strong>Type:</strong> {{ task['state']['error']['type'] }}
-                </div>
-                {% endif %}
-                {% if task['state']['error'].get('traceback') %}
-                <div class="error-traceback">
-                    <strong>Traceback:</strong>
-                    <pre class="code-block error">{{ task['state']['error']['traceback'] }}</pre>
-                </div>
-                {% elif task['state']['error'] %}
-                <pre class="code-block error">{{ task['state']['error'] | tojson(indent=2) }}</pre>
+                {% set error = task['state']['error'] %}
+                {% if error is mapping %}
+                    {# Error is a dict - extract structured fields #}
+                    {% if error.get('message') %}
+                    <div class="error-message">
+                        <strong>Message:</strong> {{ error['message'] }}
+                    </div>
+                    {% endif %}
+                    {% if error.get('type') %}
+                    <div class="error-type">
+                        <strong>Type:</strong> {{ error['type'] }}
+                    </div>
+                    {% endif %}
+                    {% if error.get('traceback') %}
+                    <div class="error-traceback">
+                        <strong>Traceback:</strong>
+                        <pre class="code-block error">{{ error['traceback'] }}</pre>
+                    </div>
+                    {% else %}
+                    <pre class="code-block error">{{ error | tojson(indent=2) }}</pre>
+                    {% endif %}
+                {% else %}
+                    {# Error is a string - display as-is #}
+                    <pre class="code-block error">{{ error }}</pre>
                 {% endif %}
             </div>
         </div>
@@ -714,6 +721,31 @@ function renderTimeline(events) {
 document.addEventListener('DOMContentLoaded', function() {
     loadTaskLogs();
     loadTaskTimeline();
+
+    // Convert UTC timestamps to local time
+    const timeElements = [
+        {id: 'task-created-time'},
+        {id: 'task-started-time'},
+        {id: 'task-completed-time'}
+    ];
+
+    timeElements.forEach(({id}) => {
+        const timeEl = document.getElementById(id);
+        if (timeEl) {
+            const utcTime = timeEl.textContent.trim();
+            if (utcTime && utcTime !== '-') {
+                const date = new Date(utcTime);
+                timeEl.textContent = date.toLocaleString('sv-SE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                }).replace(',', '');
+            }
+        }
+    });
 });
 
 // Auto-refresh every 3 seconds if task is still running

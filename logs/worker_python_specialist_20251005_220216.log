@@ -1,0 +1,166 @@
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,217 - __main__ - INFO - Loading configuration from Redis key: worker:config:python_specialist-async:e9b3fe03
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,221 - __main__ - INFO - Loaded config for worker python_specialist-async
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,221 - __main__ - INFO - Worker python_specialist-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,221 - gleitzeit.handlers.registry - INFO - Registered handler FileHandler for protocol file/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,278 - gleitzeit.handlers.registry - INFO - Registered handler HttpHandler for protocol http/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,285 - gleitzeit.handlers.registry - INFO - Registered handler OllamaHandler for protocol ollama/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,286 - gleitzeit.handlers.registry - INFO - Registered handler PythonHandler for protocol python/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,286 - gleitzeit.handlers.registry - INFO - Registered handler SignalHandler for protocol signal/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,286 - gleitzeit.handlers.registry - INFO - Registered handler TimerHandler for protocol timer/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.handlers.registry - INFO - Registered handler ValidationHandler for protocol validation/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.handlers.registry - INFO - Registered handler WorkflowHandler for protocol workflow/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.handlers - INFO - Auto-discovered 8 handler modules: file, http, ollama, python, signal, timer, validation, workflow
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.workers.task_execution_worker - INFO - Found handler configurations for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.handlers.base - INFO - Handler FileHandler initialized with ID: 3d43336c-39f4-415f-b4b5-567f5d2f23f0
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol file/v1: FileHandler (ID: 3d43336c)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'base_directories', 'max_file_size_mb', 'worker_id']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.handlers.base - INFO - Handler HttpHandler initialized with ID: 49f3d70e-a268-43bf-ba82-9ee1602edadf
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol http/v1: HttpHandler (ID: 49f3d70e)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'timeout', 'max_retries', 'allowed_hosts', 'default_headers', 'worker_id']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.handlers.base - INFO - Handler OllamaHandler initialized with ID: a12d4ae8-8a1b-4275-b30d-e7d2ef4d7350
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.core.circuit_breaker - INFO - Circuit breaker 'ollama_http://localhost:11434' initialized with threshold=3
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol ollama/v1: OllamaHandler (ID: a12d4ae8)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'base_url', 'timeout', 'default_model', 'circuit_breaker', 'worker_id']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,287 - gleitzeit.handlers.base - INFO - Handler PythonHandler initialized with ID: e85eef79-edf2-4750-85b2-8b3bba657267
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.handlers.python - INFO - Python handler will use subprocess pool (min=5, max=30)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol python/v1: PythonHandler (ID: e85eef79)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'execution_mode', 'config', 'subprocess_pool_enabled', 'subprocess_pool_min_size', 'subprocess_pool_max_size', 'default_timeout', 'worker_id']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.handlers.base - INFO - Handler SignalHandler initialized with ID: 27eea2ca-f0df-44f4-b5e6-9870ba70bc10
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol signal/v1: SignalHandler (ID: 27eea2ca)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'delivery_mode', 'max_signals_per_workflow', 'worker_id']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.handlers.base - INFO - Handler TimerHandler initialized with ID: 33ec12c9-d6c5-4bb6-9944-65d405d7389d
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol timer/v1: TimerHandler (ID: 33ec12c9)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'precision_ms', 'backend', 'worker_id']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.handlers.base - INFO - Handler ValidationHandler initialized with ID: 344b0a06-8601-45c3-8f0b-55b7b6e752aa
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol validation/v1: ValidationHandler (ID: 344b0a06)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['worker_id']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.handlers.base - INFO - Handler WorkflowHandler initialized with ID: 3b929ffc-9aec-4f2f-9bd8-3ce09a807e72
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol workflow/v1: WorkflowHandler (ID: 3b929ffc)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'max_child_workflows', 'async_submission', 'worker_id']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - Worker initialized with 8 handlers: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.core.cache - INFO - Created workflow cache with max_size=1000, ttl=3600
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - TaskExecutionWorker initialized with enabled types: ['all']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - Available handlers: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.workers.task_execution_worker - INFO - Workflow cache configured: size=1000, ttl=3600s
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.handlers.python - INFO - Eagerly initializing subprocess pool...
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,288 - gleitzeit.core.subprocess_pool - INFO - Initializing Python subprocess pool (min=5, max=30)
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,378 - gleitzeit.core.subprocess_pool - INFO - Subprocess pool initialized with 5 processes
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,378 - gleitzeit.handlers.python - INFO - Subprocess pool initialized successfully
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,378 - gleitzeit.workers.task_execution_worker - INFO - Async initialization completed for handler python/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,380 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 3d43336c for protocol file/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,380 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 49f3d70e for protocol http/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,380 - gleitzeit.workers.task_execution_worker - INFO - Registered handler a12d4ae8 for protocol ollama/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,382 - gleitzeit.workers.task_execution_worker - INFO - Registered handler e85eef79 for protocol python/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,382 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 27eea2ca for protocol signal/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,382 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 33ec12c9 for protocol timer/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,383 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 344b0a06 for protocol validation/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,383 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 3b929ffc for protocol workflow/v1
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,384 - python_specialist.python_specialist-async - INFO - Worker python_specialist-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,384 - __main__ - INFO - Worker python_specialist-async started successfully
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,384 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:16] [STDERR] 2025-10-05 22:02:16,384 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for python_specialist-async
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,050 - gleitzeit.workers.task_execution_worker - INFO - Processing task 2e18462d-2cc6-4dfe-81ce-207af148ad60 from workflow e4968177-d192-4aa1-8975-686b7039baa8
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,053 - gleitzeit.workers.task_execution_worker - INFO - Executing task 2e18462d-2cc6-4dfe-81ce-207af148ad60 with handler PythonHandler
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,059 - gleitzeit.workers.task_execution_worker - ERROR - Task 2e18462d-2cc6-4dfe-81ce-207af148ad60 failed: [TASK_EXECUTION_FAILED] Python execution failed: 'return' outside function (<string>, line 2)
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,061 - gleitzeit.workers.task_execution_worker - INFO - Emitted task failure to RetryWorker for 2e18462d-2cc6-4dfe-81ce-207af148ad60
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,693 - gleitzeit.workers.task_execution_worker - INFO - Processing task a10dfd79-6729-4117-850c-07581e4a6099 from workflow 78b5d738-6be0-4f40-934b-21ee342d35b9
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,695 - gleitzeit.workers.task_execution_worker - INFO - Executing task a10dfd79-6729-4117-850c-07581e4a6099 with handler PythonHandler
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,702 - gleitzeit.workers.task_execution_worker - ERROR - Task a10dfd79-6729-4117-850c-07581e4a6099 failed: [TASK_EXECUTION_FAILED] Python execution failed: 'return' outside function (<string>, line 2)
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,703 - gleitzeit.workers.task_execution_worker - INFO - Emitted task failure to RetryWorker for a10dfd79-6729-4117-850c-07581e4a6099
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,402 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 24 messages from {shard:0}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,403 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 27 messages from {shard:1}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,404 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 26 messages from {shard:2}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,405 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 19 messages from {shard:3}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,406 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 21 messages from {shard:4}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,407 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 19 messages from {shard:5}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,408 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 23 messages from {shard:6}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,409 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 24 messages from {shard:7}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,410 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 26 messages from {shard:8}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,411 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 27 messages from {shard:9}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,412 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 26 messages from {shard:10}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,413 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 26 messages from {shard:11}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,413 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 26 messages from {shard:12}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,414 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 19 messages from {shard:13}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,415 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 29 messages from {shard:14}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,416 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 27 messages from {shard:15}:task:ready
+[2025-10-05 22:05:16] [STDERR] 2025-10-05 22:05:16,419 - gleitzeit.workers.pending_recovery - INFO - Claimed 389 stuck pending messages
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,421 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 39 messages from {shard:0}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,423 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 21 messages from {shard:1}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,424 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 37 messages from {shard:2}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,424 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 2 messages from {shard:3}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,425 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 30 messages from {shard:4}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,426 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 23 messages from {shard:5}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,427 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 7 messages from {shard:6}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,428 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 10 messages from {shard:8}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,428 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 12 messages from {shard:9}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,429 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 21 messages from {shard:10}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,429 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 7 messages from {shard:11}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,430 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:12}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,431 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 29 messages from {shard:13}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,431 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 13 messages from {shard:14}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,432 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 15 messages from {shard:15}:task:ready
+[2025-10-05 22:06:16] [STDERR] 2025-10-05 22:06:16,435 - gleitzeit.workers.pending_recovery - INFO - Claimed 267 stuck pending messages
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,213 - gleitzeit.workers.task_execution_worker - INFO - Processing task 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 from workflow b6b4a7ad-01ca-475d-852f-064700bfc2e9
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,217 - gleitzeit.workers.task_execution_worker - INFO - Executing task 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 with handler PythonHandler
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,219 - gleitzeit.workers.task_execution_worker - ERROR - Task execution failed for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6: 'str' object has no attribute 'value'
+[2025-10-05 22:06:25] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:06:25] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/task_execution_worker.py", line 352, in process_message
+[2025-10-05 22:06:25] [STDERR]     success = await self.handle_execution_result(
+[2025-10-05 22:06:25] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:25] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/task_execution_worker.py", line 388, in handle_execution_result
+[2025-10-05 22:06:25] [STDERR]     status=result.status.value,
+[2025-10-05 22:06:25] [STDERR]            ^^^^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:25] [STDERR] AttributeError: 'str' object has no attribute 'value'
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,220 - gleitzeit.workers.task_execution_worker - ERROR - Task 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 failed: 'str' object has no attribute 'value'
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,222 - gleitzeit.workers.task_execution_worker - INFO - Emitted task failure to RetryWorker for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,222 - python_specialist.python_specialist-async - WARNING - Message 1759694785213-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,222 - python_specialist.python_specialist-async - INFO - Message 1759694785213-0 from {shard:12}:task:ready logged to dead letter queue
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,273 - gleitzeit.workers.task_execution_worker - INFO - Processing task 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 from workflow b6b4a7ad-01ca-475d-852f-064700bfc2e9
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,275 - gleitzeit.workers.task_execution_worker - INFO - Executing task 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 with handler PythonHandler
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,277 - gleitzeit.workers.task_execution_worker - ERROR - Task execution failed for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6: 'str' object has no attribute 'value'
+[2025-10-05 22:06:27] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:06:27] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/task_execution_worker.py", line 352, in process_message
+[2025-10-05 22:06:27] [STDERR]     success = await self.handle_execution_result(
+[2025-10-05 22:06:27] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:27] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/task_execution_worker.py", line 388, in handle_execution_result
+[2025-10-05 22:06:27] [STDERR]     status=result.status.value,
+[2025-10-05 22:06:27] [STDERR]            ^^^^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:27] [STDERR] AttributeError: 'str' object has no attribute 'value'
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,277 - gleitzeit.workers.task_execution_worker - ERROR - Task 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 failed: 'str' object has no attribute 'value'
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,280 - gleitzeit.workers.task_execution_worker - INFO - Emitted task failure to RetryWorker for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,280 - python_specialist.python_specialist-async - WARNING - Message 1759694787272-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,280 - python_specialist.python_specialist-async - INFO - Message 1759694787272-0 from {shard:12}:task:ready logged to dead letter queue
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,933 - gleitzeit.workers.task_execution_worker - INFO - Processing task 26f687d0-2be1-480b-917f-5da25a92dcee from workflow f14475bc-6f6e-47f9-8e6a-6da7a254bf70
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,936 - gleitzeit.workers.task_execution_worker - INFO - Executing task 26f687d0-2be1-480b-917f-5da25a92dcee with handler PythonHandler
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,937 - gleitzeit.workers.task_execution_worker - ERROR - Task execution failed for 26f687d0-2be1-480b-917f-5da25a92dcee: 'str' object has no attribute 'value'
+[2025-10-05 22:06:35] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:06:35] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/task_execution_worker.py", line 352, in process_message
+[2025-10-05 22:06:35] [STDERR]     success = await self.handle_execution_result(
+[2025-10-05 22:06:35] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:35] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/task_execution_worker.py", line 388, in handle_execution_result
+[2025-10-05 22:06:35] [STDERR]     status=result.status.value,
+[2025-10-05 22:06:35] [STDERR]            ^^^^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:35] [STDERR] AttributeError: 'str' object has no attribute 'value'
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,937 - gleitzeit.workers.task_execution_worker - ERROR - Task 26f687d0-2be1-480b-917f-5da25a92dcee failed: 'str' object has no attribute 'value'
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,944 - gleitzeit.workers.task_execution_worker - INFO - Emitted task failure to RetryWorker for 26f687d0-2be1-480b-917f-5da25a92dcee
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,944 - python_specialist.python_specialist-async - WARNING - Message 1759694795932-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,944 - python_specialist.python_specialist-async - INFO - Message 1759694795932-0 from {shard:2}:task:ready logged to dead letter queue
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,295 - gleitzeit.workers.task_execution_worker - INFO - Processing task 26f687d0-2be1-480b-917f-5da25a92dcee from workflow f14475bc-6f6e-47f9-8e6a-6da7a254bf70
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,299 - gleitzeit.workers.task_execution_worker - INFO - Executing task 26f687d0-2be1-480b-917f-5da25a92dcee with handler PythonHandler
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,301 - gleitzeit.workers.task_execution_worker - ERROR - Task execution failed for 26f687d0-2be1-480b-917f-5da25a92dcee: 'str' object has no attribute 'value'
+[2025-10-05 22:06:38] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:06:38] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/task_execution_worker.py", line 352, in process_message
+[2025-10-05 22:06:38] [STDERR]     success = await self.handle_execution_result(
+[2025-10-05 22:06:38] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:38] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/task_execution_worker.py", line 388, in handle_execution_result
+[2025-10-05 22:06:38] [STDERR]     status=result.status.value,
+[2025-10-05 22:06:38] [STDERR]            ^^^^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:38] [STDERR] AttributeError: 'str' object has no attribute 'value'
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,301 - gleitzeit.workers.task_execution_worker - ERROR - Task 26f687d0-2be1-480b-917f-5da25a92dcee failed: 'str' object has no attribute 'value'
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,304 - gleitzeit.workers.task_execution_worker - INFO - Emitted task failure to RetryWorker for 26f687d0-2be1-480b-917f-5da25a92dcee
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,304 - python_specialist.python_specialist-async - WARNING - Message 1759694798294-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,304 - python_specialist.python_specialist-async - INFO - Message 1759694798294-0 from {shard:2}:task:ready logged to dead letter queue
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - python_specialist.python_specialist-async - INFO - Shutdown signal received for python_specialist-async
+[2025-10-05 22:09:24] [STDERR] 2025-10-05 22:09:24,962 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-05 22:09:24] [STDERR] 2025-10-05 22:09:24,962 - python_specialist.python_specialist-async - INFO - Worker python_specialist-async cleaned up

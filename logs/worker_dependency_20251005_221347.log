@@ -1,0 +1,40 @@
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,216 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:81bc3898
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,219 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,219 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,219 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,219 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,219 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,221 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,221 - __main__ - INFO - Worker dependency-async started successfully
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,221 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:13:47] [STDERR] 2025-10-05 22:13:47,221 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-10-05 22:17:09] [STDERR] 2025-10-05 22:17:09,101 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:09] [STDERR] 2025-10-05 22:17:09,105 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 to shard 4
+[2025-10-05 22:17:09] [STDERR] 2025-10-05 22:17:09,162 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 from workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:09] [STDERR] 2025-10-05 22:17:09,163 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 from workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:09] [STDERR] 2025-10-05 22:17:09,163 - gleitzeit.workers.dependency_worker - WARNING - Task 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 failed - applying HARD FAIL policy for workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:09] [STDERR] 2025-10-05 22:17:09,163 - gleitzeit.workers.dependency_worker - WARNING - Task 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 failed - applying HARD FAIL policy for workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:09] [STDERR] 2025-10-05 22:17:09,164 - gleitzeit.workers.dependency_worker - INFO - Workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040 marked as FAILED due to task 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 failure (hard fail policy)
+[2025-10-05 22:17:09] [STDERR] 2025-10-05 22:17:09,164 - gleitzeit.workers.dependency_worker - INFO - Workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040 marked as FAILED due to task 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 failure (hard fail policy)
+[2025-10-05 22:17:11] [STDERR] 2025-10-05 22:17:11,219 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 from workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:11] [STDERR] 2025-10-05 22:17:11,227 - gleitzeit.workers.dependency_worker - INFO - Workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040 failed with 1 failed tasks
+[2025-10-05 22:17:11] [STDERR] 2025-10-05 22:17:11,254 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 from workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:11] [STDERR] 2025-10-05 22:17:11,254 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 from workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:11] [STDERR] 2025-10-05 22:17:11,255 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 4b88d895-f87a-4bfd-af0f-90b3a25c9a21 from workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040
+[2025-10-05 22:17:11] [STDERR] 2025-10-05 22:17:11,262 - gleitzeit.workers.dependency_worker - INFO - Workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040 failed with 1 failed tasks
+[2025-10-05 22:17:11] [STDERR] 2025-10-05 22:17:11,264 - gleitzeit.workers.dependency_worker - INFO - Workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040 failed with 1 failed tasks
+[2025-10-05 22:17:11] [STDERR] 2025-10-05 22:17:11,270 - gleitzeit.workers.dependency_worker - INFO - Workflow 09a98eb0-a5d0-43a6-976f-cf2159ef8040 failed with 1 failed tasks
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,467 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: 876c5398-d5a9-4939-a49a-7b3d756ed467
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,474 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task d9008fc6-4764-4061-b36e-a08d9933932e to shard 1
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,576 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: d9008fc6-4764-4061-b36e-a08d9933932e from workflow 876c5398-d5a9-4939-a49a-7b3d756ed467
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,577 - gleitzeit.workers.dependency_worker - WARNING - Task d9008fc6-4764-4061-b36e-a08d9933932e failed - applying HARD FAIL policy for workflow 876c5398-d5a9-4939-a49a-7b3d756ed467
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,579 - gleitzeit.workers.dependency_worker - INFO - Workflow 876c5398-d5a9-4939-a49a-7b3d756ed467 marked as FAILED due to task d9008fc6-4764-4061-b36e-a08d9933932e failure (hard fail policy)
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,596 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: d9008fc6-4764-4061-b36e-a08d9933932e from workflow 876c5398-d5a9-4939-a49a-7b3d756ed467
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,599 - gleitzeit.workers.dependency_worker - INFO - Workflow 876c5398-d5a9-4939-a49a-7b3d756ed467 failed with 1 failed tasks
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,650 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: d9008fc6-4764-4061-b36e-a08d9933932e from workflow 876c5398-d5a9-4939-a49a-7b3d756ed467
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,652 - gleitzeit.workers.dependency_worker - INFO - Workflow 876c5398-d5a9-4939-a49a-7b3d756ed467 failed with 1 failed tasks
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,669 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: d9008fc6-4764-4061-b36e-a08d9933932e from workflow 876c5398-d5a9-4939-a49a-7b3d756ed467
+[2025-10-05 22:20:44] [STDERR] 2025-10-05 22:20:44,670 - gleitzeit.workers.dependency_worker - INFO - Workflow 876c5398-d5a9-4939-a49a-7b3d756ed467 failed with 1 failed tasks
+[2025-10-05 22:21:18] [STDERR] 2025-10-05 22:21:18,161 - dependency.dependency-async - INFO - Shutdown signal received for dependency-async
+[2025-10-05 22:21:20] [STDERR] 2025-10-05 22:21:20,032 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-05 22:21:20] [STDERR] 2025-10-05 22:21:20,032 - dependency.dependency-async - INFO - Worker dependency-async cleaned up

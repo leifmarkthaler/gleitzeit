@@ -20,6 +20,7 @@ from ..core.cache import get_workflow_cache
 from ..core.events import EventType
 from ..core.event_store import EventStore, EventLevel
 from ..handlers import handler_loader, HandlerRegistry
+from ..timers.stateless_timer_manager import StatelessTimerManager
 
 logger = logging.getLogger(__name__)
 
@@ -385,7 +386,7 @@ class TaskExecutionWorker(BaseWorker):
                 f"Task {task_id} completed successfully",
                 workflow_id=workflow_id,
                 task_id=task_id,
-                status=result.status.value,
+                status=result.status,
                 duration=result.duration_seconds if hasattr(result, 'duration_seconds') else None
             )
 
@@ -535,31 +536,35 @@ class TaskExecutionWorker(BaseWorker):
     ):
         """Emit task scheduled event for TimerWorker"""
         shard = default_sharding.get_shard(workflow_id)
+        wake_time = result.metadata.get('wake_time', 0)
+
+        # Calculate duration for logging only
+        current_time = time.time()
+        duration_seconds = wake_time - current_time
 
         # Update task status
         await self.redis.hset(
             default_sharding.get_task_key(task_id, workflow_id).encode(),
             mapping={
                 b"status": TaskStatus.SCHEDULED.encode(),
-                b"wake_time": str(result.metadata.get('wake_time', 0)).encode(),
+                b"wake_time": str(wake_time).encode(),
                 b"timer_type": result.metadata.get('timer_type', 'sleep').encode(),
                 b"scheduled_at": datetime.utcnow().isoformat().encode()
             }
         )
 
-        # Emit to timer:scheduled stream for TimerWorker
-        await self.redis.xadd(
-            default_sharding.get_stream_key("timer:scheduled", workflow_id).encode(),
-            {
-                b"workflow_id": workflow_id.encode(),
-                b"task_id": task_id.encode(),
-                b"wake_time": str(result.metadata.get('wake_time', 0)).encode(),
-                b"metadata": json.dumps(result.metadata).encode(),
-                b"timestamp": datetime.utcnow().isoformat().encode()
-            }
+        # Use StatelessTimerManager to create timer in sorted set
+        # Pass wake_time (absolute timestamp) to avoid timing drift
+        timer_id = await StatelessTimerManager.create_timer(
+            redis=self.redis,
+            workflow_id=workflow_id,
+            wake_time=wake_time,  # Use absolute time - more accurate
+            task_id=task_id,
+            timer_type=result.metadata.get('timer_type', 'sleep'),
+            payload=result.metadata
         )
 
-        logger.info(f"Task {task_id} scheduled for timer execution")
+        logger.info(f"Task {task_id} scheduled for timer execution with timer_id {timer_id}, wake_time={wake_time}, duration={duration_seconds:.1f}s")
 
     async def emit_task_waiting(
         self,
@@ -577,6 +582,7 @@ class TaskExecutionWorker(BaseWorker):
             )
 
         shard = default_sharding.get_shard(workflow_id)
+        signal_name = result.metadata.get('signal_name', '')
 
         # Update task status
         await self.redis.hset(
@@ -584,23 +590,52 @@ class TaskExecutionWorker(BaseWorker):
             mapping={
                 b"status": TaskStatus.WAITING.encode(),
                 b"signal_type": result.metadata.get('signal_type', 'wait').encode(),
+                b"signal_name": signal_name.encode(),
                 b"waiting_since": datetime.utcnow().isoformat().encode()
             }
         )
 
-        # Emit to signal:waiting stream for SignalWorker
+        # Register task in waiters SET for SignalWorker to find
+        # This is the key data structure SignalWorker uses to match signals to waiting tasks
+        waiting_key = default_sharding.get_signal_key("waiters", workflow_id, signal_name)
+        await self.redis.sadd(waiting_key, task_id)
+
+        # Store metadata for SignalWorker (includes shard info)
+        metadata_key = default_sharding.get_signal_key("metadata", workflow_id, task_id)
+        await self.redis.hset(
+            metadata_key.encode(),
+            mapping={
+                b"shard": str(shard).encode(),
+                b"signal_name": signal_name.encode(),
+                b"signal_type": result.metadata.get('signal_type', 'wait').encode(),
+                b"waiting_since": datetime.utcnow().isoformat().encode(),
+                b"timeout": str(result.metadata.get('timeout', 0)).encode()
+            }
+        )
+
+        # Handle timeout if specified
+        timeout = result.metadata.get('timeout')
+        if timeout:
+            timeout_time = time.time() + timeout
+            await self.redis.zadd(
+                default_sharding.get_global_key("signal:timeouts").encode(),
+                {f"{workflow_id}:{task_id}".encode(): timeout_time}
+            )
+
+        # Emit to signal:waiting stream for observability
         await self.redis.xadd(
             default_sharding.get_stream_key("signal:waiting", workflow_id).encode(),
             {
                 b"workflow_id": workflow_id.encode(),
                 b"task_id": task_id.encode(),
+                b"signal_name": signal_name.encode(),
                 b"signal_type": result.metadata.get('signal_type', 'wait').encode(),
                 b"metadata": json.dumps(result.metadata).encode(),
                 b"timestamp": datetime.utcnow().isoformat().encode()
             }
         )
 
-        logger.info(f"Task {task_id} waiting for signal")
+        logger.info(f"Task {task_id} waiting for signal '{signal_name}' in workflow {workflow_id}")
 
     async def _emit_signal(
         self,
@@ -610,30 +645,37 @@ class TaskExecutionWorker(BaseWorker):
         target_workflow: Optional[str] = None
     ):
         """Emit a signal to the signal processing system"""
-        from ..signals.stateless_signal_manager import StatelessSignalManager
+        # Write signal directly to the sharded workflow signals stream
+        # This matches what SignalWorker expects (replaces StatelessSignalManager)
 
-        # Use StatelessSignalManager to send the signal
-        # None for workflow_id means broadcast
-        signal_id = await StatelessSignalManager.send_signal(
-            redis=self.redis,
-            signal_name=signal_name,
-            workflow_id=target_workflow,  # None for broadcast, specific ID for targeted
-            payload=payload
+        # Default to sender workflow if no target specified
+        if target_workflow is None:
+            target_workflow = sender_workflow_id
+
+        # Get the workflow signals stream key (sharded)
+        # SignalWorker scans for {shard:N}:workflow:signals:*
+        workflow_signals_key = default_sharding.get_workflow_key("signals", target_workflow)
+
+        # Add signal to the workflow's signal stream
+        # SignalWorker scans for {shard:N}:workflow:signals:* and reads from these streams
+        signal_id = await self.redis.xadd(
+            workflow_signals_key.encode(),
+            {
+                b"signal": signal_name.encode(),
+                b"payload": json.dumps(payload).encode(),
+                b"sender_workflow": sender_workflow_id.encode(),
+                b"timestamp": datetime.utcnow().isoformat().encode()
+            }
         )
 
-        if target_workflow is None:
+        if target_workflow == sender_workflow_id:
             logger.info(
-                f"Broadcast signal '{signal_name}' (ID: {signal_id}) "
-                f"from workflow {sender_workflow_id} system-wide"
-            )
-        elif target_workflow == sender_workflow_id:
-            logger.info(
-                f"Emitted signal '{signal_name}' (ID: {signal_id}) "
+                f"Emitted signal '{signal_name}' (ID: {signal_id.decode()}) "
                 f"within workflow {sender_workflow_id}"
             )
         else:
             logger.info(
-                f"Emitted signal '{signal_name}' (ID: {signal_id}) "
+                f"Emitted signal '{signal_name}' (ID: {signal_id.decode()}) "
                 f"from workflow {sender_workflow_id} to {target_workflow}"
             )
 

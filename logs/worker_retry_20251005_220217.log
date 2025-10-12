@@ -1,0 +1,165 @@
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,232 - __main__ - INFO - Loading configuration from Redis key: worker:config:retry-async:faaec6f8
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,235 - __main__ - INFO - Loaded config for worker retry-async
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,236 - __main__ - INFO - Worker retry-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,236 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized with batch_size=10
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,236 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,236 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async event store initialized
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,238 - retry.retry-async - INFO - Worker retry-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,238 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized retry service
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,238 - __main__ - INFO - Worker retry-async started successfully
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,238 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-05 22:02:17] [STDERR] 2025-10-05 22:02:17,238 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for retry-async
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,062 - gleitzeit.workers.retry_worker - INFO - Retry decision for 2e18462d-2cc6-4dfe-81ce-207af148ad60: skip (attempt 0)
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,063 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:02:32] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:02:32] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:02:32] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:02:32] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:02:32] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:02:32] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:02:32] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:02:32] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:02:32] [STDERR] AttributeError: ERROR
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,067 - retry.retry-async - WARNING - Message 1759694552061-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,067 - retry.retry-async - INFO - Message 1759694552061-0 from {shard:9}:task:failed logged to dead letter queue
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,074 - gleitzeit.workers.retry_worker - INFO - Retry decision for 2e18462d-2cc6-4dfe-81ce-207af148ad60: skip (attempt 0)
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,074 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:02:32] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:02:32] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:02:32] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:02:32] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:02:32] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:02:32] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:02:32] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:02:32] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:02:32] [STDERR] AttributeError: ERROR
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,076 - retry.retry-async - WARNING - Message 1759694552061-1 processing failed, not ACK'd (will retry)
+[2025-10-05 22:02:32] [STDERR] 2025-10-05 22:02:32,076 - retry.retry-async - INFO - Message 1759694552061-1 from {shard:9}:task:failed logged to dead letter queue
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,704 - gleitzeit.workers.retry_worker - INFO - Retry decision for a10dfd79-6729-4117-850c-07581e4a6099: skip (attempt 0)
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,705 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:03:03] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:03:03] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:03:03] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:03:03] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:03:03] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:03:03] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:03:03] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:03:03] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:03:03] [STDERR] AttributeError: ERROR
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,706 - retry.retry-async - WARNING - Message 1759694583703-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,707 - retry.retry-async - INFO - Message 1759694583703-0 from {shard:0}:task:failed logged to dead letter queue
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,713 - gleitzeit.workers.retry_worker - INFO - Retry decision for a10dfd79-6729-4117-850c-07581e4a6099: skip (attempt 0)
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,714 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:03:03] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:03:03] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:03:03] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:03:03] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:03:03] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:03:03] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:03:03] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:03:03] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:03:03] [STDERR] AttributeError: ERROR
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,716 - retry.retry-async - WARNING - Message 1759694583703-1 processing failed, not ACK'd (will retry)
+[2025-10-05 22:03:03] [STDERR] 2025-10-05 22:03:03,716 - retry.retry-async - INFO - Message 1759694583703-1 from {shard:0}:task:failed logged to dead letter queue
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,263 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 19 messages from {shard:0}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,264 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 24 messages from {shard:1}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,265 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 20 messages from {shard:2}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,266 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 27 messages from {shard:3}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,267 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 29 messages from {shard:4}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,267 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 30 messages from {shard:5}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,268 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 20 messages from {shard:6}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,269 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 22 messages from {shard:7}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,270 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 21 messages from {shard:8}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,270 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 16 messages from {shard:9}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,271 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 12 messages from {shard:10}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,272 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 20 messages from {shard:11}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,272 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 19 messages from {shard:12}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,273 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 20 messages from {shard:13}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,274 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 17 messages from {shard:14}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,274 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 14 messages from {shard:15}:task:failed
+[2025-10-05 22:05:17] [STDERR] 2025-10-05 22:05:17,279 - gleitzeit.workers.pending_recovery - INFO - Claimed 330 stuck pending messages
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,281 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 57 messages from {shard:0}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,283 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 30 messages from {shard:1}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,284 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 51 messages from {shard:2}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,284 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 5 messages from {shard:3}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,285 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 40 messages from {shard:4}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,287 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 34 messages from {shard:5}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,287 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 23 messages from {shard:6}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,288 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 6 messages from {shard:7}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,289 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 23 messages from {shard:8}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,290 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 29 messages from {shard:9}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,291 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 38 messages from {shard:10}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,291 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 21 messages from {shard:11}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,292 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 10 messages from {shard:12}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,293 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 49 messages from {shard:13}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,294 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 27 messages from {shard:14}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,294 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 33 messages from {shard:15}:task:failed
+[2025-10-05 22:06:17] [STDERR] 2025-10-05 22:06:17,300 - gleitzeit.workers.pending_recovery - INFO - Claimed 476 stuck pending messages
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,224 - gleitzeit.workers.retry_worker - INFO - Retry decision for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6: retry (attempt 0)
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,225 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 in 0.35s (attempt 1)
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,234 - gleitzeit.workers.retry_worker - INFO - Retry decision for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6: retry (attempt 1)
+[2025-10-05 22:06:25] [STDERR] 2025-10-05 22:06:25,234 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6 in 1.22s (attempt 2)
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,281 - gleitzeit.workers.retry_worker - INFO - Retry decision for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6: max_attempts (attempt 2)
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,282 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:06:27] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:06:27] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:06:27] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:06:27] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:06:27] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:06:27] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:27] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:06:27] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:06:27] [STDERR] AttributeError: ERROR
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,285 - retry.retry-async - WARNING - Message 1759694787279-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,286 - retry.retry-async - INFO - Message 1759694787279-0 from {shard:12}:task:failed logged to dead letter queue
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,295 - gleitzeit.workers.retry_worker - INFO - Retry decision for 4a63ccab-4ea0-46a0-8b2c-a433a0ed4fd6: max_attempts (attempt 2)
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,296 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:06:27] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:06:27] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:06:27] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:06:27] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:06:27] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:06:27] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:27] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:06:27] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:06:27] [STDERR] AttributeError: ERROR
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,298 - retry.retry-async - WARNING - Message 1759694787280-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:06:27] [STDERR] 2025-10-05 22:06:27,298 - retry.retry-async - INFO - Message 1759694787280-0 from {shard:12}:task:failed logged to dead letter queue
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,945 - gleitzeit.workers.retry_worker - INFO - Retry decision for 26f687d0-2be1-480b-917f-5da25a92dcee: retry (attempt 0)
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,946 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for 26f687d0-2be1-480b-917f-5da25a92dcee in 0.18s (attempt 1)
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,955 - gleitzeit.workers.retry_worker - INFO - Retry decision for 26f687d0-2be1-480b-917f-5da25a92dcee: retry (attempt 1)
+[2025-10-05 22:06:35] [STDERR] 2025-10-05 22:06:35,956 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for 26f687d0-2be1-480b-917f-5da25a92dcee in 1.90s (attempt 2)
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,306 - gleitzeit.workers.retry_worker - INFO - Retry decision for 26f687d0-2be1-480b-917f-5da25a92dcee: max_attempts (attempt 2)
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,309 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:06:38] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:06:38] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:06:38] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:06:38] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:06:38] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:06:38] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:38] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:06:38] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:06:38] [STDERR] AttributeError: ERROR
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,312 - retry.retry-async - WARNING - Message 1759694798303-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,312 - retry.retry-async - INFO - Message 1759694798303-0 from {shard:2}:task:failed logged to dead letter queue
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,324 - gleitzeit.workers.retry_worker - INFO - Retry decision for 26f687d0-2be1-480b-917f-5da25a92dcee: max_attempts (attempt 2)
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,325 - gleitzeit.workers.retry_worker - ERROR - Error handling task failure: ERROR
+[2025-10-05 22:06:38] [STDERR] Traceback (most recent call last):
+[2025-10-05 22:06:38] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 204, in _handle_task_failure
+[2025-10-05 22:06:38] [STDERR]     await self._mark_permanently_failed(
+[2025-10-05 22:06:38] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/retry_worker.py", line 328, in _mark_permanently_failed
+[2025-10-05 22:06:38] [STDERR]     level=EventLevel.ERROR,
+[2025-10-05 22:06:38] [STDERR]           ^^^^^^^^^^^^^^^^
+[2025-10-05 22:06:38] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/enum.py", line 783, in __getattr__
+[2025-10-05 22:06:38] [STDERR]     raise AttributeError(name) from None
+[2025-10-05 22:06:38] [STDERR] AttributeError: ERROR
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,329 - retry.retry-async - WARNING - Message 1759694798305-0 processing failed, not ACK'd (will retry)
+[2025-10-05 22:06:38] [STDERR] 2025-10-05 22:06:38,329 - retry.retry-async - INFO - Message 1759694798305-0 from {shard:2}:task:failed logged to dead letter queue
+[2025-10-05 22:07:17] [STDERR] 2025-10-05 22:07:17,304 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 2 messages from {shard:8}:task:failed
+[2025-10-05 22:07:17] [STDERR] 2025-10-05 22:07:17,313 - gleitzeit.workers.pending_recovery - INFO - Claimed 2 stuck pending messages
+[2025-10-05 22:08:17] [STDERR] 2025-10-05 22:08:17,316 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 2 messages from {shard:0}:task:failed
+[2025-10-05 22:08:17] [STDERR] 2025-10-05 22:08:17,320 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 2 messages from {shard:9}:task:failed
+[2025-10-05 22:08:17] [STDERR] 2025-10-05 22:08:17,328 - gleitzeit.workers.pending_recovery - INFO - Claimed 4 stuck pending messages
+[2025-10-05 22:09:23] [STDERR] 2025-10-05 22:09:23,419 - retry.retry-async - INFO - Shutdown signal received for retry-async
+[2025-10-05 22:09:24] [STDERR] 2025-10-05 22:09:24,962 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-05 22:09:24] [STDERR] 2025-10-05 22:09:24,962 - retry.retry-async - INFO - Worker retry-async cleaned up

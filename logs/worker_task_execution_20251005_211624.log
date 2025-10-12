@@ -98,3 +98,14 @@
 [2025-10-05 21:29:11] [STDERR] 2025-10-05 21:29:11,490 - task_execution.task_execution-async - INFO - Message 1759692550983-0 from {shard:13}:task:ready logged to dead letter queue
 [2025-10-05 21:29:24] [STDERR] 2025-10-05 21:29:24,979 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 2 messages from {shard:7}:task:ready
 [2025-10-05 21:29:24] [STDERR] 2025-10-05 21:29:24,986 - gleitzeit.workers.pending_recovery - INFO - Claimed 2 stuck pending messages
+[2025-10-05 21:34:25] [STDERR] 2025-10-05 21:34:25,016 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 2 messages from {shard:7}:task:ready
+[2025-10-05 21:34:25] [STDERR] 2025-10-05 21:34:25,019 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:13}:task:ready
+[2025-10-05 21:34:25] [STDERR] 2025-10-05 21:34:25,023 - gleitzeit.workers.pending_recovery - INFO - Claimed 3 stuck pending messages
+[2025-10-05 21:39:25] [STDERR] 2025-10-05 21:39:25,060 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 2 messages from {shard:7}:task:ready
+[2025-10-05 21:39:25] [STDERR] 2025-10-05 21:39:25,062 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:13}:task:ready
+[2025-10-05 21:39:25] [STDERR] 2025-10-05 21:39:25,066 - gleitzeit.workers.pending_recovery - INFO - Claimed 3 stuck pending messages
+[2025-10-05 21:43:10] [STDERR] 2025-10-05 21:43:10,280 - task_execution.task_execution-async - INFO - Shutdown signal received for task_execution-async
+[2025-10-05 21:43:10] [STDERR] 2025-10-05 21:43:10,770 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-05 21:43:10] [STDERR] 2025-10-05 21:43:10,770 - task_execution.task_execution-async - INFO - Worker task_execution-async cleaned up
+[2025-10-05 21:43:10] [STDERR] 2025-10-05 21:43:10,784 - asyncio - ERROR - Unclosed client session
+[2025-10-05 21:43:10] [STDERR] client_session: <aiohttp.client.ClientSession object at 0x107409a50>

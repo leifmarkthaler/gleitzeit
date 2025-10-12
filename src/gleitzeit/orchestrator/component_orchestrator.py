@@ -50,6 +50,9 @@ class WorkerSpec:
     handler_configs: Dict[str, Dict[str, Any]] = field(default_factory=dict)
     enabled_task_types: List[str] = field(default_factory=lambda: ['all'])
 
+    # Extra worker-specific configuration
+    extra: Dict[str, Any] = field(default_factory=dict)
+
 
 @dataclass
 class ManagedWorker:

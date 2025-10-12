@@ -1,0 +1,60 @@
+[2025-10-12 20:23:13] [STDERR] INFO:     Started server process [66514]
+[2025-10-12 20:23:13] [STDERR] INFO:     Waiting for application startup.
+[2025-10-12 20:23:13] [STDERR] INFO:     Application startup complete.
+[2025-10-12 20:23:13] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-12 20:24:22] [STDOUT] INFO:     127.0.0.1:54874 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:04] [STDOUT] INFO:     127.0.0.1:54949 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:06] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-12 20:25:06] [STDOUT] INFO:     127.0.0.1:54949 - "GET /workflows/8f7e83e8-6183-4689-9b5f-97b7f096a88a HTTP/1.1" 200 OK
+[2025-10-12 20:25:06] [STDOUT] INFO:     127.0.0.1:54949 - "GET /tasks/9716b548-b3fa-4278-943b-0fe7e1fc5e3c HTTP/1.1" 200 OK
+[2025-10-12 20:25:06] [STDOUT] INFO:     127.0.0.1:54949 - "GET /tasks/976de8cc-936d-4220-9956-00ecff3de9ba HTTP/1.1" 200 OK
+[2025-10-12 20:25:06] [STDOUT] INFO:     127.0.0.1:54949 - "GET /tasks/3c2b745d-a9bf-4660-add5-211a3e743078 HTTP/1.1" 200 OK
+[2025-10-12 20:25:06] [STDOUT] INFO:     127.0.0.1:54949 - "GET /tasks/2dcdda28-19fb-43e9-9df5-356ef89f3f46 HTTP/1.1" 404 Not Found
+[2025-10-12 20:25:06] [STDOUT] INFO:     127.0.0.1:54949 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=8f7e83e8-6183-4689-9b5f-97b7f096a88a HTTP/1.1" 200 OK
+[2025-10-12 20:25:06] [STDOUT] INFO:     127.0.0.1:54954 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:08] [STDOUT] INFO:     127.0.0.1:54949 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:11] [STDOUT] INFO:     127.0.0.1:54949 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-12 20:25:15] [STDOUT] INFO:     127.0.0.1:54949 - "GET /workflows/f4952965-a29b-4ba3-9ff5-b465bc1c2d07 HTTP/1.1" 200 OK
+[2025-10-12 20:25:15] [STDOUT] INFO:     127.0.0.1:54949 - "GET /tasks/0933a956-343f-45ee-8842-a5a5921e3838 HTTP/1.1" 200 OK
+[2025-10-12 20:25:15] [STDOUT] INFO:     127.0.0.1:54949 - "GET /tasks/77a7e7e3-919e-4657-960b-04b016defc72 HTTP/1.1" 200 OK
+[2025-10-12 20:25:15] [STDOUT] INFO:     127.0.0.1:54949 - "GET /tasks/c350c987-5750-429d-aab4-070f461de6f2 HTTP/1.1" 200 OK
+[2025-10-12 20:25:15] [STDOUT] INFO:     127.0.0.1:54949 - "GET /tasks/ffe2596f-f257-42b2-a406-22699f140739 HTTP/1.1" 200 OK
+[2025-10-12 20:25:15] [STDOUT] INFO:     127.0.0.1:54949 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=f4952965-a29b-4ba3-9ff5-b465bc1c2d07 HTTP/1.1" 200 OK
+[2025-10-12 20:25:15] [STDOUT] INFO:     127.0.0.1:54958 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:25] [STDOUT] INFO:     127.0.0.1:54975 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:29] [STDOUT] INFO:     127.0.0.1:54975 - "GET /tasks/77a7e7e3-919e-4657-960b-04b016defc72 HTTP/1.1" 200 OK
+[2025-10-12 20:25:29] [STDOUT] INFO:     127.0.0.1:54975 - "GET /workflows/f4952965-a29b-4ba3-9ff5-b465bc1c2d07 HTTP/1.1" 200 OK
+[2025-10-12 20:25:29] [STDOUT] INFO:     127.0.0.1:54975 - "GET /tasks/77a7e7e3-919e-4657-960b-04b016defc72/logs HTTP/1.1" 200 OK
+[2025-10-12 20:25:29] [STDERR] Direct key lookup failed: 'ClusterShardingStrategy' object has no attribute 'get_shard_id'
+[2025-10-12 20:25:29] [STDOUT] INFO:     127.0.0.1:54982 - "GET /tasks/77a7e7e3-919e-4657-960b-04b016defc72/events HTTP/1.1" 200 OK
+[2025-10-12 20:25:29] [STDOUT] INFO:     127.0.0.1:54983 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:39] [STDOUT] INFO:     127.0.0.1:54989 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:42] [STDERR] INFO:     127.0.0.1:55035 - "WebSocket /ws/events" [accepted]
+[2025-10-12 20:25:42] [STDERR] INFO:     connection open
+[2025-10-12 20:25:42] [STDOUT] INFO:     127.0.0.1:54989 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 20:25:47] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 20:25:47] [STDERR] INFO:     connection closed
+[2025-10-12 20:25:47] [STDOUT] INFO:     127.0.0.1:55042 - "GET /workflows/workflow_08237bdd0e70 HTTP/1.1" 200 OK
+[2025-10-12 20:25:47] [STDOUT] INFO:     127.0.0.1:55042 - "GET /tasks/a62cb46b-1efa-40ae-83ac-4207aeda2116 HTTP/1.1" 200 OK
+[2025-10-12 20:25:47] [STDOUT] INFO:     127.0.0.1:55042 - "GET /tasks/ced56720-c953-4133-a807-4e9b66e45488 HTTP/1.1" 404 Not Found
+[2025-10-12 20:25:47] [STDOUT] INFO:     127.0.0.1:55042 - "GET /tasks/05fba598-9854-4bab-aef3-1b6e2cfee9ee HTTP/1.1" 404 Not Found
+[2025-10-12 20:25:47] [STDOUT] INFO:     127.0.0.1:55042 - "GET /tasks/30297775-df11-4ba9-b175-197130571e9c HTTP/1.1" 200 OK
+[2025-10-12 20:25:47] [STDOUT] INFO:     127.0.0.1:55042 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=workflow_08237bdd0e70 HTTP/1.1" 200 OK
+[2025-10-12 20:25:47] [STDOUT] INFO:     127.0.0.1:55045 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:57] [STDOUT] INFO:     127.0.0.1:55088 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:58] [STDOUT] INFO:     127.0.0.1:55093 - "GET /workflows/list?limit=1000 HTTP/1.1" 200 OK
+[2025-10-12 20:25:58] [STDOUT] INFO:     127.0.0.1:55096 - "GET /workflows/list?limit=5 HTTP/1.1" 200 OK
+[2025-10-12 20:25:58] [STDOUT] INFO:     127.0.0.1:55088 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:25:58] [STDOUT] INFO:     127.0.0.1:55097 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:26:00] [STDERR] INFO:     127.0.0.1:55099 - "WebSocket /ws/events" [accepted]
+[2025-10-12 20:26:00] [STDERR] INFO:     connection open
+[2025-10-12 20:26:00] [STDOUT] INFO:     127.0.0.1:55088 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 20:26:01] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 20:26:01] [STDERR] INFO:     connection closed
+[2025-10-12 20:26:01] [STDOUT] INFO:     127.0.0.1:55093 - "GET /workflows/list?limit=1000 HTTP/1.1" 200 OK
+[2025-10-12 20:26:01] [STDOUT] INFO:     127.0.0.1:55096 - "GET /workflows/list?limit=5 HTTP/1.1" 200 OK
+[2025-10-12 20:26:01] [STDOUT] INFO:     127.0.0.1:55088 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:26:01] [STDOUT] INFO:     127.0.0.1:55097 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 20:26:02] [STDERR] INFO:     127.0.0.1:55102 - "WebSocket /ws/events" [accepted]
+[2025-10-12 20:26:02] [STDERR] INFO:     connection open
+[2025-10-12 20:26:02] [STDOUT] INFO:     127.0.0.1:55088 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK

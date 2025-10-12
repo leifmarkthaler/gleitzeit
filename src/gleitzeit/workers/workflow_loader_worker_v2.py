@@ -545,22 +545,6 @@ class WorkflowLoaderWorkerV2(BaseWorker):
             # Unknown task type - will be caught in validation
             return f"{task_type}/execute"
 
-        # Special handling for signal tasks based on signal_action
-        if task_type == 'signal':
-            signal_action = raw_task.get('signal_action', 'wait')
-            if signal_action == 'wait':
-                return 'signal/wait'
-            elif signal_action == 'wait_any':
-                return 'signal/wait_any'
-            elif signal_action == 'wait_all':
-                return 'signal/wait_all'
-            elif signal_action == 'send':
-                return 'signal/send'
-            elif signal_action == 'broadcast':
-                return 'signal/broadcast'
-            else:
-                return 'signal/wait'
-
         # Get first available method for the protocol as default
         if protocol in self.supported_methods:
             methods = self.supported_methods[protocol]

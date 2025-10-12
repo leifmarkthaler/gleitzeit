@@ -1,0 +1,17 @@
+[2025-10-11 15:41:24] [STDERR] INFO:     Started server process [35690]
+[2025-10-11 15:41:24] [STDERR] INFO:     Waiting for application startup.
+[2025-10-11 15:41:24] [STDERR] INFO:     Application startup complete.
+[2025-10-11 15:41:24] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-11 15:41:29] [STDOUT] INFO:     127.0.0.1:51592 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:41:40] [STDOUT] INFO:     127.0.0.1:51616 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:41:51] [STDOUT] INFO:     127.0.0.1:51629 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:41:52] [STDOUT] INFO:     127.0.0.1:51629 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:42:02] [STDOUT] INFO:     127.0.0.1:51647 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:42:05] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-11 15:42:06] [STDOUT] INFO:     127.0.0.1:51647 - "GET /workflows/ea2c7885-e4d9-4d63-a594-8024897dbd27 HTTP/1.1" 200 OK
+[2025-10-11 15:42:06] [STDOUT] INFO:     127.0.0.1:51647 - "GET /tasks/01c0344e-4505-4e92-802a-38a293dafa3c HTTP/1.1" 200 OK
+[2025-10-11 15:42:13] [STDOUT] INFO:     127.0.0.1:51668 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:42:24] [STDOUT] INFO:     127.0.0.1:51781 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:42:35] [STDOUT] INFO:     127.0.0.1:51806 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:42:46] [STDOUT] INFO:     127.0.0.1:51813 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-11 15:42:57] [STDOUT] INFO:     127.0.0.1:51921 - "GET /health/detailed HTTP/1.1" 200 OK

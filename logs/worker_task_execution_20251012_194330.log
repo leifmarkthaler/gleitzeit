@@ -1,0 +1,81 @@
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,132 - __main__ - INFO - Loading configuration from Redis key: worker:config:task_execution-async:5797cf3c
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,135 - __main__ - INFO - Loaded config for worker task_execution-async
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,135 - __main__ - INFO - Worker task_execution-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,135 - gleitzeit.handlers.registry - INFO - Registered handler FileHandler for protocol file/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,203 - gleitzeit.handlers.registry - INFO - Registered handler HttpHandler for protocol http/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,211 - gleitzeit.handlers.registry - INFO - Registered handler OllamaHandler for protocol ollama/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,211 - gleitzeit.handlers.registry - INFO - Registered handler PythonHandler for protocol python/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,212 - gleitzeit.handlers.registry - INFO - Registered handler SignalHandler for protocol signal/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,212 - gleitzeit.handlers.registry - INFO - Registered handler TimerHandler for protocol timer/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,212 - gleitzeit.handlers.registry - INFO - Registered handler ValidationHandler for protocol validation/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.handlers.registry - INFO - Registered handler WorkflowHandler for protocol workflow/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.handlers - INFO - Auto-discovered 8 handler modules: file, http, ollama, python, signal, timer, validation, workflow
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO - Found handler configurations for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.handlers.base - INFO - Handler FileHandler initialized with ID: 71e28b92-b083-467a-9692-eba560b55f72
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol file/v1: FileHandler (ID: 71e28b92)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'base_directories', 'max_file_size_mb', 'worker_id']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.handlers.base - INFO - Handler HttpHandler initialized with ID: c7c3128f-d887-4b2b-a1e2-69eba9bb8d0f
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol http/v1: HttpHandler (ID: c7c3128f)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'timeout', 'max_retries', 'allowed_hosts', 'default_headers', 'worker_id']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.handlers.base - INFO - Handler OllamaHandler initialized with ID: d4da1241-b580-4df5-bce8-135af77d53c7
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.core.circuit_breaker - INFO - Circuit breaker 'ollama_http://localhost:11434' initialized with threshold=3
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol ollama/v1: OllamaHandler (ID: d4da1241)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'base_url', 'timeout', 'default_model', 'circuit_breaker', 'worker_id']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.handlers.base - INFO - Handler PythonHandler initialized with ID: fa0798ed-ad88-4181-ace6-80c200b7b5f9
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.handlers.python - INFO - Python handler will use subprocess pool (min=2, max=20)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol python/v1: PythonHandler (ID: fa0798ed)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,213 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'execution_mode', 'config', 'subprocess_pool_enabled', 'subprocess_pool_min_size', 'subprocess_pool_max_size', 'default_timeout', 'worker_id']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.handlers.base - INFO - Handler SignalHandler initialized with ID: 4d52dda7-13f4-49ed-92cf-e4077d0634a7
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol signal/v1: SignalHandler (ID: 4d52dda7)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'delivery_mode', 'max_signals_per_workflow', 'worker_id']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.handlers.base - INFO - Handler TimerHandler initialized with ID: d325f327-34a0-4741-b1e6-988d1162f0af
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol timer/v1: TimerHandler (ID: d325f327)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'precision_ms', 'backend', 'worker_id']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.handlers.base - INFO - Handler ValidationHandler initialized with ID: d901db02-6c5c-472d-9fdb-85a7aa410486
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol validation/v1: ValidationHandler (ID: d901db02)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['worker_id']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.handlers.base - INFO - Handler WorkflowHandler initialized with ID: 43a86a52-6045-4a0e-ac55-85d9437aa62f
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol workflow/v1: WorkflowHandler (ID: 43a86a52)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'max_child_workflows', 'async_submission', 'worker_id']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO - Worker initialized with 8 handlers: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.core.cache - INFO - Created workflow cache with max_size=1000, ttl=3600
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO - TaskExecutionWorker initialized with enabled types: ['all']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO - Available handlers: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.workers.task_execution_worker - INFO - Workflow cache configured: size=1000, ttl=3600s
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.handlers.python - INFO - Eagerly initializing subprocess pool...
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,214 - gleitzeit.core.subprocess_pool - INFO - Initializing Python subprocess pool (min=2, max=20)
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,253 - gleitzeit.core.subprocess_pool - INFO - Subprocess pool initialized with 2 processes
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,253 - gleitzeit.handlers.python - INFO - Subprocess pool initialized successfully
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,253 - gleitzeit.workers.task_execution_worker - INFO - Async initialization completed for handler python/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,256 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 71e28b92 for protocol file/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,256 - gleitzeit.workers.task_execution_worker - INFO - Registered handler c7c3128f for protocol http/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,256 - gleitzeit.workers.task_execution_worker - INFO - Registered handler d4da1241 for protocol ollama/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,257 - gleitzeit.workers.task_execution_worker - INFO - Registered handler fa0798ed for protocol python/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,257 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 4d52dda7 for protocol signal/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,258 - gleitzeit.workers.task_execution_worker - INFO - Registered handler d325f327 for protocol timer/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,258 - gleitzeit.workers.task_execution_worker - INFO - Registered handler d901db02 for protocol validation/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,258 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 43a86a52 for protocol workflow/v1
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,259 - task_execution.task_execution-async - INFO - Worker task_execution-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,259 - __main__ - INFO - Worker task_execution-async started successfully
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,259 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 19:43:31] [STDERR] 2025-10-12 19:43:31,259 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for task_execution-async
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,633 - gleitzeit.workers.task_execution_worker - INFO - Processing task 78500aa6-9af6-49f6-9038-c0b4466d944f from workflow 37138526-0c81-46fc-842d-ed63d0058f15
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,637 - gleitzeit.workers.task_execution_worker - INFO - Executing task 78500aa6-9af6-49f6-9038-c0b4466d944f with handler PythonHandler
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,641 - gleitzeit.workers.task_execution_worker - INFO - Task 78500aa6-9af6-49f6-9038-c0b4466d944f completed successfully by handler fa0798ed-ad88-4181-ace6-80c200b7b5f9
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,654 - gleitzeit.workers.task_execution_worker - INFO - Processing task 412b72e3-820e-41ff-b7be-5e402c26f334 from workflow 37138526-0c81-46fc-842d-ed63d0058f15
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,656 - gleitzeit.workers.task_execution_worker - INFO - Executing task 412b72e3-820e-41ff-b7be-5e402c26f334 with handler SignalHandler
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,656 - gleitzeit.handlers.signal - INFO - Task 412b72e3-820e-41ff-b7be-5e402c26f334 sending signal 'data-ready' to 1 workflow(s)
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,660 - gleitzeit.signals.stateless_signal_manager - INFO - Sent signal signal-data-ready-7d800884 (data-ready) targeting 37138526-0c81-46fc-842d-ed63d0058f15
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,660 - gleitzeit.workers.task_execution_worker - INFO - Emitted signal 'data-ready' (ID: signal-data-ready-7d800884) within workflow 37138526-0c81-46fc-842d-ed63d0058f15
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,661 - gleitzeit.workers.task_execution_worker - INFO - Task 412b72e3-820e-41ff-b7be-5e402c26f334 completed successfully by handler 4d52dda7-13f4-49ed-92cf-e4077d0634a7
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,669 - gleitzeit.workers.task_execution_worker - INFO - Processing task 90b378d3-12df-40d0-b650-93db5c27066c from workflow 37138526-0c81-46fc-842d-ed63d0058f15
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,671 - gleitzeit.workers.task_execution_worker - INFO - Executing task 90b378d3-12df-40d0-b650-93db5c27066c with handler SignalHandler
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,671 - gleitzeit.handlers.signal - INFO - Task 90b378d3-12df-40d0-b650-93db5c27066c waiting for signal 'data-ready'
+[2025-10-12 19:44:18] [STDERR] 2025-10-12 19:44:18,671 - gleitzeit.workers.task_execution_worker - INFO - Task 90b378d3-12df-40d0-b650-93db5c27066c waiting for signal
+[2025-10-12 19:44:31] [STDERR] 2025-10-12 19:44:31,262 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:3}:task:ready
+[2025-10-12 19:44:31] [STDERR] 2025-10-12 19:44:31,268 - gleitzeit.workers.pending_recovery - INFO - Claimed 1 stuck pending messages
+[2025-10-12 19:49:31] [STDERR] 2025-10-12 19:49:31,289 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:3}:task:ready
+[2025-10-12 19:49:31] [STDERR] 2025-10-12 19:49:31,295 - gleitzeit.workers.pending_recovery - INFO - Claimed 1 stuck pending messages
+[2025-10-12 19:54:31] [STDERR] 2025-10-12 19:54:31,318 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:3}:task:ready
+[2025-10-12 19:54:31] [STDERR] 2025-10-12 19:54:31,321 - gleitzeit.workers.pending_recovery - INFO - Claimed 1 stuck pending messages

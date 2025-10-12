@@ -3,146 +3,172 @@
 {% block title %}Handlers & Workers - Gleitzeit{% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="page-header">
-        <h1>🔧 Handlers & Workers</h1>
-        <p class="subtitle">Worker health and handler status</p>
+<div class="container handlers-page">
+    <div class="page-header-modern">
+        <div>
+            <h1 class="page-title-modern">System Health</h1>
+            <p class="page-subtitle">Real-time worker status and system metrics</p>
+        </div>
+        <button class="btn-refresh"
+                hx-get="/handlers"
+                hx-target="body"
+                hx-trigger="click">
+            <span class="refresh-icon">↻</span> Refresh
+        </button>
     </div>
 
     <!-- System Overview -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>📊 System Overview</h3>
-        </div>
-        <div class="card-body">
-            <div class="metrics-grid">
-                {% if metrics %}
-                <div class="metric-card">
-                    <span class="metric-label">Total Workflows</span>
-                    <span class="metric-value">{{ metrics.workflows.total }}</span>
+    <div class="metrics-section">
+        {% if metrics %}
+        <div class="metric-card-modern metric-workflows">
+            <div class="metric-icon">📊</div>
+            <div class="metric-content">
+                <div class="metric-label-modern">Total Workflows</div>
+                <div class="metric-value-modern">{{ metrics.workflows.total }}</div>
+                <div class="metric-sublabel">
+                    <span class="running-count">{{ metrics.workflows.running }}</span> running
                 </div>
-                <div class="metric-card">
-                    <span class="metric-label">Running Workflows</span>
-                    <span class="metric-value text-primary">{{ metrics.workflows.running }}</span>
-                </div>
-                <div class="metric-card">
-                    <span class="metric-label">Total Tasks</span>
-                    <span class="metric-value">{{ metrics.tasks.total }}</span>
-                </div>
-                <div class="metric-card">
-                    <span class="metric-label">Running Tasks</span>
-                    <span class="metric-value text-primary">{{ metrics.tasks.running }}</span>
-                </div>
-                {% else %}
-                <div class="empty-state">
-                    <p>No metrics available</p>
-                </div>
-                {% endif %}
             </div>
         </div>
+        <div class="metric-card-modern metric-tasks">
+            <div class="metric-icon">✓</div>
+            <div class="metric-content">
+                <div class="metric-label-modern">Total Tasks</div>
+                <div class="metric-value-modern">{{ metrics.tasks.total }}</div>
+                <div class="metric-sublabel">
+                    <span class="running-count">{{ metrics.tasks.running }}</span> running
+                </div>
+            </div>
+        </div>
+        <div class="metric-card-modern metric-completed">
+            <div class="metric-icon">🎉</div>
+            <div class="metric-content">
+                <div class="metric-label-modern">Completed</div>
+                <div class="metric-value-modern">{{ metrics.workflows.completed }}</div>
+                <div class="metric-sublabel">workflows</div>
+            </div>
+        </div>
+        <div class="metric-card-modern metric-workers">
+            <div class="metric-icon">⚙️</div>
+            <div class="metric-content">
+                <div class="metric-label-modern">Active Workers</div>
+                <div class="metric-value-modern">{{ workers|length }}</div>
+                <div class="metric-sublabel">healthy</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No metrics available</p>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Queue Status -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>📈 Queue Depths</h3>
-            <button class="btn btn-sm btn-secondary"
-                    hx-get="/handlers"
-                    hx-target="body"
-                    hx-trigger="click">
-                🔄 Refresh
-            </button>
+    <div class="section-modern">
+        <div class="section-header">
+            <h2 class="section-title">📊 Queue Status</h2>
         </div>
-        <div class="card-body">
-            {% if queues %}
-            <div class="queue-grid">
-                {% for queue_name, queue_depth in queues.items() %}
-                <div class="queue-card">
-                    <div class="queue-header">
-                        <span class="queue-name">{{ queue_name }}</span>
-                        {% if queue_depth > 100 %}
-                        <span class="badge badge-warning">High</span>
-                        {% elif queue_depth > 0 %}
-                        <span class="badge badge-info">Active</span>
-                        {% else %}
-                        <span class="badge badge-secondary">Empty</span>
-                        {% endif %}
-                    </div>
-                    <div class="queue-depth">
-                        <span class="depth-number">{{ queue_depth }}</span>
-                        <span class="depth-label">messages</span>
+        {% if queues %}
+        <div class="queue-grid-modern">
+            {% for queue_name, queue_depth in queues.items() %}
+            <div class="queue-card-modern {% if queue_depth > 100 %}queue-high{% elif queue_depth > 0 %}queue-active{% else %}queue-empty{% endif %}">
+                <div class="queue-indicator">
+                    {% if queue_depth > 100 %}
+                    <div class="pulse-dot pulse-warning"></div>
+                    {% elif queue_depth > 0 %}
+                    <div class="pulse-dot pulse-info"></div>
+                    {% else %}
+                    <div class="pulse-dot pulse-gray"></div>
+                    {% endif %}
+                </div>
+                <div class="queue-info">
+                    <div class="queue-name-modern">{{ queue_name.replace(':', ' › ') }}</div>
+                    <div class="queue-count">
+                        <span class="count-number">{{ queue_depth }}</span>
+                        <span class="count-label">messages</span>
                     </div>
                 </div>
-                {% endfor %}
+                <div class="queue-status-badge">
+                    {% if queue_depth > 100 %}
+                    High Load
+                    {% elif queue_depth > 0 %}
+                    Active
+                    {% else %}
+                    Idle
+                    {% endif %}
+                </div>
             </div>
-            {% else %}
-            <div class="empty-state">
-                <p>No queue information available</p>
-            </div>
-            {% endif %}
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No queue information available</p>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Workers Health -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>💚 Worker Health</h3>
-            <span class="badge badge-primary">{{ workers|length }} Workers</span>
+    <div class="section-modern">
+        <div class="section-header">
+            <h2 class="section-title">💚 Worker Health</h2>
+            <div class="worker-count-badge">{{ workers|length }} Active</div>
         </div>
-        <div class="card-body">
-            {% if workers %}
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Worker ID</th>
-                        <th>Type</th>
-                        <th>Status</th>
-                        <th>Last Heartbeat</th>
-                        <th>Tasks Processed</th>
-                        <th>Errors</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for worker_id, worker_data in workers.items() %}
-                    <tr>
-                        <td>
-                            <code>{{ worker_id[:16] }}...</code>
-                        </td>
-                        <td>
-                            {{ worker_data.type|default("Unknown") }}
-                        </td>
-                        <td>
-                            {% if worker_data.status == "healthy" %}
-                            <span class="badge badge-success">Healthy</span>
-                            {% elif worker_data.status == "degraded" %}
-                            <span class="badge badge-warning">Degraded</span>
-                            {% else %}
-                            <span class="badge badge-danger">{{ worker_data.status|default("Unknown") }}</span>
-                            {% endif %}
-                        </td>
-                        <td>
-                            {{ worker_data.last_heartbeat|default("-") }}
-                        </td>
-                        <td>
-                            {{ worker_data.tasks_processed|default("0") }}
-                        </td>
-                        <td>
-                            {% if worker_data.errors|default(0) > 0 %}
-                            <span class="text-danger">{{ worker_data.errors }}</span>
-                            {% else %}
-                            <span class="text-success">0</span>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div class="empty-state">
-                <p>No active workers found</p>
+        {% if workers %}
+        <div class="workers-grid">
+            {% for worker_id, worker_data in workers.items() %}
+            <div class="worker-card {% if worker_data.status == 'healthy' %}worker-healthy{% elif worker_data.status == 'degraded' %}worker-degraded{% else %}worker-unhealthy{% endif %}">
+                <div class="worker-header">
+                    <div class="worker-type-icon">
+                        {% if worker_data.worker_type == 'task_execution' %}⚡
+                        {% elif worker_data.worker_type == 'python_specialist' %}🐍
+                        {% elif worker_data.worker_type == 'dependency' %}🔗
+                        {% elif worker_data.worker_type == 'retry' %}🔄
+                        {% elif worker_data.worker_type == 'reconciliation' %}🔍
+                        {% elif worker_data.worker_type == 'workflow_loader' %}📥
+                        {% elif worker_data.worker_type == 'workflow_submission' %}📤
+                        {% else %}⚙️
+                        {% endif %}
+                    </div>
+                    <div class="worker-status-indicator">
+                        {% if worker_data.status == "healthy" %}
+                        <div class="status-dot status-healthy"></div>
+                        {% elif worker_data.status == "degraded" %}
+                        <div class="status-dot status-degraded"></div>
+                        {% else %}
+                        <div class="status-dot status-unhealthy"></div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="worker-name">{{ worker_data.worker_type|replace('_', ' ')|title }}</div>
+                <div class="worker-id-code">{{ worker_id[:20] }}...</div>
+                <div class="worker-stats">
+                    <div class="worker-stat">
+                        <div class="stat-value">{{ worker_data.tasks_processed|default("0") }}</div>
+                        <div class="stat-label">Processed</div>
+                    </div>
+                    <div class="worker-stat">
+                        <div class="stat-value {% if worker_data.errors|default(0) > 0 %}stat-errors{% endif %}">
+                            {{ worker_data.errors|default("0") }}
+                        </div>
+                        <div class="stat-label">Errors</div>
+                    </div>
+                    <div class="worker-stat">
+                        <div class="stat-value">{{ worker_data.cpu_percent|default("0")|round(1) }}%</div>
+                        <div class="stat-label">CPU</div>
+                    </div>
+                    <div class="worker-stat">
+                        <div class="stat-value">{{ worker_data.memory_mb|default("0")|round(1) }} MB</div>
+                        <div class="stat-label">Memory</div>
+                    </div>
+                </div>
             </div>
-            {% endif %}
+            {% endfor %}
         </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No active workers found</p>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Orchestrator Status -->
@@ -165,197 +191,522 @@
     {% endif %}
 
     <!-- Available Handlers -->
-    <div class="card">
-        <div class="card-header">
-            <h3>📦 Available Handlers</h3>
+    <div class="section-modern">
+        <div class="section-header">
+            <h2 class="section-title">📦 Available Handlers</h2>
         </div>
-        <div class="card-body">
-            <div class="handler-grid">
-                <div class="handler-card">
-                    <div class="handler-icon">🐍</div>
-                    <div class="handler-name">Python</div>
-                    <div class="handler-protocol">python://</div>
-                </div>
-                <div class="handler-card">
-                    <div class="handler-icon">🌐</div>
-                    <div class="handler-name">HTTP</div>
-                    <div class="handler-protocol">http://</div>
-                </div>
-                <div class="handler-card">
-                    <div class="handler-icon">📁</div>
-                    <div class="handler-name">File</div>
-                    <div class="handler-protocol">file://</div>
-                </div>
-                <div class="handler-card">
-                    <div class="handler-icon">📋</div>
-                    <div class="handler-name">Workflow</div>
-                    <div class="handler-protocol">workflow://</div>
-                </div>
-                <div class="handler-card">
-                    <div class="handler-icon">⏰</div>
-                    <div class="handler-name">Timer</div>
-                    <div class="handler-protocol">timer://</div>
-                </div>
-                <div class="handler-card">
-                    <div class="handler-icon">📡</div>
-                    <div class="handler-name">Signal</div>
-                    <div class="handler-protocol">signal://</div>
-                </div>
-                <div class="handler-card">
-                    <div class="handler-icon">✅</div>
-                    <div class="handler-name">Validation</div>
-                    <div class="handler-protocol">validate://</div>
-                </div>
-                <div class="handler-card">
-                    <div class="handler-icon">🤖</div>
-                    <div class="handler-name">Ollama</div>
-                    <div class="handler-protocol">ollama://</div>
-                </div>
+        <div class="handlers-grid">
+            <div class="handler-card-modern handler-python">
+                <div class="handler-icon-modern">🐍</div>
+                <div class="handler-name-modern">Python</div>
+                <div class="handler-protocol-modern">python://</div>
+            </div>
+            <div class="handler-card-modern handler-http">
+                <div class="handler-icon-modern">🌐</div>
+                <div class="handler-name-modern">HTTP</div>
+                <div class="handler-protocol-modern">http://</div>
+            </div>
+            <div class="handler-card-modern handler-file">
+                <div class="handler-icon-modern">📁</div>
+                <div class="handler-name-modern">File</div>
+                <div class="handler-protocol-modern">file://</div>
+            </div>
+            <div class="handler-card-modern handler-workflow">
+                <div class="handler-icon-modern">📋</div>
+                <div class="handler-name-modern">Workflow</div>
+                <div class="handler-protocol-modern">workflow://</div>
+            </div>
+            <div class="handler-card-modern handler-timer">
+                <div class="handler-icon-modern">⏰</div>
+                <div class="handler-name-modern">Timer</div>
+                <div class="handler-protocol-modern">timer://</div>
+            </div>
+            <div class="handler-card-modern handler-signal">
+                <div class="handler-icon-modern">📡</div>
+                <div class="handler-name-modern">Signal</div>
+                <div class="handler-protocol-modern">signal://</div>
+            </div>
+            <div class="handler-card-modern handler-validation">
+                <div class="handler-icon-modern">✅</div>
+                <div class="handler-name-modern">Validation</div>
+                <div class="handler-protocol-modern">validate://</div>
+            </div>
+            <div class="handler-card-modern handler-ollama">
+                <div class="handler-icon-modern">🤖</div>
+                <div class="handler-name-modern">Ollama</div>
+                <div class="handler-protocol-modern">ollama://</div>
             </div>
         </div>
     </div>
 </div>
 
 <style>
-.metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1rem;
+/* Modern Page Layout */
+.handlers-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 1rem;
 }
 
-.metric-card {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
-    text-align: center;
-}
-
-.metric-label {
-    display: block;
-    font-size: 0.875rem;
-    color: #666;
-    margin-bottom: 0.5rem;
-}
-
-.metric-value {
-    display: block;
-    font-size: 2rem;
-    font-weight: bold;
-    color: #333;
-}
-
-.queue-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 1rem;
-}
-
-.queue-card {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
-    border-left: 4px solid #007bff;
-}
-
-.queue-header {
+.page-header-modern {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 2px solid #e9ecef;
 }
 
-.queue-name {
-    font-weight: 500;
-    font-size: 0.875rem;
+.page-title-modern {
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
 }
 
-.queue-depth {
-    text-align: center;
+.page-subtitle {
+    color: #6c757d;
+    font-size: 1rem;
+    margin-top: 0.5rem;
 }
 
-.depth-number {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #333;
-}
-
-.depth-label {
-    font-size: 0.75rem;
-    color: #666;
-    display: block;
-}
-
-.handler-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 1rem;
-}
-
-.handler-card {
-    background: #f8f9fa;
-    padding: 1rem;
-    border-radius: 8px;
-    text-align: center;
-    transition: transform 0.2s;
-}
-
-.handler-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.handler-icon {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.handler-name {
-    font-weight: 500;
-    margin-bottom: 0.25rem;
-}
-
-.handler-protocol {
-    font-size: 0.75rem;
-    color: #666;
-    font-family: monospace;
-}
-
-.info-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 1rem;
-}
-
-.info-item {
+.btn-refresh {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.info-label {
+.btn-refresh:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.refresh-icon {
+    font-size: 1.2rem;
+    display: inline-block;
+}
+
+.btn-refresh:hover .refresh-icon {
+    animation: spin 0.6s ease;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Metrics Section */
+.metrics-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.metric-card-modern {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.metric-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.metric-card-modern:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+}
+
+.metric-workflows::before { background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); }
+.metric-tasks::before { background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%); }
+.metric-completed::before { background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%); }
+.metric-workers::before { background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%); }
+
+.metric-icon {
+    font-size: 3rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-label-modern {
     font-size: 0.875rem;
-    color: #666;
-    margin-bottom: 0.25rem;
+    color: #6c757d;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
 }
 
-.info-value {
-    font-weight: 500;
+.metric-value-modern {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    line-height: 1;
 }
 
-.mb-4 {
+.metric-sublabel {
+    font-size: 0.875rem;
+    color: #94a3b8;
+    margin-top: 0.5rem;
+}
+
+.running-count {
+    color: #667eea;
+    font-weight: 600;
+}
+
+/* Section Modern */
+.section-modern {
+    margin-bottom: 3rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1.5rem;
 }
 
-.text-primary {
-    color: #007bff;
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0;
 }
 
-.text-success {
-    color: #28a745;
+.worker-count-badge {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+    padding: 0.5rem 1.25rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    box-shadow: 0 2px 10px rgba(67, 233, 123, 0.3);
 }
 
-.text-danger {
-    color: #dc3545;
+/* Queue Grid */
+.queue-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+}
+
+.queue-card-modern {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.queue-card-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1);
+}
+
+.queue-active { border-left: 4px solid #4facfe; }
+.queue-high { border-left: 4px solid #f5576c; }
+.queue-empty { border-left: 4px solid #cbd5e0; }
+
+.queue-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pulse-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.pulse-info { background: #4facfe; box-shadow: 0 0 0 0 rgba(79, 172, 254, 0.7); }
+.pulse-warning { background: #f5576c; box-shadow: 0 0 0 0 rgba(245, 87, 108, 0.7); }
+.pulse-gray { background: #cbd5e0; }
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(79, 172, 254, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(79, 172, 254, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(79, 172, 254, 0); }
+}
+
+.queue-info {
+    flex: 1;
+}
+
+.queue-name-modern {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 0.95rem;
+    margin-bottom: 0.5rem;
+}
+
+.queue-count {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.count-number {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #4a5568;
+}
+
+.count-label {
+    font-size: 0.75rem;
+    color: #94a3b8;
+}
+
+.queue-status-badge {
+    background: #f7fafc;
+    color: #4a5568;
+    padding: 0.4rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Workers Grid */
+.workers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.worker-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.worker-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+}
+
+.worker-healthy::before { background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%); }
+.worker-degraded::before { background: linear-gradient(90deg, #fa709a 0%, #fee140 100%); }
+.worker-unhealthy::before { background: linear-gradient(90deg, #ff6b6b 0%, #ee5a6f 100%); }
+
+.worker-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.worker-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.worker-type-icon {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.worker-status-indicator {
+    display: flex;
+    align-items: center;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    animation: pulse-status 2s ease-in-out infinite;
+}
+
+.status-healthy {
+    background: #43e97b;
+    box-shadow: 0 0 0 0 rgba(67, 233, 123, 0.7);
+}
+
+.status-degraded {
+    background: #fa709a;
+    box-shadow: 0 0 0 0 rgba(250, 112, 154, 0.7);
+}
+
+.status-unhealthy {
+    background: #ff6b6b;
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+}
+
+@keyframes pulse-status {
+    0% { box-shadow: 0 0 0 0 rgba(67, 233, 123, 0.7); }
+    70% { box-shadow: 0 0 0 8px rgba(67, 233, 123, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(67, 233, 123, 0); }
+}
+
+.worker-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.worker-id-code {
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 1rem;
+}
+
+.worker-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.worker-stat {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.stat-errors {
+    color: #f5576c;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.25rem;
+}
+
+/* Handlers Grid */
+.handlers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.25rem;
+}
+
+.handler-card-modern {
+    background: white;
+    border-radius: 16px;
+    padding: 1.75rem 1.25rem;
+    text-align: center;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.handler-card-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.handler-python::before { background: linear-gradient(135deg, rgba(55, 119, 188, 0.1), rgba(52, 144, 220, 0.1)); }
+.handler-http::before { background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); }
+.handler-file::before { background: linear-gradient(135deg, rgba(240, 147, 251, 0.1), rgba(245, 87, 108, 0.1)); }
+.handler-workflow::before { background: linear-gradient(135deg, rgba(79, 172, 254, 0.1), rgba(0, 242, 254, 0.1)); }
+.handler-timer::before { background: linear-gradient(135deg, rgba(250, 112, 154, 0.1), rgba(254, 225, 64, 0.1)); }
+.handler-signal::before { background: linear-gradient(135deg, rgba(250, 185, 50, 0.1), rgba(255, 202, 58, 0.1)); }
+.handler-validation::before { background: linear-gradient(135deg, rgba(67, 233, 123, 0.1), rgba(56, 249, 215, 0.1)); }
+.handler-ollama::before { background: linear-gradient(135deg, rgba(118, 75, 162, 0.1), rgba(102, 126, 234, 0.1)); }
+
+.handler-card-modern:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+}
+
+.handler-card-modern:hover::before {
+    opacity: 1;
+}
+
+.handler-icon-modern {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.1));
+    transition: transform 0.3s ease;
+}
+
+.handler-card-modern:hover .handler-icon-modern {
+    transform: scale(1.15);
+}
+
+.handler-name-modern {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.handler-protocol-modern {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 </style>
 

@@ -35,31 +35,66 @@ class StatelessTimerManager:
     async def create_timer(
         redis,
         workflow_id: str,
-        duration_seconds: float,
+        duration_seconds: float = None,
         task_id: Optional[str] = None,
         timer_type: str = "delay",
         payload: Optional[Dict[str, Any]] = None,
-        timer_id: Optional[str] = None
+        timer_id: Optional[str] = None,
+        wake_time: Optional[float] = None
     ) -> str:
         """
-        Create a new timer.
+        Create a new timer with accurate timing and no drift.
+
+        IMPORTANT: Prefer passing wake_time over duration_seconds to avoid
+        timing drift from processing delays. When wake_time is provided,
+        the timer will fire at the exact absolute time, regardless of
+        processing delays in creating the timer.
 
         Args:
             redis: Redis client
             workflow_id: Workflow ID
-            duration_seconds: Timer duration in seconds
-            task_id: Optional task ID
+            duration_seconds: Timer duration in seconds (used if wake_time not provided)
+                             Legacy parameter - prefer wake_time for accuracy
+            task_id: Optional task ID to associate with timer
             timer_type: Type of timer (delay, schedule, recurring)
-            payload: Additional timer data
-            timer_id: Optional timer ID (generated if not provided)
+            payload: Additional timer data/metadata
+            timer_id: Optional timer ID (auto-generated if not provided)
+            wake_time: Absolute wake time as Unix timestamp (RECOMMENDED)
+                      Using this parameter ensures zero timing drift
 
         Returns:
-            Timer ID
+            Timer ID string
+
+        Example:
+            # OLD WAY (may have drift)
+            timer_id = await create_timer(redis, "wf-123", duration_seconds=5.0)
+
+            # NEW WAY (accurate, no drift)
+            wake_time = time.time() + 5.0
+            timer_id = await create_timer(redis, "wf-123", wake_time=wake_time)
+
+        Note:
+            - Either wake_time or duration_seconds must be provided
+            - wake_time takes precedence if both are provided
+            - Timer is stored in Redis sorted set with wake_time as score
         """
         if not timer_id:
             timer_id = f"timer-{workflow_id}-{uuid.uuid4().hex[:8]}"
 
-        scheduled_time = datetime.utcnow() + timedelta(seconds=duration_seconds)
+        # Use wake_time if provided (absolute timestamp), otherwise calculate from duration
+        if wake_time is not None:
+            # Use absolute time - avoids drift from processing delays
+            scheduled_time = datetime.fromtimestamp(wake_time)
+            # Store original duration for metadata
+            if duration_seconds is None:
+                duration_seconds = wake_time - time.time()
+        else:
+            # Fallback to duration-based scheduling (backward compatibility)
+            if duration_seconds is None:
+                raise ValueError("Either wake_time or duration_seconds must be provided")
+            # Use time.time() for consistency - avoids timezone issues
+            wake_time = time.time() + duration_seconds
+            scheduled_time = datetime.fromtimestamp(wake_time)
 
         # Timer data
         timer_data = {

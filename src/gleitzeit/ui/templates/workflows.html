@@ -62,7 +62,9 @@
 
         async function loadWorkflows() {
             try {
-                const response = await fetch('/api/workflows/list?limit=100');
+                const response = await fetch('/api/workflows/list?limit=100', {
+                    cache: 'no-cache'
+                });
                 const data = await response.json();
 
                 const container = document.getElementById('workflows-container');
@@ -83,12 +85,26 @@
                     const taskCount = workflow.task_count || workflow.tasks?.length || 0;
                     const created = workflow.created_at || workflow.submitted_at || '-';
 
+                    // Convert UTC timestamp to local time
+                    let createdLocal = created;
+                    if (created !== '-') {
+                        const date = new Date(created);
+                        createdLocal = date.toLocaleString('sv-SE', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        }).replace(',', '');
+                    }
+
                     html += '<tr>';
                     html += `<td><code>${id.substring(0, 12)}...</code></td>`;
                     html += `<td>${name}</td>`;
                     html += `<td><span class="badge badge-${status}">${status}</span></td>`;
                     html += `<td>${taskCount}</td>`;
-                    html += `<td>${created.substring(0, 19).replace('T', ' ')}</td>`;
+                    html += `<td>${createdLocal}</td>`;
                     html += `<td><a href="/workflows/${id}" class="btn btn-primary btn-sm">View</a></td>`;
                     html += '</tr>';
                 });

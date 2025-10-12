@@ -1,0 +1,17 @@
+[2025-10-12 12:01:11] [STDERR] INFO:     Started server process [67927]
+[2025-10-12 12:01:11] [STDERR] INFO:     Waiting for application startup.
+[2025-10-12 12:01:11] [STDERR] INFO:     Application startup complete.
+[2025-10-12 12:01:11] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-12 12:01:19] [STDOUT] INFO:     127.0.0.1:56096 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 12:01:25] [STDOUT] INFO:     127.0.0.1:56120 - "POST /system/workers/timer-async/restart?reason=Apply+timer+fixes HTTP/1.1" 404 Not Found
+[2025-10-12 12:01:30] [STDOUT] INFO:     127.0.0.1:56129 - "POST /system/workers/timer-async/restart?reason=Apply+timer+fixes HTTP/1.1" 404 Not Found
+[2025-10-12 12:01:30] [STDOUT] INFO:     127.0.0.1:56139 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 12:01:41] [STDOUT] INFO:     127.0.0.1:56175 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 12:01:52] [STDOUT] INFO:     127.0.0.1:56214 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 12:01:55] [STDOUT] INFO:     127.0.0.1:56214 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 12:02:05] [STDOUT] INFO:     127.0.0.1:56223 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 12:02:15] [STDOUT] INFO:     127.0.0.1:56255 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 12:02:25] [STDERR] INFO:     Shutting down
+[2025-10-12 12:02:25] [STDERR] INFO:     Waiting for application shutdown.
+[2025-10-12 12:02:25] [STDERR] INFO:     Application shutdown complete.
+[2025-10-12 12:02:25] [STDERR] INFO:     Finished server process [67927]

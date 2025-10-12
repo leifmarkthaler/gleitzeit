@@ -1,0 +1,30 @@
+workflow:
+  name: Timer Audit Test
+  description: Simple timer workflow for audit
+
+tasks:
+  - id: init_task
+    type: python
+    params:
+      code: |
+        import time
+        print(f"Init task started at {time.time()}")
+        result = {"start_time": time.time()}
+
+  - id: timer_task
+    type: timer
+    dependencies: [init_task]
+    params:
+      duration: 3
+
+  - id: final_task
+    type: python
+    dependencies: [timer_task]
+    params:
+      code: |
+        import time
+        print(f"Final task started at {time.time()}")
+        result = {"end_time": time.time()}
+
+schedule:
+  type: once

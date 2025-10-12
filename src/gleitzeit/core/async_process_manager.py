@@ -695,19 +695,12 @@ class AsyncServiceManager:
         ]
 
     async def start_essential_workers(self):
-        """Start only essential workers for native mode"""
+        """Start all configured workers from YAML"""
         workers = self.config.get('workers', [])
 
-        essential_types = [
-            'workflow_loader',
-            'dependency',
-            'task_execution',
-            'workflow_submission'
-        ]
-
+        # Start ALL workers defined in configuration - no hardcoded filter
         for worker_config in workers:
-            if worker_config.get('worker_type') in essential_types:
-                await self.start_worker(worker_config)
+            await self.start_worker(worker_config)
 
     async def start_all(self, api_port: int = 8000, ui_port: int = 8004, no_ui: bool = False, dev_mode: bool = False, restart: bool = False, no_workers: bool = False, no_api: bool = False):
         """Start all services"""

@@ -1,0 +1,80 @@
+[2025-10-12 19:37:14] [STDERR] INFO:     Started server process [37135]
+[2025-10-12 19:37:14] [STDERR] INFO:     Waiting for application startup.
+[2025-10-12 19:37:14] [STDERR] INFO:     Application startup complete.
+[2025-10-12 19:37:14] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-12 19:37:25] [STDOUT] INFO:     127.0.0.1:65319 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:37:36] [STDOUT] INFO:     127.0.0.1:65337 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:37:40] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-12 19:37:40] [STDOUT] INFO:     127.0.0.1:65342 - "GET /workflows/5332b8c7-fdba-428a-bf0b-580a25a39595 HTTP/1.1" 200 OK
+[2025-10-12 19:37:47] [STDOUT] INFO:     127.0.0.1:65355 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:37:58] [STDOUT] INFO:     127.0.0.1:65364 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:09] [STDOUT] INFO:     127.0.0.1:65367 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:20] [STDOUT] INFO:     127.0.0.1:65370 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:30] [STDOUT] INFO:     127.0.0.1:65373 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:33] [STDERR] INFO:     127.0.0.1:65375 - "WebSocket /ws/events" [accepted]
+[2025-10-12 19:38:33] [STDERR] INFO:     connection open
+[2025-10-12 19:38:34] [STDOUT] INFO:     127.0.0.1:65373 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 19:38:36] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 19:38:36] [STDERR] INFO:     connection closed
+[2025-10-12 19:38:36] [STDOUT] INFO:     127.0.0.1:65373 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:43] [STDOUT] INFO:     127.0.0.1:65380 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-12 19:38:45] [STDOUT] INFO:     127.0.0.1:65380 - "GET /workflows/dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:45] [STDOUT] INFO:     127.0.0.1:65380 - "GET /tasks/e1932d27-743e-4ce8-9904-dfd2ef67d9ee HTTP/1.1" 200 OK
+[2025-10-12 19:38:45] [STDOUT] INFO:     127.0.0.1:65380 - "GET /tasks/f93e465b-cfd4-4927-973e-37c3a32e3d25 HTTP/1.1" 200 OK
+[2025-10-12 19:38:45] [STDOUT] INFO:     127.0.0.1:65380 - "GET /tasks/c240775a-a374-48c1-a5c9-758b0e127e6e HTTP/1.1" 200 OK
+[2025-10-12 19:38:45] [STDOUT] INFO:     127.0.0.1:65380 - "GET /tasks/fef0fe44-1050-4e75-b47d-0e6ba3372086 HTTP/1.1" 404 Not Found
+[2025-10-12 19:38:45] [STDOUT] INFO:     127.0.0.1:65380 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:45] [STDOUT] INFO:     127.0.0.1:65384 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:51] [STDOUT] INFO:     127.0.0.1:65387 - "GET /workflows/dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:51] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/e1932d27-743e-4ce8-9904-dfd2ef67d9ee HTTP/1.1" 200 OK
+[2025-10-12 19:38:51] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/f93e465b-cfd4-4927-973e-37c3a32e3d25 HTTP/1.1" 200 OK
+[2025-10-12 19:38:51] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/c240775a-a374-48c1-a5c9-758b0e127e6e HTTP/1.1" 200 OK
+[2025-10-12 19:38:51] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/fef0fe44-1050-4e75-b47d-0e6ba3372086 HTTP/1.1" 404 Not Found
+[2025-10-12 19:38:51] [STDOUT] INFO:     127.0.0.1:65387 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:51] [STDOUT] INFO:     127.0.0.1:65391 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:52] [STDOUT] INFO:     127.0.0.1:65387 - "GET /workflows/dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:52] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/e1932d27-743e-4ce8-9904-dfd2ef67d9ee HTTP/1.1" 200 OK
+[2025-10-12 19:38:52] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/f93e465b-cfd4-4927-973e-37c3a32e3d25 HTTP/1.1" 200 OK
+[2025-10-12 19:38:52] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/c240775a-a374-48c1-a5c9-758b0e127e6e HTTP/1.1" 200 OK
+[2025-10-12 19:38:52] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/fef0fe44-1050-4e75-b47d-0e6ba3372086 HTTP/1.1" 404 Not Found
+[2025-10-12 19:38:52] [STDOUT] INFO:     127.0.0.1:65387 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:52] [STDOUT] INFO:     127.0.0.1:65391 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:53] [STDOUT] INFO:     127.0.0.1:65387 - "GET /workflows/dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:53] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/e1932d27-743e-4ce8-9904-dfd2ef67d9ee HTTP/1.1" 200 OK
+[2025-10-12 19:38:53] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/f93e465b-cfd4-4927-973e-37c3a32e3d25 HTTP/1.1" 200 OK
+[2025-10-12 19:38:53] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/c240775a-a374-48c1-a5c9-758b0e127e6e HTTP/1.1" 200 OK
+[2025-10-12 19:38:53] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/fef0fe44-1050-4e75-b47d-0e6ba3372086 HTTP/1.1" 404 Not Found
+[2025-10-12 19:38:53] [STDOUT] INFO:     127.0.0.1:65387 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:53] [STDOUT] INFO:     127.0.0.1:65391 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /workflows/dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/e1932d27-743e-4ce8-9904-dfd2ef67d9ee HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/f93e465b-cfd4-4927-973e-37c3a32e3d25 HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/c240775a-a374-48c1-a5c9-758b0e127e6e HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/fef0fe44-1050-4e75-b47d-0e6ba3372086 HTTP/1.1" 404 Not Found
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65391 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /workflows/dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/e1932d27-743e-4ce8-9904-dfd2ef67d9ee HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/f93e465b-cfd4-4927-973e-37c3a32e3d25 HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/c240775a-a374-48c1-a5c9-758b0e127e6e HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /tasks/fef0fe44-1050-4e75-b47d-0e6ba3372086 HTTP/1.1" 404 Not Found
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65387 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=dd0fecf7-766f-44dd-a2c9-a692cf0155e8 HTTP/1.1" 200 OK
+[2025-10-12 19:38:54] [STDOUT] INFO:     127.0.0.1:65391 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:39:04] [STDOUT] INFO:     127.0.0.1:65416 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:39:14] [STDOUT] INFO:     127.0.0.1:65419 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:39:24] [STDOUT] INFO:     127.0.0.1:65422 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:39:34] [STDOUT] INFO:     127.0.0.1:65428 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:39:44] [STDOUT] INFO:     127.0.0.1:65431 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:39:54] [STDOUT] INFO:     127.0.0.1:65434 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:40:05] [STDOUT] INFO:     127.0.0.1:65438 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:40:16] [STDOUT] INFO:     127.0.0.1:65441 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:40:27] [STDOUT] INFO:     127.0.0.1:65444 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:40:38] [STDOUT] INFO:     127.0.0.1:65447 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:40:49] [STDOUT] INFO:     127.0.0.1:65450 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:41:00] [STDOUT] INFO:     127.0.0.1:65453 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:41:11] [STDOUT] INFO:     127.0.0.1:65468 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:41:22] [STDOUT] INFO:     127.0.0.1:65478 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:41:33] [STDOUT] INFO:     127.0.0.1:65501 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:41:44] [STDOUT] INFO:     127.0.0.1:65512 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:41:55] [STDOUT] INFO:     127.0.0.1:49208 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 19:42:06] [STDOUT] INFO:     127.0.0.1:49227 - "GET /health/detailed HTTP/1.1" 200 OK

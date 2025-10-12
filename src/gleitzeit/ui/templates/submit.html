@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Submit Workflow - Gleitzeit</title>
     <link rel="stylesheet" href="/static/css/main.css">
+
+    <!-- CodeMirror CSS -->
+    <link rel="stylesheet" href="/static/codemirror/codemirror.min.css">
+    <link rel="stylesheet" href="/static/codemirror/theme/dracula.min.css">
+
     <style>
         .submit-container {
             max-width: 1200px;
@@ -69,6 +74,18 @@
             background: var(--bg-secondary);
             color: var(--text-primary);
             resize: vertical;
+        }
+
+        .CodeMirror {
+            height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        .CodeMirror-scroll {
+            min-height: 500px;
         }
 
         .editor-actions {
@@ -272,16 +289,33 @@
                             <div class="example-title">Timer & Wait</div>
                             <div class="example-description">Delay execution with timers</div>
                         </div>
+
+                        <div class="example-card" onclick="loadExample('ollama')">
+                            <div class="example-title">Ollama LLM</div>
+                            <div class="example-description">Use Ollama for AI text generation</div>
+                        </div>
+
+                        <div class="example-card" onclick="loadExample('signal')">
+                            <div class="example-title">Signal Communication</div>
+                            <div class="example-description">Inter-workflow communication with signals</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
+    <!-- CodeMirror JavaScript -->
+    <script src="/static/codemirror/codemirror.min.js"></script>
+    <script src="/static/codemirror/mode/yaml.min.js"></script>
+    <script src="/static/codemirror/mode/javascript.min.js"></script>
+    <script src="/static/codemirror/addon/edit/matchbrackets.min.js"></script>
+    <script src="/static/codemirror/addon/edit/closebrackets.min.js"></script>
+
     <script>
         let currentFormat = 'yaml';
 
-        const examples = {
+        const yamlExamples = {
             simple: `name: Simple Python Task
 tasks:
   - id: hello
@@ -289,7 +323,7 @@ tasks:
     params:
       code: |
         print("Hello from Gleitzeit!")
-        return {"message": "Success"}`,
+        result = {"message": "Success"}`,
 
             sequential: `name: Sequential Tasks
 tasks:
@@ -298,7 +332,7 @@ tasks:
     params:
       code: |
         print("Task 1 starting")
-        return {"data": "from task 1"}
+        result = {"data": "from task 1"}
 
   - id: task2
     type: python
@@ -306,7 +340,7 @@ tasks:
     params:
       code: |
         print("Task 2 starting")
-        return {"data": "from task 2"}
+        result = {"data": "from task 2"}
 
   - id: task3
     type: python
@@ -314,7 +348,7 @@ tasks:
     params:
       code: |
         print("Task 3 starting")
-        return {"result": "All tasks completed"}`,
+        result = {"result": "All tasks completed"}`,
 
             parallel: `name: Parallel Execution
 tasks:
@@ -325,7 +359,7 @@ tasks:
         import time
         time.sleep(1)
         print("Parallel task 1")
-        return {"result": "Task 1 done"}
+        result = {"result": "Task 1 done"}
 
   - id: parallel2
     type: python
@@ -334,7 +368,7 @@ tasks:
         import time
         time.sleep(1)
         print("Parallel task 2")
-        return {"result": "Task 2 done"}
+        result = {"result": "Task 2 done"}
 
   - id: parallel3
     type: python
@@ -343,7 +377,7 @@ tasks:
         import time
         time.sleep(1)
         print("Parallel task 3")
-        return {"result": "Task 3 done"}
+        result = {"result": "Task 3 done"}
 
   - id: final
     type: python
@@ -351,7 +385,7 @@ tasks:
     params:
       code: |
         print("All parallel tasks completed!")
-        return {"status": "complete"}`,
+        result = {"status": "complete"}`,
 
             http: `name: HTTP Request Example
 tasks:
@@ -369,7 +403,7 @@ tasks:
     params:
       code: |
         print("Processing HTTP response")
-        return {"processed": True}`,
+        result = {"processed": True}`,
 
             timer: `name: Timer Example
 tasks:
@@ -378,7 +412,7 @@ tasks:
     params:
       code: |
         print("Starting workflow")
-        return {"started": True}
+        result = {"started": True}
 
   - id: wait
     type: timer
@@ -392,24 +426,302 @@ tasks:
     params:
       code: |
         print("Workflow completed after delay")
-        return {"completed": True}`
+        result = {"completed": True}`,
+
+            ollama: `name: Ollama LLM Example
+tasks:
+  - id: generate_story
+    type: ollama
+    params:
+      model: llama3.2:latest
+      prompt: "Write a short story about a robot learning to paint in exactly 3 sentences."
+      temperature: 0.7
+      max_tokens: 150
+
+  - id: analyze_story
+    type: python
+    depends_on: [generate_story]
+    params:
+      code: |
+        print("Story generated successfully!")
+        # The story from the previous task is available
+        result = {"analysis": "Story analysis complete"}`,
+
+            signal: `name: Signal Communication Example
+tasks:
+  - id: initialize
+    type: python
+    params:
+      code: |
+        print("Starting workflow")
+        result = {"ready": True}
+
+  - id: send_signal
+    type: signal
+    method: signal/send
+    depends_on: [initialize]
+    params:
+      signal_name: data-ready
+      payload:
+        message: "Data is ready for processing"
+        priority: high
+
+  - id: wait_for_signal
+    type: signal
+    method: signal/wait
+    depends_on: [send_signal]
+    params:
+      signal_name: data-ready
+      timeout: 30
+
+  - id: process
+    type: python
+    depends_on: [wait_for_signal]
+    params:
+      code: |
+        print("Signal received, processing data")
+        result = {"processed": True}`
         };
+
+        const jsonExamples = {
+            simple: `{
+  "name": "Simple Python Task",
+  "tasks": [
+    {
+      "id": "hello",
+      "type": "python",
+      "params": {
+        "code": "print(\\"Hello from Gleitzeit!\\")\\nresult = {\\"message\\": \\"Success\\"}"
+      }
+    }
+  ]
+}`,
+
+            sequential: `{
+  "name": "Sequential Tasks",
+  "tasks": [
+    {
+      "id": "task1",
+      "type": "python",
+      "params": {
+        "code": "print(\\"Task 1 starting\\")\\nresult = {\\"data\\": \\"from task 1\\"}"
+      }
+    },
+    {
+      "id": "task2",
+      "type": "python",
+      "depends_on": ["task1"],
+      "params": {
+        "code": "print(\\"Task 2 starting\\")\\nresult = {\\"data\\": \\"from task 2\\"}"
+      }
+    },
+    {
+      "id": "task3",
+      "type": "python",
+      "depends_on": ["task2"],
+      "params": {
+        "code": "print(\\"Task 3 starting\\")\\nresult = {\\"result\\": \\"All tasks completed\\"}"
+      }
+    }
+  ]
+}`,
+
+            parallel: `{
+  "name": "Parallel Execution",
+  "tasks": [
+    {
+      "id": "parallel1",
+      "type": "python",
+      "params": {
+        "code": "import time\\ntime.sleep(1)\\nprint(\\"Parallel task 1\\")\\nresult = {\\"result\\": \\"Task 1 done\\"}"
+      }
+    },
+    {
+      "id": "parallel2",
+      "type": "python",
+      "params": {
+        "code": "import time\\ntime.sleep(1)\\nprint(\\"Parallel task 2\\")\\nresult = {\\"result\\": \\"Task 2 done\\"}"
+      }
+    },
+    {
+      "id": "parallel3",
+      "type": "python",
+      "params": {
+        "code": "import time\\ntime.sleep(1)\\nprint(\\"Parallel task 3\\")\\nresult = {\\"result\\": \\"Task 3 done\\"}"
+      }
+    },
+    {
+      "id": "final",
+      "type": "python",
+      "depends_on": ["parallel1", "parallel2", "parallel3"],
+      "params": {
+        "code": "print(\\"All parallel tasks completed!\\")\\nresult = {\\"status\\": \\"complete\\"}"
+      }
+    }
+  ]
+}`,
+
+            http: `{
+  "name": "HTTP Request Example",
+  "tasks": [
+    {
+      "id": "fetch_data",
+      "type": "http",
+      "params": {
+        "url": "https://api.github.com/repos/python/cpython",
+        "method": "GET",
+        "headers": {
+          "Accept": "application/json"
+        }
+      }
+    },
+    {
+      "id": "process",
+      "type": "python",
+      "depends_on": ["fetch_data"],
+      "params": {
+        "code": "print(\\"Processing HTTP response\\")\\nresult = {\\"processed\\": True}"
+      }
+    }
+  ]
+}`,
+
+            timer: `{
+  "name": "Timer Example",
+  "tasks": [
+    {
+      "id": "start",
+      "type": "python",
+      "params": {
+        "code": "print(\\"Starting workflow\\")\\nresult = {\\"started\\": True}"
+      }
+    },
+    {
+      "id": "wait",
+      "type": "timer",
+      "depends_on": ["start"],
+      "params": {
+        "duration": 5
+      }
+    },
+    {
+      "id": "finish",
+      "type": "python",
+      "depends_on": ["wait"],
+      "params": {
+        "code": "print(\\"Workflow completed after delay\\")\\nresult = {\\"completed\\": True}"
+      }
+    }
+  ]
+}`,
+
+            ollama: `{
+  "name": "Ollama LLM Example",
+  "tasks": [
+    {
+      "id": "generate_story",
+      "type": "ollama",
+      "params": {
+        "model": "llama3.2:latest",
+        "prompt": "Write a short story about a robot learning to paint in exactly 3 sentences.",
+        "temperature": 0.7,
+        "max_tokens": 150
+      }
+    },
+    {
+      "id": "analyze_story",
+      "type": "python",
+      "depends_on": ["generate_story"],
+      "params": {
+        "code": "print(\\"Story generated successfully!\\")\\n# The story from the previous task is available\\nresult = {\\"analysis\\": \\"Story analysis complete\\"}"
+      }
+    }
+  ]
+}`,
+
+            signal: `{
+  "name": "Signal Communication Example",
+  "tasks": [
+    {
+      "id": "initialize",
+      "type": "python",
+      "params": {
+        "code": "print(\\"Starting workflow\\")\\nresult = {\\"ready\\": True}"
+      }
+    },
+    {
+      "id": "send_signal",
+      "type": "signal",
+      "method": "signal/send",
+      "depends_on": ["initialize"],
+      "params": {
+        "signal_name": "data-ready",
+        "payload": {
+          "message": "Data is ready for processing",
+          "priority": "high"
+        }
+      }
+    },
+    {
+      "id": "wait_for_signal",
+      "type": "signal",
+      "method": "signal/wait",
+      "depends_on": ["send_signal"],
+      "params": {
+        "signal_name": "data-ready",
+        "timeout": 30
+      }
+    },
+    {
+      "id": "process",
+      "type": "python",
+      "depends_on": ["wait_for_signal"],
+      "params": {
+        "code": "print(\\"Signal received, processing data\\")\\nresult = {\\"processed\\": True}"
+      }
+    }
+  ]
+}`
+        };
+
+        let currentExample = null;
 
         function setFormat(format) {
             currentFormat = format;
             document.getElementById('yaml-btn').classList.toggle('active', format === 'yaml');
             document.getElementById('json-btn').classList.toggle('active', format === 'json');
+
+            // Update CodeMirror mode
+            if (editor) {
+                editor.setOption('mode', format === 'yaml' ? 'yaml' : {name: 'javascript', json: true});
+            }
+
+            // If an example is currently loaded, reload it in the new format
+            if (currentExample) {
+                loadExample(currentExample);
+            }
         }
 
         function loadExample(exampleId) {
+            currentExample = exampleId;
+            const examples = currentFormat === 'yaml' ? yamlExamples : jsonExamples;
             const example = examples[exampleId];
             if (example) {
-                document.getElementById('workflow-editor').value = example;
+                if (editor) {
+                    editor.setValue(example);
+                } else {
+                    document.getElementById('workflow-editor').value = example;
+                }
             }
         }
 
         function clearEditor() {
-            document.getElementById('workflow-editor').value = '';
+            if (editor) {
+                editor.setValue('');
+            } else {
+                document.getElementById('workflow-editor').value = '';
+            }
+            currentExample = null;
             hideResult();
         }
 
@@ -439,7 +751,7 @@ tasks:
         }
 
         async function validateWorkflow() {
-            const content = document.getElementById('workflow-editor').value.trim();
+            const content = editor ? editor.getValue().trim() : document.getElementById('workflow-editor').value.trim();
             if (!content) {
                 showResult(false, 'Validation Error', 'Workflow definition cannot be empty');
                 return;
@@ -482,7 +794,7 @@ tasks:
         }
 
         async function submitWorkflow() {
-            const content = document.getElementById('workflow-editor').value.trim();
+            const content = editor ? editor.getValue().trim() : document.getElementById('workflow-editor').value.trim();
             if (!content) {
                 showResult(false, 'Submission Error', 'Workflow definition cannot be empty');
                 return;
@@ -523,8 +835,23 @@ tasks:
             }
         }
 
-        // Load simple example by default
+        // Initialize CodeMirror
+        let editor;
         window.addEventListener('DOMContentLoaded', () => {
+            const textarea = document.getElementById('workflow-editor');
+            editor = CodeMirror.fromTextArea(textarea, {
+                mode: 'yaml',
+                theme: 'dracula',
+                lineNumbers: true,
+                lineWrapping: true,
+                indentUnit: 2,
+                tabSize: 2,
+                indentWithTabs: false,
+                matchBrackets: true,
+                autoCloseBrackets: true
+            });
+
+            // Load simple example by default
             loadExample('simple');
         });
     </script>

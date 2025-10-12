@@ -157,7 +157,7 @@ class TaskEvent:
         result['event_type'] = self.event_type.value
         result['severity'] = self.severity.value
         if self.status:
-            result['status'] = self.status.value
+            result['status'] = self.status if isinstance(self.status, str) else self.status.value
         return result
 
 
@@ -180,7 +180,7 @@ class WorkflowEvent:
         result['event_type'] = self.event_type.value
         result['severity'] = self.severity.value
         if self.status:
-            result['status'] = self.status.value
+            result['status'] = self.status if isinstance(self.status, str) else self.status.value
         return result
 
 
