@@ -1,0 +1,51 @@
+[2025-10-12 22:55:58] [STDERR] INFO:     Started server process [55663]
+[2025-10-12 22:55:58] [STDERR] INFO:     Waiting for application startup.
+[2025-10-12 22:55:58] [STDERR] INFO:     Application startup complete.
+[2025-10-12 22:55:58] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-12 22:56:02] [STDERR] INFO:     127.0.0.1:62691 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:56:02] [STDERR] INFO:     connection open
+[2025-10-12 22:56:34] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:56:34] [STDERR] INFO:     connection closed
+[2025-10-12 22:56:34] [STDOUT] INFO:     127.0.0.1:62741 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:56:42] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-12 22:56:42] [STDOUT] INFO:     127.0.0.1:62746 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-12 22:56:43] [STDOUT] INFO:     127.0.0.1:62746 - "GET /workflows/16091d54-72c5-440a-a4d8-ee116febd363 HTTP/1.1" 200 OK
+[2025-10-12 22:56:43] [STDOUT] INFO:     127.0.0.1:62746 - "GET /tasks/5abee3ba-e35d-4a71-bc38-9ea9e74818a1 HTTP/1.1" 200 OK
+[2025-10-12 22:56:43] [STDOUT] INFO:     127.0.0.1:62746 - "GET /tasks/c916360d-3c94-48af-89c6-f4f9def4484f HTTP/1.1" 200 OK
+[2025-10-12 22:56:43] [STDOUT] INFO:     127.0.0.1:62746 - "GET /tasks/7b8ced4e-86e0-4218-832f-b81e2dc13269 HTTP/1.1" 404 Not Found
+[2025-10-12 22:56:44] [STDOUT] INFO:     127.0.0.1:62746 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=16091d54-72c5-440a-a4d8-ee116febd363 HTTP/1.1" 200 OK
+[2025-10-12 22:56:44] [STDOUT] INFO:     127.0.0.1:62751 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:56:52] [STDOUT] INFO:     127.0.0.1:62754 - "GET /workflows/16091d54-72c5-440a-a4d8-ee116febd363 HTTP/1.1" 200 OK
+[2025-10-12 22:56:52] [STDOUT] INFO:     127.0.0.1:62754 - "GET /tasks/5abee3ba-e35d-4a71-bc38-9ea9e74818a1 HTTP/1.1" 200 OK
+[2025-10-12 22:56:52] [STDOUT] INFO:     127.0.0.1:62754 - "GET /tasks/c916360d-3c94-48af-89c6-f4f9def4484f HTTP/1.1" 200 OK
+[2025-10-12 22:56:52] [STDOUT] INFO:     127.0.0.1:62754 - "GET /tasks/7b8ced4e-86e0-4218-832f-b81e2dc13269 HTTP/1.1" 404 Not Found
+[2025-10-12 22:56:52] [STDOUT] INFO:     127.0.0.1:62754 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=16091d54-72c5-440a-a4d8-ee116febd363 HTTP/1.1" 200 OK
+[2025-10-12 22:56:52] [STDOUT] INFO:     127.0.0.1:62758 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:57:02] [STDOUT] INFO:     127.0.0.1:62761 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:57:12] [STDOUT] INFO:     127.0.0.1:62765 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:57:22] [STDOUT] INFO:     127.0.0.1:62773 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:57:25] [STDOUT] INFO:     127.0.0.1:62777 - "GET /workflows/2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:57:32] [STDOUT] INFO:     127.0.0.1:62791 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:57:34] [STDOUT] INFO:     127.0.0.1:62795 - "POST /workflows HTTP/1.1" 307 Temporary Redirect
+[2025-10-12 22:57:41] [STDOUT] INFO:     127.0.0.1:62805 - "POST /workflows HTTP/1.1" 307 Temporary Redirect
+[2025-10-12 22:57:42] [STDOUT] INFO:     127.0.0.1:62818 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:57:47] [STDOUT] INFO:     127.0.0.1:62822 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-12 22:57:52] [STDOUT] INFO:     127.0.0.1:62837 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:58:02] [STDOUT] INFO:     127.0.0.1:62846 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:58:04] [STDOUT] INFO:     127.0.0.1:62850 - "GET /workflows/16091d54-72c5-440a-a4d8-ee116febd363 HTTP/1.1" 200 OK
+[2025-10-12 22:58:13] [STDOUT] INFO:     127.0.0.1:62877 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:58:24] [STDOUT] INFO:     127.0.0.1:62908 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:58:27] [STDOUT] INFO:     127.0.0.1:62908 - "GET /workflows/16091d54-72c5-440a-a4d8-ee116febd363 HTTP/1.1" 200 OK
+[2025-10-12 22:58:27] [STDOUT] INFO:     127.0.0.1:62908 - "GET /tasks/5abee3ba-e35d-4a71-bc38-9ea9e74818a1 HTTP/1.1" 200 OK
+[2025-10-12 22:58:27] [STDOUT] INFO:     127.0.0.1:62908 - "GET /tasks/c916360d-3c94-48af-89c6-f4f9def4484f HTTP/1.1" 200 OK
+[2025-10-12 22:58:27] [STDOUT] INFO:     127.0.0.1:62908 - "GET /tasks/7b8ced4e-86e0-4218-832f-b81e2dc13269 HTTP/1.1" 200 OK
+[2025-10-12 22:58:27] [STDOUT] INFO:     127.0.0.1:62908 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=16091d54-72c5-440a-a4d8-ee116febd363 HTTP/1.1" 200 OK
+[2025-10-12 22:58:27] [STDOUT] INFO:     127.0.0.1:62916 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:58:33] [STDERR] INFO:     127.0.0.1:62919 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:58:33] [STDERR] INFO:     connection open
+[2025-10-12 22:58:33] [STDOUT] INFO:     127.0.0.1:62921 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:58:37] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:58:37] [STDERR] INFO:     connection closed
+[2025-10-12 22:58:37] [STDERR] INFO:     127.0.0.1:62923 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:58:37] [STDERR] INFO:     connection open
+[2025-10-12 22:58:37] [STDOUT] INFO:     127.0.0.1:62921 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK

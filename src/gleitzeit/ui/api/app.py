@@ -11,7 +11,7 @@ from typing import Optional, Set
 
 import httpx
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect, Response
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -100,11 +100,10 @@ async def get_base_context(request: Request) -> dict:
     }
 
 
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def index(request: Request):
-    """Home page - redirect to workflows"""
-    context = await get_base_context(request)
-    return templates.TemplateResponse("index.html", context)
+    """Home page - redirect to submit"""
+    return RedirectResponse(url="/submit", status_code=302)
 
 
 @app.get("/workflows", response_class=HTMLResponse)
@@ -128,16 +127,21 @@ async def logs_list(request: Request):
     return templates.TemplateResponse("logs/list.html", context)
 
 
-@app.get("/metrics", response_class=HTMLResponse)
-async def metrics_detail(request: Request):
-    """Metrics detail page"""
-    context = await get_base_context(request)
-    return templates.TemplateResponse("metrics/detail.html", context)
+@app.get("/metrics")
+async def metrics_redirect(request: Request):
+    """Redirect to system page (handlers)"""
+    return RedirectResponse(url="/handlers", status_code=302)
 
 
-@app.get("/processes", response_class=HTMLResponse)
-async def processes_list(request: Request):
-    """Processes list page"""
+@app.get("/processes")
+async def processes_redirect(request: Request):
+    """Redirect to system page (handlers)"""
+    return RedirectResponse(url="/handlers", status_code=302)
+
+
+@app.get("/handlers", response_class=HTMLResponse)
+async def handlers_list(request: Request):
+    """System health page (handlers + processes)"""
     context = await get_base_context(request)
 
     # Get running Gleitzeit processes
@@ -205,14 +209,6 @@ async def processes_list(request: Request):
     context['processes'] = processes
     context['total_memory'] = sum(p['memory_mb'] for p in processes)
     context['process_count'] = len(processes)
-
-    return templates.TemplateResponse("processes/list.html", context)
-
-
-@app.get("/handlers", response_class=HTMLResponse)
-async def handlers_list(request: Request):
-    """Handlers list page"""
-    context = await get_base_context(request)
 
     # Fetch metrics and system status from API
     try:
@@ -494,6 +490,17 @@ async def api_task_events(task_id: str):
     except Exception as e:
         logger.error(f"Failed to fetch task events: {e}")
         return {"task_id": task_id, "events": []}
+
+
+@app.get("/api/workflows/{workflow_id}/events")
+async def api_workflow_events(workflow_id: str):
+    """Proxy to workflow events API"""
+    try:
+        response = await client.get(f"/workflows/{workflow_id}/events")
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to fetch workflow events: {e}")
+        return {"workflow_id": workflow_id, "events": []}
 
 
 @app.get("/api/health")

@@ -17,55 +17,6 @@
 
     <!-- Errors Tab -->
     <div id="errors-tab" class="tab-content active">
-        <!-- Error Analytics Dashboard -->
-        <div class="section">
-            <h2 class="section-title">Error Analytics</h2>
-            <div class="error-analytics-grid">
-                <div class="analytics-card">
-                    <h3>Total Errors</h3>
-                    <div class="analytics-value" id="analytics-total-errors">0</div>
-                    <div class="analytics-label">All time</div>
-                </div>
-                <div class="analytics-card">
-                    <h3>Last Hour</h3>
-                    <div class="analytics-value" id="analytics-errors-hour">0</div>
-                    <div class="analytics-label">Recent errors</div>
-                </div>
-                <div class="analytics-card">
-                    <h3>Last 24 Hours</h3>
-                    <div class="analytics-value" id="analytics-errors-day">0</div>
-                    <div class="analytics-label">Daily errors</div>
-                </div>
-                <div class="analytics-card">
-                    <h3>Error Rate</h3>
-                    <div class="analytics-value" id="analytics-error-rate">0</div>
-                    <div class="analytics-label">errors/hour</div>
-                </div>
-            </div>
-
-            <!-- Error Breakdown -->
-            <div class="error-breakdown-container">
-                <div class="error-breakdown-section">
-                    <h3>Top Error Types</h3>
-                    <div id="error-types-list" class="breakdown-list">
-                        <div class="loading-spinner">Loading...</div>
-                    </div>
-                </div>
-                <div class="error-breakdown-section">
-                    <h3>Errors by Component</h3>
-                    <div id="error-components-list" class="breakdown-list">
-                        <div class="loading-spinner">Loading...</div>
-                    </div>
-                </div>
-                <div class="error-breakdown-section">
-                    <h3>Affected Workflows</h3>
-                    <div id="error-workflows-list" class="breakdown-list">
-                        <div class="loading-spinner">Loading...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <!-- Error List -->
         <div class="section">
             <h2 class="section-title">Error Logs</h2>
@@ -598,87 +549,6 @@ let currentErrorOffset = 0;
 let currentLogOffset = 0;
 let currentTab = 'errors';
 
-// Load error analytics data
-function loadErrorAnalytics() {
-    const now = Date.now();
-    const oneHourAgo = now - (60 * 60 * 1000);
-    const oneDayAgo = now - (24 * 60 * 60 * 1000);
-
-    // Load all errors for analytics
-    fetch('/api/system/logs/errors?limit=10000')
-        .then(response => response.json())
-        .then(data => {
-            const errors = data.errors || [];
-            const total = data.total || 0;
-
-            // Calculate time-based stats
-            const errorsLastHour = errors.filter(e => e.timestamp >= oneHourAgo).length;
-            const errorsLastDay = errors.filter(e => e.timestamp >= oneDayAgo).length;
-            const errorRate = errorsLastDay > 0 ? (errorsLastDay / 24).toFixed(1) : 0;
-
-            // Update analytics cards
-            document.getElementById('analytics-total-errors').textContent = total;
-            document.getElementById('analytics-errors-hour').textContent = errorsLastHour;
-            document.getElementById('analytics-errors-day').textContent = errorsLastDay;
-            document.getElementById('analytics-error-rate').textContent = errorRate;
-
-            // Calculate breakdowns
-            const errorTypes = {};
-            const errorComponents = {};
-            const errorWorkflows = {};
-
-            errors.forEach(error => {
-                // Count error types
-                const errorType = error.error_type || 'Unknown';
-                errorTypes[errorType] = (errorTypes[errorType] || 0) + 1;
-
-                // Count components
-                const component = error.component || 'Unknown';
-                errorComponents[component] = (errorComponents[component] || 0) + 1;
-
-                // Count workflows
-                if (error.workflow_id) {
-                    const wf = error.workflow_id.substring(0, 12) + '...';
-                    errorWorkflows[wf] = (errorWorkflows[wf] || 0) + 1;
-                }
-            });
-
-            // Render breakdowns
-            renderBreakdown('error-types-list', errorTypes, 10);
-            renderBreakdown('error-components-list', errorComponents, 10);
-            renderBreakdown('error-workflows-list', errorWorkflows, 10);
-        })
-        .catch(error => {
-            console.error('Error loading analytics:', error);
-        });
-}
-
-function renderBreakdown(containerId, data, limit = 10) {
-    const container = document.getElementById(containerId);
-
-    // Sort by count descending
-    const sorted = Object.entries(data)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, limit);
-
-    if (sorted.length === 0) {
-        container.innerHTML = '<div style="text-align: center; color: #999; padding: 1rem;">No data available</div>';
-        return;
-    }
-
-    let html = '';
-    sorted.forEach(([label, count]) => {
-        html += `
-            <div class="breakdown-item">
-                <span class="breakdown-item-label">${label}</span>
-                <span class="breakdown-item-count">${count}</span>
-            </div>
-        `;
-    });
-
-    container.innerHTML = html;
-}
-
 function switchTab(tab) {
     // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -692,7 +562,6 @@ function switchTab(tab) {
 
     // Load data for the tab
     if (tab === 'errors') {
-        loadErrorAnalytics();
         loadErrors();
     } else if (tab === 'all') {
         loadLogs();
@@ -914,14 +783,12 @@ function clearStatsFilters() {
 
 // Load initial data
 document.addEventListener('DOMContentLoaded', function() {
-    loadErrorAnalytics();
     loadErrors();
 });
 
-// Auto-refresh every 30 seconds if on errors tab
+// Auto-refresh every 30 seconds
 setInterval(() => {
     if (currentTab === 'errors') {
-        loadErrorAnalytics();
         loadErrors(currentErrorOffset);
     } else if (currentTab === 'all') {
         loadLogs(currentLogOffset);

@@ -1,0 +1,160 @@
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,403 - __main__ - INFO - Loading configuration from Redis key: worker:config:workflow_loader-async:94bd91d4
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,406 - __main__ - INFO - Loaded config for worker workflow_loader-async
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,406 - __main__ - INFO - Worker workflow_loader-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,406 - gleitzeit.core.cache - INFO - Created workflow cache with max_size=1000, ttl=3600
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,407 - gleitzeit.handlers.registry - INFO - Registered handler FileHandler for protocol file/v1
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,463 - gleitzeit.handlers.registry - INFO - Registered handler HttpHandler for protocol http/v1
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,470 - gleitzeit.handlers.registry - INFO - Registered handler OllamaHandler for protocol ollama/v1
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,470 - gleitzeit.handlers.registry - INFO - Registered handler PythonHandler for protocol python/v1
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,471 - gleitzeit.handlers.registry - INFO - Registered handler SignalHandler for protocol signal/v1
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,471 - gleitzeit.handlers.registry - INFO - Registered handler TimerHandler for protocol timer/v1
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,471 - gleitzeit.handlers.registry - INFO - Registered handler ValidationHandler for protocol validation/v1
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,471 - gleitzeit.handlers.registry - INFO - Registered handler WorkflowHandler for protocol workflow/v1
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,471 - gleitzeit.handlers - INFO - Auto-discovered 8 handler modules: file, http, ollama, python, signal, timer, validation, workflow
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,472 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Built protocol mappings from handler registry with 24 task types
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,472 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,472 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - WorkflowLoaderWorkerV2 initialized with max tasks: 10000
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,472 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow cache configured: size=1000, ttl=3600s
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,472 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Available protocols: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,473 - workflow_loader.workflow_loader-async - INFO - Worker workflow_loader-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,473 - __main__ - INFO - Worker workflow_loader-async started successfully
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,473 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 23:40:09] [STDERR] 2025-10-12 23:40:09,473 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_loader-async
+[2025-10-12 23:41:20] [STDERR] 2025-10-12 23:41:20,172 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow 1522dadb-e15f-447e-8fb3-c58b5a096cb7 from inline
+[2025-10-12 23:41:20] [STDERR] 2025-10-12 23:41:20,175 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-10-12 23:41:20] [STDERR]   "name": "Parallel Execution",
+[2025-10-12 23:41:20] [STDERR]   "tasks": [
+[2025-10-12 23:41:20] [STDERR]     {
+[2025-10-12 23:41:20] [STDERR]       "id": "parallel1",
+[2025-10-12 23:41:20] [STDERR]       "type": "python",
+[2025-10-12 23:41:20] [STDERR]       "params": {
+[2025-10-12 23:41:20] [STDERR]         "code": "import time\ntime.sleep(1)\nprint(\"Parallel task 1\")\nresult = {\"result\": \"Task 1 done\"}\n"
+[2025-10-12 23:41:20] [STDERR]       }
+[2025-10-12 23:41:20] [STDERR]     },
+[2025-10-12 23:41:20] [STDERR]     {
+[2025-10-12 23:41:20] [STDERR]       "id": "parallel2",
+[2025-10-12 23:41:20] [STDERR]       "type": "python",
+[2025-10-12 23:41:20] [STDERR]       "params": {
+[2025-10-12 23:41:20] [STDERR]         "code": "import time\ntime.sleep(1)\nprint(\"Parallel task 2\")\nresult = {\"result\": \"Task 2 done\"}\n"
+[2025-10-12 23:41:20] [STDERR]       }
+[2025-10-12 23:41:20] [STDERR]     },
+[2025-10-12 23:41:20] [STDERR]     {
+[2025-10-12 23:41:20] [STDERR]       "id": "parallel3",
+[2025-10-12 23:41:20] [STDERR]       "type": "python",
+[2025-10-12 23:41:20] [STDERR]       "params": {
+[2025-10-12 23:41:20] [STDERR]         "code": "import time\ntime.sleep(1)\nprint(\"Parallel task 3\")\nresult = {\"result\": \"Task 3 done\"}\n"
+[2025-10-12 23:41:20] [STDERR]       }
+[2025-10-12 23:41:20] [STDERR]     },
+[2025-10-12 23:41:20] [STDERR]     {
+[2025-10-12 23:41:20] [STDERR]       "id": "final",
+[2025-10-12 23:41:20] [STDERR]       "type": "python",
+[2025-10-12 23:41:20] [STDERR]       "depends_on": [
+[2025-10-12 23:41:20] [STDERR]         "parallel1",
+[2025-10-12 23:41:20] [STDERR]         "parallel2",
+[2025-10-12 23:41:20] [STDERR]         "parallel3"
+[2025-10-12 23:41:20] [STDERR]       ],
+[2025-10-12 23:41:20] [STDERR]       "params": {
+[2025-10-12 23:41:20] [STDERR]         "code": "print(\"All parallel tasks completed!\")\nresult = {\"status\": \"complete\"}"
+[2025-10-12 23:41:20] [STDERR]       }
+[2025-10-12 23:41:20] [STDERR]     }
+[2025-10-12 23:41:20] [STDERR]   ],
+[2025-10-12 23:41:20] [STDERR]   "workflow_id": "1522dadb-e15f-447e-8fb3-c58b5a096cb7"
+[2025-10-12 23:41:20] [STDERR] }
+[2025-10-12 23:41:20] [STDERR] 2025-10-12 23:41:20,175 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-10-12 23:41:20] [STDERR]   "id": "1522dadb-e15f-447e-8fb3-c58b5a096cb7",
+[2025-10-12 23:41:20] [STDERR]   "name": "Parallel Execution",
+[2025-10-12 23:41:20] [STDERR]   "description": "",
+[2025-10-12 23:41:20] [STDERR]   "version": "1.0.0",
+[2025-10-12 23:41:20] [STDERR]   "created_at": "2025-10-12T21:41:20.175133",
+[2025-10-12 23:41:20] [STDERR]   "tasks": [
+[2025-10-12 23:41:20] [STDERR]     {
+[2025-10-12 23:41:20] [STDERR]       "id": "0f2d55f5-12b6-41f5-bb89-d2661562fcf8",
+[2025-10-12 23:41:20] [STDERR]       "workflow_id": "1522dadb-e15f-447e-8fb3-c58b5a096cb7",
+[2025-10-12 23:41:20] [STDERR]       "name": "0f2d55f5-12b6-41f5-bb89-d2661562fcf8",
+[2025-10-12 23:41:20] [STDERR]       "description": "",
+[2025-10-12 23:41:20] [STDERR]       "protocol": "python/v1",
+[2025-10-12 23:41:20] [STDERR]       "method": "python/execute",
+[2025-10-12 23:41:20] [STDERR]       "params": {
+[2025-10-12 23:41:20] [STDERR]         "code": "import time\ntime.sleep(1)\nprint(\"Parallel task 1\")\nresult = {\"result\": \"Task 1 done\"}\n"
+[2025-10-12 23:41:20] [STDERR]       },
+[2025-10-12 23:41:20] [STDERR]       "dependencies": [],
+[2025-10-12 23:41:20] [STDERR]       "timeout": 300,
+[2025-10-12 23:41:20] [STDERR]       "retry": {
+[2025-10-12 23:41:20] [STDERR]         "max_retries": 2,
+[2025-10-12 23:41:20] [STDERR]         "strategy": "exponential_jitter",
+[2025-10-12 23:41:20] [STDERR]         "base_delay": 1.0,
+[2025-10-12 23:41:20] [STDERR]         "max_delay": 30.0,
+[2025-10-12 23:41:20] [STDERR]         "jitter": true,
+[2025-10-12 23:41:20] [STDERR]         "multiplier": 2.0
+[2025-10-12 23:41:20] [STDERR]       }
+[2025-10-12 23:41:20] [STDERR]     },
+[2025-10-12 23:41:20] [STDERR]     {
+[2025-10-12 23:41:20] [STDERR]       "id": "9970f15a-d1fd-4dc8-a935-d723465a9793",
+[2025-10-12 23:41:20] [STDERR]       "workflow_id": "1522dadb-e15f-447e-8fb3-c58b5a096cb7",
+[2025-10-12 23:41:20] [STDERR]       "name": "9970f15a-d1fd-4dc8-a935-d723465a9793",
+[2025-10-12 23:41:20] [STDERR]       "description": "",
+[2025-10-12 23:41:20] [STDERR]       "protocol": "python/v1",
+[2025-10-12 23:41:20] [STDERR]       "method": "python/execute",
+[2025-10-12 23:41:20] [STDERR]       "params": {
+[2025-10-12 23:41:20] [STDERR]         "code": "import time\ntime.sleep(1)\nprint(\"Parallel task 2\")\nresult = {\"result\": \"Task 2 done\"}\n"
+[2025-10-12 23:41:20] [STDERR]       },
+[2025-10-12 23:41:20] [STDERR]       "dependencies": [],
+[2025-10-12 23:41:20] [STDERR]       "timeout": 300,
+[2025-10-12 23:41:20] [STDERR]       "retry": {
+[2025-10-12 23:41:20] [STDERR]         "max_retries": 2,
+[2025-10-12 23:41:20] [STDERR]         "strategy": "exponential_jitter",
+[2025-10-12 23:41:20] [STDERR]         "base_delay": 1.0,
+[2025-10-12 23:41:20] [STDERR]         "max_delay": 30.0,
+[2025-10-12 23:41:20] [STDERR]         "jitter": true,
+[2025-10-12 23:41:20] [STDERR]         "multiplier": 2.0
+[2025-10-12 23:41:20] [STDERR]       }
+[2025-10-12 23:41:20] [STDERR]     },
+[2025-10-12 23:41:20] [STDERR]     {
+[2025-10-12 23:41:20] [STDERR]       "id": "6747aca6-fc59-44bd-9171-c779dcc967fd",
+[2025-10-12 23:41:20] [STDERR]       "workflow_id": "1522dadb-e15f-447e-8fb3-c58b5a096cb7",
+[2025-10-12 23:41:20] [STDERR]       "name": "6747aca6-fc59-44bd-9171-c779dcc967fd",
+[2025-10-12 23:41:20] [STDERR]       "description": "",
+[2025-10-12 23:41:20] [STDERR]       "protocol": "python/v1",
+[2025-10-12 23:41:20] [STDERR]       "method": "python/execute",
+[2025-10-12 23:41:20] [STDERR]       "params": {
+[2025-10-12 23:41:20] [STDERR]         "code": "import time\ntime.sleep(1)\nprint(\"Parallel task 3\")\nresult = {\"result\": \"Task 3 done\"}\n"
+[2025-10-12 23:41:20] [STDERR]       },
+[2025-10-12 23:41:20] [STDERR]       "dependencies": [],
+[2025-10-12 23:41:20] [STDERR]       "timeout": 300,
+[2025-10-12 23:41:20] [STDERR]       "retry": {
+[2025-10-12 23:41:20] [STDERR]         "max_retries": 2,
+[2025-10-12 23:41:20] [STDERR]         "strategy": "exponential_jitter",
+[2025-10-12 23:41:20] [STDERR]         "base_delay": 1.0,
+[2025-10-12 23:41:20] [STDERR]         "max_delay": 30.0,
+[2025-10-12 23:41:20] [STDERR]         "jitter": true,
+[2025-10-12 23:41:20] [STDERR]         "multiplier": 2.0
+[2025-10-12 23:41:20] [STDERR]       }
+[2025-10-12 23:41:20] [STDERR]     },
+[2025-10-12 23:41:20] [STDERR]     {
+[2025-10-12 23:41:20] [STDERR]       "id": "2550e9de-3bcd-4d1f-939c-af7149f8cd74",
+[2025-10-12 23:41:20] [STDERR]       "workflow_id": "1522dadb-e15f-447e-8fb3-c58b5a096cb7",
+[2025-10-12 23:41:20] [STDERR]       "name": "2550e9de-3bcd-4d1f-939c-af7149f8cd74",
+[2025-10-12 23:41:20] [STDERR]       "description": "",
+[2025-10-12 23:41:20] [STDERR]       "protocol": "python/v1",
+[2025-10-12 23:41:20] [STDERR]       "method": "python/execute",
+[2025-10-12 23:41:20] [STDERR]       "params": {
+[2025-10-12 23:41:20] [STDERR]         "code": "print(\"All parallel tasks completed!\")\nresult = {\"status\": \"complete\"}"
+[2025-10-12 23:41:20] [STDERR]       },
+[2025-10-12 23:41:20] [STDERR]       "dependencies": [
+[2025-10-12 23:41:20] [STDERR]         "0f2d55f5-12b6-41f5-bb89-d2661562fcf8",
+[2025-10-12 23:41:20] [STDERR]         "9970f15a-d1fd-4dc8-a935-d723465a9793",
+[2025-10-12 23:41:20] [STDERR]         "6747aca6-fc59-44bd-9171-c779dcc967fd"
+[2025-10-12 23:41:20] [STDERR]       ],
+[2025-10-12 23:41:20] [STDERR]       "timeout": 300,
+[2025-10-12 23:41:20] [STDERR]       "retry": {
+[2025-10-12 23:41:20] [STDERR]         "max_retries": 2,
+[2025-10-12 23:41:20] [STDERR]         "strategy": "exponential_jitter",
+[2025-10-12 23:41:20] [STDERR]         "base_delay": 1.0,
+[2025-10-12 23:41:20] [STDERR]         "max_delay": 30.0,
+[2025-10-12 23:41:20] [STDERR]         "jitter": true,
+[2025-10-12 23:41:20] [STDERR]         "multiplier": 2.0
+[2025-10-12 23:41:20] [STDERR]       }
+[2025-10-12 23:41:20] [STDERR]     }
+[2025-10-12 23:41:20] [STDERR]   ]
+[2025-10-12 23:41:20] [STDERR] }
+[2025-10-12 23:41:20] [STDERR] 2025-10-12 23:41:20,181 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow 1522dadb-e15f-447e-8fb3-c58b5a096cb7 loaded and submitted to shard 2 with indexes

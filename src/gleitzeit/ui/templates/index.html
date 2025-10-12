@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - Gleitzeit</title>
-    <link rel="stylesheet" href="/static/css/main.css">
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Gleitzeit{% endblock %}
+
+{% block head %}
     <style>
         .health-grid {
             display: grid;
@@ -182,108 +180,83 @@
             margin-top: 1rem;
         }
     </style>
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <a href="/" class="brand-link">
-                    <span class="brand-icon">🚀</span>
-                    <span>Gleitzeit</span>
-                </a>
-            </div>
-            <div class="nav-menu">
-                <a href="/" class="nav-link active">Dashboard</a>
-                <a href="/workflows" class="nav-link">Workflows</a>
-                <a href="/tasks" class="nav-link">Tasks</a>
-                <a href="/submit" class="nav-link">Submit</a>
-                <a href="/logs" class="nav-link">Logs</a>
-                <a href="/metrics" class="nav-link">Metrics</a>
-                <a href="/processes" class="nav-link">Processes</a>
-                <a href="/handlers" class="nav-link">Handlers</a>
-                <div class="nav-divider"></div>
-                <span class="nav-status">
-                    <span class="status-indicator" id="api-status"></span>
-                    API Status
-                </span>
-            </div>
-        </div>
-    </nav>
+{% endblock %}
 
-    <main class="main-content">
-        <div class="container">
-            <h1 class="page-title">Dashboard</h1>
+{% block content %}
+    <div class="container">
+        <h1 class="page-title">Dashboard</h1>
 
-            <!-- System Health Status -->
-            <div class="section">
-                <h2 class="section-title">System Health</h2>
-                <div id="health-status" class="health-grid">
-                    <div class="health-card">
-                        <div class="health-icon">🔄</div>
-                        <div class="health-info">
-                            <div class="health-label">API Status</div>
-                            <div id="api-health-detail" class="health-value">Loading...</div>
-                        </div>
-                    </div>
-                    <div class="health-card">
-                        <div class="health-icon">📦</div>
-                        <div class="health-info">
-                            <div class="health-label">Redis</div>
-                            <div id="redis-status" class="health-value">Loading...</div>
-                        </div>
-                    </div>
-                    <div class="health-card">
-                        <div class="health-icon">⚡</div>
-                        <div class="health-info">
-                            <div class="health-label">Workers</div>
-                            <div id="workers-status" class="health-value">Loading...</div>
-                        </div>
+        <!-- System Health Status -->
+        <div class="section">
+            <h2 class="section-title">System Health</h2>
+            <div id="health-status" class="health-grid">
+                <div class="health-card">
+                    <div class="health-icon">🔄</div>
+                    <div class="health-info">
+                        <div class="health-label">API Status</div>
+                        <div id="api-health-detail" class="health-value">Loading...</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="section">
-                <h2 class="section-title">Overview</h2>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="total-workflows">-</div>
-                        <div class="stat-label">Total Workflows</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="running-workflows">-</div>
-                        <div class="stat-label">Running</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="completed-workflows">-</div>
-                        <div class="stat-label">Completed</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="failed-workflows">-</div>
-                        <div class="stat-label">Failed</div>
+                <div class="health-card">
+                    <div class="health-icon">📦</div>
+                    <div class="health-info">
+                        <div class="health-label">Redis</div>
+                        <div id="redis-status" class="health-value">Loading...</div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Recent Activity -->
-            <div class="section">
-                <h2 class="section-title">Recent Workflows</h2>
-                <div id="recent-workflows" class="workflow-list">
-                    <div class="loading">Loading recent workflows...</div>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <div class="section">
-                <h2 class="section-title">Quick Actions</h2>
-                <div class="button-group">
-                    <a href="/workflows" class="btn btn-primary">View All Workflows</a>
-                    <a href="/tasks" class="btn btn-secondary">View All Tasks</a>
+                <div class="health-card">
+                    <div class="health-icon">⚡</div>
+                    <div class="health-info">
+                        <div class="health-label">Workers</div>
+                        <div id="workers-status" class="health-value">Loading...</div>
+                    </div>
                 </div>
             </div>
         </div>
-    </main>
 
+        <!-- Quick Stats -->
+        <div class="section">
+            <h2 class="section-title">Overview</h2>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="total-workflows">-</div>
+                    <div class="stat-label">Total Workflows</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="running-workflows">-</div>
+                    <div class="stat-label">Running</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="completed-workflows">-</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="failed-workflows">-</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section">
+            <h2 class="section-title">Recent Workflows</h2>
+            <div id="recent-workflows" class="workflow-list">
+                <div class="loading">Loading recent workflows...</div>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section">
+            <h2 class="section-title">Quick Actions</h2>
+            <div class="button-group">
+                <a href="/workflows" class="btn btn-primary">View All Workflows</a>
+                <a href="/tasks" class="btn btn-secondary">View All Tasks</a>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
     <script>
         // Load health status
         async function loadHealth() {
@@ -384,8 +357,4 @@
         // Refresh every 5 seconds
         setInterval(initDashboard, 5000);
     </script>
-
-    <!-- Custom JavaScript for API status -->
-    <script src="/static/js/app.js"></script>
-</body>
-</html>
+{% endblock %}

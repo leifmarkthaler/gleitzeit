@@ -3,11 +3,12 @@ Workflow submission and management endpoints
 """
 
 import json
+import logging
 import uuid
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Response
 from pydantic import BaseModel, Field
 
 from ...core.sharding import default_sharding
@@ -15,6 +16,7 @@ from ..dependencies import get_client_pool
 from ..auth.dependencies import get_current_user_auto
 from ..auth.models import User
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -719,4 +721,385 @@ async def delete_workflow(
             "deleted_keys": len(deleted_keys) + deleted_tasks + len(task_status_sets) + len(stream_keys),
             "message": f"Workflow and all associated data deleted successfully"
         }
+
+
+@router.get("/{workflow_id}/events")
+async def get_workflow_events(
+    workflow_id: str,
+    user: User = Depends(get_current_user_auto),
+    client_pool = Depends(get_client_pool)
+):
+    """Get workflow and task execution events for timeline view (no cache)"""
+
+    async with client_pool.acquire_connection(user.id) as conn:
+        # Look for events in the event stream
+        events = []
+
+        # Try to construct event stream key directly using sharding
+        try:
+            # Try the sharded key first (most likely pattern)
+            shard = default_sharding.get_shard(workflow_id)
+            direct_stream_key = f"{{shard:{shard}}}:workflow:events:{workflow_id}"
+
+            # Check if this key exists
+            exists = await conn.redis.exists(direct_stream_key.encode())
+            if exists:
+                event_stream_key = direct_stream_key.encode()
+            else:
+                event_stream_key = None
+        except Exception as e:
+            logger.warning(f"Direct key lookup failed: {e}")
+            event_stream_key = None
+
+        # If direct lookup failed, fall back to scanning with timeout
+        if not event_stream_key:
+            stream_key_pattern = f"*:workflow:events:{workflow_id}".encode()
+            try:
+                # Use asyncio.wait_for to add timeout
+                import asyncio
+                async def scan_for_stream():
+                    async for key in conn.redis.scan_iter(match=stream_key_pattern, count=50):
+                        return key
+                    return None
+
+                event_stream_key = await asyncio.wait_for(scan_for_stream(), timeout=2.0)
+            except asyncio.TimeoutError:
+                logger.warning(f"Timeout while scanning for event stream for workflow {workflow_id}")
+                event_stream_key = None
+            except Exception as e:
+                logger.warning(f"Error scanning for event stream: {e}")
+                event_stream_key = None
+
+        # Read events from the stream if found
+        if event_stream_key:
+            try:
+                # Read all events from the stream (limit to last 100)
+                stream_data = await conn.redis.xrevrange(
+                    event_stream_key,
+                    count=100
+                )
+
+                for msg_id, data in stream_data:
+                    try:
+                        # Parse event data
+                        event_type = data.get(b"event_type", b"unknown").decode()
+                        timestamp = data.get(b"timestamp", b"").decode()
+
+                        # Parse event data JSON if present
+                        event_data = {}
+                        if b"data" in data:
+                            try:
+                                event_data = json.loads(data[b"data"].decode())
+                            except:
+                                pass
+
+                        events.append({
+                            "type": event_type,
+                            "timestamp": timestamp,
+                            "data": event_data,
+                            "message_id": msg_id.decode(),
+                            "source": "workflow"
+                        })
+                    except Exception as e:
+                        logger.warning(f"Error parsing event: {e}")
+                        continue
+
+            except Exception as e:
+                logger.warning(f"Error reading events from stream {event_stream_key}: {e}")
+
+        # If no events found in stream, create synthetic events from workflow state
+        if not events:
+            # Get workflow state
+            state_key = default_sharding.get_workflow_key("state", workflow_id)
+            state = await conn.redis.hgetall(state_key.encode())
+
+            if state:
+                # Add workflow submission event
+                if state.get(b"submitted_at"):
+                    events.append({
+                        "type": "workflow_submitted",
+                        "timestamp": state.get(b"submitted_at").decode(),
+                        "data": {"workflow_id": workflow_id, "status": "pending"},
+                        "source": "workflow"
+                    })
+
+                # Add workflow started event - use minimum task executed_at to avoid race condition
+                if state.get(b"started_at"):
+                    workflow_started_timestamp = state.get(b"started_at").decode()
+
+                    # Try to get minimum task execution time for more accurate started_at
+                    try:
+                        shard = default_sharding.get_shard(workflow_id)
+                        graph_key = f"{{shard:{shard}}}:workflow:dependency:graph:{workflow_id}"
+                        graph_data = await conn.redis.hgetall(graph_key.encode())
+                        task_ids = [k.decode() for k in graph_data.keys()] if graph_data else []
+
+                        min_task_start = None
+                        for task_id in task_ids:
+                            task_key = default_sharding.get_task_key(task_id, workflow_id)
+                            task_executed_at = await conn.redis.hget(task_key.encode(), b"executed_at")
+                            if task_executed_at:
+                                task_start_str = task_executed_at.decode()
+                                try:
+                                    from datetime import datetime
+                                    task_start = datetime.fromisoformat(task_start_str)
+                                    if min_task_start is None or task_start < min_task_start:
+                                        min_task_start = task_start
+                                except:
+                                    pass
+
+                        # Use minimum task start time if found
+                        if min_task_start:
+                            workflow_started_timestamp = min_task_start.isoformat()
+                    except Exception as e:
+                        logger.debug(f"Could not determine workflow start from tasks: {e}")
+
+                    events.append({
+                        "type": "workflow_started",
+                        "timestamp": workflow_started_timestamp,
+                        "data": {"workflow_id": workflow_id, "status": "running"},
+                        "source": "workflow"
+                    })
+
+                # Add completion/failure event
+                if state.get(b"completed_at"):
+                    status = state.get(b"status", b"unknown").decode()
+                    event_type = f"workflow_{status}"
+                    events.append({
+                        "type": event_type,
+                        "timestamp": state.get(b"completed_at").decode(),
+                        "data": {"workflow_id": workflow_id, "status": status},
+                        "source": "workflow"
+                    })
+
+        # Now get task events for all tasks in this workflow
+        # Get task IDs from dependency graph or task set
+        shard_bytes = await conn.redis.hget(b"{shard:0}:index:workflow_shards", workflow_id.encode())
+        task_ids = set()
+
+        if shard_bytes:
+            # Direct lookup using shard
+            shard = shard_bytes.decode()
+            graph_key = f"{{shard:{shard}}}:workflow:dependency:graph:{workflow_id}"
+            graph_data = await conn.redis.hgetall(graph_key.encode())
+
+            if graph_data:
+                task_ids = set(k.decode() for k in graph_data.keys())
+            else:
+                # Fallback to workflow:tasks set
+                task_list_key = default_sharding.get_workflow_key("tasks", workflow_id)
+                task_ids_bytes = await conn.redis.smembers(task_list_key.encode())
+                task_ids = set(t.decode() for t in task_ids_bytes)
+
+        # Get workflow definition to map task IDs to names
+        task_id_to_name = {}
+        workflow_data_key = default_sharding.get_workflow_key("data", workflow_id)
+        workflow_data_raw = await conn.redis.hget(workflow_data_key.encode(), b"workflow")
+        if workflow_data_raw:
+            try:
+                workflow_def = json.loads(workflow_data_raw.decode())
+                for task in workflow_def.get("tasks", []):
+                    if "id" in task and "name" in task:
+                        task_id_to_name[task["id"]] = task["name"]
+            except (json.JSONDecodeError, AttributeError):
+                pass
+
+        # Fetch events for each task
+        for task_id in task_ids:
+            try:
+                task_name = task_id_to_name.get(task_id, task_id)
+
+                # Get task shard
+                task_shard = default_sharding.get_shard(task_id)
+                task_event_key = f"{{shard:{task_shard}}}:task:events:{task_id}"
+
+                # Try to read task events from stream
+                task_stream_data = await conn.redis.xrevrange(
+                    task_event_key.encode(),
+                    count=50  # Limit per task
+                )
+
+                # If stream has events, use them
+                if task_stream_data:
+                    for msg_id, data in task_stream_data:
+                        try:
+                            event_type = data.get(b"event_type", b"unknown").decode()
+                            timestamp = data.get(b"timestamp", b"").decode()
+
+                            # Parse event data JSON if present
+                            event_data = {}
+                            if b"data" in data:
+                                try:
+                                    event_data = json.loads(data[b"data"].decode())
+                                except:
+                                    pass
+
+                            # Add task info to event data
+                            event_data["task_id"] = task_id
+                            event_data["task_name"] = task_name
+
+                            events.append({
+                                "type": event_type,
+                                "timestamp": timestamp,
+                                "data": event_data,
+                                "message_id": msg_id.decode(),
+                                "source": "task"
+                            })
+                        except Exception as e:
+                            logger.warning(f"Error parsing task event: {e}")
+                            continue
+                else:
+                    # No stream found, create synthetic events from task state
+                    task_key = default_sharding.get_task_key(task_id, workflow_id)
+                    task_data = await conn.redis.hgetall(task_key.encode())
+
+                    if task_data:
+                        # Decode task data
+                        task_state = {k.decode(): v.decode() for k, v in task_data.items()}
+
+                        # Parse JSON fields
+                        for field in ("result", "error"):
+                            if field in task_state:
+                                try:
+                                    task_state[field] = json.loads(task_state[field])
+                                except json.JSONDecodeError:
+                                    pass
+
+                        # Add creation event if we have created_at
+                        if task_state.get("created_at"):
+                            events.append({
+                                "type": "task_created",
+                                "timestamp": task_state.get("created_at"),
+                                "data": {
+                                    "task_id": task_id,
+                                    "task_name": task_name,
+                                    "status": "created"
+                                },
+                                "source": "task"
+                            })
+
+                        # Add execution start event
+                        if task_state.get("executed_at"):
+                            event_data = {
+                                "task_id": task_id,
+                                "task_name": task_name,
+                                "status": "running"
+                            }
+                            if task_state.get("worker_id"):
+                                event_data["worker"] = task_state.get("worker_id")
+
+                            events.append({
+                                "type": "task_started",
+                                "timestamp": task_state.get("executed_at"),
+                                "data": event_data,
+                                "source": "task"
+                            })
+
+                        # Add completion or failure event
+                        if task_state.get("completed_at"):
+                            status = task_state.get("status", "unknown")
+                            event_type = "task_completed" if status == "completed" else f"task_{status}"
+                            event_data = {
+                                "task_id": task_id,
+                                "task_name": task_name,
+                                "status": status
+                            }
+
+                            if task_state.get("result"):
+                                event_data["result"] = task_state.get("result")
+                            if task_state.get("error"):
+                                event_data["error"] = task_state.get("error")
+
+                            events.append({
+                                "type": event_type,
+                                "timestamp": task_state.get("completed_at"),
+                                "data": event_data,
+                                "source": "task"
+                            })
+
+            except Exception as e:
+                logger.debug(f"No events for task {task_id}: {e}")
+                continue
+
+        # Post-process: Fix workflow event timestamps to avoid race conditions
+        # Workflow started should be earliest task start, workflow completed should be latest task completion
+        from datetime import datetime
+
+        task_events = [e for e in events if e.get("source") == "task"]
+        workflow_events = {e.get("type"): e for e in events if e.get("source") == "workflow"}
+
+        if task_events:
+            # Find earliest task start time
+            task_start_times = []
+            for e in task_events:
+                if "started" in e.get("type", ""):
+                    try:
+                        task_start_times.append(datetime.fromisoformat(e["timestamp"].replace("Z", "+00:00")))
+                    except:
+                        pass
+
+            # Find latest task completion time
+            task_completion_times = []
+            for e in task_events:
+                if "completed" in e.get("type", "") or "failed" in e.get("type", ""):
+                    try:
+                        task_completion_times.append(datetime.fromisoformat(e["timestamp"].replace("Z", "+00:00")))
+                    except:
+                        pass
+
+            # Update workflow_started timestamp to earliest task start
+            if task_start_times and "workflow_started" in workflow_events:
+                min_task_start = min(task_start_times)
+                workflow_events["workflow_started"]["timestamp"] = min_task_start.isoformat()
+
+            # Update workflow completion timestamp to latest task completion
+            for completion_type in ["workflow_completed", "workflow_failed", "workflow_completed_with_skips"]:
+                if task_completion_times and completion_type in workflow_events:
+                    max_task_completion = max(task_completion_times)
+                    workflow_events[completion_type]["timestamp"] = max_task_completion.isoformat()
+
+        # Sort all events by timestamp (newest first), then by logical order for stability
+        # When timestamps are equal, workflow events should come before task events
+        # And within same type, follow logical sequence (submitted -> started -> completed)
+
+        event_type_order = {
+            "workflow_submitted": 0,
+            "workflow_started": 1,
+            "task_created": 2,
+            "task_started": 3,
+            "task_completed": 4,
+            "task_failed": 5,
+            "workflow_completed": 6,
+            "workflow_failed": 6,
+            "workflow_completed_with_skips": 6
+        }
+
+        def sort_key(event):
+            # Parse timestamp
+            try:
+                ts = datetime.fromisoformat(event["timestamp"].replace("Z", "+00:00"))
+            except:
+                ts = datetime.min
+
+            # Source priority: workflow (0) before task (1)
+            source_priority = 0 if event.get("source") == "workflow" else 1
+
+            # Event type priority
+            type_priority = event_type_order.get(event.get("type"), 99)
+
+            # Sort by: timestamp desc (negative for reverse), source asc, type asc
+            return (-ts.timestamp(), source_priority, type_priority)
+
+        events.sort(key=sort_key)
+
+        # Return with no-cache headers to ensure fresh data
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            content={"workflow_id": workflow_id, "events": events},
+            headers={
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
 

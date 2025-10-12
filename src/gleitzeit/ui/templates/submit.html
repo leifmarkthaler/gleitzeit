@@ -1,11 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Submit Workflow - Gleitzeit</title>
-    <link rel="stylesheet" href="/static/css/main.css">
+{% extends "base.html" %}
 
+{% block title %}Submit Workflow - Gleitzeit{% endblock %}
+
+{% block head %}
     <!-- CodeMirror CSS -->
     <link rel="stylesheet" href="/static/codemirror/codemirror.min.css">
     <link rel="stylesheet" href="/static/codemirror/theme/dracula.min.css">
@@ -204,107 +201,82 @@
             text-decoration: underline;
         }
     </style>
-</head>
-<body>
-    <nav class="navbar">
-        <div class="nav-container">
-            <div class="nav-brand">
-                <a href="/" class="brand-link">
-                    <span class="brand-icon">🚀</span>
-                    <span>Gleitzeit</span>
-                </a>
-            </div>
-            <div class="nav-menu">
-                <a href="/" class="nav-link">Dashboard</a>
-                <a href="/workflows" class="nav-link">Workflows</a>
-                <a href="/tasks" class="nav-link">Tasks</a>
-                <a href="/submit" class="nav-link active">Submit</a>
-                <a href="/logs" class="nav-link">Logs</a>
-                <a href="/metrics" class="nav-link">Metrics</a>
-                <a href="/processes" class="nav-link">Processes</a>
-                <a href="/handlers" class="nav-link">Handlers</a>
-                <div class="nav-divider"></div>
-                <span class="nav-status">
-                    <span class="status-indicator" id="api-status"></span>
-                    API Status
-                </span>
-            </div>
-        </div>
-    </nav>
+{% endblock %}
 
-    <main class="main-content">
-        <div class="submit-container">
-            <h1 class="page-title">Submit Workflow</h1>
+{% block content %}
+    <div class="submit-container">
+        <h1 class="page-title">Submit Workflow</h1>
 
-            <div class="submit-grid">
-                <!-- Editor Panel -->
-                <div class="editor-panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Workflow Definition</h2>
-                        <div class="format-toggle">
-                            <button class="format-btn active" id="yaml-btn" onclick="setFormat('yaml')">YAML</button>
-                            <button class="format-btn" id="json-btn" onclick="setFormat('json')">JSON</button>
-                        </div>
+        <div class="submit-grid">
+            <!-- Editor Panel -->
+            <div class="editor-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Workflow Definition</h2>
+                    <div class="format-toggle">
+                        <button class="format-btn active" id="yaml-btn" onclick="setFormat('yaml')">YAML</button>
+                        <button class="format-btn" id="json-btn" onclick="setFormat('json')">JSON</button>
                     </div>
-
-                    <textarea id="workflow-editor" class="editor-textarea" placeholder="Enter your workflow definition here..."></textarea>
-
-                    <div class="editor-actions">
-                        <button class="btn btn-primary" onclick="submitWorkflow()">Submit Workflow</button>
-                        <button class="btn btn-secondary" onclick="validateWorkflow()">Validate</button>
-                        <button class="btn btn-secondary" onclick="clearEditor()">Clear</button>
-                    </div>
-
-                    <div id="result-panel" style="display: none;"></div>
                 </div>
 
-                <!-- Examples Panel -->
-                <div class="examples-panel">
-                    <div class="panel-header">
-                        <h2 class="panel-title">Examples</h2>
+                <textarea id="workflow-editor" class="editor-textarea" placeholder="Enter your workflow definition here..."></textarea>
+
+                <div class="editor-actions">
+                    <button class="btn btn-primary" onclick="submitWorkflow()">Submit Workflow</button>
+                    <button class="btn btn-secondary" onclick="validateWorkflow()">Validate</button>
+                    <button class="btn btn-secondary" onclick="clearEditor()">Clear</button>
+                </div>
+
+                <div id="result-panel" style="display: none;"></div>
+            </div>
+
+            <!-- Examples Panel -->
+            <div class="examples-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title">Examples</h2>
+                </div>
+
+                <div class="examples-list">
+                    <div class="example-card" onclick="loadExample('simple')">
+                        <div class="example-title">Simple Python Task</div>
+                        <div class="example-description">Basic workflow with a single Python task</div>
                     </div>
 
-                    <div class="examples-list">
-                        <div class="example-card" onclick="loadExample('simple')">
-                            <div class="example-title">Simple Python Task</div>
-                            <div class="example-description">Basic workflow with a single Python task</div>
-                        </div>
+                    <div class="example-card" onclick="loadExample('sequential')">
+                        <div class="example-title">Sequential Tasks</div>
+                        <div class="example-description">Multiple tasks with dependencies</div>
+                    </div>
 
-                        <div class="example-card" onclick="loadExample('sequential')">
-                            <div class="example-title">Sequential Tasks</div>
-                            <div class="example-description">Multiple tasks with dependencies</div>
-                        </div>
+                    <div class="example-card" onclick="loadExample('parallel')">
+                        <div class="example-title">Parallel Execution</div>
+                        <div class="example-description">Tasks that run in parallel</div>
+                    </div>
 
-                        <div class="example-card" onclick="loadExample('parallel')">
-                            <div class="example-title">Parallel Execution</div>
-                            <div class="example-description">Tasks that run in parallel</div>
-                        </div>
+                    <div class="example-card" onclick="loadExample('http')">
+                        <div class="example-title">HTTP Request</div>
+                        <div class="example-description">Make HTTP API calls</div>
+                    </div>
 
-                        <div class="example-card" onclick="loadExample('http')">
-                            <div class="example-title">HTTP Request</div>
-                            <div class="example-description">Make HTTP API calls</div>
-                        </div>
+                    <div class="example-card" onclick="loadExample('timer')">
+                        <div class="example-title">Timer & Wait</div>
+                        <div class="example-description">Delay execution with timers</div>
+                    </div>
 
-                        <div class="example-card" onclick="loadExample('timer')">
-                            <div class="example-title">Timer & Wait</div>
-                            <div class="example-description">Delay execution with timers</div>
-                        </div>
+                    <div class="example-card" onclick="loadExample('ollama')">
+                        <div class="example-title">Ollama LLM</div>
+                        <div class="example-description">Use Ollama for AI text generation</div>
+                    </div>
 
-                        <div class="example-card" onclick="loadExample('ollama')">
-                            <div class="example-title">Ollama LLM</div>
-                            <div class="example-description">Use Ollama for AI text generation</div>
-                        </div>
-
-                        <div class="example-card" onclick="loadExample('signal')">
-                            <div class="example-title">Signal Communication</div>
-                            <div class="example-description">Inter-workflow communication with signals</div>
-                        </div>
+                    <div class="example-card" onclick="loadExample('signal')">
+                        <div class="example-title">Signal Communication</div>
+                        <div class="example-description">Inter-workflow communication with signals</div>
                     </div>
                 </div>
             </div>
         </div>
-    </main>
+    </div>
+{% endblock %}
 
+{% block scripts %}
     <!-- CodeMirror JavaScript -->
     <script src="/static/codemirror/codemirror.min.js"></script>
     <script src="/static/codemirror/mode/yaml.min.js"></script>
@@ -855,8 +827,4 @@ tasks:
             loadExample('simple');
         });
     </script>
-
-    <!-- Custom JavaScript for API status -->
-    <script src="/static/js/app.js"></script>
-</body>
-</html>
+{% endblock %}

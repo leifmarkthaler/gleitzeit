@@ -1,0 +1,22 @@
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,489 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:48603c0e
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,493 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,493 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,493 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,493 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,493 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,494 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,494 - __main__ - INFO - Worker dependency-async started successfully
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,494 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 22:56:01] [STDERR] 2025-10-12 22:56:01,494 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-10-12 22:56:42] [STDERR] 2025-10-12 22:56:42,127 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: 16091d54-72c5-440a-a4d8-ee116febd363
+[2025-10-12 22:56:42] [STDERR] 2025-10-12 22:56:42,132 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 5abee3ba-e35d-4a71-bc38-9ea9e74818a1 to shard 8
+[2025-10-12 22:56:42] [STDERR] 2025-10-12 22:56:42,165 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 5abee3ba-e35d-4a71-bc38-9ea9e74818a1 from workflow 16091d54-72c5-440a-a4d8-ee116febd363
+[2025-10-12 22:56:42] [STDERR] 2025-10-12 22:56:42,165 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 5abee3ba-e35d-4a71-bc38-9ea9e74818a1 from workflow 16091d54-72c5-440a-a4d8-ee116febd363
+[2025-10-12 22:56:42] [STDERR] 2025-10-12 22:56:42,171 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task c916360d-3c94-48af-89c6-f4f9def4484f to shard 8
+[2025-10-12 22:56:42] [STDERR] 2025-10-12 22:56:42,172 - gleitzeit.workers.dependency_worker - WARNING - Workflow 16091d54-72c5-440a-a4d8-ee116febd363 not found - cannot compute status
+[2025-10-12 22:57:22] [STDERR] 2025-10-12 22:57:22,220 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: c916360d-3c94-48af-89c6-f4f9def4484f from workflow 16091d54-72c5-440a-a4d8-ee116febd363
+[2025-10-12 22:57:22] [STDERR] 2025-10-12 22:57:22,226 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task 7b8ced4e-86e0-4218-832f-b81e2dc13269 to shard 8
+[2025-10-12 22:57:22] [STDERR] 2025-10-12 22:57:22,228 - gleitzeit.workers.dependency_worker - WARNING - Workflow 16091d54-72c5-440a-a4d8-ee116febd363 not found - cannot compute status
+[2025-10-12 22:57:22] [STDERR] 2025-10-12 22:57:22,241 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 7b8ced4e-86e0-4218-832f-b81e2dc13269 from workflow 16091d54-72c5-440a-a4d8-ee116febd363
+[2025-10-12 22:57:22] [STDERR] 2025-10-12 22:57:22,241 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 7b8ced4e-86e0-4218-832f-b81e2dc13269 from workflow 16091d54-72c5-440a-a4d8-ee116febd363
+[2025-10-12 22:57:22] [STDERR] 2025-10-12 22:57:22,243 - gleitzeit.workers.dependency_worker - WARNING - Workflow 16091d54-72c5-440a-a4d8-ee116febd363 not found - cannot compute status

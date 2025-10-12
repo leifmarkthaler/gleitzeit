@@ -59,6 +59,14 @@
         </table>
     </div>
 
+    <!-- Workflow Timeline -->
+    <div class="section">
+        <h2 class="section-title">📜 Workflow Timeline</h2>
+        <div class="timeline" id="workflow-timeline">
+            <div class="loading">Loading timeline...</div>
+        </div>
+    </div>
+
     <!-- Workflow Logs -->
     <div class="section">
         <h2 class="section-title">Workflow Logs</h2>
@@ -243,6 +251,161 @@
     background: var(--bg-primary);
     color: var(--text-primary);
 }
+
+/* Timeline styles */
+.timeline {
+    position: relative;
+    padding-left: 2rem;
+    margin-top: 1rem;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0.75rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 1.5rem;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -1.5rem;
+    width: 1rem;
+    height: 1rem;
+    border-radius: 50%;
+    background: #6c757d;
+    border: 2px solid #fff;
+    font-size: 1.25rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.timeline-marker.created,
+.timeline-marker.submitted {
+    background: #007bff;
+}
+
+.timeline-marker.started,
+.timeline-marker.running {
+    background: #ffc107;
+}
+
+.timeline-marker.completed {
+    background: #28a745;
+}
+
+.timeline-marker.failed {
+    background: #dc3545;
+}
+
+.timeline-marker.cancelled {
+    background: #6c757d;
+}
+
+.timeline-marker.waiting {
+    background: #17a2b8;
+}
+
+.timeline-marker.scheduled {
+    background: #6f42c1;
+}
+
+.timeline-content {
+    background: var(--bg-secondary);
+    padding: 0.75rem;
+    border-radius: 4px;
+}
+
+.timeline-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.timeline-time {
+    font-size: 0.75rem;
+    color: #666;
+}
+
+.timeline-details {
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.timeline-message {
+    background: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.timeline-data-item {
+    font-size: 0.75rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
+.loading {
+    text-align: center;
+    color: #666;
+    padding: 2rem;
+}
+
+.no-events {
+    text-align: center;
+    color: #666;
+    padding: 2rem;
+    font-style: italic;
+}
+
+.error {
+    text-align: center;
+    color: #dc3545;
+    padding: 2rem;
+}
+
+/* Source badges */
+.source-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 8px;
+    text-transform: uppercase;
+}
+
+.workflow-badge {
+    background-color: #e3f2fd;
+    color: #1976d2;
+}
+
+.task-badge {
+    background-color: #f3e5f5;
+    color: #7b1fa2;
+}
+
+/* Timeline event variations */
+.timeline-item.task-event .timeline-content {
+    border-left: 3px solid #7b1fa2;
+    padding-left: 12px;
+}
+
+.timeline-item.workflow-event .timeline-content {
+    border-left: 3px solid #1976d2;
+    padding-left: 12px;
+}
 </style>
 
 <script>
@@ -380,9 +543,120 @@ function deleteWorkflow(workflowId) {
     }
 }
 
-// Load errors on page load
+// Load workflow timeline
+function loadWorkflowTimeline() {
+    fetch(`/api/workflows/${workflowId}/events`)
+        .then(response => response.json())
+        .then(data => {
+            renderTimeline(data.events || []);
+        })
+        .catch(error => {
+            console.error('Failed to load timeline:', error);
+            document.getElementById('workflow-timeline').innerHTML =
+                '<div class="error">Failed to load timeline</div>';
+        });
+}
+
+function renderTimeline(events) {
+    const timelineDiv = document.getElementById('workflow-timeline');
+
+    if (!events || events.length === 0) {
+        timelineDiv.innerHTML = '<div class="no-events">No events recorded yet</div>';
+        return;
+    }
+
+    // Events are already sorted by the API, no need to sort again
+
+    const timelineHTML = events.map(event => {
+        const eventType = event.type || event.event_type || 'unknown';
+        const timestamp = event.timestamp || '-';
+        const formattedTime = new Date(timestamp).toLocaleString();
+        const source = event.source || 'unknown';
+        const isTaskEvent = source === 'task';
+
+        // Determine marker style and icon based on event type
+        let markerClass = 'default';
+        let icon = '📌';
+        if (eventType.includes('submit') || eventType.includes('create') || eventType.includes('load')) {
+            markerClass = 'submitted';
+            icon = isTaskEvent ? '📋' : '🆕';
+        } else if (eventType.includes('start') || eventType.includes('running')) {
+            markerClass = 'running';
+            icon = '▶️';
+        } else if (eventType.includes('complete') || eventType.includes('success')) {
+            markerClass = 'completed';
+            icon = '✅';
+        } else if (eventType.includes('fail') || eventType.includes('error')) {
+            markerClass = 'failed';
+            icon = '❌';
+        } else if (eventType.includes('cancel')) {
+            markerClass = 'cancelled';
+            icon = '🚫';
+        } else if (eventType.includes('waiting') || eventType.includes('wait')) {
+            markerClass = 'waiting';
+            icon = '⏳';
+        } else if (eventType.includes('schedule')) {
+            markerClass = 'scheduled';
+            icon = '⏰';
+        } else if (eventType.includes('task_ready')) {
+            markerClass = 'created';
+            icon = '✓';
+        }
+
+        // Build event title
+        let eventTitle = eventType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        if (isTaskEvent && event.data && event.data.task_name) {
+            eventTitle = `Task: ${event.data.task_name} - ${eventType.replace(/_/g, ' ')}`;
+        } else if (isTaskEvent) {
+            eventTitle = `Task ${eventTitle}`;
+        }
+
+        // Build details HTML
+        let detailsHTML = '';
+        if (event.data) {
+            if (event.data.message) {
+                detailsHTML = `<div class="timeline-message">${event.data.message}</div>`;
+            } else {
+                // Show relevant data fields (exclude task_name and task_id as they're in the title)
+                const relevantData = Object.entries(event.data)
+                    .filter(([key]) => !['workflow_id', 'task_id', 'task_name'].includes(key))
+                    .slice(0, 3);
+                if (relevantData.length > 0) {
+                    detailsHTML = relevantData.map(([key, value]) => {
+                        const displayValue = typeof value === 'string' && value.length > 50
+                            ? value.substring(0, 50) + '...'
+                            : JSON.stringify(value).substring(0, 50);
+                        return `<div class="timeline-data-item"><strong>${key}:</strong> ${displayValue}</div>`;
+                    }).join('');
+                }
+            }
+        }
+
+        // Add source badge for task events
+        const sourceBadge = isTaskEvent ? '<span class="source-badge task-badge">Task</span>' : '<span class="source-badge workflow-badge">Workflow</span>';
+
+        return `
+            <div class="timeline-item ${isTaskEvent ? 'task-event' : 'workflow-event'}">
+                <div class="timeline-marker ${markerClass}">${icon}</div>
+                <div class="timeline-content">
+                    <div class="timeline-header">
+                        <strong>${eventTitle}</strong>
+                        ${sourceBadge}
+                        <span class="timeline-time" title="${timestamp}">${formattedTime}</span>
+                    </div>
+                    ${detailsHTML ? `<div class="timeline-details">${detailsHTML}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    timelineDiv.innerHTML = timelineHTML;
+}
+
+// Load errors and timeline on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadWorkflowErrors();
+    loadWorkflowTimeline();
 
     // Convert UTC timestamp to local time
     const timeEl = document.getElementById('submitted-time');

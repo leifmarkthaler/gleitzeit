@@ -73,3 +73,11 @@
 [2025-10-12 22:13:54] [STDERR] 2025-10-12 22:13:54,581 - gleitzeit.workers.task_execution_worker - INFO - Task f05543e2-d42f-4a85-995e-a41970609488 completed successfully by handler 3073336d-f8ca-4b6d-859f-4aee849e9257
 [2025-10-12 22:15:44] [STDERR] 2025-10-12 22:15:44,473 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:3}:task:ready
 [2025-10-12 22:15:44] [STDERR] 2025-10-12 22:15:44,479 - gleitzeit.workers.pending_recovery - INFO - Claimed 1 stuck pending messages
+[2025-10-12 22:20:44] [STDERR] 2025-10-12 22:20:44,515 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:3}:task:ready
+[2025-10-12 22:20:44] [STDERR] 2025-10-12 22:20:44,522 - gleitzeit.workers.pending_recovery - INFO - Claimed 1 stuck pending messages
+[2025-10-12 22:25:44] [STDERR] 2025-10-12 22:25:44,622 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:3}:task:ready
+[2025-10-12 22:25:44] [STDERR] 2025-10-12 22:25:44,629 - gleitzeit.workers.pending_recovery - INFO - Claimed 1 stuck pending messages
+[2025-10-12 22:30:44] [STDERR] 2025-10-12 22:30:44,672 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:3}:task:ready
+[2025-10-12 22:30:44] [STDERR] 2025-10-12 22:30:44,680 - gleitzeit.workers.pending_recovery - INFO - Claimed 1 stuck pending messages
+[2025-10-12 22:35:44] [STDERR] 2025-10-12 22:35:44,722 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:3}:task:ready
+[2025-10-12 22:35:44] [STDERR] 2025-10-12 22:35:44,729 - gleitzeit.workers.pending_recovery - INFO - Claimed 1 stuck pending messages

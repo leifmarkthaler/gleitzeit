@@ -1,0 +1,7 @@
+[2025-10-12 22:38:48] [STDERR] INFO:     Started server process [45438]
+[2025-10-12 22:38:48] [STDERR] INFO:     Waiting for application startup.
+[2025-10-12 22:38:48] [STDERR] INFO:     Application startup complete.
+[2025-10-12 22:38:48] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-12 22:38:53] [STDERR] INFO:     127.0.0.1:61664 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:38:53] [STDERR] INFO:     connection open
+[2025-10-12 22:39:00] [STDOUT] INFO:     127.0.0.1:61688 - "GET /health HTTP/1.1" 307 Temporary Redirect

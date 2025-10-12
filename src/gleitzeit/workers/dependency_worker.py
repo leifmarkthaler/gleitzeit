@@ -404,8 +404,9 @@ class DependencyWorker(BaseWorker):
         )
         current_status = workflow_state.get(b"status", b"unknown").decode()
 
-        # Only fail workflow if it's still running (not already failed/completed)
-        if current_status == "running":
+        # Only fail workflow if it's still active (not already failed/completed/cancelled)
+        # Active states: running, waiting, scheduled, paused, pending
+        if current_status not in ["completed", "failed", "cancelled"]:
             logger.warning(f"Task {task_id} failed - applying HARD FAIL policy for workflow {workflow_id}")
 
             # Mark all pending and running tasks as blocked
@@ -597,8 +598,125 @@ class DependencyWorker(BaseWorker):
 
         return ready_tasks
 
+    async def compute_workflow_status(self, workflow_id: str) -> tuple[str, Dict[str, int]]:
+        """
+        Compute workflow status from actual task states in Redis (stateless).
+
+        Returns:
+            Tuple of (workflow_status, task_counts) where task_counts has keys:
+            completed, failed, scheduled, waiting, pending, cancelled, paused
+        """
+        # Initialize counters
+        counts = {
+            "completed": 0,
+            "failed": 0,
+            "scheduled": 0,
+            "waiting": 0,
+            "pending": 0,
+            "cancelled": 0,
+            "paused": 0
+        }
+
+        # Get workflow data to access tasks
+        shard = default_sharding.get_shard(workflow_id)
+        workflow_key = f"{{shard:{shard}}}:workflow:{workflow_id}"
+        workflow_data = await self.redis.hgetall(workflow_key.encode())
+
+        if not workflow_data:
+            logger.warning(f"Workflow {workflow_id} not found")
+            return "pending", counts
+
+        # Parse workflow tasks
+        workflow_json = workflow_data.get(b"data")
+        if not workflow_json:
+            logger.warning(f"Workflow {workflow_id} has no data field")
+            return "pending", counts
+
+        workflow = json.loads(workflow_json.decode())
+        tasks = workflow.get("workflow", {}).get("tasks", [])
+
+        if not tasks:
+            return "pending", counts
+
+        # Check each task's actual status from Redis
+        for task in tasks:
+            task_id = task.get("id")
+            if not task_id:
+                continue
+
+            # Query task status from Redis
+            task_status_key = f"{{shard:{shard}}}:task:status:{task_id}"
+            task_status_data = await self.redis.hgetall(task_status_key.encode())
+
+            if task_status_data:
+                # Task has explicit status in Redis
+                status = task_status_data.get(b"status", b"pending").decode()
+
+                if status == "completed":
+                    counts["completed"] += 1
+                elif status == "failed":
+                    counts["failed"] += 1
+                elif status == "scheduled":
+                    counts["scheduled"] += 1
+                elif status == "waiting":
+                    counts["waiting"] += 1
+                elif status == "cancelled":
+                    counts["cancelled"] += 1
+                elif status == "paused":
+                    counts["paused"] += 1
+                else:
+                    counts["pending"] += 1
+            else:
+                # Task has no status yet - infer from protocol
+                protocol = task.get("protocol", "python/v1")
+
+                if protocol.startswith("timer/"):
+                    counts["scheduled"] += 1
+                elif protocol.startswith("signal/"):
+                    counts["waiting"] += 1
+                else:
+                    # Regular tasks that haven't started yet
+                    counts["pending"] += 1
+
+        # Determine workflow status based on actual task states
+        total_tasks = sum(counts.values())
+
+        # Hard fail policy: any failed task fails the whole workflow
+        if counts["failed"] > 0:
+            return "failed", counts
+
+        # All tasks cancelled
+        if counts["cancelled"] == total_tasks:
+            return "cancelled", counts
+
+        # All tasks completed
+        if counts["completed"] == total_tasks:
+            return "completed", counts
+
+        # Determine status based on what's remaining
+        active_tasks = counts["pending"]
+
+        if active_tasks > 0:
+            # Has tasks ready to run or that could become ready
+            return "running", counts
+        elif counts["waiting"] > 0 and counts["scheduled"] == 0:
+            # Only waiting for signals
+            return "waiting", counts
+        elif counts["scheduled"] > 0 and counts["waiting"] == 0:
+            # Only waiting for timers
+            return "scheduled", counts
+        elif counts["scheduled"] > 0 or counts["waiting"] > 0:
+            # Has both scheduled and waiting tasks - prioritize waiting
+            return "waiting", counts
+        elif counts["paused"] > 0:
+            return "paused", counts
+        else:
+            # Shouldn't reach here
+            logger.warning(f"Workflow {workflow_id} in unexpected state: {counts}")
+            return "pending", counts
+
     async def check_workflow_status_transition(self, workflow_id: str):
-        """Check if workflow status should transition based on active task types"""
+        """Check if workflow status should transition based on actual task states (stateless)"""
         try:
             # Get current workflow state
             state_key = default_sharding.get_workflow_key("state", workflow_id)
@@ -609,35 +727,20 @@ class DependencyWorker(BaseWorker):
 
             current_status = workflow_state.get(b"status", b"running").decode()
 
-            # Only check transitions for running workflows
-            if current_status not in ["running", "waiting", "scheduled"]:
+            # Only check transitions for active workflows
+            if current_status not in ["running", "waiting", "scheduled", "pending"]:
                 return
 
-            # Get task counts
-            running_tasks = int(workflow_state.get(b"running_tasks", b"0").decode())
-            pending_tasks = int(workflow_state.get(b"pending_tasks", b"0").decode())
-            waiting_tasks = int(workflow_state.get(b"waiting_tasks", b"0").decode())
-            scheduled_tasks = int(workflow_state.get(b"scheduled_tasks", b"0").decode())
-
-            # Determine new status based on task counts
-            new_status = None
-            if running_tasks > 0 or pending_tasks > 0:
-                # Has actively running or pending tasks
-                new_status = "running"
-            elif waiting_tasks > 0 and scheduled_tasks == 0:
-                # Only waiting (signal) tasks
-                new_status = "waiting"
-            elif scheduled_tasks > 0 and waiting_tasks == 0:
-                # Only scheduled (timer) tasks
-                new_status = "scheduled"
-            elif waiting_tasks > 0 and scheduled_tasks > 0:
-                # Mixed - prioritize scheduled
-                new_status = "scheduled"
+            # Compute workflow status from actual task states
+            new_status, task_counts = await self.compute_workflow_status(workflow_id)
 
             # Update status if it changed
-            if new_status and new_status != current_status:
+            if new_status != current_status:
                 shard = default_sharding.get_shard(workflow_id)
-                logger.info(f"Transitioning workflow {workflow_id} from {current_status} to {new_status}")
+                logger.info(
+                    f"Transitioning workflow {workflow_id} from {current_status} to {new_status} "
+                    f"(task counts: {task_counts})"
+                )
 
                 # Update workflow status
                 await self.redis.hset(
@@ -703,6 +806,41 @@ class DependencyWorker(BaseWorker):
                     workflow_status = b"completed"
                     logger.info(f"Workflow {workflow_id} completed successfully!")
 
+                # Find the maximum completed_at timestamp from all tasks to use as workflow completion time
+                # This ensures the workflow completed_at is never before any task completed_at
+                workflow_completed_at = None
+                try:
+                    # Get all task IDs for this workflow
+                    shard = default_sharding.get_shard(workflow_id)
+                    graph_key = f"{{shard:{shard}}}:workflow:dependency:graph:{workflow_id}"
+                    graph_data = await self.redis.hgetall(graph_key.encode())
+
+                    task_ids = [k.decode() for k in graph_data.keys()] if graph_data else []
+
+                    # Get completed_at for each task
+                    max_timestamp = None
+                    for task_id in task_ids:
+                        task_key = default_sharding.get_task_key(task_id, workflow_id)
+                        task_completed_at = await self.redis.hget(task_key.encode(), b"completed_at")
+                        if task_completed_at:
+                            task_timestamp_str = task_completed_at.decode()
+                            try:
+                                task_timestamp = datetime.fromisoformat(task_timestamp_str)
+                                if max_timestamp is None or task_timestamp > max_timestamp:
+                                    max_timestamp = task_timestamp
+                            except:
+                                pass
+
+                    # Use the maximum task completion time, or current time if no tasks have completed_at
+                    if max_timestamp:
+                        workflow_completed_at = max_timestamp.isoformat()
+                    else:
+                        workflow_completed_at = datetime.utcnow().isoformat()
+
+                except Exception as e:
+                    logger.warning(f"Failed to determine workflow completion time from tasks: {e}")
+                    workflow_completed_at = datetime.utcnow().isoformat()
+
                 # Emit workflow completion event
                 event_type = EventType.WORKFLOW_FAILED if workflow_status == b"failed" else EventType.WORKFLOW_COMPLETED
                 await self.event_store.store_event(
@@ -725,7 +863,7 @@ class DependencyWorker(BaseWorker):
                     default_sharding.get_workflow_key("state", workflow_id).encode(),
                     mapping={
                         b"status": workflow_status,
-                        b"completed_at": datetime.utcnow().isoformat().encode(),
+                        b"completed_at": workflow_completed_at.encode(),
                         b"completed_tasks": str(completed).encode(),
                         b"skipped_tasks": str(skipped_count).encode(),
                         b"blocked_tasks": str(blocked_count).encode(),

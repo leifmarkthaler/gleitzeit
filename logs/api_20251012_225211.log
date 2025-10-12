@@ -1,0 +1,74 @@
+[2025-10-12 22:52:12] [STDERR] INFO:     Started server process [53379]
+[2025-10-12 22:52:12] [STDERR] INFO:     Waiting for application startup.
+[2025-10-12 22:52:12] [STDERR] INFO:     Application startup complete.
+[2025-10-12 22:52:12] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-12 22:52:38] [STDOUT] INFO:     127.0.0.1:62440 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:52:48] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-12 22:52:48] [STDOUT] INFO:     127.0.0.1:62448 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:52:48] [STDOUT] INFO:     127.0.0.1:62445 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-12 22:52:51] [STDOUT] INFO:     127.0.0.1:62445 - "GET /workflows/2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:52:51] [STDOUT] INFO:     127.0.0.1:62445 - "GET /tasks/175be895-42c1-440b-90e3-69eb73d37193 HTTP/1.1" 200 OK
+[2025-10-12 22:52:51] [STDOUT] INFO:     127.0.0.1:62445 - "GET /tasks/c832afc2-15c4-436e-9e45-fa74263f0d03 HTTP/1.1" 200 OK
+[2025-10-12 22:52:51] [STDOUT] INFO:     127.0.0.1:62445 - "GET /tasks/d70d3613-d751-4f09-baf9-655bb3c977e7 HTTP/1.1" 404 Not Found
+[2025-10-12 22:52:51] [STDOUT] INFO:     127.0.0.1:62445 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:52:51] [STDOUT] INFO:     127.0.0.1:62445 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:52:59] [STDERR] INFO:     127.0.0.1:62453 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:52:59] [STDERR] INFO:     connection open
+[2025-10-12 22:52:59] [STDOUT] INFO:     127.0.0.1:62455 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:53:02] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:53:02] [STDERR] INFO:     connection closed
+[2025-10-12 22:53:02] [STDERR] INFO:     127.0.0.1:62457 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:53:02] [STDERR] INFO:     connection open
+[2025-10-12 22:53:02] [STDOUT] INFO:     127.0.0.1:62455 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:53:03] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:53:03] [STDERR] INFO:     connection closed
+[2025-10-12 22:53:03] [STDERR] INFO:     127.0.0.1:62459 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:53:03] [STDERR] INFO:     connection open
+[2025-10-12 22:53:03] [STDOUT] INFO:     127.0.0.1:62455 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:53:04] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:53:04] [STDERR] INFO:     connection closed
+[2025-10-12 22:53:04] [STDERR] INFO:     127.0.0.1:62461 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:53:04] [STDERR] INFO:     connection open
+[2025-10-12 22:53:04] [STDOUT] INFO:     127.0.0.1:62455 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:53:05] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:53:05] [STDERR] INFO:     connection closed
+[2025-10-12 22:53:05] [STDERR] INFO:     127.0.0.1:62463 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:53:05] [STDERR] INFO:     connection open
+[2025-10-12 22:53:05] [STDOUT] INFO:     127.0.0.1:62455 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:53:06] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:53:06] [STDERR] INFO:     connection closed
+[2025-10-12 22:53:06] [STDERR] INFO:     127.0.0.1:62465 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:53:06] [STDERR] INFO:     connection open
+[2025-10-12 22:53:06] [STDOUT] INFO:     127.0.0.1:62455 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:53:06] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:53:06] [STDERR] INFO:     connection closed
+[2025-10-12 22:53:06] [STDERR] INFO:     127.0.0.1:62467 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:53:06] [STDERR] INFO:     connection open
+[2025-10-12 22:53:06] [STDOUT] INFO:     127.0.0.1:62455 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:53:08] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-12 22:53:08] [STDERR] INFO:     connection closed
+[2025-10-12 22:53:08] [STDOUT] INFO:     127.0.0.1:62455 - "GET /workflows/2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:53:08] [STDOUT] INFO:     127.0.0.1:62455 - "GET /tasks/175be895-42c1-440b-90e3-69eb73d37193 HTTP/1.1" 200 OK
+[2025-10-12 22:53:08] [STDOUT] INFO:     127.0.0.1:62455 - "GET /tasks/c832afc2-15c4-436e-9e45-fa74263f0d03 HTTP/1.1" 200 OK
+[2025-10-12 22:53:08] [STDOUT] INFO:     127.0.0.1:62455 - "GET /tasks/d70d3613-d751-4f09-baf9-655bb3c977e7 HTTP/1.1" 404 Not Found
+[2025-10-12 22:53:08] [STDOUT] INFO:     127.0.0.1:62455 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:53:08] [STDOUT] INFO:     127.0.0.1:62471 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:53:18] [STDOUT] INFO:     127.0.0.1:62474 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:53:28] [STDOUT] INFO:     127.0.0.1:62483 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:53:33] [STDOUT] INFO:     127.0.0.1:62483 - "GET /workflows/2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:53:33] [STDOUT] INFO:     127.0.0.1:62483 - "GET /tasks/175be895-42c1-440b-90e3-69eb73d37193 HTTP/1.1" 200 OK
+[2025-10-12 22:53:33] [STDOUT] INFO:     127.0.0.1:62483 - "GET /tasks/c832afc2-15c4-436e-9e45-fa74263f0d03 HTTP/1.1" 200 OK
+[2025-10-12 22:53:33] [STDOUT] INFO:     127.0.0.1:62483 - "GET /tasks/d70d3613-d751-4f09-baf9-655bb3c977e7 HTTP/1.1" 200 OK
+[2025-10-12 22:53:33] [STDOUT] INFO:     127.0.0.1:62483 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:53:33] [STDOUT] INFO:     127.0.0.1:62488 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:53:33] [STDOUT] INFO:     127.0.0.1:62492 - "GET /workflows/2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:53:40] [STDOUT] INFO:     127.0.0.1:62508 - "GET /workflows/2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:53:40] [STDOUT] INFO:     127.0.0.1:62508 - "GET /tasks/175be895-42c1-440b-90e3-69eb73d37193 HTTP/1.1" 200 OK
+[2025-10-12 22:53:40] [STDOUT] INFO:     127.0.0.1:62508 - "GET /tasks/c832afc2-15c4-436e-9e45-fa74263f0d03 HTTP/1.1" 200 OK
+[2025-10-12 22:53:40] [STDOUT] INFO:     127.0.0.1:62508 - "GET /tasks/d70d3613-d751-4f09-baf9-655bb3c977e7 HTTP/1.1" 200 OK
+[2025-10-12 22:53:40] [STDOUT] INFO:     127.0.0.1:62508 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK
+[2025-10-12 22:53:40] [STDOUT] INFO:     127.0.0.1:62512 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 22:53:42] [STDERR] INFO:     127.0.0.1:62526 - "WebSocket /ws/events" [accepted]
+[2025-10-12 22:53:42] [STDERR] INFO:     connection open
+[2025-10-12 22:53:42] [STDOUT] INFO:     127.0.0.1:62508 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-12 22:53:50] [STDOUT] INFO:     127.0.0.1:62533 - "GET /workflows/2a223ed9-0b6b-43e8-bb96-09e9f87c9af6 HTTP/1.1" 200 OK

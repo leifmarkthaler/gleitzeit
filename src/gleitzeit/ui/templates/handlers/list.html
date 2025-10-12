@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block title %}Handlers & Workers - Gleitzeit{% endblock %}
+{% block title %}System - Gleitzeit{% endblock %}
 
 {% block content %}
 <div class="container handlers-page">
     <div class="page-header-modern">
         <div>
-            <h1 class="page-title-modern">System Health</h1>
-            <p class="page-subtitle">Real-time worker status and system metrics</p>
+            <h1 class="page-title-modern">System</h1>
+            <p class="page-subtitle">System processes, workers, and health metrics</p>
         </div>
         <button class="btn-refresh"
                 hx-get="/handlers"
@@ -16,6 +16,16 @@
             <span class="refresh-icon">↻</span> Refresh
         </button>
     </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs-modern">
+        <button class="tab-btn-modern active" onclick="switchSystemTab('health')">Health & Workers</button>
+        <button class="tab-btn-modern" onclick="switchSystemTab('processes')">Processes</button>
+        <button class="tab-btn-modern" onclick="switchSystemTab('metrics')">Metrics</button>
+    </div>
+
+    <!-- Health & Workers Tab -->
+    <div id="health-tab" class="tab-content-modern active">
 
     <!-- System Overview -->
     <div class="metrics-section">
@@ -238,6 +248,170 @@
             </div>
         </div>
     </div>
+    </div>
+    <!-- End Health & Workers Tab -->
+
+    <!-- Processes Tab -->
+    <div id="processes-tab" class="tab-content-modern">
+        {% if processes %}
+        <!-- Process Summary -->
+        <div class="metrics-section">
+            <div class="metric-card-modern metric-processes">
+                <div class="metric-icon">⚙️</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Total Processes</div>
+                    <div class="metric-value-modern">{{ process_count|default(0) }}</div>
+                    <div class="metric-sublabel">running</div>
+                </div>
+            </div>
+            <div class="metric-card-modern metric-memory">
+                <div class="metric-icon">💾</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Total Memory</div>
+                    <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+                    <div class="metric-sublabel">MB</div>
+                </div>
+            </div>
+            <div class="metric-card-modern metric-servers">
+                <div class="metric-icon">🌐</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Servers</div>
+                    <div class="metric-value-modern">
+                        {% set server_count = processes|selectattr('type', 'in', ['api_server', 'ui_server'])|list|length %}
+                        {{ server_count }}
+                    </div>
+                    <div class="metric-sublabel">active</div>
+                </div>
+            </div>
+            <div class="metric-card-modern metric-workers">
+                <div class="metric-icon">👷</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Workers</div>
+                    <div class="metric-value-modern">
+                        {% set worker_count = processes|length - (processes|selectattr('type', 'in', ['api_server', 'ui_server'])|list|length) %}
+                        {{ worker_count }}
+                    </div>
+                    <div class="metric-sublabel">active</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Running Processes -->
+        <div class="section-modern">
+            <div class="section-header">
+                <h2 class="section-title">🖥️ Running Processes</h2>
+            </div>
+            <div class="processes-grid">
+                {% for process in processes %}
+                <div class="process-card {% if process.is_current %}process-current{% endif %} {% if process.type == 'api_server' or process.type == 'ui_server' %}process-server{% else %}process-worker{% endif %}">
+                    <div class="process-header">
+                        <div class="process-icon">
+                            {% if process.type == 'api_server' %}🚀
+                            {% elif process.type == 'ui_server' %}🎨
+                            {% elif 'task_execution' in process.type %}⚡
+                            {% elif 'python_specialist' in process.type %}🐍
+                            {% elif 'dependency' in process.type %}🔗
+                            {% elif 'retry' in process.type %}🔄
+                            {% elif 'reconciliation' in process.type %}🔍
+                            {% elif 'workflow_loader' in process.type %}📥
+                            {% elif 'workflow_submission' in process.type %}📤
+                            {% elif 'timer' in process.type %}⏰
+                            {% else %}⚙️
+                            {% endif %}
+                        </div>
+                        <div class="process-status-badge">
+                            {% if process.is_current %}
+                            <span class="current-badge">Current</span>
+                            {% else %}
+                            <span class="running-badge">Running</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="process-name">{{ process.name }}</div>
+                    <div class="process-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">PID</span>
+                            <span class="meta-value">{{ process.pid }}</span>
+                        </div>
+                        {% if process.port %}
+                        <div class="meta-item">
+                            <span class="meta-label">Port</span>
+                            <span class="meta-value">:{{ process.port }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="process-stats">
+                        <div class="process-stat">
+                            <div class="stat-value">{{ process.memory_mb|round(1) }} MB</div>
+                            <div class="stat-label">Memory</div>
+                        </div>
+                        <div class="process-stat">
+                            <div class="stat-value">{{ process.cpu_percent|round(1) }}%</div>
+                            <div class="stat-label">CPU</div>
+                        </div>
+                        <div class="process-stat">
+                            {% set hours = process.uptime_seconds // 3600 %}
+                            {% set minutes = (process.uptime_seconds % 3600) // 60 %}
+                            <div class="stat-value">
+                                {% if hours > 0 %}{{ hours }}h {% endif %}{{ minutes }}m
+                            </div>
+                            <div class="stat-label">Uptime</div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No Gleitzeit processes found</p>
+        </div>
+        {% endif %}
+    </div>
+    <!-- End Processes Tab -->
+
+    <!-- Metrics Tab -->
+    <div id="metrics-tab" class="tab-content-modern">
+        <!-- Time Range Selector -->
+        <div class="metrics-controls">
+            <button class="btn-time" id="time-1h" onclick="setTimeRange('1h')">1 Hour</button>
+            <button class="btn-time" id="time-6h" onclick="setTimeRange('6h')">6 Hours</button>
+            <button class="btn-time active" id="time-24h" onclick="setTimeRange('24h')">24 Hours</button>
+            <button class="btn-time" id="time-7d" onclick="setTimeRange('7d')">7 Days</button>
+        </div>
+
+        <!-- Overall Metrics Summary -->
+        <div class="section-modern">
+            <div class="section-header">
+                <h2 class="section-title">📊 Overall Metrics</h2>
+            </div>
+            <div id="overall-metrics" class="metrics-grid">
+                <div class="loading-spinner">Loading metrics...</div>
+            </div>
+        </div>
+
+        <!-- Workflow Metrics -->
+        <div class="section-modern">
+            <div class="section-header">
+                <h2 class="section-title">Workflow Metrics</h2>
+            </div>
+            <div id="workflow-metrics" class="metrics-detail">
+                <div class="loading-spinner">Loading workflow metrics...</div>
+            </div>
+        </div>
+
+        <!-- Task Metrics -->
+        <div class="section-modern">
+            <div class="section-header">
+                <h2 class="section-title">Task Metrics</h2>
+            </div>
+            <div id="task-metrics" class="metrics-detail">
+                <div class="loading-spinner">Loading task metrics...</div>
+            </div>
+        </div>
+    </div>
+    <!-- End Metrics Tab -->
+
 </div>
 
 <style>
@@ -246,6 +420,44 @@
     max-width: 1400px;
     margin: 0 auto;
     padding: 2rem 1rem;
+}
+
+/* Tabs */
+.tabs-modern {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.tab-btn-modern {
+    padding: 0.75rem 1.5rem;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 600;
+    color: #6c757d;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+    font-size: 0.95rem;
+}
+
+.tab-btn-modern:hover {
+    color: #667eea;
+}
+
+.tab-btn-modern.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-content-modern {
+    display: none;
+}
+
+.tab-content-modern.active {
+    display: block;
 }
 
 .page-header-modern {
@@ -708,9 +920,485 @@
     border-radius: 16px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
+
+/* Processes Grid */
+.processes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+.process-card {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.process-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+}
+
+.process-server::before {
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.process-worker::before {
+    background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+}
+
+.process-current::before {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.process-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.process-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.process-icon {
+    font-size: 2.5rem;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+.process-status-badge {
+    display: flex;
+    align-items: center;
+}
+
+.current-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.running-badge {
+    background: #f0fdf4;
+    color: #16a34a;
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.process-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 1rem;
+}
+
+.process-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.meta-label {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.meta-value {
+    font-family: 'Courier New', monospace;
+    font-size: 0.875rem;
+    color: #4a5568;
+    font-weight: 600;
+}
+
+.process-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+
+.process-stat {
+    text-align: center;
+    padding: 0.75rem 0.5rem;
+    background: #f7fafc;
+    border-radius: 8px;
+}
+
+/* Metrics Tab Styles */
+.metrics-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+}
+
+.btn-time {
+    padding: 0.5rem 1rem;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.btn-time:hover {
+    background: #f8f9fa;
+}
+
+.btn-time.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: transparent;
+}
+
+.metrics-detail {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+}
+
+.status-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.status-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.status-item .count {
+    font-size: 2rem;
+    font-weight: 700;
+    display: block;
+    color: #2d3748;
+}
+
+.status-item .label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: capitalize;
+    margin-top: 0.5rem;
+}
+
+.protocol-breakdown {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.protocol-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.protocol-badge {
+    padding: 0.5rem 1rem;
+    background: #e9ecef;
+    border-radius: 20px;
+    font-size: 0.875rem;
+}
+
+.protocol-badge .count {
+    font-weight: 700;
+    margin-left: 0.5rem;
+    color: #495057;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 2rem;
+    color: #94a3b8;
+}
 </style>
 
 <script>
+let currentTimeRange = '24h';
+
+function switchSystemTab(tab) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content-modern').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn-modern').forEach(el => el.classList.remove('active'));
+
+    // Show selected tab
+    if (tab === 'health') {
+        document.getElementById('health-tab').classList.add('active');
+        document.querySelectorAll('.tab-btn-modern')[0].classList.add('active');
+    } else if (tab === 'processes') {
+        document.getElementById('processes-tab').classList.add('active');
+        document.querySelectorAll('.tab-btn-modern')[1].classList.add('active');
+    } else if (tab === 'metrics') {
+        document.getElementById('metrics-tab').classList.add('active');
+        document.querySelectorAll('.tab-btn-modern')[2].classList.add('active');
+        // Load metrics when tab is opened
+        if (!document.getElementById('metrics-tab').dataset.loaded) {
+            loadAllMetrics();
+            document.getElementById('metrics-tab').dataset.loaded = 'true';
+        }
+    }
+}
+
+function setTimeRange(range) {
+    currentTimeRange = range;
+
+    // Update button states
+    ['1h', '6h', '24h', '7d'].forEach(r => {
+        const btn = document.getElementById(`time-${r}`);
+        if (r === range) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // Reload metrics with new time range
+    loadAllMetrics();
+}
+
+function loadAllMetrics() {
+    loadOverallMetrics();
+    loadWorkflowMetrics();
+    loadTaskMetrics();
+}
+
+function loadOverallMetrics() {
+    fetch('/api/system/metrics')
+        .then(response => response.json())
+        .then(data => {
+            renderOverallMetrics(data);
+        })
+        .catch(error => {
+            console.error('Error loading overall metrics:', error);
+            document.getElementById('overall-metrics').innerHTML =
+                '<div class="empty-state">Failed to load metrics</div>';
+        });
+}
+
+function renderOverallMetrics(data) {
+    const container = document.getElementById('overall-metrics');
+
+    if (!data) {
+        container.innerHTML = '<div class="empty-state">No metrics data available</div>';
+        return;
+    }
+
+    let html = '';
+
+    // Workflow metrics
+    if (data.workflows) {
+        html += `
+            <div class="metric-card-modern">
+                <div class="metric-icon">📊</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Total Workflows</div>
+                    <div class="metric-value-modern">${data.workflows.total || 0}</div>
+                    <div class="metric-sublabel">${data.workflows.running || 0} running</div>
+                </div>
+            </div>
+            <div class="metric-card-modern">
+                <div class="metric-icon">✅</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Completed</div>
+                    <div class="metric-value-modern">${data.workflows.completed || 0}</div>
+                    <div class="metric-sublabel">workflows</div>
+                </div>
+            </div>
+            <div class="metric-card-modern">
+                <div class="metric-icon">❌</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Failed</div>
+                    <div class="metric-value-modern">${data.workflows.failed || 0}</div>
+                    <div class="metric-sublabel">workflows</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Task metrics
+    if (data.tasks) {
+        html += `
+            <div class="metric-card-modern">
+                <div class="metric-icon">✓</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Total Tasks</div>
+                    <div class="metric-value-modern">${data.tasks.total || 0}</div>
+                    <div class="metric-sublabel">${data.tasks.running || 0} running</div>
+                </div>
+            </div>
+            <div class="metric-card-modern">
+                <div class="metric-icon">⏳</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Pending</div>
+                    <div class="metric-value-modern">${data.tasks.pending || 0}</div>
+                    <div class="metric-sublabel">tasks</div>
+                </div>
+            </div>
+            <div class="metric-card-modern">
+                <div class="metric-icon">🎉</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Completed</div>
+                    <div class="metric-value-modern">${data.tasks.completed || 0}</div>
+                    <div class="metric-sublabel">tasks</div>
+                </div>
+            </div>
+        `;
+    }
+
+    container.innerHTML = html || '<div class="empty-state">No metrics available</div>';
+}
+
+function loadWorkflowMetrics() {
+    fetch(`/api/system/metrics/workflows?time_range=${currentTimeRange}`)
+        .then(response => response.json())
+        .then(data => {
+            renderWorkflowMetrics(data);
+        })
+        .catch(error => {
+            console.error('Error loading workflow metrics:', error);
+            document.getElementById('workflow-metrics').innerHTML =
+                '<div class="empty-state">Failed to load workflow metrics</div>';
+        });
+}
+
+function renderWorkflowMetrics(data) {
+    const container = document.getElementById('workflow-metrics');
+
+    if (!data) {
+        container.innerHTML = '<div class="empty-state">No workflow metrics available</div>';
+        return;
+    }
+
+    let html = `
+        <div style="margin-bottom: 1rem;">
+            <h3 style="margin: 0;">Time Range: ${currentTimeRange}</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666;">Total Workflows: ${data.total_workflows || 0}</p>
+        </div>
+
+        <div class="status-breakdown">
+    `;
+
+    if (data.by_status) {
+        for (const [status, count] of Object.entries(data.by_status)) {
+            html += `
+                <div class="status-item">
+                    <span class="count">${count}</span>
+                    <span class="label">${status}</span>
+                </div>
+            `;
+        }
+    } else {
+        html += '<div class="empty-state">No status data available</div>';
+    }
+
+    html += '</div>';
+
+    container.innerHTML = html;
+}
+
+function loadTaskMetrics() {
+    fetch(`/api/system/metrics/tasks?time_range=${currentTimeRange}`)
+        .then(response => response.json())
+        .then(data => {
+            renderTaskMetrics(data);
+        })
+        .catch(error => {
+            console.error('Error loading task metrics:', error);
+            document.getElementById('task-metrics').innerHTML =
+                '<div class="empty-state">Failed to load task metrics</div>';
+        });
+}
+
+function renderTaskMetrics(data) {
+    const container = document.getElementById('task-metrics');
+
+    if (!data) {
+        container.innerHTML = '<div class="empty-state">No task metrics available</div>';
+        return;
+    }
+
+    let html = `
+        <div style="margin-bottom: 1rem;">
+            <h3 style="margin: 0;">Time Range: ${currentTimeRange}</h3>
+            <p style="margin: 0.5rem 0 0 0; color: #666;">Total Tasks: ${data.total_tasks || 0}</p>
+        </div>
+
+        <div class="status-breakdown">
+    `;
+
+    if (data.by_status) {
+        for (const [status, count] of Object.entries(data.by_status)) {
+            html += `
+                <div class="status-item">
+                    <span class="count">${count}</span>
+                    <span class="label">${status}</span>
+                </div>
+            `;
+        }
+    } else {
+        html += '<div class="empty-state">No status data available</div>';
+    }
+
+    html += '</div>';
+
+    // Protocol breakdown
+    if (data.by_protocol && Object.keys(data.by_protocol).length > 0) {
+        html += `
+            <div class="protocol-breakdown">
+                <h4 style="margin: 0 0 1rem 0;">By Protocol</h4>
+                <div class="protocol-list">
+        `;
+
+        for (const [protocol, count] of Object.entries(data.by_protocol)) {
+            html += `
+                <div class="protocol-badge">
+                    <span>${protocol}</span>
+                    <span class="count">${count}</span>
+                </div>
+            `;
+        }
+
+        html += '</div></div>';
+    }
+
+    container.innerHTML = html;
+}
+
 // Auto-refresh every 5 seconds
 setInterval(() => {
     htmx.trigger(document.body, 'refresh');
