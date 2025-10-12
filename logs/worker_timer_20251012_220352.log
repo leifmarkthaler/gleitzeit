@@ -1,0 +1,17 @@
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,750 - __main__ - INFO - Loading configuration from Redis key: worker:config:timer-async:3c648b44
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,753 - __main__ - INFO - Loaded config for worker timer-async
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,755 - __main__ - INFO - Worker timer-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,755 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,755 - gleitzeit.workers.timer_worker - INFO - TimerWorker initialized with atomic leader election
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,756 - timer.timer-async - INFO - Worker timer-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,756 - __main__ - INFO - Worker timer-async started successfully
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,756 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,756 - gleitzeit.workers.timer_worker - INFO - Worker timer-async starting with consumer group timer-group
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,756 - gleitzeit.workers.timer_worker - INFO - Starting atomic leader election loop for timer-async
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,757 - gleitzeit.core.leader_election - INFO - Worker timer-async became leader for {shard:0}:global:timer:leader
+[2025-10-12 22:03:52] [STDERR] 2025-10-12 22:03:52,757 - gleitzeit.workers.timer_worker - INFO - Worker timer-async became timer leader
+[2025-10-12 22:05:10] [STDERR] 2025-10-12 22:05:10,921 - gleitzeit.timers.stateless_timer_manager - INFO - Processed 2 due timers
+[2025-10-12 22:05:10] [STDERR] 2025-10-12 22:05:10,921 - gleitzeit.workers.timer_worker - INFO - Processing 2 expired timers
+[2025-10-12 22:05:10] [STDERR] 2025-10-12 22:05:10,922 - gleitzeit.workers.timer_worker - INFO - Completing timer task d5eb4eef-72c2-4d70-b215-002325a5c52e for workflow 7660635f-7d5d-4181-b3cf-fdc8e176aee1
+[2025-10-12 22:05:10] [STDERR] 2025-10-12 22:05:10,924 - gleitzeit.workers.timer_worker - INFO - Timer task d5eb4eef-72c2-4d70-b215-002325a5c52e marked as completed and event emitted to shard 11
+[2025-10-12 22:05:10] [STDERR] 2025-10-12 22:05:10,925 - gleitzeit.workers.timer_worker - INFO - Task d5eb4eef-72c2-4d70-b215-002325a5c52e is completed, skipping timer completion

@@ -9,12 +9,13 @@ import asyncio
 import logging
 import json
 import uuid
-from typing import Dict, List, Optional, Set
-from datetime import datetime, timedelta
+from typing import Dict, List, Optional
+from datetime import datetime
 from contextlib import asynccontextmanager
 
 from .base import BaseWorker, WorkerConfig
-from ..core.models import WorkflowStatus, TaskStatus
+from ..core.models import WorkflowStatus
+from ..core.sharding import default_sharding
 
 logger = logging.getLogger(__name__)
 
@@ -101,11 +102,8 @@ class WorkflowReconciliationWorker(BaseWorker):
         self.zombie_threshold = config.extra.get('zombie_threshold', self.ZOMBIE_THRESHOLD)
         self.max_concurrent_reconciliations = config.extra.get('max_concurrent', self.MAX_CONCURRENT)
 
-        # Metrics
-        self.workflows_scanned = 0
-        self.inconsistencies_found = 0
-        self.workflows_fixed = 0
-        self.scan_errors = 0
+        # Bug #19: Removed in-memory metrics - worker is now stateless
+        # Use structured logging via LoggingMixin for observability
 
         # Reconciliation semaphore
         self._reconciliation_semaphore = asyncio.Semaphore(self.max_concurrent_reconciliations)
@@ -165,24 +163,17 @@ class WorkflowReconciliationWorker(BaseWorker):
 
                     await self.log_worker_info(
                         "reconciliation_cycle_completed",
-                        f"Scanned {self.workflows_scanned} workflows, "
-                        f"found {self.inconsistencies_found} inconsistencies, "
-                        f"fixed {self.workflows_fixed} workflows in {scan_duration:.2f}s",
-                        scan_duration=scan_duration,
-                        workflows_scanned=self.workflows_scanned,
-                        inconsistencies_found=self.inconsistencies_found,
-                        workflows_fixed=self.workflows_fixed
+                        f"Reconciliation cycle completed in {scan_duration:.2f}s",
+                        scan_duration=scan_duration
                     )
 
                     # Wait for next scan interval
                     await asyncio.sleep(self.scan_interval)
 
                 except Exception as e:
-                    self.scan_errors += 1
                     await self.log_worker_error(
                         "reconciliation_cycle_failed",
-                        e,
-                        scan_errors=self.scan_errors
+                        e
                     )
                     # Wait before retrying
                     await asyncio.sleep(10)
@@ -197,8 +188,10 @@ class WorkflowReconciliationWorker(BaseWorker):
         logger.debug(f"Starting reconciliation scan for {len(self.assigned_shards)} shards")
         for shard in self.assigned_shards:
             try:
-                async with self.acquire_shard_lock(shard) as lock:
-                    await self.reconcile_shard(shard)
+                async with self.acquire_shard_lock(shard):
+                    # Bug #16: Scan multiple workflow statuses, not just running
+                    await self.reconcile_shard(shard, status='running')
+                    await self.reconcile_shard(shard, status='waiting')
             except LockAcquisitionError:
                 # Another worker is handling this shard
                 logger.debug(f"Could not acquire lock for shard {shard}, skipping")
@@ -242,14 +235,14 @@ class WorkflowReconciliationWorker(BaseWorker):
         finally:
             await lock.release()
 
-    async def reconcile_shard(self, shard: int):
-        """Reconcile all running workflows on a shard"""
+    async def reconcile_shard(self, shard: int, status: str = 'running'):
+        """Reconcile workflows with specific status on a shard (Bug #16)"""
         offset = 0
         shard_workflows_scanned = 0
 
         while True:
-            # Scan for running workflows
-            workflow_ids = await self.scan_running_workflows(shard, offset, self.batch_size)
+            # Scan for workflows with given status
+            workflow_ids = await self.scan_workflows_by_status(shard, status, offset, self.batch_size)
 
             if not workflow_ids:
                 break
@@ -268,23 +261,23 @@ class WorkflowReconciliationWorker(BaseWorker):
             shard_workflows_scanned += len(workflow_ids)
             offset += self.batch_size
 
-        logger.debug(f"Shard {shard} reconciliation complete: {shard_workflows_scanned} workflows scanned")
+        logger.debug(f"Shard {shard} status={status} reconciliation: {shard_workflows_scanned} workflows scanned")
 
     async def _reconcile_workflow_with_semaphore(self, workflow_id: str, shard: int):
         """Reconcile workflow with concurrency control"""
         async with self._reconciliation_semaphore:
             await self.reconcile_workflow(workflow_id, shard)
 
-    async def scan_running_workflows(
-        self, shard: int, offset: int, limit: int
+    async def scan_workflows_by_status(
+        self, shard: int, status: str, offset: int, limit: int
     ) -> List[str]:
         """
-        Scan for workflows with status='running' on a shard.
+        Scan for workflows with specific status on a shard (Bug #16).
 
         Uses sorted set for efficient scanning:
-        {shard:N}:workflows:by_status:running
+        {shard:N}:workflows:by_status:{status}
         """
-        key = f"{{shard:{shard}}}:workflows:by_status:running"
+        key = f"{{shard:{shard}}}:workflows:by_status:{status}"
 
         try:
             workflow_ids = await self.redis.zrange(
@@ -295,7 +288,7 @@ class WorkflowReconciliationWorker(BaseWorker):
 
             return [wf_id.decode() for wf_id in workflow_ids]
         except Exception as e:
-            logger.error(f"Failed to scan workflows on shard {shard}: {e}")
+            logger.error(f"Failed to scan {status} workflows on shard {shard}: {e}")
             return []
 
     async def reconcile_workflow(self, workflow_id: str, shard: int):
@@ -304,8 +297,6 @@ class WorkflowReconciliationWorker(BaseWorker):
 
         Performs all consistency checks and fixes inconsistencies.
         """
-        self.workflows_scanned += 1
-
         try:
             # Get workflow state
             workflow = await self.get_workflow(workflow_id, shard)
@@ -313,17 +304,17 @@ class WorkflowReconciliationWorker(BaseWorker):
                 logger.warning(f"Workflow {workflow_id} not found during reconciliation")
                 return
 
-            # Skip if no longer running
-            status = workflow.get('status', '').decode() if isinstance(workflow.get('status'), bytes) else workflow.get('status', '')
-            if status != 'running':
+            # Bug #10: Use WorkflowStatus enum instead of hardcoded string
+            status_bytes = workflow.get(b'status', b'unknown')
+            status_str = status_bytes.decode() if isinstance(status_bytes, bytes) else str(status_bytes)
+
+            if status_str != WorkflowStatus.RUNNING.value:
                 return
 
             # Run consistency checks
             inconsistencies = await self.check_workflow_consistency(workflow_id, workflow, shard)
 
             if inconsistencies:
-                self.inconsistencies_found += len(inconsistencies)
-
                 await self.log_worker_warning(
                     "workflow_inconsistency_detected",
                     f"Workflow {workflow_id} has {len(inconsistencies)} inconsistencies",
@@ -334,8 +325,6 @@ class WorkflowReconciliationWorker(BaseWorker):
 
                 # Fix inconsistencies
                 await self.fix_workflow_state(workflow_id, workflow, inconsistencies, shard)
-
-                self.workflows_fixed += 1
 
                 await self.log_worker_info(
                     "workflow_reconciled",
@@ -355,7 +344,8 @@ class WorkflowReconciliationWorker(BaseWorker):
 
     async def get_workflow(self, workflow_id: str, shard: int) -> Optional[Dict]:
         """Get workflow state from Redis"""
-        key = f"{{shard:{shard}}}:workflow:status:{workflow_id}"
+        # Bug #1: Fix key pattern to use get_workflow_key helper
+        key = default_sharding.get_workflow_key("state", workflow_id)
 
         try:
             workflow_data = await self.redis.hgetall(key.encode())
@@ -387,15 +377,21 @@ class WorkflowReconciliationWorker(BaseWorker):
         failed_tasks = get_int(b'failed_tasks', 0)
         running_tasks = get_int(b'running_tasks', 0)
         pending_tasks = get_int(b'pending_tasks', 0)
+        # Bug #2, #4, #9: Extract all task counters
+        waiting_tasks = get_int(b'waiting_tasks', 0)
+        blocked_tasks = get_int(b'blocked_tasks', 0)
+        skipped_tasks = get_int(b'skipped_tasks', 0)
 
-        # Check 1: Task count consistency
-        total_accounted = completed_tasks + failed_tasks + running_tasks + pending_tasks
+        # Check 1: Task count consistency (include all counters)
+        total_accounted = (completed_tasks + failed_tasks + running_tasks +
+                          pending_tasks + waiting_tasks + blocked_tasks + skipped_tasks)
         if total_accounted != total_tasks:
             inconsistencies.append(
                 f"task_count_mismatch: total={total_tasks} but "
                 f"accounted={total_accounted} "
                 f"(completed={completed_tasks}, failed={failed_tasks}, "
-                f"running={running_tasks}, pending={pending_tasks})"
+                f"running={running_tasks}, pending={pending_tasks}, "
+                f"waiting={waiting_tasks}, blocked={blocked_tasks}, skipped={skipped_tasks})"
             )
 
         # Check 2: Hard fail policy enforcement
@@ -412,8 +408,10 @@ class WorkflowReconciliationWorker(BaseWorker):
                 f"but status is still 'running'"
             )
 
+        # Bug #3: Fix zombie detection to account for waiting tasks
         # Check 4: Zombie workflow detection
-        if running_tasks == 0 and pending_tasks == 0 and completed_tasks < total_tasks:
+        if (running_tasks == 0 and pending_tasks == 0 and waiting_tasks == 0 and
+            completed_tasks < total_tasks):
             # No active tasks but workflow incomplete - check last activity
             last_activity = await self.get_last_workflow_activity(workflow_id, shard)
             if last_activity:
@@ -423,6 +421,23 @@ class WorkflowReconciliationWorker(BaseWorker):
                         f"zombie_workflow: no active tasks for {time_since_activity:.0f}s "
                         f"(threshold={self.zombie_threshold}s)"
                     )
+
+        # Get scheduled tasks count
+        scheduled_tasks = get_int(b'scheduled_tasks', 0)
+
+        # Bug #6: Check if workflow should transition to waiting status
+        if running_tasks == 0 and pending_tasks == 0 and waiting_tasks > 0 and scheduled_tasks == 0:
+            inconsistencies.append(
+                f"status_should_be_waiting: workflow has {waiting_tasks} waiting tasks "
+                f"but status is 'running'"
+            )
+
+        # Check if workflow should transition to scheduled status
+        if running_tasks == 0 and pending_tasks == 0 and waiting_tasks == 0 and scheduled_tasks > 0:
+            inconsistencies.append(
+                f"status_should_be_scheduled: workflow has {scheduled_tasks} scheduled tasks "
+                f"but status is 'running'"
+            )
 
         return inconsistencies
 
@@ -436,6 +451,8 @@ class WorkflowReconciliationWorker(BaseWorker):
         has_failed_tasks = any('hard_fail_policy' in i for i in inconsistencies)
         is_completed = any('completion_undetected' in i for i in inconsistencies)
         is_zombie = any('zombie_workflow' in i for i in inconsistencies)
+        should_be_waiting = any('status_should_be_waiting' in i for i in inconsistencies)
+        should_be_scheduled = any('status_should_be_scheduled' in i for i in inconsistencies)
 
         # Recalculate task counts if mismatch detected
         if has_task_count_mismatch:
@@ -445,7 +462,7 @@ class WorkflowReconciliationWorker(BaseWorker):
             if not workflow:
                 return
 
-        # Apply state fixes
+        # Apply state fixes (priority order matters)
         if has_failed_tasks:
             # Enforce hard fail policy
             await self.mark_workflow_failed(
@@ -463,21 +480,34 @@ class WorkflowReconciliationWorker(BaseWorker):
                 shard,
                 reason="Workflow stalled with no activity"
             )
+        elif should_be_scheduled:
+            # Transition to scheduled status
+            await self.mark_workflow_scheduled(workflow_id, shard)
+        elif should_be_waiting:
+            # Bug #6: Transition to waiting status
+            await self.mark_workflow_waiting(workflow_id, shard)
 
     async def recalculate_task_counts(self, workflow_id: str, shard: int):
         """
         Recalculate workflow task counts from actual task states.
         """
         try:
-            # Get all task IDs for workflow
+            # Bug #15: Get all task IDs from workflow data (not from a non-existent set)
             task_ids = await self.get_workflow_task_ids(workflow_id, shard)
 
+            # Bug #7: Track all task statuses, not just 5
             counts = {
                 'pending': 0,
-                'running': 0,
+                'running': 0,      # Also includes: executing, queued, routed, validating
                 'completed': 0,
                 'failed': 0,
-                'waiting': 0
+                'waiting': 0,      # Also includes: waiting_signal
+                'scheduled': 0,    # Timer/scheduled tasks
+                'blocked': 0,
+                'skipped': 0,
+                'cancelled': 0,
+                'paused': 0,
+                'other': 0
             }
 
             # Fetch actual task states
@@ -485,11 +515,36 @@ class WorkflowReconciliationWorker(BaseWorker):
                 task = await self.get_task(task_id, workflow_id, shard)
                 if task:
                     status = task.get(b'status', b'pending').decode() if isinstance(task.get(b'status'), bytes) else task.get('status', 'pending')
-                    if status in counts:
-                        counts[status] += 1
 
-            # Update workflow with corrected counts
-            workflow_key = f"{{shard:{shard}}}:workflow:status:{workflow_id}"
+                    # Map status to workflow counter (with status aliasing)
+                    if status == 'pending':
+                        counts['pending'] += 1
+                    elif status in ['running', 'executing', 'queued', 'routed', 'validating']:
+                        counts['running'] += 1
+                    elif status in ['waiting', 'waiting_signal']:
+                        counts['waiting'] += 1
+                    elif status in ['scheduled', 'sleeping']:
+                        counts['scheduled'] += 1
+                    elif status == 'completed':
+                        counts['completed'] += 1
+                    elif status == 'failed':
+                        counts['failed'] += 1
+                    elif status == 'blocked':
+                        counts['blocked'] += 1
+                    elif status == 'skipped':
+                        counts['skipped'] += 1
+                    elif status == 'cancelled':
+                        counts['cancelled'] += 1
+                    elif status in ['paused', 'retry_pending', 'rewound']:
+                        counts['paused'] += 1
+                    else:
+                        counts['other'] += 1
+                        logger.warning(f"Unknown task status '{status}' for task {task_id} in workflow {workflow_id}")
+
+            # Bug #1: Use helper for workflow key
+            workflow_key = default_sharding.get_workflow_key("state", workflow_id)
+
+            # Bug #17: Always update timestamp
             await self.redis.hset(
                 workflow_key.encode(),
                 mapping={
@@ -497,7 +552,10 @@ class WorkflowReconciliationWorker(BaseWorker):
                     b'running_tasks': str(counts['running']).encode(),
                     b'completed_tasks': str(counts['completed']).encode(),
                     b'failed_tasks': str(counts['failed']).encode(),
-                    b'waiting_tasks': str(counts.get('waiting', 0)).encode(),
+                    b'waiting_tasks': str(counts['waiting']).encode(),
+                    b'scheduled_tasks': str(counts['scheduled']).encode(),
+                    b'blocked_tasks': str(counts['blocked']).encode(),
+                    b'skipped_tasks': str(counts['skipped']).encode(),
                     b'updated_at': datetime.utcnow().isoformat().encode()
                 }
             )
@@ -510,19 +568,37 @@ class WorkflowReconciliationWorker(BaseWorker):
             logger.error(f"Failed to recalculate task counts for {workflow_id}: {e}")
 
     async def get_workflow_task_ids(self, workflow_id: str, shard: int) -> List[str]:
-        """Get all task IDs for a workflow"""
-        tasks_key = f"{{shard:{shard}}}:workflow:tasks:{workflow_id}"
-
+        """Get all task IDs for a workflow from workflow data"""
+        # Bug #15: Read task IDs from workflow data, not from a non-existent set
         try:
-            task_ids = await self.redis.smembers(tasks_key.encode())
-            return [tid.decode() for tid in task_ids]
+            # Get workflow data which contains the original task definitions
+            data_key = default_sharding.get_workflow_key("data", workflow_id)
+            workflow_data_json = await self.redis.get(data_key.encode())
+
+            if not workflow_data_json:
+                logger.warning(f"No workflow data found for {workflow_id}")
+                return []
+
+            workflow_data = json.loads(workflow_data_json.decode())
+            tasks = workflow_data.get('tasks', [])
+
+            # Extract task IDs
+            task_ids = []
+            for task in tasks:
+                task_id = task.get('id')
+                if task_id:
+                    task_ids.append(task_id)
+
+            return task_ids
+
         except Exception as e:
             logger.error(f"Failed to get task IDs for workflow {workflow_id}: {e}")
             return []
 
     async def get_task(self, task_id: str, workflow_id: str, shard: int) -> Optional[Dict]:
         """Get task state from Redis"""
-        task_key = f"{{shard:{shard}}}:task:status:{task_id}"
+        # Bug #13: Use helper for task key
+        task_key = default_sharding.get_task_key(task_id, workflow_id)
 
         try:
             task_data = await self.redis.hgetall(task_key.encode())
@@ -532,38 +608,63 @@ class WorkflowReconciliationWorker(BaseWorker):
             return None
 
     async def mark_workflow_failed(self, workflow_id: str, shard: int, reason: str):
-        """Mark workflow as failed"""
-        workflow_key = f"{{shard:{shard}}}:workflow:status:{workflow_id}"
+        """Mark workflow as failed atomically"""
+        # Bug #1: Use helper for workflow key
+        workflow_key = default_sharding.get_workflow_key("state", workflow_id)
+
+        # Bug #11 & #14: Use Lua script for atomicity and index cleanup
+        lua_script = """
+        -- Update workflow state
+        redis.call('hset', KEYS[1],
+            'status', ARGV[1],
+            'error', ARGV[2],
+            'failed_at', ARGV[3],
+            'updated_at', ARGV[3])
+
+        -- Remove from all possible status indices
+        for i=2,#KEYS-1 do
+            redis.call('zrem', KEYS[i], ARGV[4])
+        end
+
+        -- Add to failed index
+        redis.call('zadd', KEYS[2], ARGV[5], ARGV[4])
+
+        return 1
+        """
+
+        failed_key = f"{{shard:{shard}}}:workflows:by_status:failed"
+        running_key = f"{{shard:{shard}}}:workflows:by_status:running"
+        waiting_key = f"{{shard:{shard}}}:workflows:by_status:waiting"
+        scheduled_key = f"{{shard:{shard}}}:workflows:by_status:scheduled"
+        completed_key = f"{{shard:{shard}}}:workflows:by_status:completed"
 
         try:
-            await self.redis.hset(
+            now = datetime.utcnow()
+            await self.redis.eval(
+                lua_script.encode(),
+                6,  # number of keys
                 workflow_key.encode(),
-                mapping={
-                    b'status': WorkflowStatus.FAILED.value.encode(),
-                    b'error': reason.encode(),
-                    b'failed_at': datetime.utcnow().isoformat().encode(),
-                    b'updated_at': datetime.utcnow().isoformat().encode()
-                }
-            )
-
-            # Move from running to failed index
-            running_key = f"{{shard:{shard}}}:workflows:by_status:running"
-            failed_key = f"{{shard:{shard}}}:workflows:by_status:failed"
-
-            await self.redis.zrem(running_key.encode(), workflow_id.encode())
-            await self.redis.zadd(
                 failed_key.encode(),
-                {workflow_id.encode(): datetime.utcnow().timestamp()}
+                running_key.encode(),
+                waiting_key.encode(),
+                scheduled_key.encode(),
+                completed_key.encode(),
+                WorkflowStatus.FAILED.value.encode(),
+                reason.encode(),
+                now.isoformat().encode(),
+                workflow_id.encode(),
+                str(now.timestamp()).encode()
             )
 
-            # Emit workflow:failed event
+            # Bug #8: Fix stream key to use helper
+            # Emit workflow:failed event after atomic update succeeds
             await self.redis.xadd(
-                f"{{shard:{shard}}}:workflow:failed".encode(),
+                default_sharding.get_stream_key("workflow:failed", workflow_id).encode(),
                 {
                     b'workflow_id': workflow_id.encode(),
                     b'error': reason.encode(),
                     b'reconciliation': b'true',
-                    b'timestamp': datetime.utcnow().isoformat().encode()
+                    b'timestamp': now.isoformat().encode()
                 }
             )
 
@@ -573,37 +674,61 @@ class WorkflowReconciliationWorker(BaseWorker):
             logger.error(f"Failed to mark workflow {workflow_id} as failed: {e}")
 
     async def mark_workflow_completed(self, workflow_id: str, shard: int):
-        """Mark workflow as completed"""
-        workflow_key = f"{{shard:{shard}}}:workflow:status:{workflow_id}"
+        """Mark workflow as completed atomically"""
+        # Bug #1: Use helper for workflow key
+        workflow_key = default_sharding.get_workflow_key("state", workflow_id)
+
+        # Bug #11 & #14: Use Lua script for atomicity and index cleanup
+        lua_script = """
+        -- Update workflow state
+        redis.call('hset', KEYS[1],
+            'status', ARGV[1],
+            'completed_at', ARGV[2],
+            'updated_at', ARGV[2])
+
+        -- Remove from all possible status indices
+        for i=2,#KEYS-1 do
+            redis.call('zrem', KEYS[i], ARGV[3])
+        end
+
+        -- Add to completed index
+        redis.call('zadd', KEYS[2], ARGV[4], ARGV[3])
+
+        return 1
+        """
+
+        completed_key = f"{{shard:{shard}}}:workflows:by_status:completed"
+        running_key = f"{{shard:{shard}}}:workflows:by_status:running"
+        waiting_key = f"{{shard:{shard}}}:workflows:by_status:waiting"
+        scheduled_key = f"{{shard:{shard}}}:workflows:by_status:scheduled"
+        failed_key = f"{{shard:{shard}}}:workflows:by_status:failed"
 
         try:
-            await self.redis.hset(
+            now = datetime.utcnow()
+            await self.redis.eval(
+                lua_script.encode(),
+                6,  # number of keys
                 workflow_key.encode(),
-                mapping={
-                    b'status': WorkflowStatus.COMPLETED.value.encode(),
-                    b'completed_at': datetime.utcnow().isoformat().encode(),
-                    b'updated_at': datetime.utcnow().isoformat().encode()
-                }
-            )
-
-            # Move from running to completed index
-            running_key = f"{{shard:{shard}}}:workflows:by_status:running"
-            completed_key = f"{{shard:{shard}}}:workflows:by_status:completed"
-
-            await self.redis.zrem(running_key.encode(), workflow_id.encode())
-            await self.redis.zadd(
                 completed_key.encode(),
-                {workflow_id.encode(): datetime.utcnow().timestamp()}
+                running_key.encode(),
+                waiting_key.encode(),
+                scheduled_key.encode(),
+                failed_key.encode(),
+                WorkflowStatus.COMPLETED.value.encode(),
+                now.isoformat().encode(),
+                workflow_id.encode(),
+                str(now.timestamp()).encode()
             )
 
-            # Emit workflow:completed event
+            # Bug #8: Fix stream key to use helper
+            # Emit workflow:completed event after atomic update succeeds
             await self.redis.xadd(
-                f"{{shard:{shard}}}:workflow:completed".encode(),
+                default_sharding.get_stream_key("workflow:completed", workflow_id).encode(),
                 {
                     b'workflow_id': workflow_id.encode(),
                     b'status': b'completed',
                     b'reconciliation': b'true',
-                    b'timestamp': datetime.utcnow().isoformat().encode()
+                    b'timestamp': now.isoformat().encode()
                 }
             )
 
@@ -611,6 +736,106 @@ class WorkflowReconciliationWorker(BaseWorker):
 
         except Exception as e:
             logger.error(f"Failed to mark workflow {workflow_id} as completed: {e}")
+
+    async def mark_workflow_waiting(self, workflow_id: str, shard: int):
+        """Mark workflow as waiting for signals/timers (Bug #6)"""
+        workflow_key = default_sharding.get_workflow_key("state", workflow_id)
+
+        # Use Lua script for atomicity and index cleanup
+        lua_script = """
+        -- Update workflow state
+        redis.call('hset', KEYS[1],
+            'status', ARGV[1],
+            'updated_at', ARGV[2])
+
+        -- Remove from all possible status indices
+        for i=2,#KEYS-1 do
+            redis.call('zrem', KEYS[i], ARGV[3])
+        end
+
+        -- Add to waiting index
+        redis.call('zadd', KEYS[2], ARGV[4], ARGV[3])
+
+        return 1
+        """
+
+        waiting_key = f"{{shard:{shard}}}:workflows:by_status:waiting"
+        running_key = f"{{shard:{shard}}}:workflows:by_status:running"
+        scheduled_key = f"{{shard:{shard}}}:workflows:by_status:scheduled"
+        completed_key = f"{{shard:{shard}}}:workflows:by_status:completed"
+        failed_key = f"{{shard:{shard}}}:workflows:by_status:failed"
+
+        try:
+            now = datetime.utcnow()
+            await self.redis.eval(
+                lua_script.encode(),
+                6,  # number of keys
+                workflow_key.encode(),
+                waiting_key.encode(),
+                running_key.encode(),
+                scheduled_key.encode(),
+                completed_key.encode(),
+                failed_key.encode(),
+                WorkflowStatus.WAITING.value.encode(),
+                now.isoformat().encode(),
+                workflow_id.encode(),
+                str(now.timestamp()).encode()
+            )
+
+            logger.info(f"Marked workflow {workflow_id} as waiting")
+
+        except Exception as e:
+            logger.error(f"Failed to mark workflow {workflow_id} as waiting: {e}")
+
+    async def mark_workflow_scheduled(self, workflow_id: str, shard: int):
+        """Mark workflow as scheduled (has timer tasks waiting)"""
+        workflow_key = default_sharding.get_workflow_key("state", workflow_id)
+
+        # Use Lua script for atomicity and index cleanup
+        lua_script = """
+        -- Update workflow state
+        redis.call('hset', KEYS[1],
+            'status', ARGV[1],
+            'updated_at', ARGV[2])
+
+        -- Remove from all possible status indices
+        for i=2,#KEYS-1 do
+            redis.call('zrem', KEYS[i], ARGV[3])
+        end
+
+        -- Add to scheduled index
+        redis.call('zadd', KEYS[2], ARGV[4], ARGV[3])
+
+        return 1
+        """
+
+        scheduled_key = f"{{shard:{shard}}}:workflows:by_status:scheduled"
+        running_key = f"{{shard:{shard}}}:workflows:by_status:running"
+        waiting_key = f"{{shard:{shard}}}:workflows:by_status:waiting"
+        completed_key = f"{{shard:{shard}}}:workflows:by_status:completed"
+        failed_key = f"{{shard:{shard}}}:workflows:by_status:failed"
+
+        try:
+            now = datetime.utcnow()
+            await self.redis.eval(
+                lua_script.encode(),
+                6,  # number of keys
+                workflow_key.encode(),
+                scheduled_key.encode(),
+                running_key.encode(),
+                waiting_key.encode(),
+                completed_key.encode(),
+                failed_key.encode(),
+                WorkflowStatus.SCHEDULED.value.encode(),
+                now.isoformat().encode(),
+                workflow_id.encode(),
+                str(now.timestamp()).encode()
+            )
+
+            logger.info(f"Marked workflow {workflow_id} as scheduled")
+
+        except Exception as e:
+            logger.error(f"Failed to mark workflow {workflow_id} as scheduled: {e}")
 
     async def get_last_workflow_activity(
         self, workflow_id: str, shard: int
@@ -620,7 +845,8 @@ class WorkflowReconciliationWorker(BaseWorker):
 
         Checks updated_at timestamp on workflow state.
         """
-        workflow_key = f"{{shard:{shard}}}:workflow:status:{workflow_id}"
+        # Bug #1: Use helper for workflow key
+        workflow_key = default_sharding.get_workflow_key("state", workflow_id)
 
         try:
             updated_at = await self.redis.hget(workflow_key.encode(), b'updated_at')

@@ -186,6 +186,34 @@ class DependencyWorker(BaseWorker):
         workflow_description = workflow_data.get('description', '')
         workflow_version = workflow_data.get('version', '1.0.0')
 
+        # Determine initial workflow status based on initial tasks
+        # Count task types in initial tasks
+        scheduled_count = sum(1 for task in initial_tasks if task.get('protocol', '').startswith('timer/'))
+        signal_count = sum(1 for task in initial_tasks if task.get('protocol', '').startswith('signal/'))
+        active_count = len(initial_tasks) - scheduled_count - signal_count
+
+        # Determine initial status intelligently
+        if active_count > 0:
+            # Has actively running tasks
+            initial_status = b"running"
+            running_count = active_count
+            waiting_count = signal_count
+        elif signal_count > 0:
+            # Only signal tasks (waiting for signals)
+            initial_status = b"waiting"
+            running_count = 0
+            waiting_count = signal_count
+        elif scheduled_count > 0:
+            # Only scheduled tasks (waiting for timers)
+            initial_status = b"scheduled"
+            running_count = 0
+            waiting_count = 0
+        else:
+            # No initial tasks (all tasks have dependencies)
+            initial_status = b"running"
+            running_count = 0
+            waiting_count = 0
+
         await self.redis.hset(
             default_sharding.get_workflow_key("state", workflow_id).encode(),
             mapping={
@@ -196,7 +224,7 @@ class DependencyWorker(BaseWorker):
                 b"version": workflow_version.encode(),
 
                 # Status fields
-                b"status": b"running",  # Actual runtime status
+                b"status": initial_status,
                 b"submitted_at": now.encode(),
                 b"started_at": now.encode(),
 
@@ -206,12 +234,23 @@ class DependencyWorker(BaseWorker):
                 b"failed_tasks": b"0",
                 b"skipped_tasks": b"0",
                 b"blocked_tasks": b"0",
+                b"waiting_tasks": str(waiting_count).encode(),
+                b"scheduled_tasks": str(scheduled_count).encode(),
                 b"pending_tasks": str(pending_count).encode(),
-                b"running_tasks": str(len(initial_tasks)).encode(),
+                b"running_tasks": str(running_count).encode(),
 
                 # Worker tracking
                 b"worker_id": self.config.worker_id.encode()
             }
+        )
+
+        # Add workflow to appropriate status index for reconciliation worker
+        shard = default_sharding.get_shard(workflow_id)
+        status_str = initial_status.decode()
+        status_index_key = f"{{shard:{shard}}}:workflows:by_status:{status_str}"
+        await self.redis.zadd(
+            status_index_key.encode(),
+            {workflow_id.encode(): datetime.utcnow().timestamp()}
         )
 
     async def handle_task_completion(self, workflow_id: str, data: Dict):
@@ -329,6 +368,9 @@ class DependencyWorker(BaseWorker):
 
         # Check if workflow is complete
         await self.check_workflow_completion(workflow_id)
+
+        # Check if workflow status should be updated based on remaining tasks
+        await self.check_workflow_status_transition(workflow_id)
 
     async def handle_task_failure(self, workflow_id: str, data: Dict):
         """Handle task failure and update consolidated state"""
@@ -521,10 +563,29 @@ class DependencyWorker(BaseWorker):
                             default_sharding.get_workflow_key("tasks:running", workflow_id).encode(),
                             task_id.encode()
                         )
-                        # Update running task count in consolidated state
+
+                        # Get workflow data to check task protocol
+                        workflow_data = await self.redis.hget(
+                            default_sharding.get_workflow_key("data", workflow_id).encode(),
+                            b"workflow"
+                        )
+
+                        # Determine which counter to update based on task protocol
+                        counter_field = b"running_tasks"
+                        if workflow_data:
+                            workflow = json.loads(workflow_data)
+                            task_def = self.find_task_by_id(workflow, task_id)
+                            if task_def:
+                                protocol = task_def.get('protocol', '')
+                                if protocol.startswith('timer/'):
+                                    counter_field = b"scheduled_tasks"
+                                elif protocol.startswith('signal/'):
+                                    counter_field = b"waiting_tasks"
+
+                        # Update appropriate task count in consolidated state
                         await self.redis.hincrby(
                             default_sharding.get_workflow_key("state", workflow_id).encode(),
-                            b"running_tasks",
+                            counter_field,
                             1
                         )
                         # Decrement pending tasks
@@ -535,6 +596,69 @@ class DependencyWorker(BaseWorker):
                         )
 
         return ready_tasks
+
+    async def check_workflow_status_transition(self, workflow_id: str):
+        """Check if workflow status should transition based on active task types"""
+        try:
+            # Get current workflow state
+            state_key = default_sharding.get_workflow_key("state", workflow_id)
+            workflow_state = await self.redis.hgetall(state_key.encode())
+
+            if not workflow_state:
+                return
+
+            current_status = workflow_state.get(b"status", b"running").decode()
+
+            # Only check transitions for running workflows
+            if current_status not in ["running", "waiting", "scheduled"]:
+                return
+
+            # Get task counts
+            running_tasks = int(workflow_state.get(b"running_tasks", b"0").decode())
+            pending_tasks = int(workflow_state.get(b"pending_tasks", b"0").decode())
+            waiting_tasks = int(workflow_state.get(b"waiting_tasks", b"0").decode())
+            scheduled_tasks = int(workflow_state.get(b"scheduled_tasks", b"0").decode())
+
+            # Determine new status based on task counts
+            new_status = None
+            if running_tasks > 0 or pending_tasks > 0:
+                # Has actively running or pending tasks
+                new_status = "running"
+            elif waiting_tasks > 0 and scheduled_tasks == 0:
+                # Only waiting (signal) tasks
+                new_status = "waiting"
+            elif scheduled_tasks > 0 and waiting_tasks == 0:
+                # Only scheduled (timer) tasks
+                new_status = "scheduled"
+            elif waiting_tasks > 0 and scheduled_tasks > 0:
+                # Mixed - prioritize scheduled
+                new_status = "scheduled"
+
+            # Update status if it changed
+            if new_status and new_status != current_status:
+                shard = default_sharding.get_shard(workflow_id)
+                logger.info(f"Transitioning workflow {workflow_id} from {current_status} to {new_status}")
+
+                # Update workflow status
+                await self.redis.hset(
+                    state_key.encode(),
+                    b"status",
+                    new_status.encode()
+                )
+
+                # Update status indices
+                old_index = f"{{shard:{shard}}}:workflows:by_status:{current_status}"
+                new_index = f"{{shard:{shard}}}:workflows:by_status:{new_status}"
+
+                # Remove from old index and add to new index
+                await self.redis.zrem(old_index.encode(), workflow_id.encode())
+                await self.redis.zadd(
+                    new_index.encode(),
+                    {workflow_id.encode(): datetime.utcnow().timestamp()}
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to check workflow status transition for {workflow_id}: {e}")
 
     async def check_workflow_completion(self, workflow_id: str):
         """Check if workflow is complete, including skipped and blocked tasks"""

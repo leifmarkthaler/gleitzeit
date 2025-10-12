@@ -615,3 +615,108 @@ async def cancel_workflow(
             "message": f"Workflow cancelled successfully, {cancelled_count} tasks were cancelled"
         }
 
+
+@router.delete("/{workflow_id}")
+async def delete_workflow(
+    workflow_id: str,
+    user: User = Depends(get_current_user_auto),
+    client_pool = Depends(get_client_pool)
+):
+    """
+    Delete a workflow and all its associated data from Redis.
+
+    This permanently removes:
+    - Workflow state
+    - Workflow data
+    - All task data
+    - Workflow from status indices
+
+    Use with caution - this operation cannot be undone.
+    """
+
+    async with client_pool.acquire_connection(user.id) as conn:
+        # Get workflow state to check if it exists
+        state_key = default_sharding.get_workflow_key("state", workflow_id)
+        workflow_state = await conn.redis.hgetall(state_key.encode())
+
+        if not workflow_state:
+            raise HTTPException(status_code=404, detail="Workflow not found")
+
+        # Get shard for cleanup operations
+        shard = default_sharding.get_shard(workflow_id)
+
+        # Get workflow status for index cleanup
+        status_bytes = workflow_state.get(b'status', b'unknown')
+        workflow_status = status_bytes.decode() if isinstance(status_bytes, bytes) else str(status_bytes)
+
+        deleted_keys = []
+
+        # 1. Delete workflow state
+        await conn.redis.delete(state_key.encode())
+        deleted_keys.append(state_key)
+
+        # 2. Delete workflow data
+        data_key = default_sharding.get_workflow_key("data", workflow_id)
+        await conn.redis.delete(data_key.encode())
+        deleted_keys.append(data_key)
+
+        # 3. Get and delete all tasks
+        tasks_key = default_sharding.get_workflow_key("tasks", workflow_id)
+        task_ids = await conn.redis.smembers(tasks_key.encode())
+
+        deleted_tasks = 0
+        for task_id_bytes in task_ids:
+            task_id = task_id_bytes.decode()
+            task_state_key = default_sharding.get_task_key(task_id, workflow_id)
+            await conn.redis.delete(task_state_key.encode())
+            deleted_tasks += 1
+
+        # Delete tasks set
+        await conn.redis.delete(tasks_key.encode())
+
+        # 4. Remove from status indices (all possible statuses)
+        status_indices = ['running', 'waiting', 'completed', 'failed', 'scheduled', 'cancelled']
+        for status in status_indices:
+            index_key = f"{{shard:{shard}}}:workflows:by_status:{status}"
+            await conn.redis.zrem(index_key.encode(), workflow_id.encode())
+
+        # 5. Remove from shard indices
+        # Remove from per-shard workflow index (used by list endpoint)
+        shard_index_key = f"{{shard:{shard}}}:index:workflows"
+        await conn.redis.srem(shard_index_key.encode(), workflow_id.encode())
+
+        # Remove from workflow shard mapping (used by get_workflow_tasks)
+        await conn.redis.hdel(b"{shard:0}:index:workflow_shards", workflow_id.encode())
+
+        # 5. Delete task status sets (running, completed, pending, etc.)
+        task_status_sets = [
+            f"{{shard:{shard}}}:workflow:tasks:running:{workflow_id}",
+            f"{{shard:{shard}}}:workflow:tasks:completed:{workflow_id}",
+            f"{{shard:{shard}}}:workflow:tasks:pending:{workflow_id}",
+            f"{{shard:{shard}}}:workflow:tasks:failed:{workflow_id}",
+            f"{{shard:{shard}}}:workflow:tasks:waiting:{workflow_id}",
+            f"{{shard:{shard}}}:workflow:tasks:blocked:{workflow_id}",
+            f"{{shard:{shard}}}:workflow:tasks:skipped:{workflow_id}"
+        ]
+
+        for set_key in task_status_sets:
+            await conn.redis.delete(set_key.encode())
+
+        # 6. Delete any streams related to this workflow
+        stream_keys = [
+            default_sharding.get_stream_key("workflow:completed", workflow_id),
+            default_sharding.get_stream_key("workflow:failed", workflow_id),
+            default_sharding.get_stream_key("workflow:cancelled", workflow_id),
+        ]
+
+        for stream_key in stream_keys:
+            await conn.redis.delete(stream_key.encode())
+
+        return {
+            "workflow_id": workflow_id,
+            "status": "deleted",
+            "deleted_tasks": deleted_tasks,
+            "deleted_keys": len(deleted_keys) + deleted_tasks + len(task_status_sets) + len(stream_keys),
+            "message": f"Workflow and all associated data deleted successfully"
+        }
+

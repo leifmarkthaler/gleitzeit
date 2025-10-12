@@ -1,0 +1,19 @@
+[2025-10-12 21:26:07] [STDERR] INFO:     Started server process [4377]
+[2025-10-12 21:26:07] [STDERR] INFO:     Waiting for application startup.
+[2025-10-12 21:26:07] [STDERR] INFO:     Application startup complete.
+[2025-10-12 21:26:07] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-12 21:26:09] [STDOUT] INFO:     127.0.0.1:58278 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:26:20] [STDOUT] INFO:     127.0.0.1:58285 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:26:31] [STDOUT] INFO:     127.0.0.1:58288 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:26:42] [STDOUT] INFO:     127.0.0.1:58299 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:26:51] [STDOUT] INFO:     127.0.0.1:58314 - "DELETE /api/workflows/8f7e83e8-6183-4689-9b5f-97b7f096a88a HTTP/1.1" 404 Not Found
+[2025-10-12 21:26:53] [STDOUT] INFO:     127.0.0.1:58325 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:27:04] [STDOUT] INFO:     127.0.0.1:58339 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:27:15] [STDOUT] INFO:     127.0.0.1:58352 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:27:17] [STDOUT] INFO:     127.0.0.1:58356 - "GET /docs HTTP/1.1" 200 OK
+[2025-10-12 21:27:26] [STDOUT] INFO:     127.0.0.1:58377 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:27:37] [STDOUT] INFO:     127.0.0.1:58383 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-12 21:27:38] [STDERR] INFO:     Shutting down
+[2025-10-12 21:27:38] [STDERR] INFO:     Waiting for application shutdown.
+[2025-10-12 21:27:38] [STDERR] INFO:     Application shutdown complete.
+[2025-10-12 21:27:38] [STDERR] INFO:     Finished server process [4377]

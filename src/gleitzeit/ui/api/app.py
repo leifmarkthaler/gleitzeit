@@ -695,6 +695,34 @@ async def api_submit_workflow(request: Request):
         )
 
 
+@app.post("/api/workflows/{workflow_id}/cancel")
+async def api_cancel_workflow(workflow_id: str):
+    """Proxy to workflow cancellation API"""
+    try:
+        response = await client.post(f"/workflows/{workflow_id}/cancel")
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to cancel workflow: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+
+@app.delete("/api/workflows/{workflow_id}")
+async def api_delete_workflow(workflow_id: str):
+    """Proxy to workflow deletion API"""
+    try:
+        response = await client.delete(f"/workflows/{workflow_id}")
+        return response.json()
+    except Exception as e:
+        logger.error(f"Failed to delete workflow: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": str(e)}
+        )
+
+
 @app.websocket("/ws/updates")
 async def websocket_updates(websocket: WebSocket):
     """WebSocket endpoint for real-time updates"""

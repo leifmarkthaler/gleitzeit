@@ -51,6 +51,7 @@
                         {% elif status in ['running', 'submitted'] %}
                         <button onclick="cancelWorkflow('{{ workflow['workflow_id'] }}')" class="btn btn-sm btn-danger">Cancel</button>
                         {% endif %}
+                        <button onclick="deleteWorkflow('{{ workflow['workflow_id'] }}')" class="btn btn-sm btn-danger">Delete</button>
                     </td>
                 </tr>
                 {% else %}
@@ -225,6 +226,29 @@ function cancelWorkflow(workflowId) {
         })
         .catch(error => {
             alert('Error cancelling workflow: ' + error);
+        });
+    }
+}
+
+function deleteWorkflow(workflowId) {
+    if (confirm('Are you sure you want to delete this workflow? This action cannot be undone.')) {
+        fetch(`/api/workflows/${workflowId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'deleted') {
+                alert('Workflow deleted successfully');
+                location.reload();
+            } else {
+                alert('Failed to delete workflow: ' + (data.detail || data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            alert('Error deleting workflow: ' + error);
         });
     }
 }
