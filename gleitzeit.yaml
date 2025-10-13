@@ -209,8 +209,12 @@ logging:
   # Enable Redis-backed queryable logging
   redis_logging_enabled: true
 
+  # Enable file-based logging (stdout/stderr to log files)
+  # When disabled, only Redis logging is used
+  # Useful for debugging or when Redis logging is not sufficient
+  file_logging_enabled: false
+
   # Minimum level to log to Redis (DEBUG, INFO, WARNING, ERROR)
-  # File logging always gets all levels
   redis_log_level: INFO
 
   # Sampling rates (0.0 - 1.0) to control Redis memory usage

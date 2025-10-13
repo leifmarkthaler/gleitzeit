@@ -77,6 +77,7 @@ def check_docker_compose_available() -> bool:
 @click.option('--workers-only', is_flag=True, help='Run only workers, no API/UI')
 @click.option('--redis-url', envvar='REDIS_URL', help='Redis URL (also via REDIS_URL env var)')
 @click.option('--config-url', envvar='CONFIG_URL', help='Remote config URL (http/s3) or path')
+@click.option('--log-level', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR'], case_sensitive=False), help='Override log level (DEBUG, INFO, WARNING, ERROR)')
 def serve_unified(
     config_file: str,
     api_host: Optional[str],
@@ -96,7 +97,8 @@ def serve_unified(
     api_only: bool,
     workers_only: bool,
     redis_url: Optional[str],
-    config_url: Optional[str]
+    config_url: Optional[str],
+    log_level: Optional[str]
 ):
     """
     Start Gleitzeit services (API, UI, workers).
@@ -238,7 +240,8 @@ def serve_unified(
             api_only=api_only,
             workers_only=workers_only,
             redis_url=redis_url,
-            port_offset=port_offset
+            port_offset=port_offset,
+            log_level=log_level
         ))
 
 
@@ -254,11 +257,24 @@ async def serve_native_async(
     api_only: bool = False,
     workers_only: bool = False,
     redis_url: Optional[str] = None,
-    port_offset: int = 0
+    port_offset: int = 0,
+    log_level: Optional[str] = None
 ):
     """Native serve using AsyncProcessManager (fixes subprocess deadlock)"""
     from ..core.async_process_manager import AsyncServiceManager
     import signal
+    import logging
+
+    # Apply log level override if provided
+    if log_level:
+        log_level_upper = log_level.upper()
+        numeric_level = getattr(logging, log_level_upper, None)
+        if numeric_level:
+            # Set root logger level
+            logging.getLogger().setLevel(numeric_level)
+            # Also set for gleitzeit logger
+            logging.getLogger('gleitzeit').setLevel(numeric_level)
+            print(f"🔍 Log level set to {log_level_upper}")
 
     # Apply port offset
     api_port = api_port + port_offset

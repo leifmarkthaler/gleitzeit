@@ -1,0 +1,23 @@
+[2025-10-13 17:50:19] [STDERR] INFO:     Started server process [85594]
+[2025-10-13 17:50:19] [STDERR] INFO:     Waiting for application startup.
+[2025-10-13 17:50:19] [STDERR] INFO:     Application startup complete.
+[2025-10-13 17:50:19] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-13 17:50:41] [STDOUT] INFO:     127.0.0.1:59252 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:50:45] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-13 17:50:45] [STDOUT] INFO:     127.0.0.1:59252 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-13 17:50:46] [STDOUT] INFO:     127.0.0.1:59252 - "GET /workflows/4dd0c7e7-8b06-4849-bc07-25e77a9a044b HTTP/1.1" 200 OK
+[2025-10-13 17:50:46] [STDOUT] INFO:     127.0.0.1:59252 - "GET /tasks/55144b65-1a84-473e-94cb-ea3ad905d7d6 HTTP/1.1" 200 OK
+[2025-10-13 17:50:46] [STDOUT] INFO:     127.0.0.1:59252 - "GET /tasks/be83763c-4bda-4b7d-be8a-b6ae65ebcd53 HTTP/1.1" 200 OK
+[2025-10-13 17:50:47] [STDOUT] INFO:     127.0.0.1:59252 - "GET /tasks/910427af-3874-4f85-8f24-7233c4700a72 HTTP/1.1" 200 OK
+[2025-10-13 17:50:47] [STDOUT] INFO:     127.0.0.1:59252 - "GET /tasks/968e3e5e-790f-4c77-9dbd-4495c1679eeb HTTP/1.1" 404 Not Found
+[2025-10-13 17:50:47] [STDOUT] INFO:     127.0.0.1:59252 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=4dd0c7e7-8b06-4849-bc07-25e77a9a044b HTTP/1.1" 200 OK
+[2025-10-13 17:50:47] [STDOUT] INFO:     127.0.0.1:59260 - "GET /workflows/4dd0c7e7-8b06-4849-bc07-25e77a9a044b/events HTTP/1.1" 200 OK
+[2025-10-13 17:50:47] [STDOUT] INFO:     127.0.0.1:59261 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:50:57] [STDOUT] INFO:     127.0.0.1:59273 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:51:07] [STDOUT] INFO:     127.0.0.1:59293 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:51:17] [STDOUT] INFO:     127.0.0.1:59312 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:51:27] [STDOUT] INFO:     127.0.0.1:59331 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:51:37] [STDOUT] INFO:     127.0.0.1:59354 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:51:47] [STDOUT] INFO:     127.0.0.1:59382 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:51:57] [STDOUT] INFO:     127.0.0.1:59394 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:52:07] [STDOUT] INFO:     127.0.0.1:59411 - "GET /health/detailed HTTP/1.1" 200 OK

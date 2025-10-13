@@ -26,3 +26,14 @@
 [2025-10-12 23:48:28] [STDERR] 2025-10-12 23:48:28,698 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: bab95d05-39e0-457f-bb65-d8b13db505bb from workflow 5ee31336-d37c-48c8-b592-5c625abcc838
 [2025-10-12 23:48:28] [STDERR] 2025-10-12 23:48:28,698 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: bab95d05-39e0-457f-bb65-d8b13db505bb from workflow 5ee31336-d37c-48c8-b592-5c625abcc838
 [2025-10-12 23:48:28] [STDERR] 2025-10-12 23:48:28,699 - gleitzeit.workers.dependency_worker - INFO - Workflow 5ee31336-d37c-48c8-b592-5c625abcc838 completed successfully!
+[2025-10-13 16:46:26] [STDERR] 2025-10-13 16:46:26,964 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: 6803aa42-b809-455e-9508-1e9d6057a86d
+[2025-10-13 16:46:26] [STDERR] 2025-10-13 16:46:26,971 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task dff6103d-37ca-4473-a0eb-9ed8c742ec39 to shard 10
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,074 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: dff6103d-37ca-4473-a0eb-9ed8c742ec39 from workflow 6803aa42-b809-455e-9508-1e9d6057a86d
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,078 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task cb82e742-0738-4e12-af2b-938cfcfbab99 to shard 10
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,079 - gleitzeit.workers.dependency_worker - WARNING - Workflow 6803aa42-b809-455e-9508-1e9d6057a86d not found
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,079 - gleitzeit.workers.dependency_worker - INFO - Transitioning workflow 6803aa42-b809-455e-9508-1e9d6057a86d from running to pending (task counts: {'completed': 0, 'failed': 0, 'scheduled': 0, 'waiting': 0, 'pending': 0, 'cancelled': 0, 'paused': 0})
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,091 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: cb82e742-0738-4e12-af2b-938cfcfbab99 from workflow 6803aa42-b809-455e-9508-1e9d6057a86d
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,094 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task 3539d936-be61-4a9f-8be8-d139b0655d4f to shard 10
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,095 - gleitzeit.workers.dependency_worker - WARNING - Workflow 6803aa42-b809-455e-9508-1e9d6057a86d not found
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,132 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: dff6103d-37ca-4473-a0eb-9ed8c742ec39 from workflow 6803aa42-b809-455e-9508-1e9d6057a86d
+[2025-10-13 16:46:27] [STDERR] 2025-10-13 16:46:27,144 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: cb82e742-0738-4e12-af2b-938cfcfbab99 from workflow 6803aa42-b809-455e-9508-1e9d6057a86d

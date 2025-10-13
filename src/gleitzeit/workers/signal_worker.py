@@ -59,6 +59,9 @@ class SignalWorker(BaseWorker):
 
         self._running = True  # Important: Set running flag!
 
+        # Start heartbeat task (includes worker registration and command checking)
+        heartbeat_task = asyncio.create_task(self._heartbeat_loop())
+
         # Start leader election task
         election_task = asyncio.create_task(self._leader_election_loop())
 
@@ -67,11 +70,12 @@ class SignalWorker(BaseWorker):
 
         try:
             # Run all tasks
-            await asyncio.gather(election_task, signal_task)
+            await asyncio.gather(heartbeat_task, election_task, signal_task)
         except asyncio.CancelledError:
             logger.info("Worker cancelled")
         finally:
             # Cleanup
+            heartbeat_task.cancel()
             if self.leader_election and self.leader_election.is_leader:
                 await self.leader_election.release()
 
@@ -96,12 +100,25 @@ class SignalWorker(BaseWorker):
 
     async def _signal_processing_loop(self):
         """Process signals (only when leader)"""
+        logger.info(f"Signal processing loop started for {self.config.worker_id}")
+        iteration = 0
 
         while self._running:
             try:
+                iteration += 1
+                # Log every 20th iteration to avoid spam, but always log first few
+                if iteration <= 3 or iteration % 20 == 0:
+                    logger.info(f"Signal processing loop iteration {iteration}")
+
                 if self.leader_election and self.leader_election.is_leader:
-                    # Process workflow signal streams
-                    await self._process_workflow_signals()
+                    # Process workflow signal streams with timeout to prevent hanging
+                    try:
+                        await asyncio.wait_for(
+                            self._process_workflow_signals(),
+                            timeout=5.0
+                        )
+                    except asyncio.TimeoutError:
+                        logger.warning("Signal processing timed out after 5s, continuing")
 
                     # Check for signal timeouts
                     await self._check_signal_timeouts()
@@ -109,55 +126,98 @@ class SignalWorker(BaseWorker):
                 await asyncio.sleep(self.check_interval)
 
             except Exception as e:
-                logger.error(f"Signal processing error: {e}")
+                logger.error(f"Signal processing error: {e}", exc_info=True)
                 await asyncio.sleep(1)
 
+        logger.info(f"Signal processing loop ended for {self.config.worker_id}")
+
     async def _process_workflow_signals(self):
-        """Process signals for all workflows"""
-        # Scan for workflows with signal streams
-        workflow_keys = []
-        # Scan across all shards for workflow signal streams
-        for shard in range(default_sharding.num_shards):
-            pattern = f"{{shard:{shard}}}:workflow:signals:*"
-            async for key in self.redis.scan_iter(pattern.encode()):
-                workflow_keys.append(key)
+        """Process signals using global registry - eliminates race conditions"""
+        try:
+            # Get all pending signals from global registry
+            registry_key = default_sharding.get_global_key("signal:registry")
+            registry_entries = await self.redis.smembers(registry_key)
 
-        if not workflow_keys:
-            return
+            if not registry_entries:
+                return
 
-        for workflow_key in workflow_keys:
-            # Extract workflow_id from key
-            workflow_id = workflow_key.decode().split(":")[-1]
+            logger.info(f"SignalWorker found {len(registry_entries)} signals in global registry")
 
-            # Ensure consumer group exists for this stream
-            try:
-                await self.redis.xgroup_create(workflow_key, "signal-workers", id="0")
-            except:
-                # Group already exists
-                pass
+            # Process each registry entry: "workflow_id:signal_name"
+            for entry in registry_entries:
+                try:
+                    entry_str = entry.decode() if isinstance(entry, bytes) else entry
+                    workflow_id, signal_name = entry_str.split(":", 1)
 
-            # Read pending signals from workflow stream
-            messages = await self.redis.xreadgroup(
-                "signal-workers",
-                self.config.worker_id,
-                {workflow_key: b">"},  # Read new messages only
-                count=10,
-                block=0  # Non-blocking read
-            )
+                    logger.info(f"Processing registry entry: workflow={workflow_id}, signal={signal_name}")
 
-            if not messages:
-                continue
+                    # Check if there are any waiters for this signal
+                    waiting_key = default_sharding.get_signal_key("waiters", workflow_id, signal_name)
+                    waiting_tasks = await self.redis.smembers(waiting_key)
 
-            # Process each signal - messages is a list of tuples
-            for stream_key, stream_messages in messages:
-                for msg_id, signal_data in stream_messages:
+                    if not waiting_tasks:
+                        # No waiters yet, keep signal in registry for future processing
+                        logger.info(f"No waiters for signal {signal_name} in workflow {workflow_id} - keeping in registry")
+                        continue
+
+                    logger.info(f"Found {len(waiting_tasks)} waiting tasks for signal {signal_name}")
+
+                    # Get signal data from workflow stream
+                    workflow_stream_key = default_sharding.get_all_keys_for_workflow(workflow_id)["workflow_signals"]
+
+                    # Ensure consumer group exists for this stream
                     try:
-                        await self._handle_signal(workflow_id, msg_id, signal_data)
+                        await self.redis.xgroup_create(workflow_stream_key, "signal-workers", id="0")
+                    except Exception:
+                        # Group already exists - this is normal
+                        pass
 
-                        # ACK the signal message
-                        await self.redis.xack(workflow_key, "signal-workers", msg_id)
-                    except Exception as e:
-                        logger.error(f"Error processing signal {msg_id}: {e}")
+                    # Read messages from workflow stream to find this signal
+                    messages = await self.redis.xreadgroup(
+                        "signal-workers",
+                        self.config.worker_id,
+                        {workflow_stream_key: b">"},  # Read new messages only
+                        count=100,  # Read more to find matching signal
+                        block=0  # Non-blocking read
+                    )
+
+                    if not messages:
+                        logger.info(f"No messages in stream for workflow {workflow_id} - signal may have been processed")
+                        # Remove from registry since we have waiters but no signal in stream
+                        await self.redis.srem(registry_key, entry)
+                        continue
+
+                    # Process each message looking for matching signal name
+                    signal_found = False
+                    for stream_key, stream_messages in messages:
+                        for msg_id, signal_data in stream_messages:
+                            msg_signal_name = signal_data.get(b"signal", b"").decode()
+
+                            if msg_signal_name == signal_name:
+                                # Found matching signal - process it
+                                logger.info(f"Found matching signal {signal_name} in stream (msg_id={msg_id})")
+                                await self._handle_signal(workflow_id, msg_id, signal_data)
+
+                                # ACK the signal message
+                                await self.redis.xack(workflow_stream_key, "signal-workers", msg_id)
+
+                                # Remove from registry since it's been processed
+                                await self.redis.srem(registry_key, entry)
+                                signal_found = True
+                                break
+
+                        if signal_found:
+                            break
+
+                    if not signal_found:
+                        logger.info(f"Signal {signal_name} not found in stream messages for workflow {workflow_id}")
+
+                except Exception as e:
+                    logger.error(f"Error processing registry entry {entry}: {e}", exc_info=True)
+                    continue
+
+        except Exception as e:
+            logger.error(f"Error processing signal registry: {e}", exc_info=True)
 
     async def _handle_signal(self, workflow_id: str, msg_id: str, signal_data: Dict):
         """Handle a single signal"""

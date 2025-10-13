@@ -158,3 +158,159 @@
 [2025-10-12 23:48:26] [STDERR]   ]
 [2025-10-12 23:48:26] [STDERR] }
 [2025-10-12 23:48:26] [STDERR] 2025-10-12 23:48:26,597 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow 5ee31336-d37c-48c8-b592-5c625abcc838 loaded and submitted to shard 14 with indexes
+[2025-10-13 16:46:26] [STDERR] 2025-10-13 16:46:26,958 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow 6803aa42-b809-455e-9508-1e9d6057a86d from inline
+[2025-10-13 16:46:26] [STDERR] 2025-10-13 16:46:26,961 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-10-13 16:46:26] [STDERR]   "name": "Signal Communication Example",
+[2025-10-13 16:46:26] [STDERR]   "tasks": [
+[2025-10-13 16:46:26] [STDERR]     {
+[2025-10-13 16:46:26] [STDERR]       "id": "initialize",
+[2025-10-13 16:46:26] [STDERR]       "type": "python",
+[2025-10-13 16:46:26] [STDERR]       "params": {
+[2025-10-13 16:46:26] [STDERR]         "code": "print(\"Starting workflow\")\nresult = {\"ready\": True}\n"
+[2025-10-13 16:46:26] [STDERR]       }
+[2025-10-13 16:46:26] [STDERR]     },
+[2025-10-13 16:46:26] [STDERR]     {
+[2025-10-13 16:46:26] [STDERR]       "id": "send_signal",
+[2025-10-13 16:46:26] [STDERR]       "type": "signal",
+[2025-10-13 16:46:26] [STDERR]       "method": "signal/send",
+[2025-10-13 16:46:26] [STDERR]       "depends_on": [
+[2025-10-13 16:46:26] [STDERR]         "initialize"
+[2025-10-13 16:46:26] [STDERR]       ],
+[2025-10-13 16:46:26] [STDERR]       "params": {
+[2025-10-13 16:46:26] [STDERR]         "signal_name": "data-ready",
+[2025-10-13 16:46:26] [STDERR]         "payload": {
+[2025-10-13 16:46:26] [STDERR]           "message": "Data is ready for processing",
+[2025-10-13 16:46:26] [STDERR]           "priority": "high"
+[2025-10-13 16:46:26] [STDERR]         }
+[2025-10-13 16:46:26] [STDERR]       }
+[2025-10-13 16:46:26] [STDERR]     },
+[2025-10-13 16:46:26] [STDERR]     {
+[2025-10-13 16:46:26] [STDERR]       "id": "wait_for_signal",
+[2025-10-13 16:46:26] [STDERR]       "type": "signal",
+[2025-10-13 16:46:26] [STDERR]       "method": "signal/wait",
+[2025-10-13 16:46:26] [STDERR]       "depends_on": [
+[2025-10-13 16:46:26] [STDERR]         "send_signal"
+[2025-10-13 16:46:26] [STDERR]       ],
+[2025-10-13 16:46:26] [STDERR]       "params": {
+[2025-10-13 16:46:26] [STDERR]         "signal_name": "data-ready",
+[2025-10-13 16:46:26] [STDERR]         "timeout": 30
+[2025-10-13 16:46:26] [STDERR]       }
+[2025-10-13 16:46:26] [STDERR]     },
+[2025-10-13 16:46:26] [STDERR]     {
+[2025-10-13 16:46:26] [STDERR]       "id": "process",
+[2025-10-13 16:46:26] [STDERR]       "type": "python",
+[2025-10-13 16:46:26] [STDERR]       "depends_on": [
+[2025-10-13 16:46:26] [STDERR]         "wait_for_signal"
+[2025-10-13 16:46:26] [STDERR]       ],
+[2025-10-13 16:46:26] [STDERR]       "params": {
+[2025-10-13 16:46:26] [STDERR]         "code": "print(\"Signal received, processing data\")\nresult = {\"processed\": True}"
+[2025-10-13 16:46:26] [STDERR]       }
+[2025-10-13 16:46:26] [STDERR]     }
+[2025-10-13 16:46:26] [STDERR]   ],
+[2025-10-13 16:46:26] [STDERR]   "workflow_id": "6803aa42-b809-455e-9508-1e9d6057a86d"
+[2025-10-13 16:46:26] [STDERR] }
+[2025-10-13 16:46:26] [STDERR] 2025-10-13 16:46:26,962 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-10-13 16:46:26] [STDERR]   "id": "6803aa42-b809-455e-9508-1e9d6057a86d",
+[2025-10-13 16:46:26] [STDERR]   "name": "Signal Communication Example",
+[2025-10-13 16:46:26] [STDERR]   "description": "",
+[2025-10-13 16:46:26] [STDERR]   "version": "1.0.0",
+[2025-10-13 16:46:26] [STDERR]   "created_at": "2025-10-13T14:46:26.961804",
+[2025-10-13 16:46:26] [STDERR]   "tasks": [
+[2025-10-13 16:46:26] [STDERR]     {
+[2025-10-13 16:46:26] [STDERR]       "id": "dff6103d-37ca-4473-a0eb-9ed8c742ec39",
+[2025-10-13 16:46:26] [STDERR]       "workflow_id": "6803aa42-b809-455e-9508-1e9d6057a86d",
+[2025-10-13 16:46:26] [STDERR]       "name": "dff6103d-37ca-4473-a0eb-9ed8c742ec39",
+[2025-10-13 16:46:26] [STDERR]       "description": "",
+[2025-10-13 16:46:26] [STDERR]       "protocol": "python/v1",
+[2025-10-13 16:46:26] [STDERR]       "method": "python/execute",
+[2025-10-13 16:46:26] [STDERR]       "params": {
+[2025-10-13 16:46:26] [STDERR]         "code": "print(\"Starting workflow\")\nresult = {\"ready\": True}\n"
+[2025-10-13 16:46:26] [STDERR]       },
+[2025-10-13 16:46:26] [STDERR]       "dependencies": [],
+[2025-10-13 16:46:26] [STDERR]       "timeout": 300,
+[2025-10-13 16:46:26] [STDERR]       "retry": {
+[2025-10-13 16:46:26] [STDERR]         "max_retries": 2,
+[2025-10-13 16:46:26] [STDERR]         "strategy": "exponential_jitter",
+[2025-10-13 16:46:26] [STDERR]         "base_delay": 1.0,
+[2025-10-13 16:46:26] [STDERR]         "max_delay": 30.0,
+[2025-10-13 16:46:26] [STDERR]         "jitter": true,
+[2025-10-13 16:46:26] [STDERR]         "multiplier": 2.0
+[2025-10-13 16:46:26] [STDERR]       }
+[2025-10-13 16:46:26] [STDERR]     },
+[2025-10-13 16:46:26] [STDERR]     {
+[2025-10-13 16:46:26] [STDERR]       "id": "cb82e742-0738-4e12-af2b-938cfcfbab99",
+[2025-10-13 16:46:26] [STDERR]       "workflow_id": "6803aa42-b809-455e-9508-1e9d6057a86d",
+[2025-10-13 16:46:26] [STDERR]       "name": "cb82e742-0738-4e12-af2b-938cfcfbab99",
+[2025-10-13 16:46:26] [STDERR]       "description": "",
+[2025-10-13 16:46:26] [STDERR]       "protocol": "signal/v1",
+[2025-10-13 16:46:26] [STDERR]       "method": "signal/send",
+[2025-10-13 16:46:26] [STDERR]       "params": {
+[2025-10-13 16:46:26] [STDERR]         "signal_name": "data-ready",
+[2025-10-13 16:46:26] [STDERR]         "payload": {
+[2025-10-13 16:46:26] [STDERR]           "message": "Data is ready for processing",
+[2025-10-13 16:46:26] [STDERR]           "priority": "high"
+[2025-10-13 16:46:26] [STDERR]         }
+[2025-10-13 16:46:26] [STDERR]       },
+[2025-10-13 16:46:26] [STDERR]       "dependencies": [
+[2025-10-13 16:46:26] [STDERR]         "dff6103d-37ca-4473-a0eb-9ed8c742ec39"
+[2025-10-13 16:46:26] [STDERR]       ],
+[2025-10-13 16:46:26] [STDERR]       "timeout": 300,
+[2025-10-13 16:46:26] [STDERR]       "retry": {
+[2025-10-13 16:46:26] [STDERR]         "max_retries": 2,
+[2025-10-13 16:46:26] [STDERR]         "strategy": "exponential_jitter",
+[2025-10-13 16:46:26] [STDERR]         "base_delay": 1.0,
+[2025-10-13 16:46:26] [STDERR]         "max_delay": 30.0,
+[2025-10-13 16:46:26] [STDERR]         "jitter": true,
+[2025-10-13 16:46:26] [STDERR]         "multiplier": 2.0
+[2025-10-13 16:46:26] [STDERR]       }
+[2025-10-13 16:46:26] [STDERR]     },
+[2025-10-13 16:46:26] [STDERR]     {
+[2025-10-13 16:46:26] [STDERR]       "id": "3539d936-be61-4a9f-8be8-d139b0655d4f",
+[2025-10-13 16:46:26] [STDERR]       "workflow_id": "6803aa42-b809-455e-9508-1e9d6057a86d",
+[2025-10-13 16:46:26] [STDERR]       "name": "3539d936-be61-4a9f-8be8-d139b0655d4f",
+[2025-10-13 16:46:26] [STDERR]       "description": "",
+[2025-10-13 16:46:26] [STDERR]       "protocol": "signal/v1",
+[2025-10-13 16:46:26] [STDERR]       "method": "signal/wait",
+[2025-10-13 16:46:26] [STDERR]       "params": {
+[2025-10-13 16:46:26] [STDERR]         "signal_name": "data-ready",
+[2025-10-13 16:46:26] [STDERR]         "timeout": 30
+[2025-10-13 16:46:26] [STDERR]       },
+[2025-10-13 16:46:26] [STDERR]       "dependencies": [
+[2025-10-13 16:46:26] [STDERR]         "cb82e742-0738-4e12-af2b-938cfcfbab99"
+[2025-10-13 16:46:26] [STDERR]       ],
+[2025-10-13 16:46:26] [STDERR]       "timeout": 300,
+[2025-10-13 16:46:26] [STDERR]       "retry": {
+[2025-10-13 16:46:26] [STDERR]         "max_retries": 2,
+[2025-10-13 16:46:26] [STDERR]         "strategy": "exponential_jitter",
+[2025-10-13 16:46:26] [STDERR]         "base_delay": 1.0,
+[2025-10-13 16:46:26] [STDERR]         "max_delay": 30.0,
+[2025-10-13 16:46:26] [STDERR]         "jitter": true,
+[2025-10-13 16:46:26] [STDERR]         "multiplier": 2.0
+[2025-10-13 16:46:26] [STDERR]       }
+[2025-10-13 16:46:26] [STDERR]     },
+[2025-10-13 16:46:26] [STDERR]     {
+[2025-10-13 16:46:26] [STDERR]       "id": "892c037a-f664-438e-b3f8-7da3f80fc749",
+[2025-10-13 16:46:26] [STDERR]       "workflow_id": "6803aa42-b809-455e-9508-1e9d6057a86d",
+[2025-10-13 16:46:26] [STDERR]       "name": "892c037a-f664-438e-b3f8-7da3f80fc749",
+[2025-10-13 16:46:26] [STDERR]       "description": "",
+[2025-10-13 16:46:26] [STDERR]       "protocol": "python/v1",
+[2025-10-13 16:46:26] [STDERR]       "method": "python/execute",
+[2025-10-13 16:46:26] [STDERR]       "params": {
+[2025-10-13 16:46:26] [STDERR]         "code": "print(\"Signal received, processing data\")\nresult = {\"processed\": True}"
+[2025-10-13 16:46:26] [STDERR]       },
+[2025-10-13 16:46:26] [STDERR]       "dependencies": [
+[2025-10-13 16:46:26] [STDERR]         "3539d936-be61-4a9f-8be8-d139b0655d4f"
+[2025-10-13 16:46:26] [STDERR]       ],
+[2025-10-13 16:46:26] [STDERR]       "timeout": 300,
+[2025-10-13 16:46:26] [STDERR]       "retry": {
+[2025-10-13 16:46:26] [STDERR]         "max_retries": 2,
+[2025-10-13 16:46:26] [STDERR]         "strategy": "exponential_jitter",
+[2025-10-13 16:46:26] [STDERR]         "base_delay": 1.0,
+[2025-10-13 16:46:26] [STDERR]         "max_delay": 30.0,
+[2025-10-13 16:46:26] [STDERR]         "jitter": true,
+[2025-10-13 16:46:26] [STDERR]         "multiplier": 2.0
+[2025-10-13 16:46:26] [STDERR]       }
+[2025-10-13 16:46:26] [STDERR]     }
+[2025-10-13 16:46:26] [STDERR]   ]
+[2025-10-13 16:46:26] [STDERR] }
+[2025-10-13 16:46:26] [STDERR] 2025-10-13 16:46:26,968 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow 6803aa42-b809-455e-9508-1e9d6057a86d loaded and submitted to shard 10 with indexes

@@ -1,0 +1,178 @@
+[2025-10-13 17:15:48] [STDERR] INFO:     Started server process [68957]
+[2025-10-13 17:15:48] [STDERR] INFO:     Waiting for application startup.
+[2025-10-13 17:15:48] [STDERR] INFO:     Application startup complete.
+[2025-10-13 17:15:48] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-13 17:15:52] [STDOUT] INFO:     127.0.0.1:57987 - "GET /system/metrics HTTP/1.1" 200 OK
+[2025-10-13 17:15:52] [STDOUT] INFO:     127.0.0.1:57987 - "GET /system/status HTTP/1.1" 200 OK
+[2025-10-13 17:15:52] [STDOUT] INFO:     127.0.0.1:57987 - "GET /system/workers HTTP/1.1" 200 OK
+[2025-10-13 17:15:52] [STDOUT] INFO:     127.0.0.1:57987 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:16:02] [STDOUT] INFO:     127.0.0.1:58023 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:16:12] [STDOUT] INFO:     127.0.0.1:58050 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:16:22] [STDOUT] INFO:     127.0.0.1:58069 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:16:32] [STDOUT] INFO:     127.0.0.1:58077 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:16:42] [STDOUT] INFO:     127.0.0.1:58092 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:16:52] [STDERR] INFO:     127.0.0.1:58111 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:16:52] [STDERR] INFO:     connection open
+[2025-10-13 17:16:52] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-13 17:16:52] [STDOUT] INFO:     127.0.0.1:58112 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:16:52] [STDOUT] INFO:     127.0.0.1:58114 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:16:55] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:16:55] [STDERR] INFO:     connection closed
+[2025-10-13 17:16:55] [STDOUT] INFO:     127.0.0.1:58112 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:16:58] [STDOUT] INFO:     127.0.0.1:58112 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-13 17:17:00] [STDOUT] INFO:     127.0.0.1:58112 - "GET /workflows/36b363ab-e7bb-4747-8d00-ed5e4197bc37 HTTP/1.1" 200 OK
+[2025-10-13 17:17:00] [STDOUT] INFO:     127.0.0.1:58112 - "GET /tasks/4b5b8132-471f-4a04-ace9-b046952ffa61 HTTP/1.1" 200 OK
+[2025-10-13 17:17:00] [STDOUT] INFO:     127.0.0.1:58112 - "GET /tasks/6728cc74-61b0-4ba1-a073-8ea6adcbc902 HTTP/1.1" 200 OK
+[2025-10-13 17:17:00] [STDOUT] INFO:     127.0.0.1:58112 - "GET /tasks/b3eef6b3-d568-4ddc-bcb7-ff325c54bea8 HTTP/1.1" 200 OK
+[2025-10-13 17:17:00] [STDOUT] INFO:     127.0.0.1:58112 - "GET /tasks/47824f13-58d2-4d24-bf00-19c4ab3a919e HTTP/1.1" 404 Not Found
+[2025-10-13 17:17:00] [STDOUT] INFO:     127.0.0.1:58112 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=36b363ab-e7bb-4747-8d00-ed5e4197bc37 HTTP/1.1" 200 OK
+[2025-10-13 17:17:00] [STDOUT] INFO:     127.0.0.1:58130 - "GET /workflows/36b363ab-e7bb-4747-8d00-ed5e4197bc37/events HTTP/1.1" 200 OK
+[2025-10-13 17:17:00] [STDOUT] INFO:     127.0.0.1:58129 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:01] [STDERR] INFO:     127.0.0.1:58134 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:17:01] [STDERR] INFO:     connection open
+[2025-10-13 17:17:01] [STDOUT] INFO:     127.0.0.1:58112 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:17:01] [STDOUT] INFO:     127.0.0.1:58130 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:11] [STDOUT] INFO:     127.0.0.1:58154 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:13] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:17:13] [STDERR] INFO:     connection closed
+[2025-10-13 17:17:13] [STDERR] INFO:     127.0.0.1:58160 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:17:13] [STDERR] INFO:     connection open
+[2025-10-13 17:17:13] [STDOUT] INFO:     127.0.0.1:58162 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:17:13] [STDOUT] INFO:     127.0.0.1:58154 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:13] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:17:13] [STDERR] INFO:     connection closed
+[2025-10-13 17:17:13] [STDERR] INFO:     127.0.0.1:58165 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:17:13] [STDERR] INFO:     connection open
+[2025-10-13 17:17:13] [STDOUT] INFO:     127.0.0.1:58162 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:17:13] [STDOUT] INFO:     127.0.0.1:58154 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:14] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:17:14] [STDERR] INFO:     connection closed
+[2025-10-13 17:17:14] [STDERR] INFO:     127.0.0.1:58168 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:17:14] [STDERR] INFO:     connection open
+[2025-10-13 17:17:14] [STDOUT] INFO:     127.0.0.1:58162 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:17:14] [STDOUT] INFO:     127.0.0.1:58154 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:14] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:17:14] [STDERR] INFO:     connection closed
+[2025-10-13 17:17:14] [STDERR] INFO:     127.0.0.1:58171 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:17:14] [STDERR] INFO:     connection open
+[2025-10-13 17:17:14] [STDOUT] INFO:     127.0.0.1:58162 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:17:14] [STDOUT] INFO:     127.0.0.1:58154 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:24] [STDOUT] INFO:     127.0.0.1:58186 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:34] [STDOUT] INFO:     127.0.0.1:58205 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:44] [STDOUT] INFO:     127.0.0.1:58215 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:17:54] [STDOUT] INFO:     127.0.0.1:58219 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:18:04] [STDOUT] INFO:     127.0.0.1:58232 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:18:14] [STDOUT] INFO:     127.0.0.1:58243 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:18:24] [STDOUT] INFO:     127.0.0.1:58257 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:18:30] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:18:30] [STDERR] INFO:     connection closed
+[2025-10-13 17:18:30] [STDERR] INFO:     127.0.0.1:58264 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:18:30] [STDERR] INFO:     connection open
+[2025-10-13 17:18:30] [STDOUT] INFO:     127.0.0.1:58268 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:18:30] [STDOUT] INFO:     127.0.0.1:58266 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:18:40] [STDOUT] INFO:     127.0.0.1:58287 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:18:50] [STDOUT] INFO:     127.0.0.1:58303 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:19:00] [STDOUT] INFO:     127.0.0.1:58321 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:19:10] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:19:10] [STDERR] INFO:     connection closed
+[2025-10-13 17:19:10] [STDERR] INFO:     127.0.0.1:58345 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:19:10] [STDERR] INFO:     connection open
+[2025-10-13 17:19:10] [STDOUT] INFO:     127.0.0.1:58349 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:19:10] [STDOUT] INFO:     127.0.0.1:58347 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:19:12] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:19:12] [STDERR] INFO:     connection closed
+[2025-10-13 17:19:12] [STDOUT] INFO:     127.0.0.1:58347 - "GET /workflows/36b363ab-e7bb-4747-8d00-ed5e4197bc37 HTTP/1.1" 200 OK
+[2025-10-13 17:19:12] [STDOUT] INFO:     127.0.0.1:58347 - "GET /tasks/4b5b8132-471f-4a04-ace9-b046952ffa61 HTTP/1.1" 200 OK
+[2025-10-13 17:19:12] [STDOUT] INFO:     127.0.0.1:58347 - "GET /tasks/6728cc74-61b0-4ba1-a073-8ea6adcbc902 HTTP/1.1" 200 OK
+[2025-10-13 17:19:12] [STDOUT] INFO:     127.0.0.1:58347 - "GET /tasks/b3eef6b3-d568-4ddc-bcb7-ff325c54bea8 HTTP/1.1" 200 OK
+[2025-10-13 17:19:12] [STDOUT] INFO:     127.0.0.1:58347 - "GET /tasks/47824f13-58d2-4d24-bf00-19c4ab3a919e HTTP/1.1" 404 Not Found
+[2025-10-13 17:19:12] [STDOUT] INFO:     127.0.0.1:58347 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=36b363ab-e7bb-4747-8d00-ed5e4197bc37 HTTP/1.1" 200 OK
+[2025-10-13 17:19:12] [STDOUT] INFO:     127.0.0.1:58349 - "GET /workflows/36b363ab-e7bb-4747-8d00-ed5e4197bc37/events HTTP/1.1" 200 OK
+[2025-10-13 17:19:12] [STDOUT] INFO:     127.0.0.1:58353 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:19:22] [STDOUT] INFO:     127.0.0.1:58365 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:19:32] [STDOUT] INFO:     127.0.0.1:58386 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:19:42] [STDOUT] INFO:     127.0.0.1:58403 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:19:52] [STDOUT] INFO:     127.0.0.1:58412 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:20:02] [STDOUT] INFO:     127.0.0.1:58437 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:20:12] [STDOUT] INFO:     127.0.0.1:58465 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:20:22] [STDOUT] INFO:     127.0.0.1:58471 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:20:32] [STDOUT] INFO:     127.0.0.1:58486 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:20:42] [STDOUT] INFO:     127.0.0.1:58493 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:20:52] [STDOUT] INFO:     127.0.0.1:58496 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:21:02] [STDOUT] INFO:     127.0.0.1:58511 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:21:12] [STDOUT] INFO:     127.0.0.1:58514 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:21:22] [STDOUT] INFO:     127.0.0.1:58518 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:21:32] [STDOUT] INFO:     127.0.0.1:58521 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:21:42] [STDOUT] INFO:     127.0.0.1:58530 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:21:52] [STDOUT] INFO:     127.0.0.1:58541 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:22:02] [STDOUT] INFO:     127.0.0.1:58544 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:22:12] [STDOUT] INFO:     127.0.0.1:58561 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:22:22] [STDOUT] INFO:     127.0.0.1:58571 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:22:32] [STDOUT] INFO:     127.0.0.1:58580 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:22:42] [STDOUT] INFO:     127.0.0.1:58583 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:22:52] [STDOUT] INFO:     127.0.0.1:58593 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:23:02] [STDOUT] INFO:     127.0.0.1:58610 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:23:12] [STDOUT] INFO:     127.0.0.1:58620 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:23:22] [STDOUT] INFO:     127.0.0.1:58630 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:23:32] [STDOUT] INFO:     127.0.0.1:58653 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:23:42] [STDOUT] INFO:     127.0.0.1:58664 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:23:52] [STDOUT] INFO:     127.0.0.1:58668 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:24:02] [STDOUT] INFO:     127.0.0.1:58671 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:24:12] [STDOUT] INFO:     127.0.0.1:58681 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:24:22] [STDOUT] INFO:     127.0.0.1:58684 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:24:32] [STDOUT] INFO:     127.0.0.1:58687 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:24:42] [STDOUT] INFO:     127.0.0.1:58690 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:24:52] [STDOUT] INFO:     127.0.0.1:58693 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:25:02] [STDOUT] INFO:     127.0.0.1:58697 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:25:12] [STDOUT] INFO:     127.0.0.1:58700 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:25:22] [STDOUT] INFO:     127.0.0.1:58703 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:25:32] [STDOUT] INFO:     127.0.0.1:58706 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:25:42] [STDOUT] INFO:     127.0.0.1:58709 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:25:52] [STDOUT] INFO:     127.0.0.1:58712 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:26:02] [STDOUT] INFO:     127.0.0.1:58715 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:26:12] [STDOUT] INFO:     127.0.0.1:58730 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:26:22] [STDOUT] INFO:     127.0.0.1:58734 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:26:32] [STDOUT] INFO:     127.0.0.1:58737 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:26:42] [STDOUT] INFO:     127.0.0.1:58740 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:26:52] [STDOUT] INFO:     127.0.0.1:58743 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:27:02] [STDOUT] INFO:     127.0.0.1:58746 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:27:12] [STDOUT] INFO:     127.0.0.1:58750 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:27:22] [STDOUT] INFO:     127.0.0.1:58753 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:27:32] [STDOUT] INFO:     127.0.0.1:58756 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:27:42] [STDOUT] INFO:     127.0.0.1:58759 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:27:52] [STDOUT] INFO:     127.0.0.1:58762 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:28:02] [STDOUT] INFO:     127.0.0.1:58765 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:28:10] [STDERR] INFO:     127.0.0.1:58770 - "WebSocket /ws/events" [accepted]
+[2025-10-13 17:28:10] [STDERR] INFO:     connection open
+[2025-10-13 17:28:10] [STDOUT] INFO:     127.0.0.1:58772 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:28:10] [STDOUT] INFO:     127.0.0.1:58774 - "GET /workflows/list?limit=100 HTTP/1.1" 200 OK
+[2025-10-13 17:28:11] [STDERR] Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-13 17:28:11] [STDERR] INFO:     connection closed
+[2025-10-13 17:28:11] [STDOUT] INFO:     127.0.0.1:58772 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:28:21] [STDOUT] INFO:     127.0.0.1:58780 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:28:31] [STDOUT] INFO:     127.0.0.1:58783 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:28:41] [STDOUT] INFO:     127.0.0.1:58786 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:28:51] [STDOUT] INFO:     127.0.0.1:58795 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:29:01] [STDOUT] INFO:     127.0.0.1:58808 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:29:11] [STDOUT] INFO:     127.0.0.1:58815 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:29:21] [STDOUT] INFO:     127.0.0.1:58822 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:29:31] [STDOUT] INFO:     127.0.0.1:58829 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:29:41] [STDOUT] INFO:     127.0.0.1:58832 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:29:51] [STDOUT] INFO:     127.0.0.1:58849 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:30:01] [STDOUT] INFO:     127.0.0.1:58853 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:30:11] [STDOUT] INFO:     127.0.0.1:58856 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:30:21] [STDOUT] INFO:     127.0.0.1:58859 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:30:31] [STDOUT] INFO:     127.0.0.1:58862 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:30:41] [STDOUT] INFO:     127.0.0.1:58865 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:30:51] [STDOUT] INFO:     127.0.0.1:58875 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:31:01] [STDOUT] INFO:     127.0.0.1:58885 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:31:11] [STDOUT] INFO:     127.0.0.1:58901 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:31:23] [STDOUT] INFO:     127.0.0.1:58904 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:31:41] [STDOUT] INFO:     127.0.0.1:58907 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:32:23] [STDOUT] INFO:     127.0.0.1:58910 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:32:39] [STDOUT] INFO:     127.0.0.1:58914 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:33:46] [STDOUT] INFO:     127.0.0.1:58919 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:34:13] [STDOUT] INFO:     127.0.0.1:58922 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:36:27] [STDOUT] INFO:     127.0.0.1:58926 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:45:30] [STDOUT] INFO:     127.0.0.1:59019 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:49:50] [STDOUT] INFO:     127.0.0.1:59141 - "GET /health/detailed HTTP/1.1" 200 OK

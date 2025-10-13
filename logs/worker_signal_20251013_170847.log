@@ -1,0 +1,19 @@
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,812 - __main__ - INFO - Loading configuration from Redis key: worker:config:signal-async:be164670
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,816 - __main__ - INFO - Loaded config for worker signal-async
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,819 - __main__ - INFO - Worker signal-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,819 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,819 - gleitzeit.workers.signal_worker - INFO - SignalWorker initialized with atomic leader election
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,820 - signal.signal-async - INFO - Worker signal-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,820 - __main__ - INFO - Worker signal-async started successfully
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,820 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,821 - gleitzeit.workers.signal_worker - INFO - Worker signal-async starting with consumer group signal-group
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,821 - gleitzeit.workers.signal_worker - INFO - Starting atomic leader election loop for signal-async
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,821 - gleitzeit.workers.signal_worker - INFO - Signal processing loop started for signal-async
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,821 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-10-13 17:08:47] [STDERR] 2025-10-13 17:08:47,821 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-10-13 17:08:49] [STDERR] 2025-10-13 17:08:49,142 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 4 workflow signal streams to process
+[2025-10-13 17:08:49] [STDERR] 2025-10-13 17:08:49,143 - gleitzeit.workers.signal_worker - INFO - Found 1 message groups for workflow 6dff60e8-43f1-4c90-ac79-a05279abe795
+[2025-10-13 17:08:49] [STDERR] 2025-10-13 17:08:49,143 - gleitzeit.workers.signal_worker - INFO - Processing signal data-ready for workflow 6dff60e8-43f1-4c90-ac79-a05279abe795
+[2025-10-13 17:08:49] [STDERR] 2025-10-13 17:08:49,143 - gleitzeit.workers.signal_worker - INFO - Signal data-ready matched 1 tasks in workflow 6dff60e8-43f1-4c90-ac79-a05279abe795
+[2025-10-13 17:08:49] [STDERR] 2025-10-13 17:08:49,143 - gleitzeit.workers.signal_worker - INFO - Signal task 5002136a-106a-4957-ae3e-ea016ea4f854 marked as completed and event emitted to shard 6
+[2025-10-13 17:08:49] [STDERR] 2025-10-13 17:08:49,144 - gleitzeit.workers.signal_worker - INFO - Processing signal data-ready for workflow 6dff60e8-43f1-4c90-ac79-a05279abe795

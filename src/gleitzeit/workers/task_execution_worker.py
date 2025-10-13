@@ -657,7 +657,6 @@ class TaskExecutionWorker(BaseWorker):
         workflow_signals_key = default_sharding.get_workflow_key("signals", target_workflow)
 
         # Add signal to the workflow's signal stream
-        # SignalWorker scans for {shard:N}:workflow:signals:* and reads from these streams
         signal_id = await self.redis.xadd(
             workflow_signals_key.encode(),
             {
@@ -668,15 +667,21 @@ class TaskExecutionWorker(BaseWorker):
             }
         )
 
+        # CRITICAL: Also register in global signal registry for SignalWorker
+        # This eliminates race conditions - signals are discoverable immediately
+        registry_key = default_sharding.get_global_key("signal:registry")
+        registry_entry = f"{target_workflow}:{signal_name}"
+        await self.redis.sadd(registry_key, registry_entry)
+
         if target_workflow == sender_workflow_id:
             logger.info(
                 f"Emitted signal '{signal_name}' (ID: {signal_id.decode()}) "
-                f"within workflow {sender_workflow_id}"
+                f"within workflow {sender_workflow_id}, registered in global registry"
             )
         else:
             logger.info(
                 f"Emitted signal '{signal_name}' (ID: {signal_id.decode()}) "
-                f"from workflow {sender_workflow_id} to {target_workflow}"
+                f"from workflow {sender_workflow_id} to {target_workflow}, registered in global registry"
             )
 
     async def handle_task_failure(

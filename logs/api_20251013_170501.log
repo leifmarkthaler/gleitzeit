@@ -1,0 +1,42 @@
+[2025-10-13 17:05:01] [STDERR] INFO:     Started server process [62431]
+[2025-10-13 17:05:01] [STDERR] INFO:     Waiting for application startup.
+[2025-10-13 17:05:01] [STDERR] INFO:     Application startup complete.
+[2025-10-13 17:05:01] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-13 17:05:06] [STDOUT] INFO:     127.0.0.1:56978 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:05:16] [STDOUT] INFO:     127.0.0.1:57018 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:05:26] [STDOUT] INFO:     127.0.0.1:57029 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:05:36] [STDOUT] INFO:     127.0.0.1:57050 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:05:45] [STDOUT] INFO:     127.0.0.1:57068 - "POST /api/workflows/submit HTTP/1.1" 404 Not Found
+[2025-10-13 17:05:46] [STDOUT] INFO:     127.0.0.1:57080 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:05:53] [STDOUT] INFO:     127.0.0.1:57087 - "GET /health HTTP/1.1" 307 Temporary Redirect
+[2025-10-13 17:05:56] [STDOUT] INFO:     127.0.0.1:57100 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:06:06] [STDOUT] INFO:     127.0.0.1:57107 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:06:16] [STDOUT] INFO:     127.0.0.1:57120 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:06:18] [STDOUT] INFO:     127.0.0.1:57123 - "POST /api/workflows/submit HTTP/1.1" 404 Not Found
+[2025-10-13 17:06:23] [STDOUT] INFO:     127.0.0.1:57137 - "GET /docs HTTP/1.1" 200 OK
+[2025-10-13 17:06:26] [STDOUT] INFO:     127.0.0.1:57150 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:06:33] [STDOUT] INFO:     127.0.0.1:57155 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:06:35] [STDERR] Using default JWT secret key. Change this in production!
+[2025-10-13 17:06:35] [STDOUT] INFO:     127.0.0.1:57155 - "POST /workflows/submit HTTP/1.1" 200 OK
+[2025-10-13 17:06:39] [STDOUT] INFO:     127.0.0.1:57155 - "GET /workflows/6dff60e8-43f1-4c90-ac79-a05279abe795 HTTP/1.1" 200 OK
+[2025-10-13 17:06:39] [STDOUT] INFO:     127.0.0.1:57155 - "GET /tasks/d28ffd72-6577-47e5-8056-5b0f22f7b46c HTTP/1.1" 200 OK
+[2025-10-13 17:06:39] [STDOUT] INFO:     127.0.0.1:57155 - "GET /tasks/4861c73e-5b14-437e-86e8-f24eab571d33 HTTP/1.1" 200 OK
+[2025-10-13 17:06:39] [STDOUT] INFO:     127.0.0.1:57155 - "GET /tasks/5002136a-106a-4957-ae3e-ea016ea4f854 HTTP/1.1" 200 OK
+[2025-10-13 17:06:39] [STDOUT] INFO:     127.0.0.1:57155 - "GET /tasks/dfcd1797-b5ac-4c93-a03a-29218ce9ccbe HTTP/1.1" 404 Not Found
+[2025-10-13 17:06:39] [STDOUT] INFO:     127.0.0.1:57155 - "GET /system/logs/errors?limit=50&offset=0&workflow_id=6dff60e8-43f1-4c90-ac79-a05279abe795 HTTP/1.1" 200 OK
+[2025-10-13 17:06:39] [STDOUT] INFO:     127.0.0.1:57162 - "GET /workflows/6dff60e8-43f1-4c90-ac79-a05279abe795/events HTTP/1.1" 200 OK
+[2025-10-13 17:06:39] [STDOUT] INFO:     127.0.0.1:57163 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:06:49] [STDOUT] INFO:     127.0.0.1:57173 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:06:59] [STDOUT] INFO:     127.0.0.1:57192 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:07:09] [STDOUT] INFO:     127.0.0.1:57211 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:07:19] [STDOUT] INFO:     127.0.0.1:57233 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:07:29] [STDOUT] INFO:     127.0.0.1:57251 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:07:39] [STDOUT] INFO:     127.0.0.1:57272 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:07:45] [STDOUT] INFO:     127.0.0.1:57277 - "GET /system/logs/errors?limit=50&offset=0 HTTP/1.1" 200 OK
+[2025-10-13 17:07:45] [STDOUT] INFO:     127.0.0.1:57279 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:07:50] [STDOUT] INFO:     127.0.0.1:57277 - "GET /system/logs/errors?limit=1000&offset=0 HTTP/1.1" 200 OK
+[2025-10-13 17:07:55] [STDOUT] INFO:     127.0.0.1:57294 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:08:05] [STDOUT] INFO:     127.0.0.1:57305 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:08:15] [STDOUT] INFO:     127.0.0.1:57323 - "GET /system/logs/errors?limit=50&offset=0 HTTP/1.1" 200 OK
+[2025-10-13 17:08:15] [STDOUT] INFO:     127.0.0.1:57324 - "GET /health/detailed HTTP/1.1" 200 OK
+[2025-10-13 17:08:25] [STDOUT] INFO:     127.0.0.1:57339 - "GET /health/detailed HTTP/1.1" 200 OK

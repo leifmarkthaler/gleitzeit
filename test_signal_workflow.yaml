@@ -1,0 +1,24 @@
+name: signal-test
+description: Test workflow for signal registry implementation
+
+tasks:
+  send_signal:
+    id: send_signal
+    type: signal
+    method: signal/send
+    params:
+      signal_name: "test-ready"
+      payload:
+        message: "Test signal sent"
+    priority: 5
+
+  wait_for_signal:
+    id: wait_for_signal
+    type: signal
+    method: signal/wait
+    params:
+      signal_name: "test-ready"
+      timeout: 30
+    priority: 5
+    depends_on:
+      - send_signal

@@ -48,10 +48,15 @@ class AsyncProcessManager:
     - Health monitoring without blocking
     """
 
-    def __init__(self, log_dir: Path = None):
+    def __init__(self, log_dir: Path = None, file_logging_enabled: bool = False):
         self.processes: Dict[str, ProcessInfo] = {}
         self.log_dir = log_dir or Path("logs")
-        self.log_dir.mkdir(exist_ok=True, parents=True)
+        self.file_logging_enabled = file_logging_enabled
+
+        # Only create log directory if file logging is enabled
+        if self.file_logging_enabled:
+            self.log_dir.mkdir(exist_ok=True, parents=True)
+
         self._running = True
 
     async def _stream_output(self, stream, name: str, log_file: Path, prefix: str = ""):
@@ -140,18 +145,19 @@ class AsyncProcessManager:
                 name=name,
                 command=command,
                 process=process,
-                log_file=log_file,
+                log_file=log_file if self.file_logging_enabled else None,
                 started_at=datetime.now(),
                 port=port
             )
 
-            # Start streaming output (this prevents deadlock!)
-            info.stdout_task = asyncio.create_task(
-                self._stream_output(process.stdout, name, log_file, "[STDOUT] ")
-            )
-            info.stderr_task = asyncio.create_task(
-                self._stream_output(process.stderr, name, log_file, "[STDERR] ")
-            )
+            # Start streaming output only if file logging is enabled (this prevents deadlock!)
+            if self.file_logging_enabled:
+                info.stdout_task = asyncio.create_task(
+                    self._stream_output(process.stdout, name, log_file, "[STDOUT] ")
+                )
+                info.stderr_task = asyncio.create_task(
+                    self._stream_output(process.stderr, name, log_file, "[STDERR] ")
+                )
 
             self.processes[name] = info
 
@@ -164,7 +170,11 @@ class AsyncProcessManager:
                 del self.processes[name]
                 raise RuntimeError(f"Process {name} failed to start")
 
-            logger.info(f"✅ Started {name} (PID: {process.pid}, Log: {log_file})")
+            # Log message with or without log file reference
+            if self.file_logging_enabled:
+                logger.info(f"✅ Started {name} (PID: {process.pid}, Log: {log_file})")
+            else:
+                logger.info(f"✅ Started {name} (PID: {process.pid}, Logs: Redis only)")
             return info
 
         except Exception as e:
@@ -328,8 +338,6 @@ class AsyncServiceManager:
         self.config_file = config_file or 'gleitzeit.yaml'
         self.redis_url = redis_url or os.environ.get('REDIS_URL', 'redis://localhost:6379')
         self.port_offset = port_offset
-        self.process_manager = AsyncProcessManager(log_dir)
-        self.python_path = sys.executable
 
         # Use ConfigurationManager as per the plan!
         from .config_manager import ConfigurationManager
@@ -337,6 +345,13 @@ class AsyncServiceManager:
             config_file=self.config_file,
             cli_args={}  # Could be populated from CLI
         )
+
+        # Get file logging configuration
+        logging_config = self.config_manager.get_all_config().get('logging', {})
+        file_logging_enabled = logging_config.get('file_logging_enabled', False)
+
+        self.process_manager = AsyncProcessManager(log_dir, file_logging_enabled=file_logging_enabled)
+        self.python_path = sys.executable
 
         # Load handler configurations using ConfigurationManager
         self.handler_configs = {}
