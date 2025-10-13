@@ -199,6 +199,11 @@ workers:
       zombie_threshold: 600    # Seconds of inactivity before marking as zombie
       max_concurrent: 5        # Max workflows to reconcile concurrently
 
+  # NOTE: Loki exporter is NOT configured here
+  # It runs as a standalone process (like API/UI) and is controlled by:
+  #   logging.loki.enabled: true/false
+  # See AsyncProcessManager.start_loki_exporter() for implementation
+
 # Sharding configuration
 sharding:
   num_shards: 16
@@ -224,12 +229,14 @@ logging:
     warning: 1.0  # Log all WARNING logs
     error: 1.0    # Log all ERROR logs
 
-  # TTL (time to live) in seconds for log retention
+  # TTL (time to live) in seconds for log retention in Redis
+  # With Loki integration, Redis serves as hot storage for fast queries
+  # while Loki provides long-term persistent storage
   ttl:
-    debug: 86400      # 1 day
-    info: 604800      # 7 days
-    warning: 1209600  # 14 days
-    error: 2592000    # 30 days
+    debug: 172800     # 48 hours (2 days)
+    info: 172800      # 48 hours (2 days)
+    warning: 172800   # 48 hours (2 days)
+    error: 172800     # 48 hours (2 days)
 
   # Component-specific log levels
   # Override redis_log_level for specific components
@@ -249,6 +256,14 @@ logging:
 
     # Batch size for bulk log operations
     batch_size: 100
+
+  # Loki Integration for long-term log storage
+  loki:
+    enabled: true               # Enable Loki exporter
+    url: http://localhost:3100  # Loki server URL
+    batch_size: 100             # Number of logs to batch before pushing
+    poll_interval: 5            # Seconds between polls for new logs
+    retention_days: 30          # How long Loki should retain logs
 
 # Monitoring Configuration
 monitoring:

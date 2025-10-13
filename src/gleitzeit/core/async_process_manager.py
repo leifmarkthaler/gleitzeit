@@ -709,12 +709,39 @@ class AsyncServiceManager:
             "--block-timeout", str(worker_config.get('block_timeout', 5000))
         ]
 
+    async def start_loki_exporter(self, loki_config: dict):
+        """Start the Loki exporter worker as a standalone process"""
+        redis_url = self.config_manager.get_redis_url()
+        loki_url = loki_config.get('url', 'http://localhost:3100')
+        batch_size = loki_config.get('batch_size', 100)
+        poll_interval = loki_config.get('poll_interval', 5)
+
+        command = f"{sys.executable} -m gleitzeit.workers.loki_exporter_worker " \
+                  f"--redis-url {redis_url} " \
+                  f"--loki-url {loki_url} " \
+                  f"--batch-size {batch_size} " \
+                  f"--poll-interval {poll_interval}"
+
+        logger.info(f"Starting loki_exporter: {command}")
+
+        await self.start_process(
+            name="loki_exporter",
+            command=command,
+            port=None  # Loki exporter doesn't need a port
+        )
+
     async def start_essential_workers(self):
         """Start all configured workers from YAML"""
         workers = self.config.get('workers', [])
 
         # Start ALL workers defined in configuration - no hardcoded filter
         for worker_config in workers:
+            worker_type = worker_config.get('worker_type')
+
+            # Skip loki_exporter worker type - it's handled separately as a standalone process
+            if worker_type == 'loki_exporter':
+                continue
+
             await self.start_worker(worker_config)
 
     async def start_all(self, api_port: int = 8000, ui_port: int = 8004, no_ui: bool = False, dev_mode: bool = False, restart: bool = False, no_workers: bool = False, no_api: bool = False):
@@ -779,6 +806,11 @@ class AsyncServiceManager:
         # Start essential workers if enabled
         if not no_workers:
             await self.start_essential_workers()
+
+        # Start Loki exporter if enabled
+        loki_config = self.config.get('logging', {}).get('loki', {})
+        if loki_config.get('enabled', False):
+            await self.start_loki_exporter(loki_config)
 
         return await self.process_manager.monitor_processes()
 

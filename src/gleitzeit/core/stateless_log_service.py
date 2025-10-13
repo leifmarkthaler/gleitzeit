@@ -32,14 +32,29 @@ class StatelessLogService:
     - Metadata on shard 0 (for fetching from correct shard)
     """
 
-    # Default TTLs by level (seconds)
+    # Default TTLs by level (seconds) - can be overridden by gleitzeit.yaml
     DEFAULT_TTL = {
-        "DEBUG": 86400,      # 1 day
-        "INFO": 604800,      # 7 days
-        "WARNING": 1209600,  # 14 days
-        "ERROR": 2592000,    # 30 days
-        "CRITICAL": 2592000, # 30 days
+        "DEBUG": 172800,     # 48 hours (2 days)
+        "INFO": 172800,      # 48 hours (2 days)
+        "WARNING": 172800,   # 48 hours (2 days)
+        "ERROR": 172800,     # 48 hours (2 days)
+        "CRITICAL": 172800,  # 48 hours (2 days)
     }
+
+    @staticmethod
+    def _get_ttl_from_config(level: str) -> int:
+        """Get TTL for a log level from configuration, or use default"""
+        try:
+            from gleitzeit.core.config_manager import ConfigurationManager
+            import os
+            config_path = os.environ.get('GLEITZEIT_CONFIG', 'gleitzeit.yaml')
+            config_manager = ConfigurationManager(config_path, {})
+            logging_config = config_manager.get_all_config().get('logging', {})
+            ttl_config = logging_config.get('ttl', {})
+            return ttl_config.get(level.lower(), StatelessLogService.DEFAULT_TTL.get(level, 172800))
+        except Exception:
+            # Fall back to default if config fails
+            return StatelessLogService.DEFAULT_TTL.get(level, 172800)
 
     @staticmethod
     def _get_shard(workflow_id: str) -> int:
@@ -692,7 +707,13 @@ class StatelessLogService:
                     continue
 
                 # Get log from correct shard
-                log_shard = int(meta[b'shard'].decode())
+                shard_bytes = meta.get(b'shard')
+                if not shard_bytes:
+                    # Fallback: try shard 0 if metadata is missing shard
+                    log_shard = 0
+                else:
+                    log_shard = int(shard_bytes.decode())
+
                 log_key = f"{{shard:{log_shard}}}:log:{level_lower}:{log_id_str}"
                 log_data = await redis.get(log_key)
 

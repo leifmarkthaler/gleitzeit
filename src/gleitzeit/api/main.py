@@ -226,7 +226,7 @@ app.add_middleware(RequestTrackingMiddleware)
 
 
 # Import and include routers
-from .routes import workflows, tasks, system, health, auth, websocket
+from .routes import workflows, tasks, system, health, auth, websocket, metrics
 from .auth.dependencies import init_auth
 from .discovery import router as discovery_router
 
@@ -286,6 +286,7 @@ app.include_router(system.router, prefix="/system", tags=["system"])
 app.include_router(health.router, prefix="/health", tags=["health"])
 app.include_router(websocket.router, tags=["websocket"])
 app.include_router(discovery_router, tags=["discovery"])
+app.include_router(metrics.router, tags=["metrics"])
 
 
 @app.get("/")
