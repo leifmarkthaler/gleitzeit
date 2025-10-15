@@ -11,6 +11,7 @@ Architecture:
 2. Batches logs and pushes to Loki
 3. Tracks last processed timestamp to avoid duplicates
 4. Handles backpressure and retries
+5. Uses leader election to prevent duplicate exports (multiple instances safe)
 """
 
 import asyncio
@@ -24,6 +25,8 @@ import redis.asyncio as aioredis
 
 from ..core.config_manager import ConfigurationManager
 from ..core.logging_mixin import LoggingMixin
+from ..core.leader_election import LeaderElection, LeaderStatus
+from ..core.sharding import default_sharding
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +37,9 @@ class LokiExporterWorker:
 
     Runs continuously, polling Redis for new logs and pushing them to Loki
     in batches for efficient storage and retrieval.
+
+    Features leader election to ensure only one instance exports logs,
+    preventing duplicates in multi-instance deployments.
     """
 
     def __init__(
@@ -54,27 +60,90 @@ class LokiExporterWorker:
         self.last_exported_timestamp: Dict[str, int] = {}  # Track per level
         self.running = False
 
+        # Leader election for multi-instance coordination
+        self.leader_election: Optional[LeaderElection] = None
+        self.leader_key = ""  # Will be set in initialize()
+        self.leader_ttl = 30  # 30 second TTL with 10s heartbeat
+
         # Set up logging with standard Python logger
         self.logger = logging.getLogger(f"LokiExporter.{worker_id}")
 
     async def initialize(self):
-        """Initialize Redis and HTTP connections"""
+        """Initialize Redis, HTTP connections, and leader election"""
         self.redis = await aioredis.from_url(
             self.redis_url,
             encoding="utf-8",
             decode_responses=True
         )
         self.session = aiohttp.ClientSession()
-        self.logger.info(f"Loki exporter worker initialized (loki_url={self.loki_url}, batch_size={self.batch_size}, poll_interval={self.poll_interval})")
+
+        # Initialize leader election using global key
+        self.leader_key = default_sharding.get_global_key("loki_exporter:leader")
+        self.leader_election = LeaderElection(
+            self.redis,
+            self.leader_key,
+            self.worker_id,
+            self.leader_ttl
+        )
+
+        self.logger.info(
+            f"Loki exporter worker initialized "
+            f"(loki_url={self.loki_url}, batch_size={self.batch_size}, "
+            f"poll_interval={self.poll_interval}, leader_key={self.leader_key})"
+        )
 
     async def shutdown(self):
         """Clean shutdown"""
         self.running = False
+
+        # Release leadership if we have it
+        if self.leader_election and self.leader_election.is_leader:
+            await self.leader_election.release()
+            self.logger.info(f"Released leadership for {self.worker_id}")
+
         if self.session:
             await self.session.close()
         if self.redis:
             await self.redis.close()
+
         self.logger.info("Loki exporter worker shutdown complete")
+
+    async def _leader_election_loop(self):
+        """
+        Participate in leader election for log export coordination.
+
+        Only one Loki exporter across all instances will be the leader
+        and perform actual log exports.
+        """
+        self.logger.info(f"Starting leader election loop for {self.worker_id}")
+
+        while self.running:
+            try:
+                # Try to become/remain leader
+                status = await self.leader_election.try_elect()
+
+                if status == LeaderStatus.BECAME_LEADER:
+                    self.logger.info(f"🎖️  LokiExporter {self.worker_id} BECAME LEADER")
+                elif status == LeaderStatus.LOST_LEADERSHIP:
+                    self.logger.warning(f"👥 LokiExporter {self.worker_id} LOST LEADERSHIP")
+                elif status == LeaderStatus.STILL_LEADER:
+                    self.logger.debug(f"LokiExporter {self.worker_id} still leader")
+                else:  # NOT_LEADER
+                    current_leader = await self.leader_election.get_current_leader()
+                    self.logger.debug(
+                        f"LokiExporter {self.worker_id} not leader "
+                        f"(current leader: {current_leader})"
+                    )
+
+                # Heartbeat every 1/3 of TTL for safety
+                await asyncio.sleep(self.leader_ttl // 3)
+
+            except asyncio.CancelledError:
+                self.logger.info("Leader election loop cancelled")
+                raise
+            except Exception as e:
+                self.logger.error(f"Leader election error: {e}", exc_info=True)
+                await asyncio.sleep(5)
 
     async def export_logs_to_loki(self, logs: List[Dict[str, Any]]) -> bool:
         """
@@ -201,13 +270,18 @@ class LokiExporterWorker:
                 max_timestamp = max(log.get("timestamp", 0) for log in logs)
                 self.last_exported_timestamp[level] = max_timestamp
 
-                self.logger.debug(f"Exported {len(logs)} {level} logs (up to {max_timestamp})")
+                self.logger.info(f"✅ Exported {len(logs)} {level} logs (up to {max_timestamp})")
 
         except Exception as e:
             self.logger.error(f"Error exporting {level} logs: {e}", exc_info=True)
 
     async def run(self):
-        """Main worker loop"""
+        """
+        Main worker loop with leader election.
+
+        Only the leader instance will export logs to prevent duplicates.
+        Follower instances will wait and be ready for failover.
+        """
         await self.initialize()
         self.running = True
 
@@ -215,23 +289,43 @@ class LokiExporterWorker:
 
         levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
 
-        while self.running:
+        # Start leader election task
+        election_task = asyncio.create_task(self._leader_election_loop())
+
+        try:
+            while self.running:
+                try:
+                    # Only export if we're the leader
+                    if self.leader_election and self.leader_election.is_leader:
+                        # Export each level
+                        for level in levels:
+                            await self.export_level(level)
+                    else:
+                        # Not leader - just wait and be ready for failover
+                        current_leader = await self.leader_election.get_current_leader() if self.leader_election else "unknown"
+                        self.logger.debug(
+                            f"Standby mode - not leader. Current leader: {current_leader}"
+                        )
+
+                    # Wait before next poll
+                    await asyncio.sleep(self.poll_interval)
+
+                except asyncio.CancelledError:
+                    self.logger.info("Loki exporter received cancellation signal")
+                    break
+                except Exception as e:
+                    self.logger.error(f"Unexpected error in Loki exporter loop: {e}", exc_info=True)
+                    await asyncio.sleep(self.poll_interval)
+
+        finally:
+            # Cleanup
+            election_task.cancel()
             try:
-                # Export each level
-                for level in levels:
-                    await self.export_level(level)
-
-                # Wait before next poll
-                await asyncio.sleep(self.poll_interval)
-
+                await election_task
             except asyncio.CancelledError:
-                self.logger.info("Loki exporter received cancellation signal")
-                break
-            except Exception as e:
-                self.logger.error(f"Unexpected error in Loki exporter loop: {e}", exc_info=True)
-                await asyncio.sleep(self.poll_interval)
+                pass
 
-        await self.shutdown()
+            await self.shutdown()
 
 
 async def main():

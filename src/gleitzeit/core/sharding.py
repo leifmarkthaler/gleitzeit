@@ -260,3 +260,47 @@ default_sharding = ClusterShardingStrategy(num_shards=16)
 
 # For backward compatibility (if needed temporarily)
 ShardingStrategy = ClusterShardingStrategy
+
+
+class ShardingConfigurationError(Exception):
+    """Raised when sharding configuration is inconsistent across instances"""
+    pass
+
+
+async def validate_sharding_config(redis):
+    """
+    Validate that all Gleitzeit instances use the same sharding configuration.
+
+    This prevents workflow corruption from instances with mismatched num_shards.
+    The first instance to start stores its configuration in Redis.
+    Subsequent instances validate against the stored configuration.
+
+    Args:
+        redis: Redis client instance
+
+    Raises:
+        ShardingConfigurationError: If this instance's configuration doesn't
+                                   match the cluster's stored configuration
+    """
+    config_key = "global:config:num_shards"
+    instance_shards = default_sharding.num_shards
+
+    # Try to get the stored configuration
+    stored_shards = await redis.get(config_key)
+
+    if stored_shards:
+        # Configuration exists - validate match
+        stored_shards = int(stored_shards)
+        if stored_shards != instance_shards:
+            raise ShardingConfigurationError(
+                f"Sharding configuration mismatch!\n"
+                f"  This instance:  num_shards={instance_shards}\n"
+                f"  Cluster expects: num_shards={stored_shards}\n"
+                f"All instances must use the same num_shards configuration.\n"
+                f"Update your gleitzeit.yaml or restart the cluster with consistent configuration."
+            )
+    else:
+        # First instance - store configuration
+        await redis.set(config_key, str(instance_shards))
+        # Set expiry to prevent stale config (30 days)
+        await redis.expire(config_key, 30 * 24 * 60 * 60)

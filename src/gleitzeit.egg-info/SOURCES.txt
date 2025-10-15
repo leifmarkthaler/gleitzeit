@@ -23,6 +23,7 @@ src/gleitzeit/api/pools/client_pool.py
 src/gleitzeit/api/routes/__init__.py
 src/gleitzeit/api/routes/auth.py
 src/gleitzeit/api/routes/health.py
+src/gleitzeit/api/routes/metrics.py
 src/gleitzeit/api/routes/system.py
 src/gleitzeit/api/routes/tasks.py
 src/gleitzeit/api/routes/websocket.py
@@ -118,6 +119,7 @@ src/gleitzeit/workers/base.py
 src/gleitzeit/workers/base_cluster.py
 src/gleitzeit/workers/dependency_worker.py
 src/gleitzeit/workers/file_loader_worker.py
+src/gleitzeit/workers/loki_exporter_worker.py
 src/gleitzeit/workers/pending_recovery.py
 src/gleitzeit/workers/reconciliation_worker.py
 src/gleitzeit/workers/replay_worker.py
@@ -139,6 +141,7 @@ tests/test_ollama_handler.py
 tests/test_p0_ack_fixes.py
 tests/test_pending_recovery.py
 tests/test_real_handler_execution.py
+tests/test_reconciliation_worker.py
 tests/test_replay_functionality.py
 tests/test_signal_delivery.py
 tests/test_signal_send_handler.py

@@ -19,6 +19,7 @@ import yaml
 import uuid
 import socket
 import redis
+from .sharding import validate_sharding_config, ShardingConfigurationError
 
 logger = logging.getLogger(__name__)
 
@@ -716,15 +717,17 @@ class AsyncServiceManager:
         batch_size = loki_config.get('batch_size', 100)
         poll_interval = loki_config.get('poll_interval', 5)
 
-        command = f"{sys.executable} -m gleitzeit.workers.loki_exporter_worker " \
-                  f"--redis-url {redis_url} " \
-                  f"--loki-url {loki_url} " \
-                  f"--batch-size {batch_size} " \
-                  f"--poll-interval {poll_interval}"
+        command = [
+            sys.executable, "-m", "gleitzeit.workers.loki_exporter_worker",
+            "--redis-url", redis_url,
+            "--loki-url", loki_url,
+            "--batch-size", str(batch_size),
+            "--poll-interval", str(poll_interval)
+        ]
 
-        logger.info(f"Starting loki_exporter: {command}")
+        logger.info(f"Starting loki_exporter: {' '.join(command)}")
 
-        await self.start_process(
+        await self.process_manager.start_process(
             name="loki_exporter",
             command=command,
             port=None  # Loki exporter doesn't need a port
@@ -748,6 +751,14 @@ class AsyncServiceManager:
         """Start all services"""
         # Initialize SmartProcessManager for service registry
         await self._init_smart_manager()
+
+        # Validate sharding configuration consistency across instances
+        try:
+            await validate_sharding_config(self.redis)
+            logger.info("✅ Sharding configuration validated")
+        except ShardingConfigurationError as e:
+            logger.error(f"❌ {e}")
+            raise SystemExit(1)
 
         # Track whether we're attaching to existing services or starting new ones
         self.attached_mode = False
@@ -808,9 +819,13 @@ class AsyncServiceManager:
             await self.start_essential_workers()
 
         # Start Loki exporter if enabled
-        loki_config = self.config.get('logging', {}).get('loki', {})
+        logging_config = self.config_manager.get_value('logging') or {}
+        loki_config = logging_config.get('loki', {})
         if loki_config.get('enabled', False):
+            logger.info("🚀 Starting Loki exporter...")
             await self.start_loki_exporter(loki_config)
+        else:
+            logger.info(f"Loki exporter not enabled (config: {loki_config})")
 
         return await self.process_manager.monitor_processes()
 

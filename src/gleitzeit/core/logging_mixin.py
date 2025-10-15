@@ -50,7 +50,10 @@ class LoggingMixin:
     
     def __init__(self, *args, **kwargs):
         """Initialize the mixin"""
-        super().__init__(*args, **kwargs)
+        # Only call super().__init__() if there's another class in the MRO
+        # to avoid TypeError with object.__init__()
+        if len(self.__class__.__mro__) > 2:  # More than (cls, LoggingMixin, object)
+            super().__init__(*args, **kwargs)
         self._component_name = self.__class__.__name__
         self._log_source = self._determine_log_source()
     
