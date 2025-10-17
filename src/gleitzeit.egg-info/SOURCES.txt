@@ -137,6 +137,7 @@ src/gleitzeit/workers/workflow_submission_worker.py
 tests/test_circuit_breaker.py
 tests/test_complete_recovery.py
 tests/test_complete_workflow_with_handlers.py
+tests/test_container_integration.py
 tests/test_execution_path_trace.py
 tests/test_handler_system.py
 tests/test_health_checks.py
@@ -149,7 +150,9 @@ tests/test_real_handler_execution.py
 tests/test_reconciliation_sharding.py
 tests/test_reconciliation_worker.py
 tests/test_replay_functionality.py
+tests/test_shard_distribution.py
 tests/test_signal_delivery.py
+tests/test_signal_registry.py
 tests/test_signal_send_handler.py
 tests/test_stateless_retry.py
 tests/test_task_timeline.py

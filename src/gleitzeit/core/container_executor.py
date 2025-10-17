@@ -50,19 +50,41 @@ class ContainerExecutor:
         self._initialized = False
 
     def _ensure_docker_client(self):
-        """Lazily initialize Docker client."""
+        """Lazily initialize Docker/Podman client."""
         if not self.docker_client:
             try:
                 import docker
+                import os
+
+                # Try to detect Podman socket first
+                podman_socket = os.path.expanduser(f"unix:///run/user/{os.getuid()}/podman/podman.sock")
+                docker_socket = "unix:///var/run/docker.sock"
+
+                # Try Podman first if DOCKER_HOST is not set
+                if not os.environ.get('DOCKER_HOST'):
+                    # Check if Podman socket exists
+                    podman_path = podman_socket.replace('unix://', '')
+                    if os.path.exists(podman_path):
+                        os.environ['DOCKER_HOST'] = podman_socket
+                        logger.info(f"Using Podman socket: {podman_socket}")
+
                 self.docker_client = docker.from_env()
                 # Test connection
-                self.docker_client.ping()
+                info = self.docker_client.ping()
                 self._initialized = True
-                logger.info(f"Docker client initialized, using image: {self.image}")
+
+                # Detect which container runtime we're using
+                try:
+                    version_info = self.docker_client.version()
+                    runtime = version_info.get('Components', [{}])[0].get('Name', 'Docker')
+                    logger.info(f"Container runtime initialized: {runtime}, using image: {self.image}")
+                except:
+                    logger.info(f"Container client initialized, using image: {self.image}")
+
             except ImportError:
                 raise RuntimeError("Docker package not installed. Run: pip install docker")
             except Exception as e:
-                raise RuntimeError(f"Failed to connect to Docker: {e}")
+                raise RuntimeError(f"Failed to connect to container runtime (Docker/Podman): {e}")
 
     def is_available(self) -> bool:
         """Check if Docker is available and accessible."""

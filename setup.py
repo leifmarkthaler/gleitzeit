@@ -44,6 +44,8 @@ setup(
         "pyjwt>=2.8.0",
         "httpx>=0.24.0",
         "jinja2>=3.1.0",
+        "docker>=6.1.0",
+        "rich>=13.0.0",
     ],
     extras_require={
         "dev": [
