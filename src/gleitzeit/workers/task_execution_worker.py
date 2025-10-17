@@ -16,6 +16,7 @@ from .base import BaseWorker, WorkerConfig
 from ..core.sharding import default_sharding
 from ..core.models import Task, TaskResult, TaskStatus
 from ..core.cache import get_workflow_cache
+from ..core.config_loader import get_config
 # Retry is now handled by RetryWorker - no local retry imports needed
 from ..core.events import EventType
 from ..core.event_store import EventStore, EventLevel
@@ -42,6 +43,10 @@ class TaskExecutionWorker(BaseWorker):
         # Get enabled task types from config
         # Use the proper dataclass attribute
         self.enabled_types = config.enabled_task_types if hasattr(config, 'enabled_task_types') else ['all']
+
+        # Load signal registry TTL from global config once (not on every signal emission)
+        global_config = get_config()
+        self.signal_registry_ttl = global_config.get('handlers', {}).get('signal', {}).get('config', {}).get('signal_registry_ttl', 3600)
 
         # Initialize handlers
         self.handlers = {}
@@ -669,9 +674,11 @@ class TaskExecutionWorker(BaseWorker):
 
         # CRITICAL: Also register in global signal registry for SignalWorker
         # This eliminates race conditions - signals are discoverable immediately
-        registry_key = default_sharding.get_global_key("signal:registry")
-        registry_entry = f"{target_workflow}:{signal_name}"
-        await self.redis.sadd(registry_key, registry_entry)
+        # Use individual key with TTL for automatic cleanup (prevents memory leak)
+        registry_entry_key = f"signal:registry:{target_workflow}:{signal_name}"
+
+        # Use TTL loaded from config during initialization
+        await self.redis.setex(registry_entry_key, self.signal_registry_ttl, "1")
 
         if target_workflow == sender_workflow_id:
             logger.info(

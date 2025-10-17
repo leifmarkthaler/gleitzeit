@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 from .base import BaseWorker, WorkerConfig
 from ..core.models import WorkflowStatus
 from ..core.sharding import default_sharding
+from ..core.reconciliation_sharding import ReconciliationShardAssignment
 
 logger = logging.getLogger(__name__)
 
@@ -108,8 +109,22 @@ class WorkflowReconciliationWorker(BaseWorker):
         # Reconciliation semaphore
         self._reconciliation_semaphore = asyncio.Semaphore(self.max_concurrent_reconciliations)
 
+        # Shard assignment manager (will be initialized in on_initialize)
+        self.shard_assignment: Optional[ReconciliationShardAssignment] = None
+        self._shard_heartbeat_task = None
+
     async def on_initialize(self):
         """Initialize worker resources"""
+        # Initialize shard assignment manager
+        self.shard_assignment = ReconciliationShardAssignment(
+            redis=self.redis,
+            total_shards=16,
+            heartbeat_interval=30
+        )
+
+        # Get initial shard assignment
+        self.assigned_shards = await self.shard_assignment.get_assigned_shards()
+
         logger.info(
             f"WorkflowReconciliationWorker initialized: "
             f"scan_interval={self.scan_interval}s, "
@@ -148,11 +163,21 @@ class WorkflowReconciliationWorker(BaseWorker):
         # Start heartbeat task
         heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
+        # Start shard assignment heartbeat task
+        if self.shard_assignment:
+            self._shard_heartbeat_task = asyncio.create_task(
+                self.shard_assignment.start_heartbeat()
+            )
+
         try:
             # Initial delay to let system stabilize
             await asyncio.sleep(5)
 
             while self._running:
+                # Refresh shard assignment
+                if self.shard_assignment:
+                    self.assigned_shards = await self.shard_assignment.get_assigned_shards()
+
                 try:
                     scan_start = datetime.utcnow()
 
@@ -181,6 +206,13 @@ class WorkflowReconciliationWorker(BaseWorker):
         finally:
             self._running = False
             heartbeat_task.cancel()
+
+            # Stop shard assignment heartbeat
+            if self._shard_heartbeat_task:
+                self._shard_heartbeat_task.cancel()
+            if self.shard_assignment:
+                await self.shard_assignment.stop_heartbeat()
+
             await self._cleanup()
 
     async def reconcile_all_shards(self):

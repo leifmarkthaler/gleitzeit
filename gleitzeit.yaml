@@ -99,6 +99,7 @@ handlers:
     config:
       delivery_mode: at_least_once
       max_signals_per_workflow: 1000
+      signal_registry_ttl: 3600  # Seconds before orphaned signals expire (default: 1 hour)
 
   # Workflow handler configuration
   workflow:

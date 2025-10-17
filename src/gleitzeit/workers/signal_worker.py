@@ -134,20 +134,38 @@ class SignalWorker(BaseWorker):
     async def _process_workflow_signals(self):
         """Process signals using global registry - eliminates race conditions"""
         try:
-            # Get all pending signals from global registry
-            registry_key = default_sharding.get_global_key("signal:registry")
-            registry_entries = await self.redis.smembers(registry_key)
+            # Scan for registry keys (now using individual keys with TTL instead of set)
+            # Pattern: signal:registry:workflow_id:signal_name
+            registry_pattern = "signal:registry:*"
+            registry_keys = []
 
-            if not registry_entries:
+            cursor = 0
+            while True:
+                cursor, keys = await self.redis.scan(cursor, match=registry_pattern, count=100)
+                registry_keys.extend(keys)
+                if cursor == 0:
+                    break
+
+            if not registry_keys:
                 return
 
-            logger.info(f"SignalWorker found {len(registry_entries)} signals in global registry")
+            logger.info(f"SignalWorker found {len(registry_keys)} signals in global registry")
 
-            # Process each registry entry: "workflow_id:signal_name"
-            for entry in registry_entries:
+            # Process each registry key: "signal:registry:workflow_id:signal_name"
+            for registry_key in registry_keys:
                 try:
-                    entry_str = entry.decode() if isinstance(entry, bytes) else entry
-                    workflow_id, signal_name = entry_str.split(":", 1)
+                    # Decode key if bytes
+                    key_str = registry_key.decode() if isinstance(registry_key, bytes) else registry_key
+
+                    # Extract workflow_id and signal_name from key
+                    # Key format: "signal:registry:workflow_id:signal_name"
+                    parts = key_str.split(":", 3)  # Split into max 4 parts
+                    if len(parts) < 4:
+                        logger.warning(f"Invalid registry key format: {key_str}")
+                        continue
+
+                    workflow_id = parts[2]
+                    signal_name = parts[3]
 
                     logger.info(f"Processing registry entry: workflow={workflow_id}, signal={signal_name}")
 
@@ -184,7 +202,7 @@ class SignalWorker(BaseWorker):
                     if not messages:
                         logger.info(f"No messages in stream for workflow {workflow_id} - signal may have been processed")
                         # Remove from registry since we have waiters but no signal in stream
-                        await self.redis.srem(registry_key, entry)
+                        await self.redis.delete(registry_key)
                         continue
 
                     # Process each message looking for matching signal name
@@ -202,7 +220,7 @@ class SignalWorker(BaseWorker):
                                 await self.redis.xack(workflow_stream_key, "signal-workers", msg_id)
 
                                 # Remove from registry since it's been processed
-                                await self.redis.srem(registry_key, entry)
+                                await self.redis.delete(registry_key)
                                 signal_found = True
                                 break
 

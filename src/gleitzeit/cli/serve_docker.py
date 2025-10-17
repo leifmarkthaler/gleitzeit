@@ -229,12 +229,26 @@ class DockerOrchestrator:
         # Worker services (skip if api-only)
         if not api_only:
             workers = config.get("workers", [])
+            total_shards = 16
+
             for idx, worker_config in enumerate(workers):
                 worker_type = worker_config.get("worker_type")
                 worker_class = worker_config.get("worker_class")
                 count = worker_config.get("count", 1)
 
+                # Distribute shards evenly across workers of this type
+                # This enables true horizontal scaling
                 for i in range(count):
+                    # Calculate shard assignment for this specific worker instance
+                    shards_per_worker = total_shards // count
+                    remainder = total_shards % count
+
+                    # Each worker gets base share, first `remainder` workers get +1 shard
+                    start_shard = i * shards_per_worker + min(i, remainder)
+                    end_shard = start_shard + shards_per_worker + (1 if i < remainder else 0)
+                    assigned_shards = list(range(start_shard, end_shard))
+                    shards_str = ",".join(str(s) for s in assigned_shards)
+
                     service_name = f"worker-{worker_type}-{i+1}"
                     compose["services"][service_name] = {
                         "build": {
@@ -248,7 +262,7 @@ class DockerOrchestrator:
                             "--worker-id", f"{worker_type}-{i+1}",
                             "--worker-type", worker_type,
                             "--redis-url", redis_connection,
-                            "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+                            "--shards", shards_str,  # Distributed shard assignment
                             "--max-concurrent", str(worker_config.get("max_concurrent", 10)),
                             "--batch-size", str(worker_config.get("batch_size", 10)),
                             "--block-timeout", str(worker_config.get("block_timeout", 5000))

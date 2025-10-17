@@ -34,6 +34,16 @@ async def run_worker(args):
     """Run a worker instance"""
     redis = None
     try:
+        # Initialize instance identity from environment variable
+        # This is passed from the main process via GLEITZEIT_INSTANCE_ID
+        import os
+        from ..core.instance import initialize_instance, get_current_instance
+
+        instance_id = os.environ.get('GLEITZEIT_INSTANCE_ID')
+        if instance_id and not get_current_instance():
+            initialize_instance(instance_name=instance_id)
+            logger.info(f"Initialized worker instance identity: {instance_id}")
+
         # Connect to Redis
         redis_url = args.redis_url or 'redis://localhost:6379'
         redis = await aioredis.from_url(

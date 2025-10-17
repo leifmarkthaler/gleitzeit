@@ -129,6 +129,13 @@ class AsyncProcessManager:
         if 'REDIS_CLUSTER_NODES' not in process_env:
             process_env['REDIS_CLUSTER_NODES'] = 'localhost:6379'
 
+        # Pass instance ID to worker processes
+        from .instance import get_current_instance
+        current_instance = get_current_instance()
+        if current_instance:
+            process_env['GLEITZEIT_INSTANCE_ID'] = current_instance.instance_id
+            logger.debug(f"Passing instance ID to worker: {current_instance.instance_id}")
+
         # Create process with asyncio (no PIPE deadlock!)
         try:
             process = await asyncio.create_subprocess_exec(
@@ -754,7 +761,7 @@ class AsyncServiceManager:
 
         # Validate sharding configuration consistency across instances
         try:
-            await validate_sharding_config(self.redis)
+            await validate_sharding_config(self.smart_manager.redis)
             logger.info("✅ Sharding configuration validated")
         except ShardingConfigurationError as e:
             logger.error(f"❌ {e}")

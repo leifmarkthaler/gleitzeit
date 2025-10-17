@@ -218,3 +218,58 @@ async def cluster_health_check(
         "deployment_modes": list(set(s.get('mode', 'unknown') for s in services.values())),
         "timestamp": datetime.now().isoformat()
     }
+
+
+@router.get("/coordination")
+async def coordination_health_check(
+    redis: aioredis.Redis = Depends(get_redis)
+):
+    """Get coordination mechanism health status (leader election, service registry, streams, sharding)"""
+    import json
+    import time
+
+    # Retrieve health metrics from Redis (stored by HealthMonitorWorker)
+    health_keys = await redis.keys("health:coordination:*")
+
+    if not health_keys:
+        return {
+            "status": "unknown",
+            "message": "Health monitor not running or no data available yet",
+            "checks": {},
+            "timestamp": time.time()
+        }
+
+    all_healthy = True
+    checks = {}
+
+    for key in health_keys:
+        # Decode key if bytes
+        key_str = key.decode() if isinstance(key, bytes) else key
+
+        check_name = key_str.split(":")[-1]
+        check_data = await redis.get(key_str)
+
+        if check_data:
+            # Decode if bytes
+            if isinstance(check_data, bytes):
+                check_data = check_data.decode()
+
+            try:
+                data = json.loads(check_data)
+                checks[check_name] = data
+
+                if not data.get('healthy', True):
+                    all_healthy = False
+            except json.JSONDecodeError:
+                checks[check_name] = {
+                    "healthy": False,
+                    "issues": ["Failed to parse health check data"],
+                    "timestamp": time.time()
+                }
+                all_healthy = False
+
+    return {
+        "status": "healthy" if all_healthy else "unhealthy",
+        "checks": checks,
+        "timestamp": time.time()
+    }

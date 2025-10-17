@@ -70,6 +70,7 @@ src/gleitzeit/core/event_monitor.py
 src/gleitzeit/core/event_store.py
 src/gleitzeit/core/events.py
 src/gleitzeit/core/file_operations.py
+src/gleitzeit/core/health_checks.py
 src/gleitzeit/core/instance.py
 src/gleitzeit/core/leader_election.py
 src/gleitzeit/core/logging_mixin.py
@@ -79,6 +80,7 @@ src/gleitzeit/core/parameter_resolver.py
 src/gleitzeit/core/ports.py
 src/gleitzeit/core/process_manager.py
 src/gleitzeit/core/process_orchestrator.py
+src/gleitzeit/core/reconciliation_sharding.py
 src/gleitzeit/core/redis_cluster.py
 src/gleitzeit/core/redis_health_monitor.py
 src/gleitzeit/core/service_manager.py
@@ -119,6 +121,7 @@ src/gleitzeit/workers/base.py
 src/gleitzeit/workers/base_cluster.py
 src/gleitzeit/workers/dependency_worker.py
 src/gleitzeit/workers/file_loader_worker.py
+src/gleitzeit/workers/health_monitor_worker.py
 src/gleitzeit/workers/loki_exporter_worker.py
 src/gleitzeit/workers/pending_recovery.py
 src/gleitzeit/workers/reconciliation_worker.py
@@ -136,11 +139,14 @@ tests/test_complete_recovery.py
 tests/test_complete_workflow_with_handlers.py
 tests/test_execution_path_trace.py
 tests/test_handler_system.py
+tests/test_health_checks.py
 tests/test_http_handler.py
+tests/test_multi_instance_coordination.py
 tests/test_ollama_handler.py
 tests/test_p0_ack_fixes.py
 tests/test_pending_recovery.py
 tests/test_real_handler_execution.py
+tests/test_reconciliation_sharding.py
 tests/test_reconciliation_worker.py
 tests/test_replay_functionality.py
 tests/test_signal_delivery.py

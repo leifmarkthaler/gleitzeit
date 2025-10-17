@@ -204,6 +204,11 @@ class SimpleNativeServer:
 
         click.echo("🚀 Starting workers...")
 
+        # In native mode, we only start one worker of each type, so give it all shards
+        # This is appropriate for single-machine development mode
+        total_shards = 16
+        all_shards_str = ",".join(str(s) for s in range(total_shards))
+
         for worker_config in workers:
             worker_type = worker_config.get('worker_type')
 
@@ -218,6 +223,7 @@ class SimpleNativeServer:
             stdout_file, stderr_file, stdout_path, stderr_path = self._create_log_files(f"worker_{worker_type}")
 
             # Build command
+            # In native mode, since we only run 1 worker per type, assign all shards
             python_path = self._get_python_path()
             cmd = [
                 python_path, "-m", "gleitzeit.workers.runner",
@@ -225,7 +231,7 @@ class SimpleNativeServer:
                 "--worker-id", worker_id,
                 "--worker-type", worker_type,
                 "--redis-url", "redis://localhost:6379",
-                "--shards", "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15",
+                "--shards", all_shards_str,  # All shards to single worker (native mode)
                 "--max-concurrent", str(worker_config.get('max_concurrent', 5)),
                 "--batch-size", str(worker_config.get('batch_size', 10)),
                 "--block-timeout", str(worker_config.get('block_timeout', 5000))

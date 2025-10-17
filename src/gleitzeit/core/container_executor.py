@@ -118,17 +118,24 @@ class ContainerExecutor:
             )
 
             # Run container
+            container = None
             try:
                 container = await self._run_container(container_config, timeout)
 
-                # Collect results
-                result = await self._collect_results(container)
+                # Collect results (pass timeout to prevent infinite wait)
+                result = await self._collect_results(container, timeout)
 
                 return result
 
             except asyncio.TimeoutError:
+                # Clean up container on timeout
+                if container:
+                    await self._cleanup_container(container)
                 raise TimeoutError(f"Container execution exceeded {timeout}s timeout")
             except Exception as e:
+                # Clean up container on any error
+                if container:
+                    await self._cleanup_container(container)
                 logger.error(f"Container execution failed: {e}")
                 raise
 
@@ -202,13 +209,15 @@ if 'result' in locals():
         command = commands.get(runtime, ['cat', f'/workspace/{code_file}'])
 
         # Build container configuration
+        # Note: Volume is mounted read-write as code needs to write output
+        # Container isolation provides security boundary
         config = {
             'image': self.image,
             'command': command,
             'volumes': {
                 str(temp_path): {
                     'bind': '/workspace',
-                    'mode': 'rw'
+                    'mode': 'rw'  # Read-write needed for output
                 }
             },
             'working_dir': '/workspace',
@@ -245,14 +254,60 @@ if 'result' in locals():
 
         return container
 
-    async def _collect_results(self, container) -> Dict[str, Any]:
-        """Collect results from container execution."""
+    async def _cleanup_container(self, container):
+        """Clean up container (kill and remove).
+
+        Args:
+            container: Docker container object to clean up
+        """
         loop = asyncio.get_event_loop()
 
-        # Wait for container to finish
+        try:
+            # Try to kill the container if it's still running
+            try:
+                await loop.run_in_executor(None, container.kill)
+                logger.info(f"Killed container {container.short_id}")
+            except Exception as e:
+                # Container may already be stopped
+                logger.debug(f"Could not kill container {container.short_id}: {e}")
+
+            # Remove the container
+            try:
+                await loop.run_in_executor(None, container.remove)
+                logger.info(f"Removed container {container.short_id}")
+            except Exception as e:
+                logger.warning(f"Failed to remove container {container.short_id}: {e}")
+
+        except Exception as e:
+            logger.error(f"Error during container cleanup: {e}")
+
+    async def _collect_results(self, container, timeout: int = 300) -> Dict[str, Any]:
+        """Collect results from container execution.
+
+        Args:
+            container: Docker container object
+            timeout: Maximum time to wait for container (seconds)
+
+        Raises:
+            TimeoutError: If container doesn't exit within timeout
+        """
+        loop = asyncio.get_event_loop()
+
+        # Wait for container to finish with timeout
         start_time = asyncio.get_event_loop().time()
+        max_wait_time = timeout + 10  # Add 10s buffer for container cleanup
 
         while True:
+            # Check timeout
+            elapsed = asyncio.get_event_loop().time() - start_time
+            if elapsed > max_wait_time:
+                # Kill hung container
+                try:
+                    await loop.run_in_executor(None, container.kill)
+                except Exception as e:
+                    logger.warning(f"Failed to kill hung container: {e}")
+                raise TimeoutError(f"Container did not exit within {max_wait_time}s")
+
             # Check container status
             container.reload()
             if container.status in ['exited', 'dead']:

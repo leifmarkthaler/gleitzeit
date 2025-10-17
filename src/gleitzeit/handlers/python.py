@@ -222,7 +222,11 @@ class PythonHandler(BaseHandler):
     async def _execute_code(self, task: Task) -> Any:
         """Execute Python code block
 
-        Uses subprocess pool for performance when available.
+        Supports multiple execution modes:
+        - 'container': Execute in isolated Docker container (most secure)
+        - 'pool': Use subprocess pool for performance (default)
+        - 'subprocess': Individual subprocess execution
+
         Code execution errors (syntax, runtime) are handled and returned.
         Pool infrastructure failures trigger automatic fallback to subprocess.
         """
@@ -231,8 +235,75 @@ class PythonHandler(BaseHandler):
         env = task.params.get('env', {})
         timeout = task.timeout or self.config.get('default_timeout', 300)
 
-        # Use subprocess pool if enabled
-        if self.use_pool and self.pool:
+        # Check execution mode
+        exec_mode = self.config.get('execution_mode', 'pool')
+
+        # Container execution mode - most secure, isolated
+        if exec_mode == 'container':
+            from ..core.container_executor import ContainerExecutor
+
+            # Get container configuration
+            container_config = self.config.get('container_config', {})
+            executor = ContainerExecutor(container_config)
+
+            # Check if Docker is available
+            if not executor.is_available():
+                logger.warning("Container execution requested but Docker not available, falling back to pool")
+                exec_mode = 'pool'  # Fallback to pool
+            else:
+                try:
+                    logger.info(f"Executing Python code in container for task {task.id}")
+                    container_result = await executor.execute(
+                        code=code,
+                        inputs=inputs,
+                        timeout=timeout,
+                        runtime='python'
+                    )
+
+                    # Check if container execution failed
+                    if not container_result.get('success', False):
+                        from ..core.errors import HandlerExecutionError
+                        error_msg = container_result.get('output', 'Container execution failed')
+
+                        raise HandlerExecutionError(
+                            message=f"Container execution failed: {error_msg}",
+                            task_id=task.id,
+                            handler_type="python",
+                            original_error=error_msg,
+                            original_error_type="ContainerExecutionError",
+                            data={
+                                'exit_code': container_result.get('exit_code'),
+                                'container_id': container_result.get('container_id'),
+                                'output': error_msg
+                            }
+                        )
+
+                    # Return the result from container
+                    return container_result.get('result', container_result.get('output'))
+
+                except Exception as e:
+                    if isinstance(e, asyncio.TimeoutError):
+                        raise TaskTimeoutError(
+                            f"Container execution exceeded {timeout}s timeout",
+                            task_id=task.id,
+                            timeout_seconds=timeout
+                        )
+                    # Re-raise HandlerExecutionError as-is
+                    if 'HandlerExecutionError' in type(e).__name__:
+                        raise
+                    # Wrap other errors
+                    logger.error(f"Container execution failed: {e}")
+                    from ..core.errors import HandlerExecutionError
+                    raise HandlerExecutionError(
+                        message=f"Container execution error: {str(e)}",
+                        task_id=task.id,
+                        handler_type="python",
+                        original_error=str(e),
+                        original_error_type=type(e).__name__
+                    )
+
+        # Use subprocess pool if enabled (default mode)
+        if exec_mode == 'pool' and self.use_pool and self.pool:
             try:
                 # Initialize pool if needed
                 if not self._pool_initialized:
