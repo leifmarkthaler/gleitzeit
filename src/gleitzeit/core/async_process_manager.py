@@ -363,8 +363,7 @@ class AsyncServiceManager:
 
         # Load handler configurations using ConfigurationManager
         self.handler_configs = {}
-        if Path(self.config_file).exists():
-            self._load_handler_configs()
+        self._load_handler_configs()
 
         # Initialize Redis client for config storage
         self.redis_client = None
@@ -382,6 +381,17 @@ class AsyncServiceManager:
         except Exception as e:
             logger.warning(f"Failed to connect to Redis: {e}")
             self.redis_client = None
+
+    def _is_port_in_use(self, port: int, host: str = '0.0.0.0') -> bool:
+        """Check if a port is already in use"""
+        import socket as sock_module
+        try:
+            with sock_module.socket(sock_module.AF_INET, sock_module.SOCK_STREAM) as s:
+                s.setsockopt(sock_module.SOL_SOCKET, sock_module.SO_REUSEADDR, 1)
+                s.bind((host, port))
+                return False
+        except OSError:
+            return True
 
     def _get_network_hostname(self, bind_host: str) -> str:
         """Get network-accessible hostname for service registration"""
@@ -428,8 +438,39 @@ class AsyncServiceManager:
 
             self.smart_manager = SmartProcessManager(config=self.config, redis_url=self.redis_url)
             await self.smart_manager.initialize()
-            # Check for existing services
+
+            # Check for existing services in BOTH old and new registries
+            # Old registry: service:registry:*
+            # New registry: {shard:0}:worker:registry:*
             registered_services = await self.smart_manager.get_registered_services()
+
+            # Also check new worker registry
+            import redis.asyncio as aioredis
+            try:
+                redis_client = await aioredis.from_url(self.redis_url or 'redis://localhost:6379', decode_responses=False)
+                # Scan for worker registry keys
+                worker_services = {}
+                async for key in redis_client.scan_iter(match=b"{shard:0}:worker:registry:*"):
+                    worker_data = await redis_client.hgetall(key)
+                    if worker_data:
+                        # Extract worker type from key (e.g., {shard:0}:worker:registry:api:api-async)
+                        key_str = key.decode()
+                        parts = key_str.split(':')
+                        if len(parts) >= 4:
+                            worker_type = parts[3]  # e.g., 'api', 'ui', 'python'
+                            # Create service name like 'worker_api' to match our naming convention
+                            service_name = f"worker_{worker_type}"
+                            worker_services[service_name] = {
+                                k.decode(): v.decode() for k, v in worker_data.items()
+                            }
+                await redis_client.aclose()
+
+                # Merge both registries
+                if worker_services:
+                    logger.info(f"Found {len(worker_services)} workers in new registry")
+                    registered_services.update(worker_services)
+            except Exception as e:
+                logger.warning(f"Failed to check worker registry: {e}")
 
             # Validate that registered services are actually still running
             self.existing_services = {}
@@ -469,8 +510,8 @@ class AsyncServiceManager:
     def _load_handler_configs(self):
         """Load handler configurations from gleitzeit.yaml"""
         try:
-            with open(self.config_file, 'r') as f:
-                full_config = yaml.safe_load(f)
+            # Use ConfigurationManager's loaded config instead of opening file again
+            full_config = self.config_manager.yaml_config
 
             # Extract handler configurations
             handlers_section = full_config.get('handlers', {})
@@ -501,104 +542,6 @@ class AsyncServiceManager:
         except Exception as e:
             logger.warning(f"Failed to load handler configs from {self.config_file}: {e}")
             self.handler_configs = {}
-
-    async def start_api(self, host: str = "0.0.0.0", port: int = 8000, dev_mode: bool = False):
-        """Start API service"""
-        # Check if already running in registry
-        if "api" in self.existing_services:
-            existing = self.existing_services["api"]
-            logger.info(f"API service already running (PID: {existing.get('pid')}, Port: {existing.get('port')})")
-            return ProcessInfo(
-                pid=int(existing.get('pid')),
-                name="api",
-                command=[],
-                process=None,
-                port=int(existing.get('port', port)),
-                started_at=datetime.now()
-            )
-
-        command = [
-            self.python_path, "-m", "uvicorn",
-            "gleitzeit.api.main:app",
-            "--host", host,
-            "--port", str(port),
-            "--log-level", "info"
-        ]
-
-        if dev_mode:
-            command.append("--reload")
-
-        env = {
-            'REDIS_URL': self.redis_url,
-            'REDIS_CLUSTER_NODES': self.redis_url.replace('redis://', '').replace('/', ''),
-            'GLEITZEIT_AUTO_LOGIN': 'true'
-        }
-
-        result = await self.process_manager.start_process(
-            "api", command, env=env, port=port
-        )
-
-        # Register in service registry
-        if result and self.smart_manager:
-            network_host = self._get_network_hostname(host)
-            await self.smart_manager.register_service("api", {
-                "pid": str(result.pid),
-                "port": str(port),
-                "host": network_host,
-                "started_at": datetime.now().isoformat(),
-                "mode": "native"
-            })
-
-        return result
-
-    async def start_ui(self, host: str = "0.0.0.0", port: int = 8004, api_port: int = 8000, dev_mode: bool = False):
-        """Start UI service"""
-        # Check if already running in registry
-        if "ui" in self.existing_services:
-            existing = self.existing_services["ui"]
-            logger.info(f"UI service already running (PID: {existing.get('pid')}, Port: {existing.get('port')})")
-            return ProcessInfo(
-                pid=int(existing.get('pid')),
-                name="ui",
-                command=[],
-                process=None,
-                port=int(existing.get('port', port)),
-                started_at=datetime.now()
-            )
-
-        command = [
-            self.python_path, "-m", "uvicorn",
-            "gleitzeit.ui.api.app:app",
-            "--host", host,
-            "--port", str(port),
-            "--log-level", "warning"
-        ]
-
-        if dev_mode:
-            command.append("--reload")
-
-        env = {
-            'REDIS_URL': self.redis_url,
-            'REDIS_CLUSTER_NODES': self.redis_url.replace('redis://', '').replace('/', ''),
-            'API_URL': f'http://localhost:{api_port}'
-        }
-
-        result = await self.process_manager.start_process(
-            "ui", command, env=env, port=port
-        )
-
-        # Register in service registry
-        if result and self.smart_manager:
-            network_host = self._get_network_hostname(host)
-            await self.smart_manager.register_service("ui", {
-                "pid": str(result.pid),
-                "port": str(port),
-                "host": network_host,
-                "started_at": datetime.now().isoformat(),
-                "mode": "native"
-            })
-
-        return result
 
     async def start_worker(self, worker_config: dict):
         """Start a worker from configuration"""
@@ -740,11 +683,64 @@ class AsyncServiceManager:
             port=None  # Loki exporter doesn't need a port
         )
 
-    async def start_essential_workers(self):
-        """Start all configured workers from YAML"""
+    def _apply_overrides(self, worker_config: dict, cli_overrides: dict) -> Optional[dict]:
+        """
+        Apply CLI flags to worker configuration.
+
+        Returns None if worker should be skipped based on CLI flags.
+        """
+        config = worker_config.copy()
+        worker_type = config.get('worker_type')
+
+        # Filter workers based on mode flags
+        if cli_overrides.get('api_only') and worker_type not in ['api', 'ui']:
+            return None  # Skip non-API/UI workers
+        if cli_overrides.get('workers_only') and worker_type in ['api', 'ui']:
+            return None  # Skip API/UI workers
+        if cli_overrides.get('no_ui') and worker_type == 'ui':
+            return None  # Skip UI worker
+        if cli_overrides.get('no_api') and worker_type == 'api':
+            return None  # Skip API worker
+        if cli_overrides.get('no_workers') and worker_type not in ['api', 'ui']:
+            return None  # Skip processing workers
+
+        # Apply type-specific overrides
+        if 'extra' not in config:
+            config['extra'] = {}
+
+        if worker_type == 'api':
+            if cli_overrides.get('api_port'):
+                config['extra']['port'] = cli_overrides['api_port']
+            if cli_overrides.get('api_host'):
+                config['extra']['host'] = cli_overrides['api_host']
+            if cli_overrides.get('dev_mode'):
+                config['extra']['dev_mode'] = True
+
+        elif worker_type == 'ui':
+            if cli_overrides.get('ui_port'):
+                config['extra']['port'] = cli_overrides['ui_port']
+            if cli_overrides.get('ui_host'):
+                config['extra']['host'] = cli_overrides['ui_host']
+            if cli_overrides.get('api_port'):
+                config['extra']['api_port'] = cli_overrides['api_port']
+            if cli_overrides.get('dev_mode'):
+                config['extra']['dev_mode'] = True
+
+        return config
+
+    async def start_essential_workers(self, cli_overrides: dict = None):
+        """
+        Start all configured workers from YAML.
+
+        This is the NEW unified approach - treats API, UI, and processing
+        workers all the same way!
+        """
         workers = self.config.get('workers', [])
 
-        # Start ALL workers defined in configuration - no hardcoded filter
+        if cli_overrides is None:
+            cli_overrides = {}
+
+        # Start ALL workers defined in configuration (including API/UI!)
         for worker_config in workers:
             worker_type = worker_config.get('worker_type')
 
@@ -752,10 +748,23 @@ class AsyncServiceManager:
             if worker_type == 'loki_exporter':
                 continue
 
-            await self.start_worker(worker_config)
+            # Apply CLI overrides and check if worker should be started
+            config = self._apply_overrides(worker_config, cli_overrides)
+            if config is None:
+                logger.info(f"Skipping worker {worker_type} due to CLI flags")
+                continue
 
-    async def start_all(self, api_port: int = 8000, ui_port: int = 8004, no_ui: bool = False, dev_mode: bool = False, restart: bool = False, no_workers: bool = False, no_api: bool = False):
-        """Start all services"""
+            await self.start_worker(config)
+
+    async def start_all(self, api_port: int = 8000, ui_port: int = 8004, no_ui: bool = False,
+                        dev_mode: bool = False, restart: bool = False, no_workers: bool = False,
+                        no_api: bool = False, api_host: str = "0.0.0.0", ui_host: str = "0.0.0.0",
+                        api_only: bool = False, workers_only: bool = False):
+        """
+        Start all services using unified worker architecture.
+
+        This simplified version treats API, UI, and processing workers uniformly!
+        """
         # Initialize SmartProcessManager for service registry
         await self._init_smart_manager()
 
@@ -767,34 +776,15 @@ class AsyncServiceManager:
             logger.error(f"❌ {e}")
             raise SystemExit(1)
 
-        # Track whether we're attaching to existing services or starting new ones
-        self.attached_mode = False
-
-        # If services exist and not restarting, attach to them
+        # Check for existing services (from service registry)
+        # This makes native mode behave like Docker mode - idempotent!
         if self.existing_services and not restart:
-            logger.info(f"Found {len(self.existing_services)} existing services, attaching to them")
-            self.attached_mode = True
-
-            # Reconstruct ProcessInfo objects for existing services
-            for service_name, service_info in self.existing_services.items():
-                pid = int(service_info.get('pid', 0))
-                port = service_info.get('port')
-                if port:
-                    port = int(port)
-
-                # Create a ProcessInfo object for the existing service
-                info = ProcessInfo(
-                    pid=pid,
-                    name=service_name,
-                    command=[],  # Command not stored, but not needed for monitoring
-                    process=None,  # Can't attach to subprocess, but we can monitor via PID
-                    port=port,
-                    started_at=datetime.fromisoformat(service_info.get('started_at', datetime.now().isoformat()))
-                )
-                self.process_manager.processes[service_name] = info
-                logger.info(f"  Attached to {service_name} (PID: {pid}, Port: {port})")
-
-            # Return existing status
+            logger.info(f"⚠️  Found {len(self.existing_services)} services already running")
+            logger.info("   Services are already registered in Redis")
+            logger.info("   Use --restart to force restart, or stop services first")
+            logger.info("")
+            logger.info("   To stop: pkill -f 'gleitzeit'")
+            logger.info("   Or use: gleitzeit ps  # to see running services")
             return await self.process_manager.monitor_processes()
 
         # If restarting, stop existing services first
@@ -804,28 +794,25 @@ class AsyncServiceManager:
             await asyncio.sleep(2)
             self.existing_services = {}
 
-        # Start API if enabled
-        if not no_api:
-            # Use config ports if available, otherwise use provided defaults
-            config_api_port = self.config.get('api', {}).get('port', api_port)
-            actual_api_port = config_api_port + self.port_offset
-            await self.start_api(port=actual_api_port, dev_mode=dev_mode)
+        # Build CLI overrides dict
+        cli_overrides = {
+            'api_port': api_port + self.port_offset,
+            'ui_port': ui_port + self.port_offset,
+            'api_host': api_host,
+            'ui_host': ui_host,
+            'dev_mode': dev_mode,
+            'no_ui': no_ui,
+            'no_api': no_api,
+            'no_workers': no_workers,
+            'api_only': api_only,
+            'workers_only': workers_only,
+        }
 
-            # Wait for API to be ready
-            await asyncio.sleep(2)
+        # Start ALL workers from config (API, UI, and processing workers!)
+        # This is the new unified approach - no special cases!
+        await self.start_essential_workers(cli_overrides)
 
-        # Start UI if enabled
-        if not no_ui and not no_api:
-            config_ui_port = self.config.get('ui', {}).get('port', ui_port)
-            actual_ui_port = config_ui_port + self.port_offset
-            actual_api_port = self.config.get('api', {}).get('port', api_port) + self.port_offset
-            await self.start_ui(port=actual_ui_port, api_port=actual_api_port, dev_mode=dev_mode)
-
-        # Start essential workers if enabled
-        if not no_workers:
-            await self.start_essential_workers()
-
-        # Start Loki exporter if enabled
+        # Start Loki exporter if enabled (still separate - not a worker)
         logging_config = self.config_manager.get_value('logging') or {}
         loki_config = logging_config.get('loki', {})
         if loki_config.get('enabled', False):
@@ -854,135 +841,48 @@ class AsyncServiceManager:
                 await self.smart_manager.unregister_service(service_name)
                 logger.info(f"Unregistered service {service_name} that we started")
 
-    async def _service_heartbeat_loop(self):
-        """
-        Periodically refresh service registrations to prevent expiry.
-
-        Uses circuit breaker pattern - never terminates, backs off on failures.
-        """
-        from .circuit_breaker import CircuitBreaker, CircuitBreakerConfig, CircuitOpenError
-
-        # Create circuit breaker for service heartbeat
-        circuit_breaker = CircuitBreaker(
-            "service_heartbeat",
-            CircuitBreakerConfig(
-                failure_threshold=10,
-                success_threshold=2,
-                reset_timeout=300  # 5 minutes
-            )
-        )
-
-        while True:  # Never exit - keep trying forever
-            try:
-                await asyncio.sleep(30)  # Heartbeat every 30 seconds
-
-                # Wrap the actual heartbeat work in circuit breaker
-                await circuit_breaker.call(self._refresh_service_registrations)
-
-            except CircuitOpenError as e:
-                # Circuit is open - back off longer
-                logger.warning(
-                    f"Service heartbeat circuit breaker is OPEN: {e}. "
-                    f"Backing off for {e.reset_timeout}s"
-                )
-                await asyncio.sleep(e.reset_timeout)
-
-            except asyncio.CancelledError:
-                # Allow graceful cancellation
-                logger.info("Service heartbeat loop cancelled")
-                raise
-
-            except Exception as e:
-                # Unexpected error - log and continue
-                logger.error(f"Unexpected error in service heartbeat loop: {e}", exc_info=True)
-                await asyncio.sleep(30)
-
-    async def _refresh_service_registrations(self):
-        """
-        Refresh service registrations (called through circuit breaker).
-
-        Raises:
-            Exception: On any failure (circuit breaker will track)
-        """
-        if not self.smart_manager:
-            logger.warning("No smart_manager available for service refresh")
-            return
-
-        # Re-register all running services
-        services_refreshed = 0
-        for name, info in self.process_manager.processes.items():
-            if info.process is not None or info.pid:  # Service is running
-                if name == "api" or name == "ui":
-                    # Re-register service with updated TTL
-                    service_data = await self.smart_manager.redis.hgetall(f"service:registry:{name}")
-                    if service_data:
-                        # Decode and refresh
-                        decoded_data = {}
-                        for k, v in service_data.items():
-                            key = k.decode() if isinstance(k, bytes) else k
-                            value = v.decode() if isinstance(v, bytes) else v
-                            decoded_data[key] = value
-
-                        # Re-register with fresh TTL
-                        await self.smart_manager.register_service(name, decoded_data)
-                        logger.debug(f"Refreshed registration for {name}")
-                        services_refreshed += 1
-
-        if services_refreshed == 0:
-            logger.debug("No services to refresh in this heartbeat cycle")
-
     async def monitor_loop(self, auto_restart=True):
-        """Monitor services and restart if needed"""
+        """
+        Monitor worker processes and restart if needed.
+
+        NOTE: Workers (including API/UI) now self-register with heartbeat,
+        so no centralized heartbeat loop is needed!
+        """
         restart_attempts = {}
         max_restart_attempts = 3
 
-        # Start heartbeat task
-        heartbeat_task = asyncio.create_task(self._service_heartbeat_loop())
+        while True:
+            status = await self.process_manager.monitor_processes()
 
-        try:
-            while True:
-                status = await self.process_manager.monitor_processes()
+            # Check for dead processes and restart if needed
+            for name, info in status.items():
+                if info.get('status') == 'dead':
+                    logger.error(f"Worker {name} died with exit code {info.get('exit_code')}")
 
-                # Check for dead processes and restart if needed
-                for name, info in status.items():
-                    if info.get('status') == 'dead':
-                        logger.error(f"Service {name} died with exit code {info.get('exit_code')}")
-
-                        if auto_restart:
-                            # Track restart attempts
-                            if name not in restart_attempts:
-                                restart_attempts[name] = 0
-
-                            if restart_attempts[name] < max_restart_attempts:
-                                restart_attempts[name] += 1
-                                logger.info(f"Attempting to restart {name} (attempt {restart_attempts[name]}/{max_restart_attempts})")
-
-                                # Try to restart the service
-                                if name == 'api':
-                                    await self.start_api(port=self.config.get('api_port', 8000))
-                                elif name == 'ui':
-                                    await self.start_ui(port=self.config.get('ui_port', 8004))
-                                elif name.startswith('worker_'):
-                                    worker_type = name.replace('worker_', '')
-                                    for worker_config in self.config.get('workers', []):
-                                        if worker_config.get('worker_type') == worker_type:
-                                            await self.start_worker(worker_config)
-                                            break
-                            else:
-                                logger.error(f"Max restart attempts reached for {name}, giving up")
-                    elif info.get('status') == 'running':
-                        # Reset restart counter for running processes
-                        if name in restart_attempts:
+                    if auto_restart:
+                        # Track restart attempts
+                        if name not in restart_attempts:
                             restart_attempts[name] = 0
 
-                await asyncio.sleep(5)
-        finally:
-            # Clean up heartbeat task
-            heartbeat_task.cancel()
-            try:
-                await heartbeat_task
-            except asyncio.CancelledError:
-                pass
+                        if restart_attempts[name] < max_restart_attempts:
+                            restart_attempts[name] += 1
+                            logger.info(f"Attempting to restart {name} (attempt {restart_attempts[name]}/{max_restart_attempts})")
+
+                            # Find worker config and restart
+                            # Extract worker type from process name (e.g., "worker_api" -> "api")
+                            worker_type = name.replace('worker_', '')
+                            for worker_config in self.config.get('workers', []):
+                                if worker_config.get('worker_type') == worker_type:
+                                    await self.start_worker(worker_config)
+                                    break
+                        else:
+                            logger.error(f"Max restart attempts reached for {name}, giving up")
+                elif info.get('status') == 'running':
+                    # Reset restart counter for running processes
+                    if name in restart_attempts:
+                        restart_attempts[name] = 0
+
+            await asyncio.sleep(5)
 
 
 # Export for use in CLI

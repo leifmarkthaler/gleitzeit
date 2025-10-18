@@ -17,6 +17,14 @@ setup(
     url="https://github.com/yourorg/gleitzeit",
     package_dir={"": "src"},
     packages=find_packages(where="src"),
+    include_package_data=True,
+    package_data={
+        "gleitzeit": [
+            "docker/Dockerfile.*",
+            "config/*.yaml",
+            "config/*.yml",
+        ],
+    },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",

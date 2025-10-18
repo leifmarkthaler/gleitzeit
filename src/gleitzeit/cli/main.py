@@ -9,22 +9,17 @@ import sys
 import os
 from pathlib import Path
 
-# Check if running in proper uv environment
+# Check if running in proper uv environment (optional warning, not required)
 if not sys.prefix.endswith('.venv'):
-    print("=" * 60, file=sys.stderr)
-    print("❌ Not running in uv virtual environment!", file=sys.stderr)
-    print("=" * 60, file=sys.stderr)
     print("", file=sys.stderr)
-    print("Please run gleitzeit through uv:", file=sys.stderr)
-    print("  1. Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh", file=sys.stderr)
-    print("  2. cd <project_root>", file=sys.stderr)
-    print("  3. uv venv .venv", file=sys.stderr)
-    print("  4. uv sync", file=sys.stderr)
-    print("  5. .venv/bin/python -m gleitzeit.cli.main <command>", file=sys.stderr)
+    print("⚠️  Gleitzeit is running outside a virtual environment", file=sys.stderr)
     print("", file=sys.stderr)
-    print("Or use: uv run python -m gleitzeit.cli.main <command>", file=sys.stderr)
-    print("=" * 60, file=sys.stderr)
-    sys.exit(1)
+    print("💡 Recommendation: Use UV for better dependency management:", file=sys.stderr)
+    print("   uv venv && uv sync && uv run gleitzeit <command>", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("   Learn more: https://docs.astral.sh/uv/", file=sys.stderr)
+    print("", file=sys.stderr)
+    # Continue execution - don't exit!
 
 import click
 import asyncio

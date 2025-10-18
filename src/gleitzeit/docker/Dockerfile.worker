@@ -1,0 +1,41 @@
+# Worker Container
+FROM python:3.11-slim
+
+# System dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:${PATH}"
+
+WORKDIR /app
+
+# Copy project files
+COPY pyproject.toml uv.lock ./
+COPY src/ ./src/
+
+# Install dependencies
+RUN uv venv .venv && uv sync --frozen
+
+# Set Python environment
+ENV VIRTUAL_ENV=/app/.venv
+ENV PATH="/app/.venv/bin:${PATH}"
+ENV PYTHONPATH=/app/src:${PYTHONPATH}
+
+# Worker configuration (can be overridden)
+ENV WORKER_TYPE=task
+ENV WORKER_SHARDS=0,1,2,3
+ENV WORKER_CONCURRENCY=10
+ENV MAX_CONCURRENT_TASKS=10
+
+# No exposed ports for workers
+
+# Simple health check - verify Python and imports work
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD python -c "import gleitzeit.workers; print('healthy')" || exit 1
+
+# Run worker based on type - for now, just sleep to keep container running
+# Workers need proper configuration which should come from docker-compose
+CMD ["sleep", "infinity"]

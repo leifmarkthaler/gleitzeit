@@ -15,6 +15,8 @@ from typing import Optional
 import click
 import yaml
 
+from ..core.config_manager import ConfigurationManager
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,6 +80,7 @@ def check_docker_compose_available() -> bool:
 @click.option('--redis-url', envvar='REDIS_URL', help='Redis URL (also via REDIS_URL env var)')
 @click.option('--config-url', envvar='CONFIG_URL', help='Remote config URL (http/s3) or path')
 @click.option('--log-level', type=click.Choice(['DEBUG', 'INFO', 'WARNING', 'ERROR'], case_sensitive=False), help='Override log level (DEBUG, INFO, WARNING, ERROR)')
+@click.option('--isolated', is_flag=True, help='Run in isolated network (prevents worker sharing with other instances)')
 def serve_unified(
     config_file: str,
     api_host: Optional[str],
@@ -98,6 +101,7 @@ def serve_unified(
     workers_only: bool,
     redis_url: Optional[str],
     config_url: Optional[str],
+    isolated: bool,
     log_level: Optional[str]
 ):
     """
@@ -157,23 +161,24 @@ def serve_unified(
     # Determine which implementation to use
     use_docker = False
 
-    # Check if config has mixed handler execution modes
+    # Load config using ConfigurationManager (handles fallback to packaged config)
     config_path = Path(config_file)
+    config_manager = ConfigurationManager(str(config_path), {})
+    config = config_manager.yaml_config
+
+    # Check if config has mixed handler execution modes
     has_mixed_modes = False
-    if config_path.exists():
-        with open(config_path) as f:
-            config = yaml.safe_load(f) or {}
-            handlers = config.get('handlers', {})
-            if handlers:
-                # Check if handlers have different execution modes
-                modes = set()
-                for handler_config in handlers.values():
-                    if 'execution' in handler_config:
-                        modes.add(handler_config['execution'].get('mode', 'native'))
-                # If we have container mode mixed with other modes, use native services
-                if 'container' in modes and len(modes) > 1:
-                    has_mixed_modes = True
-                    click.echo("🔀 Mixed handler execution modes detected in configuration")
+    handlers = config.get('handlers', {})
+    if handlers:
+        # Check if handlers have different execution modes
+        modes = set()
+        for handler_config in handlers.values():
+            if 'execution' in handler_config:
+                modes.add(handler_config['execution'].get('mode', 'native'))
+        # If we have container mode mixed with other modes, use native services
+        if 'container' in modes and len(modes) > 1:
+            has_mixed_modes = True
+            click.echo("🔀 Mixed handler execution modes detected in configuration")
 
     if force_docker:
         use_docker = True
@@ -224,7 +229,8 @@ def serve_unified(
             api_only=api_only,
             workers_only=workers_only,
             redis_url=redis_url,
-            config_url=config_url
+            config_url=config_url,
+            isolated=isolated
         )
     else:
         # Use native async implementation (fixed!)
@@ -280,12 +286,10 @@ async def serve_native_async(
     api_port = api_port + port_offset
     ui_port = ui_port + port_offset
 
-    # Load configuration
+    # Load configuration using ConfigurationManager (handles fallback to packaged config)
     config_path = Path(config_file)
-    config = {}
-    if config_path.exists():
-        with open(config_path) as f:
-            config = yaml.safe_load(f) or {}
+    config_manager = ConfigurationManager(str(config_path), {})
+    config = config_manager.yaml_config
 
     # Create async service manager with config file path and Redis URL
     manager = AsyncServiceManager(
@@ -385,32 +389,21 @@ async def serve_native_async(
         # Start services based on mode
         if api_only:
             click.echo("🎯 Starting API/UI only (no workers)")
-            status = await manager.start_all(
-                api_port=api_port,
-                ui_port=ui_port,
-                no_ui=no_ui,
-                dev_mode=dev_mode,
-                restart=restart,
-                no_workers=True
-            )
         elif workers_only:
             click.echo("🎯 Starting workers only (no API/UI)")
-            status = await manager.start_all(
-                api_port=api_port,
-                ui_port=ui_port,
-                no_ui=True,
-                no_api=True,
-                dev_mode=dev_mode,
-                restart=restart
-            )
-        else:
-            status = await manager.start_all(
-                api_port=api_port,
-                ui_port=ui_port,
-                no_ui=no_ui,
-                dev_mode=dev_mode,
-                restart=restart
-            )
+
+        # Unified startup - no special cases!
+        status = await manager.start_all(
+            api_port=api_port,
+            ui_port=ui_port,
+            api_host=api_host,
+            ui_host=ui_host,
+            no_ui=no_ui,
+            dev_mode=dev_mode,
+            restart=restart,
+            api_only=api_only,
+            workers_only=workers_only
+        )
 
         click.echo("\n" + "=" * 60)
         click.echo("✨ Gleitzeit is running!")

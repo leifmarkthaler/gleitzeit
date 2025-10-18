@@ -5,9 +5,11 @@ Provides unified configuration with clear precedence order.
 """
 
 import os
+import os.path
 import logging
 from typing import Dict, Any, Optional, List
 import yaml
+import importlib.resources as pkg_resources
 
 from .instance import get_current_instance
 from .ports import PortManager
@@ -41,16 +43,36 @@ class ConfigurationManager:
 
     def _load_yaml(self) -> Dict:
         """Load configuration from YAML file"""
+        # Check if config file exists and is a file (not a directory)
+        if os.path.isfile(self.config_file):
+            try:
+                with open(self.config_file, 'r') as f:
+                    config = yaml.safe_load(f) or {}
+                    logger.info(f"Loaded configuration from {self.config_file}")
+                    return config
+            except Exception as e:
+                logger.error(f"Failed to load config from {self.config_file}: {e}")
+                # Fall through to load packaged default
+
+        # Config file doesn't exist or is not a file, try packaged default
         try:
-            with open(self.config_file, 'r') as f:
-                config = yaml.safe_load(f) or {}
-                logger.info(f"Loaded configuration from {self.config_file}")
-                return config
-        except FileNotFoundError:
-            logger.warning(f"Config file {self.config_file} not found, using defaults")
-            return {}
+            from .. import config as config_pkg
+
+            try:
+                # Python 3.9+
+                default_config = pkg_resources.files(config_pkg).joinpath('gleitzeit.yaml.default')
+                with default_config.open('r') as f:
+                    config = yaml.safe_load(f) or {}
+                    logger.info(f"Using packaged default configuration")
+                    return config
+            except AttributeError:
+                # Python 3.7-3.8 fallback
+                with pkg_resources.open_text(config_pkg, 'gleitzeit.yaml.default') as f:
+                    config = yaml.safe_load(f) or {}
+                    logger.info(f"Using packaged default configuration")
+                    return config
         except Exception as e:
-            logger.error(f"Failed to load config: {e}")
+            logger.warning(f"Could not load packaged config: {e}, using minimal defaults")
             return {}
 
     def get_value(self, key: str, service: Optional[str] = None) -> Any:

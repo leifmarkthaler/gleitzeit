@@ -1,0 +1,19 @@
+# Include configuration files
+include gleitzeit.yaml
+include README.md
+include LICENSE
+
+# Include Docker files from the package
+recursive-include src/gleitzeit/docker *.api *.ui *.base *.worker Dockerfile.*
+
+# Include config files
+recursive-include src/gleitzeit/config *.yaml *.yml
+
+# Include documentation
+recursive-include docs *.md *.rst
+
+# Exclude development files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude __pycache__
+global-exclude .DS_Store
