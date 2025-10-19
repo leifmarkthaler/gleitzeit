@@ -320,18 +320,36 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                 default_sharding.get_workflow_key("state", workflow_id).encode(),
                 mapping={
                     b"workflow_id": workflow_id.encode(),
-                    b"status": b"validation_failed",
+                    b"status": b"failed",
                     b"name": workflow_name.encode(),
                     b"description": workflow_description.encode(),
                     b"error": str(e).encode(),
                     b"failed_at": datetime.utcnow().isoformat().encode(),
                     b"submitted_at": data.get('submitted_at', datetime.utcnow().isoformat()).encode(),
+                    b"user_id": data.get('user_id', '').encode(),
                     b"total_tasks": b"0",
                     b"completed_tasks": b"0"
                 }
             )
 
-            # Emit failure event
+            # Add to workflow indexes even if validation failed
+            # This allows the UI to show failed workflows
+            shard = default_sharding.get_shard(workflow_id)
+
+            # Add workflow to global shard mapping index
+            await self.redis.hset(
+                b"{shard:0}:index:workflow_shards",
+                workflow_id.encode(),
+                str(shard).encode()
+            )
+
+            # Add to per-shard workflow index for efficient listing
+            await self.redis.sadd(
+                f"{{shard:{shard}}}:index:workflows".encode(),
+                workflow_id.encode()
+            )
+
+            # Emit failure event to workflow:load:failed stream
             await self.redis.xadd(
                 default_sharding.get_global_key("workflow:load:failed").encode(),
                 {
@@ -342,6 +360,17 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                     b"timestamp": datetime.utcnow().isoformat().encode()
                 }
             )
+
+            # Emit to workflow:submitted stream so dependency_worker can create timeline event
+            # Dependency worker will check the workflow status and emit WORKFLOW_FAILED event
+            await self.redis.xadd(
+                default_sharding.get_stream_key("workflow:submitted", workflow_id).encode(),
+                {
+                    b"workflow_id": workflow_id.encode(),
+                    b"timestamp": datetime.utcnow().isoformat().encode()
+                }
+            )
+
             return True  # Don't retry validation errors
 
         except Exception as e:
@@ -492,9 +521,13 @@ class WorkflowLoaderWorkerV2(BaseWorker):
         elif task_type in self.type_to_protocol:
             protocol = self.type_to_protocol[task_type]
         else:
-            # Unknown task type - create a placeholder protocol that will fail validation
-            protocol = f"{task_type}/unknown"
-            logger.warning(f"Unknown task type '{task_type}' in task '{task_id}', using placeholder protocol '{protocol}'")
+            # Unknown task type - this is a validation error
+            task_name = raw_task.get('name', raw_task.get('id', 'unknown'))
+            available_types = ', '.join(sorted(self.type_to_protocol.keys()))
+            raise WorkflowValidationError(
+                workflow_id=workflow_id,
+                validation_errors=[f"Task '{task_name}': unsupported task type '{task_type}'. Available types: {available_types}"]
+            )
 
         # Create protocol-based task structure
         task = {

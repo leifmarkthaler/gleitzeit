@@ -174,6 +174,12 @@ async def handlers_list(request: Request):
                     process_type = "api_server"
                     process_name = "API Server"
                     port = 8000
+                elif 'workers.loki_exporter_worker' in cmdline_str:
+                    process_type = "worker_loki_exporter"
+                    process_name = "Loki Exporter"
+                elif 'gleitzeit serve' in cmdline_str:
+                    process_type = "orchestrator"
+                    process_name = "Orchestrator"
                 elif 'workers.runner' in cmdline_str:
                     # Extract worker type from config key
                     for part in cmdline:

@@ -15,6 +15,8 @@ from .base import BaseWorker, WorkerConfig
 from ..core.sharding import default_sharding
 from ..timers.stateless_timer_manager import StatelessTimerManager
 from ..core.leader_election import LeaderElection, LeaderStatus
+from ..core.events import EventType
+from ..core.event_store import EventStore, EventLevel
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +53,12 @@ class TimerWorker(BaseWorker):
             self.config.worker_id,
             self.leader_ttl
         )
+
+        # Initialize event store for publishing timer events
+        self.event_store = EventStore(self.redis, config={
+            'max_events_per_workflow': 10000,
+            'event_ttl_seconds': 86400 * 30  # 30 days
+        })
 
         logger.info(f"TimerWorker initialized with atomic leader election")
 
@@ -281,6 +289,15 @@ class TimerWorker(BaseWorker):
                 "fired_at": timer_data.get('fired_at'),
                 "created_at": timer_data.get('created_at')
             })
+
+        # Publish timer fired event
+        await self.event_store.store_event(
+            event_type=EventType.TIMER_FIRED,
+            workflow_id=workflow_id,
+            task_id=task_id,
+            level=EventLevel.IMPORTANT,
+            data=result_data
+        )
 
         # Mark timer task as completed
         completion_time = datetime.utcnow().isoformat()

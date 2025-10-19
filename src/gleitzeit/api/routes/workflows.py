@@ -737,9 +737,9 @@ async def get_workflow_events(
 
         # Try to construct event stream key directly using sharding
         try:
-            # Try the sharded key first (most likely pattern)
+            # Try the sharded key first (EventStore pattern)
             shard = default_sharding.get_shard(workflow_id)
-            direct_stream_key = f"{{shard:{shard}}}:workflow:events:{workflow_id}"
+            direct_stream_key = f"{{shard:{shard}}}:events:{workflow_id}"
 
             # Check if this key exists
             exists = await conn.redis.exists(direct_stream_key.encode())
@@ -753,7 +753,7 @@ async def get_workflow_events(
 
         # If direct lookup failed, fall back to scanning with timeout
         if not event_stream_key:
-            stream_key_pattern = f"*:workflow:events:{workflow_id}".encode()
+            stream_key_pattern = f"*:events:{workflow_id}".encode()
             try:
                 # Use asyncio.wait_for to add timeout
                 import asyncio

@@ -10,6 +10,7 @@ from .retry import RetryMixin
 from .workflows import WorkflowMixin, WorkflowResponse, WorkflowStatus
 from .tasks import TaskMixin, TaskStatus
 from .monitoring import MonitoringMixin, SystemHealth, WorkerStatus
+from .websocket_mixin import WebSocketMixin
 
 __all__ = [
     # Auth
@@ -33,4 +34,7 @@ __all__ = [
     'MonitoringMixin',
     'SystemHealth',
     'WorkerStatus',
+
+    # WebSocket
+    'WebSocketMixin',
 ]

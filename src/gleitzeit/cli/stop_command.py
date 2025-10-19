@@ -2,6 +2,55 @@
 Enhanced stop command for Gleitzeit CLI
 
 Provides intelligent stopping of services in both Docker and native modes.
+
+## Stop Command Flags
+
+### Basic Usage
+- `gleitzeit stop` - Gracefully stop all services (recommended for normal use)
+  - Sends SIGTERM to processes (allows cleanup)
+  - Waits up to 10 seconds for graceful shutdown
+  - Force kills any remaining processes
+  - Cleans up Redis registry
+  - Stops both Docker and native services
+  - **This is sufficient for most use cases**
+
+### Optional Flags
+
+#### `--force`
+- Immediately kills processes with SIGKILL instead of graceful SIGTERM
+- Use when: Processes are hung and not responding to normal shutdown
+- Example: `gleitzeit stop --force`
+
+#### `--all`
+- Stops ALL gleitzeit processes including serve monitor loops
+- Without this flag: Only stops worker/API/UI processes (not serve processes)
+- Use when: You want to ensure absolutely everything is stopped
+- Example: `gleitzeit stop --all`
+- Note: In practice, `gleitzeit stop` already stops everything needed
+
+#### `--timeout N`
+- Custom timeout in seconds for graceful shutdown (default: 10)
+- Use when: Services need more time to cleanly shut down
+- Example: `gleitzeit stop --timeout 30`
+
+#### `--no-validate`
+- Skip validation check after stopping
+- Use when: You want faster stop without verification
+- Example: `gleitzeit stop --no-validate`
+
+### Mixed Deployments
+The stop command automatically detects and stops both:
+- Docker containers (via docker-compose)
+- Native Python processes
+
+### Examples
+```bash
+gleitzeit stop                    # Normal use - stops everything
+gleitzeit stop --force            # Force kill hung processes
+gleitzeit stop --all              # Ensure monitor loops are stopped
+gleitzeit stop --force --all      # Nuclear option - kill everything immediately
+gleitzeit stop --timeout 30       # Wait longer for graceful shutdown
+```
 """
 
 import click
@@ -14,21 +63,31 @@ from .mode_utils import detect_running_mode
 
 
 @click.command()
-@click.option('--force', is_flag=True, help='Force stop all processes')
-@click.option('--timeout', type=int, default=10, help='Timeout for graceful shutdown')
-@click.option('--all', is_flag=True, help='Stop all instances including monitor loops')
-@click.option('--validate/--no-validate', default=True, help='Validate stop operation')
+@click.option('--force', is_flag=True, help='Immediately kill processes (SIGKILL) instead of graceful shutdown (SIGTERM)')
+@click.option('--timeout', type=int, default=10, help='Seconds to wait for graceful shutdown before force killing (default: 10)')
+@click.option('--all', is_flag=True, help='Stop ALL processes including serve monitor loops (normally not needed)')
+@click.option('--validate/--no-validate', default=True, help='Validate that all services stopped successfully')
 def stop(force: bool, timeout: int, all: bool, validate: bool):
     """
-    Stop all Gleitzeit services (Docker or native).
+    Stop all Gleitzeit services (Docker and/or native).
 
-    Automatically detects which mode is running and stops appropriately.
+    Automatically detects running services and stops them appropriately.
+    For most use cases, just use 'gleitzeit stop' without any flags.
 
+    \b
     Examples:
-        gleitzeit stop           # Gracefully stop services
-        gleitzeit stop --force   # Force stop all processes
-        gleitzeit stop --all     # Stop all instances including monitor loops
-        gleitzeit stop --timeout 30  # Wait up to 30 seconds for graceful shutdown
+        gleitzeit stop                    # Normal use - stops everything gracefully
+        gleitzeit stop --force            # Force kill hung processes immediately
+        gleitzeit stop --all              # Ensure monitor loops are also stopped
+        gleitzeit stop --force --all      # Nuclear option - kill everything now
+        gleitzeit stop --timeout 30       # Wait 30s for graceful shutdown
+
+    \b
+    Behavior:
+        - Detects and stops both Docker containers and native processes
+        - Gracefully terminates (SIGTERM) then force kills if needed
+        - Cleans up Redis service registry
+        - Validates that everything stopped successfully
     """
     # Check for both Docker and native services
     has_docker = has_docker_containers()
@@ -327,7 +386,16 @@ def check_if_stopped() -> tuple[bool, list[str]]:
     Returns:
         (success: bool, issues: List[str])
     """
+    import os
     issues = []
+
+    # Get current process and parent to exclude from check
+    current_pid = os.getpid()
+    try:
+        current_proc = psutil.Process(current_pid)
+        parent_pid = current_proc.ppid()
+    except:
+        parent_pid = None
 
     # 1. Check for running processes
     running_procs = []
@@ -338,7 +406,9 @@ def check_if_stopped() -> tuple[bool, list[str]]:
                 continue
             cmdline_str = ' '.join(cmdline)
             if 'gleitzeit' in cmdline_str and 'python' in cmdline_str:
-                running_procs.append(proc.pid)
+                # Exclude the stop command itself and its parent
+                if proc.pid != current_pid and proc.pid != parent_pid:
+                    running_procs.append(proc.pid)
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
 

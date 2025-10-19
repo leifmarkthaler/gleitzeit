@@ -14,6 +14,8 @@ import time
 from .base import BaseWorker, WorkerConfig
 from ..core.sharding import default_sharding
 from ..core.leader_election import LeaderElection, LeaderStatus
+from ..core.events import EventType
+from ..core.event_store import EventStore, EventLevel
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +41,12 @@ class SignalWorker(BaseWorker):
 
     async def on_initialize(self):
         """Initialize signal worker resources"""
+        # Initialize event store for publishing signal events
+        self.event_store = EventStore(self.redis, config={
+            'max_events_per_workflow': 10000,
+            'event_ttl_seconds': 86400 * 30  # 30 days
+        })
+
         # Initialize atomic leader election
         self.leader_election = LeaderElection(
             self.redis,
@@ -46,7 +54,7 @@ class SignalWorker(BaseWorker):
             self.config.worker_id,
             self.leader_ttl
         )
-        logger.info(f"SignalWorker initialized with atomic leader election")
+        logger.info(f"SignalWorker initialized with atomic leader election and event store")
 
     def get_base_streams(self) -> List[str]:
         """Return streams this worker consumes from"""
@@ -262,6 +270,18 @@ class SignalWorker(BaseWorker):
                 metadata = await self.redis.hgetall(default_sharding.get_signal_key("metadata", workflow_id, task_id).encode())
                 shard = int(metadata.get(b"shard", b"0").decode())
 
+                # Publish signal received event
+                await self.event_store.store_event(
+                    event_type=EventType.SIGNAL_RECEIVED,
+                    workflow_id=workflow_id,
+                    task_id=task_id,
+                    level=EventLevel.IMPORTANT,
+                    data={
+                        'signal_name': signal_name,
+                        'payload': json.loads(payload) if payload else {}
+                    }
+                )
+
                 # Mark signal task as completed
                 await self.redis.hset(
                     default_sharding.get_task_key(task_id, workflow_id).encode(),
@@ -331,6 +351,17 @@ class SignalWorker(BaseWorker):
                     # Get task metadata to find shard
                     metadata = await self.redis.hgetall(default_sharding.get_signal_key("metadata", workflow_id, task_id).encode())
                     shard = int(metadata.get(b"shard", b"0").decode())
+
+                    # Publish signal timeout event
+                    await self.event_store.store_event(
+                        event_type=EventType.SIGNAL_TIMEOUT,
+                        workflow_id=workflow_id,
+                        task_id=task_id,
+                        level=EventLevel.WARNING,
+                        data={
+                            'error': 'Signal wait timed out'
+                        }
+                    )
 
                     # Mark task as failed due to timeout
                     await self.redis.hset(

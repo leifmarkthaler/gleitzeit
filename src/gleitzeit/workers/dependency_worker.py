@@ -103,7 +103,30 @@ class DependencyWorker(BaseWorker):
             workflow_id=workflow_id
         )
 
-        # Emit workflow started event
+        # Check if workflow already failed during validation
+        workflow_state_key = default_sharding.get_workflow_key("state", workflow_id)
+        workflow_state = await self.redis.hgetall(workflow_state_key.encode())
+        workflow_status = workflow_state.get(b"status", b"").decode() if workflow_state else ""
+
+        # If workflow already failed (e.g., validation failure), emit WORKFLOW_FAILED and skip processing
+        if workflow_status == "failed":
+            logger.info(f"Workflow {workflow_id} already failed (status: {workflow_status}), emitting WORKFLOW_FAILED event")
+
+            await self.event_store.store_event(
+                event_type=EventType.WORKFLOW_FAILED,
+                workflow_id=workflow_id,
+                level=EventLevel.CRITICAL,
+                data={
+                    'status': 'failed',
+                    'error': workflow_state.get(b"error", b"").decode(),
+                    'total_tasks': 0,
+                    'completed_tasks': 0,
+                    'worker_id': self.config.worker_id
+                }
+            )
+            return  # Don't process further
+
+        # Emit workflow started event for successful validation
         await self.event_store.store_event(
             event_type=EventType.WORKFLOW_STARTED,
             workflow_id=workflow_id,

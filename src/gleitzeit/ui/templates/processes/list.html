@@ -152,6 +152,8 @@
                     <div class="process-icon">
                         {% if process.type == 'api_server' %}🚀
                         {% elif process.type == 'ui_server' %}🎨
+                        {% elif process.type == 'orchestrator' %}🎯
+                        {% elif process.type == 'worker_loki_exporter' %}📊
                         {% elif 'task_execution' in process.type %}⚡
                         {% elif 'python_specialist' in process.type %}🐍
                         {% elif 'dependency' in process.type %}🔗
@@ -201,6 +203,16 @@
                         </div>
                         <div class="stat-label">Uptime</div>
                     </div>
+                </div>
+                <div class="process-actions">
+                    <button class="btn-details" onclick="showWorkerDetails('{{ process.type }}', {{ process.pid }})">
+                        Details
+                    </button>
+                    {% if not process.is_current %}
+                    <button class="btn-stop" onclick="stopWorker('{{ process.type }}', {{ process.pid }})">
+                        Stop
+                    </button>
+                    {% endif %}
                 </div>
             </div>
             {% endfor %}
@@ -528,17 +540,336 @@
 .mb-4 {
     margin-bottom: 1.5rem;
 }
+
+/* Worker Actions */
+.process-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+}
+
+.btn-details, .btn-stop {
+    flex: 1;
+    padding: 0.5rem 0.875rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: white;
+    color: #4a5568;
+}
+
+.btn-details:hover {
+    background: #f7fafc;
+    border-color: #a0aec0;
+    color: #2d3748;
+}
+
+.btn-stop {
+    color: #c53030;
+    border-color: #fc8181;
+}
+
+.btn-stop:hover {
+    background: #fff5f5;
+    border-color: #f56565;
+    color: #9b2c2c;
+}
+
+.btn-stop:active, .btn-details:active {
+    transform: scale(0.98);
+}
+
+/* Worker Details Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(2px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    border: 1px solid #e2e8f0;
+    animation: modalSlideIn 0.2s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: color 0.15s;
+    padding: 0.25rem;
+}
+
+.modal-close:hover {
+    color: #2d3748;
+}
+
+.worker-detail-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.625rem 0.75rem;
+    background: #f8fafc;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: #64748b;
+    font-size: 0.875rem;
+}
+
+.detail-value {
+    font-family: 'Courier New', monospace;
+    color: #2d3748;
+    font-size: 0.875rem;
+}
+
+.loading {
+    text-align: center;
+    padding: 2rem;
+    color: #94a3b8;
+}
 </style>
 
+<!-- Worker Details Modal -->
+<div id="workerModal" class="modal-overlay" onclick="if(event.target === this) closeModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modalTitle">Worker Details</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div id="modalBody" class="loading">
+            Loading...
+        </div>
+    </div>
+</div>
+
 <script>
+// Modal functions
+function closeModal() {
+    document.getElementById('workerModal').classList.remove('active');
+}
+
+async function showWorkerDetails(workerType, pid) {
+    const modal = document.getElementById('workerModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    // Show modal
+    modal.classList.add('active');
+    const displayType = workerType.replace('worker_', '').replace('_', ' ');
+    modalTitle.textContent = `${displayType.charAt(0).toUpperCase() + displayType.slice(1)} Details`;
+    modalBody.innerHTML = '<div class="loading">Loading...</div>';
+
+    try {
+        // For unknown processes, show basic info
+        if (workerType === 'unknown') {
+            modalBody.innerHTML = `
+                <div class="worker-detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Process Type:</span>
+                        <span class="detail-value">Auxiliary Process</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">PID:</span>
+                        <span class="detail-value">${pid}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value">Running (not in worker registry)</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Note:</span>
+                        <span class="detail-value" style="font-family: inherit; font-size: 0.8125rem;">This is a supporting process like Loki exporter or main orchestrator</span>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Extract worker name from type
+        const workerName = workerType.replace('worker_', '').replace('_server', '');
+
+        // Try to fetch from API
+        const response = await fetch(`http://localhost:8000/workers/`);
+        if (!response.ok) throw new Error('Failed to fetch workers');
+
+        const data = await response.json();
+
+        // Find worker by matching type first, then PID
+        let worker = data.workers.find(w => w.worker_type === workerName);
+
+        // If not found by type, try partial match
+        if (!worker) {
+            worker = data.workers.find(w =>
+                w.worker_type.includes(workerName) ||
+                workerName.includes(w.worker_type)
+            );
+        }
+
+        // Last resort: try PID match
+        if (!worker) {
+            worker = data.workers.find(w => w.pid === pid.toString());
+        }
+
+        if (worker) {
+            modalBody.innerHTML = `
+                <div class="worker-detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Worker ID:</span>
+                        <span class="detail-value">${worker.worker_id}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Worker Type:</span>
+                        <span class="detail-value">${worker.worker_type}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">PID:</span>
+                        <span class="detail-value">${worker.pid || 'N/A'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Shards:</span>
+                        <span class="detail-value">${worker.shards || '[]'}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Started At:</span>
+                        <span class="detail-value">${worker.started_at ? new Date(worker.started_at).toLocaleString() : 'N/A'}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            modalBody.innerHTML = `
+                <div class="worker-detail-grid">
+                    <div class="detail-item">
+                        <span class="detail-label">Process Type:</span>
+                        <span class="detail-value">${workerType}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">PID:</span>
+                        <span class="detail-value">${pid}</span>
+                    </div>
+                    <div class="detail-item">
+                        <span class="detail-label">Status:</span>
+                        <span class="detail-value">Running (not registered as worker)</span>
+                    </div>
+                </div>
+            `;
+        }
+    } catch (error) {
+        modalBody.innerHTML = `
+            <div style="text-align: center; color: #ef4444;">
+                Failed to load worker details: ${error.message}
+            </div>
+        `;
+    }
+}
+
+async function stopWorker(workerType, pid) {
+    if (!confirm(`Are you sure you want to stop ${workerType}?`)) {
+        return;
+    }
+
+    try {
+        // Extract worker name from type
+        const workerName = workerType.replace('worker_', '').replace('_server', '');
+
+        const response = await fetch('http://localhost:8000/workers/stop', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                worker_name: workerName,
+                force: false,
+                timeout: 10
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.detail || 'Failed to stop worker');
+        }
+
+        const result = await response.json();
+        alert(`✅ Successfully stopped ${result.total_stopped} worker(s)\n` +
+              `Docker: ${result.docker_stopped}, Native: ${result.native_stopped}\n` +
+              `Registry cleaned: ${result.registry_cleaned}`);
+
+        // Refresh the page
+        window.location.reload();
+    } catch (error) {
+        alert(`❌ Failed to stop worker: ${error.message}`);
+    }
+}
+
 function showMachineDetails(machineId) {
-    // TODO: Implement machine details modal or page
     console.log('Show details for machine:', machineId);
 }
 
 // Auto-refresh every 10 seconds
 setInterval(() => {
-    htmx.trigger('#machines-table', 'refresh');
+    if (!document.getElementById('workerModal').classList.contains('active')) {
+        window.location.reload();
+    }
 }, 10000);
 </script>
 {% endblock %}

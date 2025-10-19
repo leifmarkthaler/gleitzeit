@@ -14,7 +14,8 @@ from .mixins import (
     RetryMixin,
     WorkflowMixin,
     TaskMixin,
-    MonitoringMixin
+    MonitoringMixin,
+    WebSocketMixin
 )
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class GleitzeitClient(
     WorkflowMixin,
     TaskMixin,
     MonitoringMixin,
+    WebSocketMixin,
     BaseClient
 ):
     """

@@ -226,7 +226,7 @@ class WorkflowMixin:
         created_at = state.get('submitted_at') or response.get('created_at', '')
         updated_at = state.get('updated_at') or response.get('updated_at', '')
         completed_at = data_section.get('completed_at') or response.get('completed_at')
-        error = data_section.get('error') or response.get('error')
+        error = state.get('error') or data_section.get('error') or response.get('error')
 
         return WorkflowStatus(
             workflow_id=response.get("workflow_id", workflow_id),

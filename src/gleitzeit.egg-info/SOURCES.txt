@@ -10,6 +10,7 @@ docs/INSTANCE_MANAGEMENT_AUDIT.md
 docs/RECOVERY_SYSTEM.md
 docs/SIGNAL_SEND_BROADCAST.md
 docs/STATE_PROGRESSION_AUDIT.md
+docs/UNIFIED_WORKER_ARCHITECTURE.md
 docs/WORKFLOW_HANDLER_DESIGN.md
 docs/WORKFLOW_HANDLER_EXECUTION_FLOW.md
 docs/WORKFLOW_HANDLER_IMPLEMENTATION.md
@@ -29,6 +30,7 @@ docs/performance-implementation-plan.md
 docs/phase-2-completion-summary.md
 docs/port-locks-redis-design.md
 docs/process-management-audit.md
+docs/python-client-websocket-examples.md
 docs/redis-port-management.md
 docs/restart-functionality.md
 docs/retry_error_classification.md
@@ -100,6 +102,7 @@ src/gleitzeit/api/routes/metrics.py
 src/gleitzeit/api/routes/system.py
 src/gleitzeit/api/routes/tasks.py
 src/gleitzeit/api/routes/websocket.py
+src/gleitzeit/api/routes/workers.py
 src/gleitzeit/api/routes/workflows.py
 src/gleitzeit/api/services/__init__.py
 src/gleitzeit/api/services/event_broadcaster.py
@@ -129,6 +132,7 @@ src/gleitzeit/client/mixins/auth.py
 src/gleitzeit/client/mixins/monitoring.py
 src/gleitzeit/client/mixins/retry.py
 src/gleitzeit/client/mixins/tasks.py
+src/gleitzeit/client/mixins/websocket_mixin.py
 src/gleitzeit/client/mixins/workflows.py
 src/gleitzeit/config/__init__.py
 src/gleitzeit/core/__init__.py
@@ -216,6 +220,7 @@ src/gleitzeit/workers/workflow_loader_worker_v2.py
 src/gleitzeit/workers/workflow_monitor_worker.py
 src/gleitzeit/workers/workflow_submission_worker.py
 tests/test_circuit_breaker.py
+tests/test_client_websocket.py
 tests/test_complete_recovery.py
 tests/test_complete_workflow_with_handlers.py
 tests/test_container_integration.py
@@ -238,6 +243,7 @@ tests/test_signal_send_handler.py
 tests/test_stateless_retry.py
 tests/test_task_timeline.py
 tests/test_unsupported_types.py
+tests/test_worker_stop_command.py
 tests/test_workflow_execution_e2e.py
 tests/test_workflow_handler.py
 tests/test_workflow_loader_integration.py

@@ -1,33 +1,18 @@
-name: test_python_workflow
-description: Simple test workflow using Python tasks
-
+name: test-python-simple
 tasks:
   - id: task1
-    type: python
-    name: "First Task"
-    code: |
-      print('Task 1 executed successfully')
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        import time
+        result = {"message": "Task 1 complete", "value": 42}
 
   - id: task2
-    type: python
-    name: "Second Task"
-    code: |
-      print('Task 2 executed successfully')
-    depends_on:
-      - task1
-
-  - id: task3
-    type: python
-    name: "Final Task"
-    code: |
-      print('Workflow completed!')
-    depends_on:
-      - task2
-
-on_success:
-  - type: log
-    message: "Test workflow completed successfully!"
-
-on_failure:
-  - type: log
-    message: "Test workflow failed!"
+    protocol: python/v1
+    method: python/execute
+    params:
+      code: |
+        import time
+        result = {"message": "Task 2 complete", "value": 100}
+    dependencies: [task1]

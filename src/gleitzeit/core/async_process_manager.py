@@ -493,9 +493,11 @@ class AsyncServiceManager:
                         else:
                             logger.info(f"  ❌ {service_name} has invalid/missing PID, removing from registry")
                             await self.smart_manager.unregister_service(service_name)
-                    except (psutil.NoSuchProcess, ValueError) as e:
-                        logger.info(f"  ❌ {service_name} process not found, removing from registry")
-                        await self.smart_manager.unregister_service(service_name)
+                    except (psutil.NoSuchProcess, ValueError, OverflowError) as e:
+                        logger.info(f"  ❌ {service_name} process not found or invalid PID: {e}")
+                        # Don't try to unregister if we don't have smart_manager yet
+                        if self.smart_manager:
+                            await self.smart_manager.unregister_service(service_name)
 
                 if self.existing_services:
                     logger.info(f"Found {len(self.existing_services)} healthy existing services")
@@ -740,6 +742,10 @@ class AsyncServiceManager:
         if cli_overrides is None:
             cli_overrides = {}
 
+        # Track which workers failed to start
+        failed_workers = []
+        started_workers = []
+
         # Start ALL workers defined in configuration (including API/UI!)
         for worker_config in workers:
             worker_type = worker_config.get('worker_type')
@@ -754,7 +760,20 @@ class AsyncServiceManager:
                 logger.info(f"Skipping worker {worker_type} due to CLI flags")
                 continue
 
-            await self.start_worker(config)
+            try:
+                await self.start_worker(config)
+                started_workers.append(worker_type)
+            except Exception as e:
+                logger.error(f"Failed to start worker {worker_type}: {e}")
+                failed_workers.append(worker_type)
+                # Continue with next worker instead of failing completely
+
+        # Log summary of startup results
+        if started_workers:
+            logger.info(f"✅ Successfully started {len(started_workers)} worker(s): {', '.join(started_workers)}")
+        if failed_workers:
+            logger.warning(f"⚠️  Failed to start {len(failed_workers)} worker(s): {', '.join(failed_workers)}")
+            logger.warning("   Other workers will continue running")
 
     async def start_all(self, api_port: int = 8000, ui_port: int = 8004, no_ui: bool = False,
                         dev_mode: bool = False, restart: bool = False, no_workers: bool = False,

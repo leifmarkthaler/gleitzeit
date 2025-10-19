@@ -285,7 +285,7 @@ class TaskExecutionWorker(BaseWorker):
                         }
                     )
 
-                    # Don't retry - this is a permanent failure
+                    # Don't retry - this is a permanent failure (unretryable error per CLAUDE.md)
                     return True  # ACK to prevent retry
 
             # Get handler
@@ -569,6 +569,20 @@ class TaskExecutionWorker(BaseWorker):
             payload=result.metadata
         )
 
+        # Publish timer created event
+        await self.event_store.store_event(
+            event_type=EventType.TIMER_CREATED,
+            workflow_id=workflow_id,
+            task_id=task_id,
+            level=EventLevel.INFO,
+            data={
+                'timer_id': timer_id,
+                'timer_type': result.metadata.get('timer_type', 'sleep'),
+                'wake_time': wake_time,
+                'duration_seconds': duration_seconds
+            }
+        )
+
         logger.info(f"Task {task_id} scheduled for timer execution with timer_id {timer_id}, wake_time={wake_time}, duration={duration_seconds:.1f}s")
 
     async def emit_task_waiting(
@@ -615,6 +629,19 @@ class TaskExecutionWorker(BaseWorker):
                 b"signal_type": result.metadata.get('signal_type', 'wait').encode(),
                 b"waiting_since": datetime.utcnow().isoformat().encode(),
                 b"timeout": str(result.metadata.get('timeout', 0)).encode()
+            }
+        )
+
+        # Publish task waiting event
+        await self.event_store.store_event(
+            event_type=EventType.TASK_WAITING,
+            workflow_id=workflow_id,
+            task_id=task_id,
+            level=EventLevel.INFO,
+            data={
+                'signal_name': signal_name,
+                'signal_type': result.metadata.get('signal_type', 'wait'),
+                'timeout': result.metadata.get('timeout')
             }
         )
 
@@ -679,6 +706,18 @@ class TaskExecutionWorker(BaseWorker):
 
         # Use TTL loaded from config during initialization
         await self.redis.setex(registry_entry_key, self.signal_registry_ttl, "1")
+
+        # Publish signal sent event
+        await self.event_store.store_event(
+            event_type=EventType.SIGNAL_SENT,
+            workflow_id=sender_workflow_id,
+            level=EventLevel.IMPORTANT,
+            data={
+                'signal_name': signal_name,
+                'target_workflow': target_workflow,
+                'payload': payload
+            }
+        )
 
         if target_workflow == sender_workflow_id:
             logger.info(

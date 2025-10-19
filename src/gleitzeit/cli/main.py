@@ -576,6 +576,197 @@ def worker_list(ctx):
     asyncio.run(list_workers())
 
 
+@worker.command('stop')
+@click.argument('worker_name', required=True)
+@click.option('--force', is_flag=True, help='Force kill immediately (SIGKILL) instead of graceful shutdown')
+@click.option('--timeout', type=int, default=10, help='Timeout for graceful shutdown in seconds')
+@click.pass_context
+def worker_stop(ctx, worker_name: str, force: bool, timeout: int):
+    """
+    Stop a specific worker by name or type.
+
+    Works for both Docker and native workers.
+
+    \b
+    Examples:
+        gleitzeit worker stop worker_api              # Stop API worker
+        gleitzeit worker stop task_execution          # Stop all task_execution workers
+        gleitzeit worker stop worker_task_execution-1 # Stop specific worker instance
+        gleitzeit worker stop api --force             # Force kill API worker
+
+    \b
+    Arguments:
+        WORKER_NAME: Worker name (e.g., 'api', 'worker_api') or type (e.g., 'task_execution')
+    """
+    import subprocess
+    import psutil
+    from pathlib import Path
+
+    stopped_count = 0
+
+    # Normalize worker name (handle both 'api' and 'worker_api' formats)
+    if not worker_name.startswith('worker_'):
+        worker_search = f"worker_{worker_name}"
+    else:
+        worker_search = worker_name
+
+    # Also search for the base name without 'worker_' prefix
+    base_name = worker_name.replace('worker_', '')
+
+    click.echo(f"🔍 Searching for workers matching: {worker_name}")
+
+    # 1. Check for Docker containers
+    docker_stopped = 0
+    try:
+        result = subprocess.run(
+            ["docker", "ps", "--format", "{{.Names}}"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            containers = [c for c in result.stdout.strip().split('\n') if c]
+            matching_containers = [
+                c for c in containers
+                if worker_search.lower() in c.lower() or base_name.lower() in c.lower()
+            ]
+
+            if matching_containers:
+                click.echo(f"\n🐳 Found {len(matching_containers)} Docker container(s):")
+                for container in matching_containers:
+                    click.echo(f"   - {container}")
+                    try:
+                        if force:
+                            click.echo(f"   Force killing: {container}")
+                            subprocess.run(["docker", "kill", container],
+                                         capture_output=True, timeout=5)
+                        else:
+                            click.echo(f"   Stopping: {container}")
+                            subprocess.run(["docker", "stop", "-t", str(timeout), container],
+                                         capture_output=True, timeout=timeout + 5)
+                        docker_stopped += 1
+                    except Exception as e:
+                        click.echo(f"   ⚠️  Error: {e}")
+    except (FileNotFoundError, subprocess.TimeoutExpired):
+        pass  # Docker not available
+
+    # 2. Check for native processes
+    native_stopped = 0
+    processes_to_stop = []
+
+    for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+        try:
+            cmdline = proc.info.get('cmdline', [])
+            if not cmdline:
+                continue
+
+            cmdline_str = ' '.join(cmdline)
+
+            # Check if it's a matching gleitzeit worker process
+            if 'python' in cmdline_str and 'gleitzeit.workers.runner' in cmdline_str:
+                # Check if worker name matches in the command line
+                if (worker_search.lower() in cmdline_str.lower() or
+                    base_name.lower() in cmdline_str.lower()):
+                    processes_to_stop.append(proc)
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+
+    if processes_to_stop:
+        click.echo(f"\n🔧 Found {len(processes_to_stop)} native process(es):")
+        for proc in processes_to_stop:
+            click.echo(f"   - PID {proc.pid}")
+            try:
+                if force:
+                    click.echo(f"   Force killing PID {proc.pid}")
+                    proc.kill()
+                else:
+                    click.echo(f"   Terminating PID {proc.pid}")
+                    proc.terminate()
+                native_stopped += 1
+            except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                click.echo(f"   ⚠️  Error: {e}")
+
+        # Wait for graceful shutdown if not forcing
+        if not force and processes_to_stop:
+            click.echo(f"\n⏳ Waiting up to {timeout}s for graceful shutdown...")
+            gone, alive = psutil.wait_procs(processes_to_stop, timeout=timeout)
+
+            if alive:
+                click.echo(f"   {len(alive)} process(es) still running, force killing...")
+                for proc in alive:
+                    try:
+                        proc.kill()
+                        click.echo(f"   Force killed PID {proc.pid}")
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        pass
+
+    # 3. Clean up Redis registry for stopped workers
+    if native_stopped > 0 or docker_stopped > 0:
+        try:
+            import redis
+            r = redis.Redis(host='localhost', port=6379, decode_responses=True)
+
+            cleaned = 0
+            # Scan for all worker registry keys
+            for key in r.scan_iter(match="{shard:0}:worker:registry:*"):
+                try:
+                    # Get worker info
+                    worker_data = r.hgetall(key)
+                    if not worker_data:
+                        continue
+
+                    worker_id = worker_data.get('worker_id', '')
+                    worker_type = worker_data.get('worker_type', '')
+                    pid_str = worker_data.get('pid', '')
+
+                    # Check if this worker matches our search
+                    matches = (worker_search.lower() in worker_id.lower() or
+                              worker_search.lower() in worker_type.lower() or
+                              base_name.lower() in worker_type.lower())
+
+                    if not matches:
+                        continue
+
+                    # Check if the process is still running
+                    process_dead = True
+                    if pid_str:
+                        try:
+                            pid = int(pid_str)
+                            psutil.Process(pid)  # Will raise NoSuchProcess if dead
+                            process_dead = False  # Process still alive
+                        except (psutil.NoSuchProcess, ValueError, OverflowError):
+                            process_dead = True
+
+                    # Only clean up if process is confirmed dead
+                    if process_dead:
+                        r.delete(key)
+                        cleaned += 1
+                        click.echo(f"   Cleaned registry: {worker_id}")
+
+                except Exception as e:
+                    # Skip individual key errors but continue cleanup
+                    continue
+
+            if cleaned > 0:
+                click.echo(f"✅ Cleaned {cleaned} registry entry(ies)")
+
+        except Exception as e:
+            click.echo(f"⚠️  Registry cleanup failed: {e}")
+
+    # Summary
+    stopped_count = docker_stopped + native_stopped
+    if stopped_count > 0:
+        click.echo(f"\n✅ Stopped {stopped_count} worker(s)")
+        if docker_stopped > 0:
+            click.echo(f"   - Docker: {docker_stopped}")
+        if native_stopped > 0:
+            click.echo(f"   - Native: {native_stopped}")
+    else:
+        click.echo(f"\n⚠️  No workers found matching: {worker_name}")
+        click.echo("   Use 'gleitzeit worker list' to see available workers")
+        click.echo("   Use 'gleitzeit ps' to see all services")
+
+
 # ============= Workflow Commands =============
 
 @cli.group()
