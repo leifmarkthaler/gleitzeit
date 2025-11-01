@@ -1,0 +1,36 @@
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,033 - __main__ - INFO - Initialized worker instance identity: gleitzei-0247e048
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,033 - __main__ - INFO - Loading configuration from Redis key: worker:config:ui-async:94b55ff1
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,035 - __main__ - INFO - Loaded config for worker ui-async
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,062 - __main__ - INFO - Worker ui-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,062 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,246 - ui.ui-async - INFO - UI worker initialized on 0.0.0.0:8004
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,248 - ui.ui-async - INFO - Worker ui-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,248 - __main__ - INFO - Worker ui-async started successfully
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,248 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:09:58] [STDERR] 2025-10-26 15:09:58,248 - ui.ui-async - INFO - Starting UI server on 0.0.0.0:8004
+[2025-10-26 15:10:02] [STDERR] 2025-10-26 15:10:02,075 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:10:13] [STDERR] 2025-10-26 15:10:13,078 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:10:20] [STDERR] 2025-10-26 15:10:20,823 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-10-26 15:10:24] [STDERR] 2025-10-26 15:10:24,077 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:10:35] [STDERR] 2025-10-26 15:10:35,082 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:10:43] [STDERR] 2025-10-26 15:10:43,819 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-10-26 15:10:44] [STDERR] 2025-10-26 15:10:44,046 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-10-26 15:10:44] [STDERR] 2025-10-26 15:10:44,054 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:10:47] [STDERR] 2025-10-26 15:10:47,330 - httpx - INFO - HTTP Request: POST http://localhost:8000/workflows/submit "HTTP/1.1 200 OK"
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,562 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/7ef72b49-5ecf-4bd8-8c2b-6dc65799f06e "HTTP/1.1 200 OK"
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,563 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,563 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,563 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,563 - gleitzeit.ui.api.app - INFO - Found 3 task definitions
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,566 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/dcd5284a-2113-4d7b-a32a-3891ebc8582c "HTTP/1.1 200 OK"
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,569 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/88d603d0-42d8-4dd3-abf1-b84e2b8c7401 "HTTP/1.1 200 OK"
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,574 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/20441dcf-16c5-4a01-be96-7b7d4060e3fb "HTTP/1.1 404 Not Found"
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,592 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,603 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,605 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=7ef72b49-5ecf-4bd8-8c2b-6dc65799f06e "HTTP/1.1 200 OK"
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,615 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/7ef72b49-5ecf-4bd8-8c2b-6dc65799f06e/events "HTTP/1.1 200 OK"
+[2025-10-26 15:10:49] [STDERR] 2025-10-26 15:10:49,616 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:10:59] [STDERR] 2025-10-26 15:10:59,617 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:11:09] [STDERR] 2025-10-26 15:11:09,615 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:11:19] [STDERR] 2025-10-26 15:11:19,610 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-10-26 15:11:29] [STDERR] 2025-10-26 15:11:29,620 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"

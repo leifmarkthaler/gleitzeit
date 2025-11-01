@@ -409,6 +409,10 @@ class ConfigurationManager:
         # Redis configuration
         config['redis'] = self.get_redis_config()
 
+        # Logging configuration (from yaml_config)
+        if 'logging' in self.yaml_config:
+            config['logging'] = self.yaml_config['logging']
+
         # Development mode
         config['dev_mode'] = self.get_value('dev_mode') or False
 

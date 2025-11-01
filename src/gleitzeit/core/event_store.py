@@ -21,6 +21,7 @@ class EventLevel(str, Enum):
     """Event importance levels for filtering"""
     CRITICAL = "critical"  # State changes (task completion, failure)
     IMPORTANT = "important"  # Task starts, dependency resolution
+    INFO = "info"  # General informational events (timer created, signal registered)
     DETAIL = "detail"  # Parameter resolution, validation checks
     DEBUG = "debug"  # Internal state, timing
 
@@ -192,8 +193,9 @@ class EventStore:
         level_hierarchy = {
             EventLevel.DEBUG: 0,
             EventLevel.DETAIL: 1,
-            EventLevel.IMPORTANT: 2,
-            EventLevel.CRITICAL: 3
+            EventLevel.INFO: 2,
+            EventLevel.IMPORTANT: 3,
+            EventLevel.CRITICAL: 4
         }
         min_level_value = level_hierarchy.get(min_level, 0)
 

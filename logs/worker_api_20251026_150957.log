@@ -1,0 +1,29 @@
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,517 - __main__ - INFO - Initialized worker instance identity: gleitzei-0247e048
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,517 - __main__ - INFO - Loading configuration from Redis key: worker:config:api-async:0944a92c
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,519 - __main__ - INFO - Loaded config for worker api-async
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,553 - __main__ - INFO - Worker api-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,553 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,699 - gleitzeit.core.config_manager - INFO - Loaded configuration from gleitzeit.yaml
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,699 - gleitzeit.api.main - INFO - Worker dependencies injected: Redis=<class 'gleitzeit.core.redis_cluster.GleitzeitRedisCluster'>, redis_url=redis://localhost:6379
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,699 - api.api-async - INFO - Injected worker dependencies: Redis=<class 'gleitzeit.core.redis_cluster.GleitzeitRedisCluster'>, redis_url=redis://localhost:6379
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,699 - api.api-async - INFO - API worker initialized on 0.0.0.0:8000
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,701 - api.api-async - INFO - Worker api-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,701 - __main__ - INFO - Worker api-async started successfully
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,701 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,701 - api.api-async - INFO - Starting API server on 0.0.0.0:8000
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,713 - uvicorn.error - INFO - Started server process [55443]
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,713 - uvicorn.error - INFO - Waiting for application startup.
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,713 - gleitzeit.api.main - INFO - Starting Gleitzeit API server
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,713 - gleitzeit.api.main - INFO - Using Redis connection from worker: <class 'gleitzeit.core.redis_cluster.GleitzeitRedisCluster'>
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,713 - gleitzeit.api.pools.client_pool - INFO - Client pool initialized with max 10 connections per user
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,713 - gleitzeit.api.services.event_broadcaster - INFO - Starting EventBroadcaster with redis_url=redis://localhost:6379
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,713 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster created dedicated Redis connection
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,713 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster created pubsub instance
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,819 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster subscribed to gleitzeit:events
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,820 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster started and listening to gleitzeit:events
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,820 - gleitzeit.api.main - INFO - Event broadcaster initialized for WebSocket support
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,820 - gleitzeit.api.main - INFO - API server initialized successfully
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,820 - uvicorn.error - INFO - Application startup complete.
+[2025-10-26 15:09:57] [STDERR] 2025-10-26 15:09:57,820 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-26 15:10:47] [STDERR] 2025-10-26 15:10:47,224 - gleitzeit.api.auth.jwt_manager - WARNING - Using default JWT secret key. Change this in production!
+[2025-10-26 15:10:47] [STDERR] 2025-10-26 15:10:47,224 - gleitzeit.api.auth.dependencies - INFO - Authentication components initialized

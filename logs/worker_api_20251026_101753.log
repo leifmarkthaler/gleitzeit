@@ -1,0 +1,62 @@
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,574 - __main__ - INFO - Initialized worker instance identity: gleitzei-9f31b8ff
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,575 - __main__ - INFO - Loading configuration from Redis key: worker:config:api-async:ca0e3254
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,576 - __main__ - INFO - Loaded config for worker api-async
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,613 - __main__ - INFO - Worker api-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,613 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,758 - gleitzeit.core.config_manager - INFO - Loaded configuration from gleitzeit.yaml
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,758 - gleitzeit.api.main - INFO - Worker dependencies injected: Redis=<class 'gleitzeit.core.redis_cluster.GleitzeitRedisCluster'>, redis_url=redis://localhost:6379
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,758 - api.api-async - INFO - Injected worker dependencies: Redis=<class 'gleitzeit.core.redis_cluster.GleitzeitRedisCluster'>, redis_url=redis://localhost:6379
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,758 - api.api-async - INFO - API worker initialized on 0.0.0.0:8000
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,760 - api.api-async - INFO - Worker api-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,760 - __main__ - INFO - Worker api-async started successfully
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,760 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,760 - api.api-async - INFO - Starting API server on 0.0.0.0:8000
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,772 - uvicorn.error - INFO - Started server process [23126]
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,772 - uvicorn.error - INFO - Waiting for application startup.
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,772 - gleitzeit.api.main - INFO - Starting Gleitzeit API server
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,772 - gleitzeit.api.main - INFO - Using Redis connection from worker: <class 'gleitzeit.core.redis_cluster.GleitzeitRedisCluster'>
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,772 - gleitzeit.api.pools.client_pool - INFO - Client pool initialized with max 10 connections per user
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,772 - gleitzeit.api.services.event_broadcaster - INFO - Starting EventBroadcaster with redis_url=redis://localhost:6379
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,772 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster created dedicated Redis connection
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,772 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster created pubsub instance
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,877 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster subscribed to gleitzeit:events
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,877 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster started and listening to gleitzeit:events
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,877 - gleitzeit.api.main - INFO - Event broadcaster initialized for WebSocket support
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,877 - gleitzeit.api.main - INFO - API server initialized successfully
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,877 - uvicorn.error - INFO - Application startup complete.
+[2025-10-26 10:17:53] [STDERR] 2025-10-26 10:17:53,877 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+[2025-10-26 10:19:43] [STDERR] 2025-10-26 10:19:43,229 - gleitzeit.api.auth.jwt_manager - WARNING - Using default JWT secret key. Change this in production!
+[2025-10-26 10:19:43] [STDERR] 2025-10-26 10:19:43,229 - gleitzeit.api.auth.dependencies - INFO - Authentication components initialized
+[2025-10-26 10:19:43] [STDERR] 2025-10-26 10:19:43,229 - gleitzeit.api.auth.session_manager - INFO - Created session 91487fcb-6160-4459-b167-457a96a501cc for user default_user
+[2025-10-26 10:23:03] [STDERR] 2025-10-26 10:23:03,069 - gleitzeit.api.routes.tasks - WARNING - Direct key lookup failed: 'ClusterShardingStrategy' object has no attribute 'get_shard_id'
+[2025-10-26 10:23:06] [STDERR] 2025-10-26 10:23:06,308 - uvicorn.error - INFO - 127.0.0.1:61896 - "WebSocket /ws/events" [accepted]
+[2025-10-26 10:23:06] [STDERR] 2025-10-26 10:23:06,308 - gleitzeit.api.services.event_broadcaster - INFO - WebSocket client connected. Total: 1, Filters: none
+[2025-10-26 10:23:06] [STDERR] 2025-10-26 10:23:06,308 - uvicorn.error - INFO - connection open
+[2025-10-26 10:23:10] [STDERR] 2025-10-26 10:23:10,037 - gleitzeit.api.routes.websocket - ERROR - Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-26 10:23:10] [STDERR] 2025-10-26 10:23:10,037 - gleitzeit.api.services.event_broadcaster - INFO - WebSocket client disconnected. Total: 0
+[2025-10-26 10:23:10] [STDERR] 2025-10-26 10:23:10,037 - uvicorn.error - INFO - connection closed
+[2025-10-26 10:24:53] [STDERR] 2025-10-26 10:24:53,780 - gleitzeit.api.pools.client_pool - INFO - Cleaned up idle pool for user 3dd81a87-ef29-4687-bb02-d6102556776b
+[2025-10-26 10:25:24] [STDERR] 2025-10-26 10:25:24,119 - uvicorn.error - INFO - 127.0.0.1:62439 - "WebSocket /ws/events" [accepted]
+[2025-10-26 10:25:24] [STDERR] 2025-10-26 10:25:24,120 - gleitzeit.api.services.event_broadcaster - INFO - WebSocket client connected. Total: 1, Filters: none
+[2025-10-26 10:25:24] [STDERR] 2025-10-26 10:25:24,120 - uvicorn.error - INFO - connection open
+[2025-10-26 10:25:30] [STDERR] 2025-10-26 10:25:30,033 - gleitzeit.api.routes.websocket - ERROR - Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-10-26 10:25:30] [STDERR] 2025-10-26 10:25:30,033 - gleitzeit.api.services.event_broadcaster - INFO - WebSocket client disconnected. Total: 0
+[2025-10-26 10:25:30] [STDERR] 2025-10-26 10:25:30,034 - uvicorn.error - INFO - connection closed
+[2025-10-26 10:30:53] [STDERR] 2025-10-26 10:30:53,787 - gleitzeit.api.pools.client_pool - INFO - Cleaned up idle pool for user api-dev-key-
+[2025-10-26 10:50:06] [STDERR] 2025-10-26 10:50:06,508 - gleitzeit.api.pools.client_pool - INFO - Cleaned up idle pool for user api-dev-key-
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,385 - api.api-async - INFO - Shutdown signal received for api-async
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,438 - uvicorn.error - INFO - Shutting down
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,539 - uvicorn.error - INFO - Waiting for application shutdown.
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,540 - gleitzeit.api.main - INFO - Shutting down Gleitzeit API server
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,540 - gleitzeit.api.services.event_broadcaster - INFO - Stopping EventBroadcaster...
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,540 - gleitzeit.api.services.event_broadcaster - INFO - Redis listener task cancelled
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,540 - gleitzeit.api.services.event_broadcaster - INFO - EventBroadcaster stopped
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,540 - gleitzeit.api.main - INFO - Event broadcaster stopped
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,541 - gleitzeit.api.pools.client_pool - INFO - Client pool shut down
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,541 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,541 - uvicorn.error - INFO - Application shutdown complete.
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,541 - uvicorn.error - INFO - Finished server process [23126]
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,542 - api.api-async - INFO - API worker shutting down...
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,542 - api.api-async - ERROR - Failed to unregister API worker: Redis client not initialized. Call initialize() first
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,542 - api.api-async - INFO - Shutdown signal received for api-async
+[2025-10-26 14:43:34] [STDERR] 2025-10-26 14:43:34,542 - gleitzeit.core.redis_cluster - INFO - Redis connections closed

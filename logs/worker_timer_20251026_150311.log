@@ -1,0 +1,10 @@
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,315 - __main__ - INFO - Initialized worker instance identity: gleitzei-27a79239
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,315 - __main__ - INFO - Loading configuration from Redis key: worker:config:timer-async:f3ba6edc
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,317 - __main__ - INFO - Loaded config for worker timer-async
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,318 - __main__ - INFO - Worker timer-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,318 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,318 - gleitzeit.workers.timer_worker - INFO - TimerWorker initialized (event-driven)
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,319 - timer.timer-async - INFO - Worker timer-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,319 - __main__ - INFO - Worker timer-async started successfully
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,319 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:03:11] [STDERR] 2025-10-26 15:03:11,319 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for timer-async

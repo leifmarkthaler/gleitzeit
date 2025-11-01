@@ -111,23 +111,58 @@ class ClusterShardingStrategy:
             return f"{base_key}:{signal_name}"
         return base_key
 
-    def get_timer_key(self, timer_type: str, workflow_id: str = None) -> str:
+    def get_timer_key(self, timer_type: str, workflow_id: str = None, task_id: str = None) -> str:
         """
         Get timer-related key with cluster routing.
 
         Args:
-            timer_type: Type of timer key (pending, active, etc.)
+            timer_type: Type of timer key (metadata, pending, etc.)
             workflow_id: Optional workflow ID for workflow-specific timers
+            task_id: Optional task ID for task-specific keys
 
         Returns:
             Cluster key with appropriate hash tag
+
+        Examples:
+            get_timer_key("metadata", "wf-123", "task-abc")
+            → "{shard:5}:timer:metadata:wf-123:task-abc"
+
+            get_timer_key("pending", "wf-123")
+            → "{shard:5}:timer:pending:wf-123"
         """
         if workflow_id:
             shard = self.get_shard(workflow_id)
-            return f"{{shard:{shard}}}:timer:{timer_type}:{workflow_id}"
+            base_key = f"{{shard:{shard}}}:timer:{timer_type}:{workflow_id}"
+            if task_id:
+                return f"{base_key}:{task_id}"
+            return base_key
         else:
             # Global timer keys go to shard 0 for consistency
             return f"{{shard:0}}:timer:{timer_type}"
+
+    @staticmethod
+    def get_timer_bucket(wake_time: float, bucket_size: int = 60) -> int:
+        """
+        Get the time bucket for a timer wake time.
+
+        Timers are bucketed by time intervals to enable efficient
+        batch processing. Default bucket size is 60 seconds (1 minute).
+
+        Args:
+            wake_time: Unix timestamp when timer should fire
+            bucket_size: Bucket size in seconds (default 60)
+
+        Returns:
+            Bucket timestamp (aligned to bucket_size boundary)
+
+        Examples:
+            >>> get_timer_bucket(1761470383.5, 60)
+            1761470340  # Bucket for 10:29:00-10:29:59
+
+            >>> get_timer_bucket(1761470400.0, 60)
+            1761470400  # Bucket for 10:30:00-10:30:59
+        """
+        return int(wake_time // bucket_size) * bucket_size
 
     def get_global_key(self, key_type: str) -> str:
         """

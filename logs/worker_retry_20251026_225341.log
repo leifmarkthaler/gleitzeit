@@ -1,0 +1,67 @@
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,725 - __main__ - INFO - Initialized worker instance identity: gleitzei-ea6821c4
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,726 - __main__ - INFO - Loading configuration from Redis key: worker:config:retry-async:0bc374f6
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,728 - __main__ - INFO - Loaded config for worker retry-async
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,729 - __main__ - INFO - Worker retry-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,729 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized with batch_size=10
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,729 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,729 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async event store initialized
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,731 - retry.retry-async - INFO - Worker retry-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,731 - gleitzeit.workers.retry_worker - INFO - RetryWorker retry-async initialized retry service
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,731 - __main__ - INFO - Worker retry-async started successfully
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,731 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,731 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for retry-async
+[2025-10-26 22:54:01] [STDERR] 2025-10-26 22:54:01,096 - gleitzeit.workers.retry_worker - INFO - Retry decision for 287d33df-467f-41bd-a8cf-7f1c3d515bd7: retry (attempt 0)
+[2025-10-26 22:54:01] [STDERR] 2025-10-26 22:54:01,098 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for 287d33df-467f-41bd-a8cf-7f1c3d515bd7 in 0.85s (attempt 1, bucket=1761515640)
+[2025-10-31 22:14:16] [STDERR] 2025-10-31 22:14:16,016 - gleitzeit.workers.retry_worker - INFO - Retry decision for 8d07410f-f5f8-4677-affe-34d44389147c: retry (attempt 0)
+[2025-10-31 22:14:16] [STDERR] 2025-10-31 22:14:16,017 - gleitzeit.workers.retry_worker - INFO - Scheduled retry for 8d07410f-f5f8-4677-affe-34d44389147c in 0.38s (attempt 1, bucket=1761945240)
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,018 - retry.retry-async - INFO - Shutdown signal received for retry-async
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,070 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:2}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,070 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:15}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,070 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:1}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,070 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:13}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,070 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:13}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,070 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:0}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:12}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:6}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:15}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:8}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:12}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:0}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:7}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:14}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:2}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:9}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:7}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:5}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:6}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:4}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:5}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:0}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:3}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:15}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:4}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:10}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:10}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:8}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:12}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:8}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:7}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:14}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:9}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:5}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:11}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:10}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:1}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:3}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:6}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:1}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:13}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:11}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:9}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:11}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:4}:retry:configure': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:14}:retry:check': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:2}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,071 - retry.retry-async - WARNING - Failed to remove consumer from b'{shard:3}:task:failed': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,073 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-31 22:20:13] [STDERR] 2025-10-31 22:20:13,073 - retry.retry-async - INFO - Worker retry-async cleaned up

@@ -1,0 +1,29 @@
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,740 - __main__ - INFO - Initialized worker instance identity: gleitzei-ea6821c4
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,740 - __main__ - INFO - Loading configuration from Redis key: worker:config:timer-async:ece24aae
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,742 - __main__ - INFO - Loaded config for worker timer-async
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,743 - __main__ - INFO - Worker timer-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,743 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,743 - gleitzeit.workers.timer_worker - INFO - TimerWorker initialized (event-driven)
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,745 - timer.timer-async - INFO - Worker timer-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,745 - __main__ - INFO - Worker timer-async started successfully
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,745 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 22:53:42] [STDERR] 2025-10-26 22:53:42,745 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for timer-async
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,018 - timer.timer-async - INFO - Shutdown signal received for timer-async
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:14}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:5}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:13}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:0}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:9}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:4}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:2}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:11}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:10}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:15}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:1}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:7}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:3}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:6}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:8}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,059 - timer.timer-async - WARNING - Failed to remove consumer from b'{shard:12}:{shard:0}:global:timer:time_advance': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,060 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,060 - timer.timer-async - INFO - Worker timer-async cleaned up

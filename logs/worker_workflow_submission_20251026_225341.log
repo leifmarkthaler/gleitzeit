@@ -1,0 +1,29 @@
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,228 - __main__ - INFO - Initialized worker instance identity: gleitzei-ea6821c4
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,228 - __main__ - INFO - Loading configuration from Redis key: worker:config:workflow_submission-async:2524efa7
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,230 - __main__ - INFO - Loaded config for worker workflow_submission-async
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,231 - __main__ - INFO - Worker workflow_submission-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,231 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,231 - gleitzeit.workers.workflow_submission_worker - INFO - WorkflowSubmissionWorker initialized with shards [] monitoring streams: ['workflow:submit']
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,232 - workflow_submission.workflow_submission-async - INFO - Worker workflow_submission-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,232 - __main__ - INFO - Worker workflow_submission-async started successfully
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,232 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 22:53:41] [STDERR] 2025-10-26 22:53:41,233 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_submission-async
+[2025-10-31 22:20:12] [STDERR] 2025-10-31 22:20:12,017 - workflow_submission.workflow_submission-async - INFO - Shutdown signal received for workflow_submission-async
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:7}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:4}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:1}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:6}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:9}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:11}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:12}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:10}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:13}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:3}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:14}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:5}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:15}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:2}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:0}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,092 - workflow_submission.workflow_submission-async - WARNING - Failed to remove consumer from b'{shard:8}:workflow:submit': 'WorkerConfig' object has no attribute 'consumer_name'
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,093 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-10-31 22:20:15] [STDERR] 2025-10-31 22:20:15,094 - workflow_submission.workflow_submission-async - INFO - Worker workflow_submission-async cleaned up

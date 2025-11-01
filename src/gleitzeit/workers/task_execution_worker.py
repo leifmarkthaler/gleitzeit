@@ -21,7 +21,6 @@ from ..core.config_loader import get_config
 from ..core.events import EventType
 from ..core.event_store import EventStore, EventLevel
 from ..handlers import handler_loader, HandlerRegistry
-from ..timers.stateless_timer_manager import StatelessTimerManager
 
 logger = logging.getLogger(__name__)
 
@@ -539,11 +538,9 @@ class TaskExecutionWorker(BaseWorker):
         workflow_id: str,
         result: TaskResult
     ):
-        """Emit task scheduled event for TimerWorker"""
-        shard = default_sharding.get_shard(workflow_id)
+        """Register timer - simple metadata only, no buckets/registry"""
         wake_time = result.metadata.get('wake_time', 0)
-
-        # Calculate duration for logging only
+        shard = default_sharding.get_shard(workflow_id)
         current_time = time.time()
         duration_seconds = wake_time - current_time
 
@@ -558,32 +555,41 @@ class TaskExecutionWorker(BaseWorker):
             }
         )
 
-        # Use StatelessTimerManager to create timer in sorted set
-        # Pass wake_time (absolute timestamp) to avoid timing drift
-        timer_id = await StatelessTimerManager.create_timer(
-            redis=self.redis,
-            workflow_id=workflow_id,
-            wake_time=wake_time,  # Use absolute time - more accurate
-            task_id=task_id,
-            timer_type=result.metadata.get('timer_type', 'sleep'),
-            payload=result.metadata
+        # Store timer metadata (NO TTL, NO bucket, NO registry)
+        metadata_key = default_sharding.get_timer_key("metadata", workflow_id, task_id)
+        await self.redis.hset(
+            metadata_key.encode(),
+            mapping={
+                b"workflow_id": workflow_id.encode(),
+                b"task_id": task_id.encode(),
+                b"shard": str(shard).encode(),
+                b"wake_time": str(wake_time).encode(),
+                b"timer_type": result.metadata.get('timer_type', 'sleep').encode(),
+                b"created_at": datetime.utcnow().isoformat().encode()
+            }
         )
 
-        # Publish timer created event
+        # Add to pending set for reconciliation
+        pending_key = default_sharding.get_timer_key("pending", workflow_id)
+        await self.redis.sadd(pending_key, task_id)
+
+        # Publish timer created event (full audit trail)
         await self.event_store.store_event(
             event_type=EventType.TIMER_CREATED,
             workflow_id=workflow_id,
             task_id=task_id,
             level=EventLevel.INFO,
             data={
-                'timer_id': timer_id,
                 'timer_type': result.metadata.get('timer_type', 'sleep'),
                 'wake_time': wake_time,
                 'duration_seconds': duration_seconds
             }
         )
 
-        logger.info(f"Task {task_id} scheduled for timer execution with timer_id {timer_id}, wake_time={wake_time}, duration={duration_seconds:.1f}s")
+        logger.info(
+            f"Timer registered for task {task_id}: "
+            f"wake_time={wake_time}, duration={duration_seconds:.1f}s"
+        )
 
     async def emit_task_waiting(
         self,

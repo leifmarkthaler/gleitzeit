@@ -640,6 +640,13 @@ class WorkflowLoaderWorkerV2(BaseWorker):
                     errors.append(f"Task {task_id}: unsupported type '{task_type}'")
             elif not protocol:
                 errors.append(f"Task {task_id} must have either 'type' or 'protocol' field")
+            else:
+                # Validate that the protocol is supported
+                if protocol not in self.supported_methods:
+                    errors.append(
+                        f"Task {task_id}: unsupported protocol '{protocol}'. "
+                        f"Available protocols: {', '.join(sorted(self.supported_methods.keys()))}"
+                    )
 
             # Validate method and required parameters
             method = task.get('method')

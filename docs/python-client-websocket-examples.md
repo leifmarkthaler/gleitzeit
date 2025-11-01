@@ -12,6 +12,12 @@ The Gleitzeit Python client provides powerful WebSocket functionality for real-t
   - [Pattern 3: Multiple Workflow Monitoring](#pattern-3-multiple-workflow-monitoring)
   - [Pattern 4: Task-Level Monitoring](#pattern-4-task-level-monitoring)
 - [Advanced Features](#advanced-features)
+  - [Connection Health Monitoring](#connection-health-monitoring)
+  - [Global Workflow Monitoring](#global-workflow-monitoring)
+  - [Dynamic Subscription Management](#dynamic-subscription-management)
+  - [Historical Event Retrieval](#historical-event-retrieval)
+  - [Signal Task Monitoring](#signal-task-monitoring)
+  - [Validation Task Monitoring](#validation-task-monitoring)
 - [Error Handling](#error-handling)
 - [Best Practices](#best-practices)
 - [Complete Examples](#complete-examples)
@@ -556,6 +562,333 @@ WebSocket events for signal coordination:
       }
   }
   ```
+
+### Validation Task Monitoring
+
+Monitor validation handler tasks in real-time via WebSocket:
+
+```python
+async def monitor_validation_workflow():
+    async with GleitzeitClient(api_url="http://localhost:8000") as client:
+        # Workflow with validation checks
+        workflow = {
+            "name": "data-quality-check",
+            "tasks": [
+                {
+                    "id": "compute_metrics",
+                    "protocol": "python/v1",
+                    "method": "python/execute",
+                    "params": {"code": "result = {'accuracy': 95, 'completeness': 98}"}
+                },
+                {
+                    "id": "validate_quality",
+                    "protocol": "validation/v1",
+                    "method": "validation/evaluate",
+                    "params": {
+                        "conditions": [
+                            "accuracy >= 90",
+                            "completeness >= 95"
+                        ],
+                        "context": {
+                            "accuracy": 95,
+                            "completeness": 98
+                        },
+                        "mode": "all",
+                        "on_failure": "skip"
+                    },
+                    "dependencies": ["compute_metrics"]
+                },
+                {
+                    "id": "publish_data",
+                    "protocol": "python/v1",
+                    "method": "python/execute",
+                    "params": {"code": "result = {'published': True}"},
+                    "dependencies": ["validate_quality"]
+                }
+            ]
+        }
+
+        response = await client.submit_workflow(workflow)
+        workflow_id = response.workflow_id
+
+        # Track validation results
+        validation_results = []
+        workflow_done = asyncio.Event()
+
+        def on_task_complete(event):
+            task_data = event.get('data', {})
+            result = task_data.get('result', {})
+
+            # Check if this is a validation task
+            if 'valid' in result:
+                validation_results.append(result)
+                print(f"📋 Validation Result:")
+                print(f"   Valid: {result['valid']}")
+                print(f"   Passed: {result['summary']['passed']}/{result['summary']['total']}")
+
+                # Show individual condition results
+                for detail in result.get('details', []):
+                    status = "✓" if detail['result'] else "✗"
+                    print(f"   {status} {detail['expression']}")
+
+        def on_complete(event):
+            print("✅ Quality check passed - data published!")
+            workflow_done.set()
+
+        def on_failure(event):
+            print("❌ Quality check failed - data not published")
+            workflow_done.set()
+
+        # Monitor workflow
+        await client.wait_for_workflow_async(
+            workflow_id,
+            on_task_complete=on_task_complete,
+            on_complete=on_complete,
+            on_failure=on_failure,
+            timeout=60
+        )
+
+        await workflow_done.wait()
+```
+
+**Output:**
+```
+📋 Validation Result:
+   Valid: True
+   Passed: 2/2
+   ✓ accuracy >= 90
+   ✓ completeness >= 95
+✅ Quality check passed - data published!
+```
+
+#### Validation Event Types
+
+WebSocket events for validation tasks:
+
+- **`task:completed` with validation result** - Validation evaluated successfully
+  ```python
+  {
+      'event_type': 'task:completed',
+      'workflow_id': 'workflow-123',
+      'task_id': 'validate-task',
+      'data': {
+          'result': {
+              'valid': True,
+              'mode': 'all',
+              'summary': {'total': 2, 'passed': 2, 'failed': 0},
+              'details': [
+                  {
+                      'name': 'condition_1',
+                      'expression': 'accuracy >= 90',
+                      'result': True,
+                      'evaluated': True
+                  },
+                  {
+                      'name': 'condition_2',
+                      'expression': 'completeness >= 95',
+                      'result': True,
+                      'evaluated': True
+                  }
+              ],
+              'evaluated_at': '2025-10-19T12:00:00.123456'
+          }
+      }
+  }
+  ```
+
+- **`task:failed` for assertion** - Assertion validation failed
+  ```python
+  {
+      'event_type': 'task:failed',
+      'workflow_id': 'workflow-123',
+      'task_id': 'assert-task',
+      'data': {
+          'error': 'Assertion failed: 1 of 1 assertions failed',
+          'result': {
+              'valid': False,
+              'assertions_passed': 0,
+              'assertions_failed': 1
+          }
+      }
+  }
+  ```
+
+#### Validation Methods
+
+The `validation/v1` protocol supports three methods:
+
+1. **`validation/evaluate`** - Evaluate conditions without failing
+   ```python
+   {
+       "protocol": "validation/v1",
+       "method": "validation/evaluate",
+       "params": {
+           "conditions": ["x > 5", "y < 10"],
+           "context": {"x": 7, "y": 8},
+           "mode": "all",  # or "any", "none"
+           "on_failure": "skip"
+       }
+   }
+   ```
+
+2. **`validation/assert`** - Strict assertions (fails task if false)
+   ```python
+   {
+       "protocol": "validation/v1",
+       "method": "validation/assert",
+       "params": {
+           "assertions": ["value > 100"],
+           "context": {"value": 150}
+       }
+   }
+   ```
+
+3. **`validation/gate`** - Conditional workflow branching
+   ```python
+   {
+       "protocol": "validation/v1",
+       "method": "validation/gate",
+       "params": {
+           "rules": [
+               {
+                   "name": "prod_check",
+                   "condition": "env == 'production'",
+                   "enable_tasks": ["deploy_prod"],
+                   "disable_tasks": ["deploy_dev"]
+               }
+           ],
+           "context": {"env": "production"}
+       }
+   }
+   ```
+
+#### Example: Assertion Failure Monitoring
+
+Monitor workflows with strict assertions via WebSocket:
+
+```python
+async def monitor_assertion_workflow():
+    async with GleitzeitClient(api_url="http://localhost:8000") as client:
+        workflow = {
+            "name": "quality-assertion",
+            "tasks": [
+                {
+                    "id": "check_threshold",
+                    "protocol": "validation/v1",
+                    "method": "validation/assert",
+                    "params": {
+                        "assertions": ["score > 80"],
+                        "context": {"score": 75}  # Will fail!
+                    }
+                }
+            ]
+        }
+
+        response = await client.submit_workflow(workflow)
+        workflow_id = response.workflow_id
+
+        # Track task failures
+        failed_tasks = []
+
+        async def capture_events():
+            async for event in client.stream_workflow_events([workflow_id]):
+                event_type = event.get('event_type', '')
+
+                if 'task:failed' in event_type:
+                    failed_tasks.append(event)
+                    error = event['data'].get('error', '')
+                    print(f"❌ Assertion Failed: {error}")
+
+                if 'workflow:failed' in event_type:
+                    break
+
+        await capture_events()
+```
+
+**Output:**
+```
+❌ Assertion Failed: Assertion failed: 1 of 1 assertions failed
+```
+
+#### Example: Gate Control with WebSocket
+
+Monitor conditional workflow branching:
+
+```python
+async def monitor_gate_workflow():
+    async with GleitzeitClient(api_url="http://localhost:8000") as client:
+        workflow = {
+            "name": "deployment-gate",
+            "tasks": [
+                {
+                    "id": "env_check",
+                    "protocol": "validation/v1",
+                    "method": "validation/gate",
+                    "params": {
+                        "rules": [
+                            {
+                                "name": "environment_gate",
+                                "condition": "env == 'production'",
+                                "enable_tasks": ["deploy_prod"],
+                                "disable_tasks": ["deploy_dev"]
+                            }
+                        ],
+                        "context": {"env": "production"}
+                    }
+                },
+                {
+                    "id": "deploy_prod",
+                    "protocol": "python/v1",
+                    "method": "python/execute",
+                    "params": {"code": "result = {'deployed': 'prod'}"},
+                    "dependencies": ["env_check"]
+                },
+                {
+                    "id": "deploy_dev",
+                    "protocol": "python/v1",
+                    "method": "python/execute",
+                    "params": {"code": "result = {'deployed': 'dev'}"},
+                    "dependencies": ["env_check"]
+                }
+            ]
+        }
+
+        response = await client.submit_workflow(workflow)
+        workflow_id = response.workflow_id
+
+        gate_results = []
+
+        def on_task_complete(event):
+            result = event.get('data', {}).get('result', {})
+            if 'gate_results' in result:
+                gate_results.append(result)
+                print(f"🚦 Gate Decision:")
+                for rule in result['gate_results']:
+                    print(f"   Rule: {rule['name']}")
+                    print(f"   Condition Met: {rule['condition_met']}")
+                    print(f"   Enabled: {rule['enabled_tasks']}")
+                    print(f"   Disabled: {rule['disabled_tasks']}")
+
+        workflow_done = asyncio.Event()
+
+        await client.wait_for_workflow_async(
+            workflow_id,
+            on_task_complete=on_task_complete,
+            on_complete=lambda e: workflow_done.set(),
+            timeout=60
+        )
+
+        await workflow_done.wait()
+```
+
+**Output:**
+```
+🚦 Gate Decision:
+   Rule: environment_gate
+   Condition Met: True
+   Enabled: ['deploy_prod']
+   Disabled: ['deploy_dev']
+```
 
 ---
 

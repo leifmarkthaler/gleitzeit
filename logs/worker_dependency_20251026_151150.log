@@ -1,0 +1,16 @@
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,901 - __main__ - INFO - Initialized worker instance identity: gleitzei-16b46a86
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,901 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:61bcdfa6
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,903 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,903 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,903 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,903 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,903 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,904 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,904 - __main__ - INFO - Worker dependency-async started successfully
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,904 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:11:50] [STDERR] 2025-10-26 15:11:50,904 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-10-26 15:12:08] [STDERR] 2025-10-26 15:12:08,422 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: workflow_1da0bf43eda9
+[2025-10-26 15:12:08] [STDERR] 2025-10-26 15:12:08,426 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task e60fe636-1b41-4054-876c-a766a5ec48d3 to shard 2
+[2025-10-26 15:12:08] [STDERR] 2025-10-26 15:12:08,510 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: da3f43fb-362c-4812-be32-e1017b5b6053 from workflow workflow_1da0bf43eda9
+[2025-10-26 15:12:08] [STDERR] 2025-10-26 15:12:08,511 - gleitzeit.workers.dependency_worker - WARNING - Task da3f43fb-362c-4812-be32-e1017b5b6053 failed - applying HARD FAIL policy for workflow workflow_1da0bf43eda9
+[2025-10-26 15:12:08] [STDERR] 2025-10-26 15:12:08,512 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow_1da0bf43eda9 marked as FAILED due to task da3f43fb-362c-4812-be32-e1017b5b6053 failure (hard fail policy)

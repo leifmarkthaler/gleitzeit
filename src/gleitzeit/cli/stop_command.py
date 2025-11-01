@@ -162,13 +162,29 @@ def stop_docker_services(force: bool, timeout: int, stop_all: bool):
     click.echo("🐳 Stopping Docker services...")
 
     # Method 1: Stop via compose files
-    compose_files = list(Path(".").glob("docker-compose-*.yml"))
-    gleitzeit_compose_files = []
-    for f in compose_files:
-        if f.name not in ["docker-compose.yml", "docker-compose.yaml"]:
-            gleitzeit_compose_files.append(f)
+    # Find all compose files (including main ones and observability)
+    compose_files = []
 
-    compose_files = gleitzeit_compose_files
+    # Check for main compose files
+    for main_file in ["docker-compose.yml", "docker-compose.yaml"]:
+        main_path = Path(main_file)
+        if main_path.exists():
+            compose_files.append(main_path)
+
+    # Check for additional compose files (observability, dev, prod, etc.)
+    for pattern in ["docker-compose.*.yml", "docker-compose-*.yml"]:
+        for f in Path(".").glob(pattern):
+            if f not in compose_files:
+                compose_files.append(f)
+
+    # Static compose files that should NOT be deleted
+    static_compose_files = {
+        "docker-compose.yml",
+        "docker-compose.yaml",
+        "docker-compose.observability.yml",
+        "docker-compose.dev.yml",
+        "docker-compose.prod.yml"
+    }
 
     stopped_via_compose = 0
     if compose_files:
@@ -185,10 +201,12 @@ def stop_docker_services(force: bool, timeout: int, stop_all: bool):
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout + 5)
                 if result.returncode == 0:
                     stopped_via_compose += 1
-                    try:
-                        compose_file.unlink()
-                    except Exception:
-                        pass
+                    # Only delete dynamically generated compose files
+                    if compose_file.name not in static_compose_files:
+                        try:
+                            compose_file.unlink()
+                        except Exception:
+                            pass
             except Exception as e:
                 click.echo(f"   ⚠️  Error with {compose_file.name}: {e}")
 

@@ -1,0 +1,207 @@
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,457 - __main__ - INFO - Initialized worker instance identity: gleitzei-e3a5d080
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,457 - __main__ - INFO - Loading configuration from Redis key: worker:config:ui-async:981ee740
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,459 - __main__ - INFO - Loaded config for worker ui-async
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,485 - __main__ - INFO - Worker ui-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,485 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,639 - ui.ui-async - INFO - UI worker initialized on 0.0.0.0:8004
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,641 - ui.ui-async - INFO - Worker ui-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,641 - __main__ - INFO - Worker ui-async started successfully
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,641 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-01 09:27:14] [STDERR] 2025-11-01 09:27:14,641 - ui.ui-async - INFO - Starting UI server on 0.0.0.0:8004
+[2025-11-01 09:27:16] [STDERR] 2025-11-01 09:27:16,492 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 09:27:17] [STDERR] 2025-11-01 09:27:17,054 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:27:28] [STDERR] 2025-11-01 09:27:28,058 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:27:39] [STDERR] 2025-11-01 09:27:39,056 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:27:50] [STDERR] 2025-11-01 09:27:50,054 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:28:01] [STDERR] 2025-11-01 09:28:01,052 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:28:12] [STDERR] 2025-11-01 09:28:12,053 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:28:23] [STDERR] 2025-11-01 09:28:23,054 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:28:34] [STDERR] 2025-11-01 09:28:34,058 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:28:45] [STDERR] 2025-11-01 09:28:45,086 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:28:56] [STDERR] 2025-11-01 09:28:56,051 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:29:07] [STDERR] 2025-11-01 09:29:07,057 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:29:18] [STDERR] 2025-11-01 09:29:18,059 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:29:29] [STDERR] 2025-11-01 09:29:29,052 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:29:40] [STDERR] 2025-11-01 09:29:40,052 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:29:51] [STDERR] 2025-11-01 09:29:51,060 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:30:02] [STDERR] 2025-11-01 09:30:02,056 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:30:13] [STDERR] 2025-11-01 09:30:13,058 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:30:24] [STDERR] 2025-11-01 09:30:24,056 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:30:35] [STDERR] 2025-11-01 09:30:35,060 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:30:46] [STDERR] 2025-11-01 09:30:46,055 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:30:57] [STDERR] 2025-11-01 09:30:57,058 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:31:08] [STDERR] 2025-11-01 09:31:08,057 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:31:19] [STDERR] 2025-11-01 09:31:19,059 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:31:30] [STDERR] 2025-11-01 09:31:30,059 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:31:41] [STDERR] 2025-11-01 09:31:41,056 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:31:52] [STDERR] 2025-11-01 09:31:52,059 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:32:03] [STDERR] 2025-11-01 09:32:03,052 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:32:14] [STDERR] 2025-11-01 09:32:14,044 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:32:25] [STDERR] 2025-11-01 09:32:25,043 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 09:50:30] [STDERR] 2025-11-01 09:50:30,686 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:11:10] [STDERR] 2025-11-01 10:11:10,582 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:11:20] [STDERR] 2025-11-01 10:11:20,588 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:11:30] [STDERR] 2025-11-01 10:11:30,738 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:11:43] [STDERR] 2025-11-01 10:11:43,472 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:12:02] [STDERR] 2025-11-01 10:12:02,901 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:12:44] [STDERR] 2025-11-01 10:12:44,490 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:13:39] [STDERR] 2025-11-01 10:13:39,022 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:14:42] [STDERR] 2025-11-01 10:14:42,939 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:14:45] [STDERR] 2025-11-01 10:14:45,160 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:14:45] [STDERR] 2025-11-01 10:14:45,239 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:14:45] [STDERR] 2025-11-01 10:14:45,245 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:14:48] [STDERR] 2025-11-01 10:14:48,316 - httpx - INFO - HTTP Request: POST http://localhost:8000/workflows/submit "HTTP/1.1 200 OK"
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,070 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,070 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,071 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,071 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,071 - gleitzeit.ui.api.app - INFO - Found 3 task definitions
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,074 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/2492a7d2-2f26-4933-912a-fc52c6a9536a "HTTP/1.1 200 OK"
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,077 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/f84cda72-710d-4b70-8396-28b8c91601c9 "HTTP/1.1 200 OK"
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,083 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/85c642d3-3954-41ed-a429-df1c9546179e "HTTP/1.1 404 Not Found"
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,102 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,111 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,114 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,126 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b/events "HTTP/1.1 200 OK"
+[2025-11-01 10:14:50] [STDERR] 2025-11-01 10:14:50,131 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,156 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,157 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,157 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,157 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,157 - gleitzeit.ui.api.app - INFO - Found 3 task definitions
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,160 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/2492a7d2-2f26-4933-912a-fc52c6a9536a "HTTP/1.1 200 OK"
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,163 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/f84cda72-710d-4b70-8396-28b8c91601c9 "HTTP/1.1 200 OK"
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,167 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/85c642d3-3954-41ed-a429-df1c9546179e "HTTP/1.1 404 Not Found"
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,181 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,188 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,188 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,192 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b/events "HTTP/1.1 200 OK"
+[2025-11-01 10:14:54] [STDERR] 2025-11-01 10:14:54,196 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,571 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,571 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,571 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,571 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,571 - gleitzeit.ui.api.app - INFO - Found 3 task definitions
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,573 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/2492a7d2-2f26-4933-912a-fc52c6a9536a "HTTP/1.1 200 OK"
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,576 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/f84cda72-710d-4b70-8396-28b8c91601c9 "HTTP/1.1 200 OK"
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,579 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/85c642d3-3954-41ed-a429-df1c9546179e "HTTP/1.1 200 OK"
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,593 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,600 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,601 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,605 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b/events "HTTP/1.1 200 OK"
+[2025-11-01 10:14:55] [STDERR] 2025-11-01 10:14:55,608 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,201 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,201 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,201 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,201 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,202 - gleitzeit.ui.api.app - INFO - Found 3 task definitions
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,204 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/2492a7d2-2f26-4933-912a-fc52c6a9536a "HTTP/1.1 200 OK"
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,207 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/f84cda72-710d-4b70-8396-28b8c91601c9 "HTTP/1.1 200 OK"
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,209 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/85c642d3-3954-41ed-a429-df1c9546179e "HTTP/1.1 200 OK"
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,219 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,229 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,230 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,233 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b/events "HTTP/1.1 200 OK"
+[2025-11-01 10:14:58] [STDERR] 2025-11-01 10:14:58,238 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:15:08] [STDERR] 2025-11-01 10:15:08,239 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:15:08] [STDERR] 2025-11-01 10:15:08,503 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:15:08] [STDERR] 2025-11-01 10:15:08,511 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:15:08] [STDERR] 2025-11-01 10:15:08,523 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:15:11] [STDERR] 2025-11-01 10:15:11,832 - httpx - INFO - HTTP Request: POST http://localhost:8000/workflows/submit "HTTP/1.1 200 OK"
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,544 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/b10eb1c1-7c22-4a80-8e62-f059673643be "HTTP/1.1 200 OK"
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,544 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,544 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,544 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,544 - gleitzeit.ui.api.app - INFO - Found 4 task definitions
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,547 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/ca380e61-82ad-421f-aab8-f0864bfa7a4e "HTTP/1.1 200 OK"
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,550 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/13dfc5dc-7ebc-4f79-8fc3-71e3f07df4a9 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,553 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/984c9f1f-2436-4514-b213-7b1b745e1a9d "HTTP/1.1 200 OK"
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,556 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/18aac0ad-ec9b-432e-aed7-b9fcbae09d42 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,574 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,582 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,583 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=b10eb1c1-7c22-4a80-8e62-f059673643be "HTTP/1.1 200 OK"
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,604 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/b10eb1c1-7c22-4a80-8e62-f059673643be/events "HTTP/1.1 200 OK"
+[2025-11-01 10:15:13] [STDERR] 2025-11-01 10:15:13,607 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:15:23] [STDERR] 2025-11-01 10:15:23,602 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:15:33] [STDERR] 2025-11-01 10:15:33,600 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,923 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,933 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,939 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/list?limit=100 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,944 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/18aac0ad-ec9b-432e-aed7-b9fcbae09d42 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,944 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,946 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/b10eb1c1-7c22-4a80-8e62-f059673643be "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,948 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/984c9f1f-2436-4514-b213-7b1b745e1a9d "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,949 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/13dfc5dc-7ebc-4f79-8fc3-71e3f07df4a9 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,951 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/ca380e61-82ad-421f-aab8-f0864bfa7a4e "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,952 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/85c642d3-3954-41ed-a429-df1c9546179e "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,954 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,956 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/f84cda72-710d-4b70-8396-28b8c91601c9 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,957 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/2492a7d2-2f26-4933-912a-fc52c6a9536a "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,959 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/53aae23b-0467-4825-88ca-07115ee66b1f "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,961 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/86b797a6-c217-4eb5-9ae5-e83bc41d3a7f "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,962 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/42e8d64c-0122-41ca-9b1c-697444892973 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,964 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/69cae530-2131-4e21-af59-22763c045ffa "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,966 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/77d0d3e4-90bf-4886-b9b6-b164c74d4f08 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,967 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/6fe594f5-4171-46b1-b2fd-92335d8db706 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,969 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/d036c286-10d9-445a-9ec8-60836e582de9 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,970 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/54620c39-5e1f-4315-bc80-78e6ab38ad7d "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,971 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/0db8c1a3-8cdc-431b-b17c-84f835bdff3f "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,973 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/65eaa48a-520e-4b97-8a44-9147065143af "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,975 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/2498b60b-9640-4e01-a743-342d760d6347 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,976 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/f60742c7-fbf5-4eee-9c54-ee22300d6585 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,978 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/8d07410f-f5f8-4677-affe-34d44389147c "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,979 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/workflow_14c49ed901b3 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,981 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/18d2c2ff-0f0b-45e3-a87e-ca261093d525 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,982 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/workflow_b8256116a426 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,984 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/287d33df-467f-41bd-a8cf-7f1c3d515bd7 "HTTP/1.1 200 OK"
+[2025-11-01 10:15:34] [STDERR] 2025-11-01 10:15:34,985 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/ac746b98-8b2a-45c0-90b3-e3c10408b35e "HTTP/1.1 200 OK"
+[2025-11-01 10:15:44] [STDERR] 2025-11-01 10:15:44,942 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:15:54] [STDERR] 2025-11-01 10:15:54,942 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:16:04] [STDERR] 2025-11-01 10:16:04,943 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:16:14] [STDERR] 2025-11-01 10:16:14,946 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:16:24] [STDERR] 2025-11-01 10:16:24,947 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:16:34] [STDERR] 2025-11-01 10:16:34,952 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:16:45] [STDERR] 2025-11-01 10:16:45,594 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:16:56] [STDERR] 2025-11-01 10:16:56,592 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:17:07] [STDERR] 2025-11-01 10:17:07,591 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:17:18] [STDERR] 2025-11-01 10:17:18,591 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:17:29] [STDERR] 2025-11-01 10:17:29,592 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:17:40] [STDERR] 2025-11-01 10:17:40,592 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:17:51] [STDERR] 2025-11-01 10:17:51,591 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:18:02] [STDERR] 2025-11-01 10:18:02,590 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:18:13] [STDERR] 2025-11-01 10:18:13,591 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:18:24] [STDERR] 2025-11-01 10:18:24,591 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:18:35] [STDERR] 2025-11-01 10:18:35,595 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:18:46] [STDERR] 2025-11-01 10:18:46,591 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:18:57] [STDERR] 2025-11-01 10:18:57,590 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:19:08] [STDERR] 2025-11-01 10:19:08,586 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:19:19] [STDERR] 2025-11-01 10:19:19,591 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:19:30] [STDERR] 2025-11-01 10:19:30,590 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:19:41] [STDERR] 2025-11-01 10:19:41,578 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:19:52] [STDERR] 2025-11-01 10:19:52,590 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:20:03] [STDERR] 2025-11-01 10:20:03,590 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:20:14] [STDERR] 2025-11-01 10:20:14,581 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:20:25] [STDERR] 2025-11-01 10:20:25,590 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:20:36] [STDERR] 2025-11-01 10:20:36,590 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:20:47] [STDERR] 2025-11-01 10:20:47,583 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:20:58] [STDERR] 2025-11-01 10:20:58,590 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:21:09] [STDERR] 2025-11-01 10:21:09,591 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:21:20] [STDERR] 2025-11-01 10:21:20,582 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:21:43] [STDERR] 2025-11-01 10:21:43,099 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:21:53] [STDERR] 2025-11-01 10:21:53,081 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:22:03] [STDERR] 2025-11-01 10:22:03,068 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:22:13] [STDERR] 2025-11-01 10:22:13,066 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:22:23] [STDERR] 2025-11-01 10:22:23,072 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:22:33] [STDERR] 2025-11-01 10:22:33,073 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:22:44] [STDERR] 2025-11-01 10:22:44,069 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:22:54] [STDERR] 2025-11-01 10:22:54,070 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:23:04] [STDERR] 2025-11-01 10:23:04,071 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:23:14] [STDERR] 2025-11-01 10:23:14,072 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:23:24] [STDERR] 2025-11-01 10:23:24,069 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:23:34] [STDERR] 2025-11-01 10:23:34,072 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:23:44] [STDERR] 2025-11-01 10:23:44,075 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:23:54] [STDERR] 2025-11-01 10:23:54,102 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:24:04] [STDERR] 2025-11-01 10:24:04,075 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:24:14] [STDERR] 2025-11-01 10:24:14,077 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:24:24] [STDERR] 2025-11-01 10:24:24,078 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:24:34] [STDERR] 2025-11-01 10:24:34,073 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"

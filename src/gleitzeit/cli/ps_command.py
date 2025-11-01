@@ -2,12 +2,14 @@
 Enhanced ps command for Gleitzeit CLI
 
 Shows running services using Redis service registry as single source of truth.
+Also detects Docker containers for complete visibility.
 """
 
 import click
 import asyncio
 import json
 import os
+import subprocess
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 import redis.asyncio as aioredis
@@ -75,7 +77,8 @@ async def show_redis_services(all: bool, output_format: str, group_services: boo
                 # Determine service health based on registration time
                 try:
                     started_at = datetime.fromisoformat(service_info.get('started_at', ''))
-                    time_since_start = datetime.now() - started_at
+                    # Use UTC time since workers store timestamps in UTC
+                    time_since_start = datetime.utcnow() - started_at
 
                     # Consider service healthy if registered recently (within 30 minutes)
                     is_healthy = time_since_start < timedelta(minutes=30)
@@ -122,7 +125,8 @@ async def show_redis_services(all: bool, output_format: str, group_services: boo
                 # Also check started_at for consistency
                 try:
                     started_at = datetime.fromisoformat(worker_info.get('started_at', ''))
-                    time_since_start = datetime.now() - started_at
+                    # Use UTC time since workers store timestamps in UTC
+                    time_since_start = datetime.utcnow() - started_at
                     worker_info['uptime_seconds'] = int(time_since_start.total_seconds())
                 except:
                     worker_info['uptime_seconds'] = 0
@@ -132,9 +136,11 @@ async def show_redis_services(all: bool, output_format: str, group_services: boo
 
                 # Add consistent fields for display
                 worker_info['health_status'] = 'healthy' if is_healthy else 'stale'
-                worker_info['service_type'] = f"worker-{worker_type}"
+                worker_info['service_type'] = f"worker_{worker_type}"
                 worker_info['worker_type'] = worker_type
-                worker_info['mode'] = 'docker'  # Workers are typically Docker-based
+                # Use mode from worker_info if present, otherwise default to 'native'
+                if 'mode' not in worker_info:
+                    worker_info['mode'] = 'native'
 
                 # Workers don't have port field, set to N/A
                 if 'port' not in worker_info:
@@ -143,6 +149,12 @@ async def show_redis_services(all: bool, output_format: str, group_services: boo
                 # Only show healthy workers unless --all is specified
                 if all or worker_info['health_status'] == 'healthy':
                     services.append(worker_info)
+
+        # Also check for Docker containers when --all is specified
+        if all:
+            docker_containers = get_docker_containers()
+            services.extend(docker_containers)
+            service_count += len(docker_containers)
 
         if not services:
             if all:
@@ -182,36 +194,39 @@ def show_services_table(services: List[Dict[str, Any]], output_format: str, grou
 
             for service in service_list:
                 uptime = format_uptime(service.get('uptime_seconds', 0))
-                status_icon = "✅" if service.get('health_status') == 'healthy' else "⚠️"
+                health_status = service.get('health_status', 'unknown')
+                status_icon = "✅" if health_status == 'healthy' else "🔴" if health_status == 'stopped' else "⚠️"
 
                 click.echo(
                     f"   {service.get('service_type', 'unknown'):<15} "
                     f"{service.get('host', 'unknown'):<20} "
                     f"{service.get('port', 'N/A'):<8} "
                     f"{service.get('mode', 'unknown'):<10} "
-                    f"{status_icon} {service.get('health_status', 'unknown'):<8} "
+                    f"{status_icon} {health_status:<8} "
                     f"{uptime:<15}"
                 )
     else:
         # Regular table
         if output_format == "simple":
             for service in services:
-                status_icon = "✅" if service.get('health_status') == 'healthy' else "⚠️"
-                click.echo(f"   {service.get('service_type')}: {status_icon} {service.get('health_status')} on {service.get('host')}:{service.get('port')} ({service.get('mode')})")
+                health_status = service.get('health_status', 'unknown')
+                status_icon = "✅" if health_status == 'healthy' else "🔴" if health_status == 'stopped' else "⚠️"
+                click.echo(f"   {service.get('service_type')}: {status_icon} {health_status} on {service.get('host')}:{service.get('port')} ({service.get('mode')})")
         else:
             click.echo(f"   {'Service':<15} {'Host':<20} {'Port':<8} {'Mode':<10} {'Status':<10} {'Uptime':<15}")
             click.echo(f"   {'-'*84}")
 
             for service in services:
                 uptime = format_uptime(service.get('uptime_seconds', 0))
-                status_icon = "✅" if service.get('health_status') == 'healthy' else "⚠️"
+                health_status = service.get('health_status', 'unknown')
+                status_icon = "✅" if health_status == 'healthy' else "🔴" if health_status == 'stopped' else "⚠️"
 
                 click.echo(
                     f"   {service.get('service_type', 'unknown'):<15} "
                     f"{service.get('host', 'unknown'):<20} "
                     f"{service.get('port', 'N/A'):<8} "
                     f"{service.get('mode', 'unknown'):<10} "
-                    f"{status_icon} {service.get('health_status', 'unknown'):<8} "
+                    f"{status_icon} {health_status:<8} "
                     f"{uptime:<15}"
                 )
 
@@ -261,3 +276,67 @@ def format_uptime(seconds: int) -> str:
         days = seconds // 86400
         hours = (seconds % 86400) // 3600
         return f"{days}d {hours}h"
+
+
+def get_docker_containers() -> List[Dict[str, Any]]:
+    """Get Docker containers (running or stopped) with gleitzeit in the name"""
+    containers = []
+
+    try:
+        # Get all containers (including stopped ones)
+        result = subprocess.run(
+            ["docker", "ps", "-a", "--filter", "name=gleitzeit",
+             "--format", "{{.Names}}\t{{.Status}}\t{{.Ports}}"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+
+        if result.returncode == 0 and result.stdout.strip():
+            for line in result.stdout.strip().split('\n'):
+                if not line:
+                    continue
+
+                parts = line.split('\t')
+                if len(parts) < 2:
+                    continue
+
+                name = parts[0]
+                status = parts[1]
+                ports = parts[2] if len(parts) > 2 else ""
+
+                # Determine if container is running or stopped
+                is_running = status.startswith("Up")
+
+                # Parse port if available
+                port = "N/A"
+                if ports and "->" in ports:
+                    # Extract first port mapping (e.g., "0.0.0.0:8000->8000/tcp")
+                    port_parts = ports.split("->")[0].split(":")
+                    if len(port_parts) > 1:
+                        port = port_parts[-1]
+
+                # Determine service type from container name
+                service_type = "docker"
+                if "_" in name:
+                    service_type = name.split("_", 1)[1]  # e.g., gleitzeit_redis -> redis
+
+                containers.append({
+                    'service_type': service_type,
+                    'host': 'docker',
+                    'port': port,
+                    'mode': 'docker',
+                    'health_status': 'running' if is_running else 'stopped',
+                    'uptime_seconds': 0,
+                    'container_name': name,
+                    'container_status': status
+                })
+
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        # Docker not available or timeout
+        pass
+    except Exception:
+        # Other errors, silently ignore
+        pass
+
+    return containers

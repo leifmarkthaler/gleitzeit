@@ -1,0 +1,16 @@
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,756 - __main__ - INFO - Initialized worker instance identity: gleitzei-27a79239
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,756 - __main__ - INFO - Loading configuration from Redis key: worker:config:dependency-async:3f722136
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,758 - __main__ - INFO - Loaded config for worker dependency-async
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,758 - __main__ - INFO - Worker dependency-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,758 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,758 - gleitzeit.workers.dependency_worker - INFO - DependencyWorker initialized
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,758 - gleitzeit.workers.dependency_worker - INFO - Dependency cache configured: size=500, ttl=1800s
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,760 - dependency.dependency-async - INFO - Worker dependency-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,760 - __main__ - INFO - Worker dependency-async started successfully
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,760 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-26 15:03:08] [STDERR] 2025-10-26 15:03:08,760 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-10-26 15:03:26] [STDERR] 2025-10-26 15:03:26,271 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: workflow_0258d06a7d6c
+[2025-10-26 15:03:26] [STDERR] 2025-10-26 15:03:26,275 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 726577b2-50a9-4806-91ed-a2c9683fbd05 to shard 1
+[2025-10-26 15:03:26] [STDERR] 2025-10-26 15:03:26,427 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: fed87cba-ba2f-4c1b-9cea-955e37442cce from workflow workflow_0258d06a7d6c
+[2025-10-26 15:03:26] [STDERR] 2025-10-26 15:03:26,428 - gleitzeit.workers.dependency_worker - WARNING - Task fed87cba-ba2f-4c1b-9cea-955e37442cce failed - applying HARD FAIL policy for workflow workflow_0258d06a7d6c
+[2025-10-26 15:03:26] [STDERR] 2025-10-26 15:03:26,428 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow_0258d06a7d6c marked as FAILED due to task fed87cba-ba2f-4c1b-9cea-955e37442cce failure (hard fail policy)

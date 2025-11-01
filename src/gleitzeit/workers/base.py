@@ -715,6 +715,39 @@ class BaseWorker(ABC, LoggingMixin, PendingRecoveryMixin):
         for task in self._tasks.values():
             task.cancel()
 
+        # Remove this consumer from all consumer groups it joined
+        # This prevents messages from getting stuck in PENDING state when worker dies
+        if self.redis and self._consumer_groups_created:
+            for stream_key in self._consumer_groups_created:
+                try:
+                    # Get consumer group name (derived from stream name)
+                    stream_str = stream_key.decode() if isinstance(stream_key, bytes) else stream_key
+                    # Extract stream type from key (e.g., "{shard:0}:task:ready" -> "task")
+                    parts = stream_str.split(':')
+                    if len(parts) >= 3:
+                        stream_type = parts[1]  # e.g., "task", "workflow", "signal"
+                        consumer_group = f"{stream_type}-group"
+
+                        # Delete this consumer from the group
+                        # XGROUP DELCONSUMER returns number of pending messages that were reassigned
+                        pending_count = await self.redis.xgroup_delconsumer(
+                            stream_key,
+                            consumer_group.encode(),
+                            self.config.consumer_name.encode()
+                        )
+                        if pending_count > 0:
+                            self.logger.warning(
+                                f"Removed consumer {self.config.consumer_name} from {stream_str} "
+                                f"with {pending_count} pending messages"
+                            )
+                        else:
+                            self.logger.info(
+                                f"Removed consumer {self.config.consumer_name} from {stream_str}"
+                            )
+                except Exception as e:
+                    # Don't fail cleanup if consumer deletion fails
+                    self.logger.warning(f"Failed to remove consumer from {stream_key}: {e}")
+
         # Unregister worker from cluster
         key = f"{{shard:0}}:worker:registry:{self.config.worker_type}:{self.config.worker_id}"
         await self.redis.delete(key.encode())

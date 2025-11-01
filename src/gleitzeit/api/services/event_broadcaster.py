@@ -21,8 +21,18 @@ class EventBroadcaster:
     Subscribes to Redis Pub/Sub and broadcasts to WebSocket clients
     """
 
-    def __init__(self, redis_client):
-        self.redis = redis_client
+    def __init__(self, redis_url: str):
+        """
+        Initialize EventBroadcaster with redis_url.
+
+        Creates its own dedicated Redis connection to avoid conflicts
+        with the worker's connection.
+
+        Args:
+            redis_url: Redis connection URL (e.g., "redis://localhost:6379")
+        """
+        self.redis_url = redis_url
+        self.redis = None  # Will be created in start()
         self.pubsub = None
         self.active_connections: Set[WebSocket] = set()
         self.subscription_filters: Dict[WebSocket, Set[str]] = {}
@@ -31,13 +41,22 @@ class EventBroadcaster:
 
     async def start(self):
         """Subscribe to Redis pub/sub channel"""
-        logger.info("Starting EventBroadcaster...")
+        import redis.asyncio as aioredis
+
+        logger.info(f"Starting EventBroadcaster with redis_url={self.redis_url}")
+
+        # Create dedicated Redis connection for pubsub
+        # This avoids connection reuse issues with the worker's Redis instance
+        self.redis = await aioredis.from_url(self.redis_url)
+        logger.info("EventBroadcaster created dedicated Redis connection")
 
         # Create pubsub instance
         self.pubsub = self.redis.pubsub()
+        logger.info("EventBroadcaster created pubsub instance")
 
         # Subscribe to gleitzeit events channel
         await self.pubsub.subscribe('gleitzeit:events')
+        logger.info("EventBroadcaster subscribed to gleitzeit:events")
 
         # Start listening task
         self._running = True

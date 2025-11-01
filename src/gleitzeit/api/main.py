@@ -18,7 +18,6 @@ import redis.asyncio as aioredis
 
 from ..core.sharding import default_sharding
 from ..core.instance import initialize_instance
-from ..core.config_manager import ConfigurationManager
 from .pools.client_pool import ClientPool
 from .middleware.security import (
     RateLimitMiddleware,
@@ -30,22 +29,40 @@ from .middleware.security import (
 
 logger = logging.getLogger(__name__)
 
+# Module-level variables injected by APIWorker
+# These MUST be set by APIWorker.on_initialize() before uvicorn starts
+_worker_redis = None
+_worker_config = None
+_redis_url = None
 
-def load_config(config_path: str = "gleitzeit.yaml") -> Dict[str, Any]:
-    """Load configuration from gleitzeit.yaml"""
-    # Initialize ConfigurationManager for unified config
-    config_manager = ConfigurationManager(config_path, {})
-    return config_manager.get_all_config()
-
-
-# Load configuration at module level
-CONFIG = load_config(os.environ.get('GLEITZEIT_CONFIG', 'gleitzeit.yaml'))
+def set_worker_dependencies(redis_instance, config: Dict[str, Any], redis_url: str):
+    """Called by APIWorker to inject Redis connection, config, and redis_url"""
+    global _worker_redis, _worker_config, _redis_url
+    _worker_redis = redis_instance
+    _worker_config = config
+    _redis_url = redis_url
+    logger.info(f"Worker dependencies injected: Redis={type(redis_instance)}, redis_url={redis_url}")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle"""
     logger.info("Starting Gleitzeit API server")
+
+    # Redis, config, and redis_url MUST be injected by APIWorker before server starts
+    global _worker_redis, _worker_config, _redis_url
+    if _worker_redis is None or _worker_config is None or _redis_url is None:
+        error_msg = (
+            "Worker dependencies not injected. "
+            "The API must be run via APIWorker, not directly. "
+            "Use 'gleitzeit serve' to start the API."
+        )
+        logger.error(error_msg)
+        raise RuntimeError(error_msg)
+
+    # Use the injected Redis connection
+    app.state.redis = _worker_redis
+    logger.info(f"Using Redis connection from worker: {type(app.state.redis)}")
 
     # Initialize instance from environment variables if set
     instance_name = os.environ.get('GLEITZEIT_INSTANCE_NAME')
@@ -54,29 +71,9 @@ async def lifespan(app: FastAPI):
         initialize_instance(instance_name, instance_role)
         logger.info(f"Initialized instance: {instance_name} with role {instance_role}")
 
-    # Initialize Redis connection from config
-    redis_config = CONFIG.get('redis', {})
-    redis_url = os.getenv("REDIS_URL", None)
-
-    if not redis_url:
-        # Build Redis URL from config
-        if redis_config.get('mode') == 'single':
-            single_node = redis_config.get('single_node', {})
-            redis_host = single_node.get('host', 'localhost')
-            redis_port = single_node.get('port', 6379)
-            redis_db = single_node.get('db', 0)
-            redis_url = f"redis://{redis_host}:{redis_port}/{redis_db}"
-        else:
-            redis_url = "redis://localhost:6379"
-
-    app.state.redis = await aioredis.from_url(
-        redis_url,
-        decode_responses=False
-    )
-
-    # Initialize client connection pool with Redis URL
+    # Initialize client connection pool with redis_url from worker
     app.state.client_pool = ClientPool(
-        redis_url=redis_url,
+        redis_url=_redis_url,
         max_clients_per_user=10  # Can be configured
     )
     await app.state.client_pool.initialize()
@@ -86,7 +83,7 @@ async def lifespan(app: FastAPI):
 
     # Initialize EventBroadcaster for WebSocket support
     from .services.event_broadcaster import EventBroadcaster, set_broadcaster
-    broadcaster = EventBroadcaster(app.state.redis)
+    broadcaster = EventBroadcaster(_redis_url)
     await broadcaster.start()
     set_broadcaster(broadcaster)
     app.state.broadcaster = broadcaster
@@ -96,7 +93,7 @@ async def lifespan(app: FastAPI):
     service_type = os.environ.get('SERVICE_TYPE')
     if service_type:
         # Check if service registry is enabled in config
-        registry_config = CONFIG.get('service_registry', {})
+        registry_config = _worker_config.get('service_registry', {})
         if registry_config.get('enabled', True):  # Default to enabled for backward compatibility
             try:
                 from ..core.config_manager import ConfigurationManager
@@ -118,21 +115,13 @@ async def lifespan(app: FastAPI):
     # Cleanup
     logger.info("Shutting down Gleitzeit API server")
 
-    # Unregister Docker service if in Docker environment and service registry is enabled
+    # Unregister Docker service if in Docker environment
+    # This is legacy code for Docker-based deployments
     service_type = os.environ.get('SERVICE_TYPE')
     if service_type:
-        registry_config = CONFIG.get('service_registry', {})
-        if registry_config.get('enabled', True):
-            try:
-                from ..core.config_manager import ConfigurationManager
-                config_manager = ConfigurationManager(os.environ.get('GLEITZEIT_CONFIG', 'gleitzeit.yaml'), {})
-                service_redis_url = config_manager.get_redis_url()
-
-                from ..core.docker_service_registry import unregister_service
-                await unregister_service(service_type, service_redis_url)
-                logger.info(f"Unregistered {service_type} service from Redis registry")
-            except Exception as e:
-                logger.warning(f"Failed to unregister Docker service: {e}")
+        # TODO: This Docker service registry code should be removed or updated
+        # to use the worker's Redis connection directly
+        pass
 
     # Stop event broadcaster
     if hasattr(app.state, 'broadcaster'):
@@ -151,75 +140,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS from YAML config
-cors_config = CONFIG.get('security', {}).get('cors', {})
-
-# Build allowed origins list
-allowed_origins = []
-
-# Check if we should auto-compute from serve config
-if cors_config.get('use_serve_config', True):
-    serve_config = CONFIG.get('serve', {})
-
-    # Add API URL
-    api_config = serve_config.get('api', {})
-    api_host = api_config.get('host', 'localhost')
-    if api_host == '0.0.0.0':
-        api_host = 'localhost'
-    api_port = api_config.get('port', 8000)
-    allowed_origins.extend([
-        f"http://{api_host}:{api_port}",
-        f"http://localhost:{api_port}",
-        f"http://127.0.0.1:{api_port}"
-    ])
-
-    # Add UI URL
-    ui_config = serve_config.get('ui', {})
-    if ui_config.get('enabled', True):
-        ui_host = ui_config.get('host', 'localhost')
-        if ui_host == '0.0.0.0':
-            ui_host = 'localhost'
-        ui_port = ui_config.get('port', 8004)
-        allowed_origins.extend([
-            f"http://{ui_host}:{ui_port}",
-            f"http://localhost:{ui_port}",
-            f"http://127.0.0.1:{ui_port}"
-        ])
-
-# Add additional origins from config
-additional_origins = cors_config.get('additional_origins', '')
-if additional_origins:
-    if isinstance(additional_origins, str):
-        allowed_origins.extend(additional_origins.split(','))
-    elif isinstance(additional_origins, list):
-        allowed_origins.extend(additional_origins)
-
-# Add from environment as fallback
-env_origins = os.getenv("CORS_ORIGINS", "")
-if env_origins:
-    allowed_origins.extend(env_origins.split(','))
-
-# Remove duplicates and empty strings
-allowed_origins = list(filter(None, set(allowed_origins)))
-
-# Default if nothing configured
-if not allowed_origins:
-    allowed_origins = ["http://localhost:8000", "http://localhost:8004"]
-
-logger.info(f"CORS allowed origins: {allowed_origins}")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=cors_config.get('allow_credentials', True),
-    allow_methods=cors_config.get('allow_methods', ["GET", "POST", "PUT", "DELETE", "OPTIONS"]),
-    allow_headers=cors_config.get('allow_headers', ["Content-Type", "Authorization", "X-Session-ID", "X-API-Key"]),
-    expose_headers=cors_config.get('expose_headers', ["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"]),
-)
-
-# Add security middleware (order matters - these run in reverse order)
-app.add_middleware(SecurityHeadersMiddleware)
-app.add_middleware(RequestTrackingMiddleware)
+# CORS and security middleware will be configured in startup_event
+# after worker injects config from gleitzeit.yaml
+# Do NOT add any middleware here - all middleware uses worker config
 
 
 # Dependency injection helpers are now in dependencies.py
@@ -234,8 +157,14 @@ from .discovery import router as discovery_router
 @app.on_event("startup")
 async def startup_event():
     """Initialize authentication and middleware on startup"""
+    # Get config from worker injection
+    global _worker_config
+    if _worker_config is None:
+        logger.warning("Worker config not available in startup event")
+        return
+
     # Initialize auth with config
-    auth_config = CONFIG.get('auth', {})
+    auth_config = _worker_config.get('auth', {})
 
     # Set GLEITZEIT_AUTO_LOGIN from config
     if 'auto_login' in auth_config:
@@ -249,7 +178,7 @@ async def startup_event():
     init_auth(app.state.redis)
 
     # Add rate limiting middleware from config
-    rate_limit_config = CONFIG.get('security', {}).get('rate_limiting', {})
+    rate_limit_config = _worker_config.get('security', {}).get('rate_limiting', {})
     if rate_limit_config.get('enabled', True):
         app.add_middleware(
             RateLimitMiddleware,
@@ -259,7 +188,7 @@ async def startup_event():
         )
 
     # Add audit logging middleware from config
-    audit_config = CONFIG.get('security', {}).get('audit', {})
+    audit_config = _worker_config.get('security', {}).get('audit', {})
     if audit_config.get('enabled', True):
         app.add_middleware(
             AuditLoggingMiddleware,
@@ -267,7 +196,7 @@ async def startup_event():
         )
 
     # Add IP whitelist from config
-    ip_whitelist_config = CONFIG.get('security', {}).get('ip_whitelist', {})
+    ip_whitelist_config = _worker_config.get('security', {}).get('ip_whitelist', {})
     if ip_whitelist_config.get('enabled', False):
         whitelist_str = ip_whitelist_config.get('whitelist', '')
         if whitelist_str:

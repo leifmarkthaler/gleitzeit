@@ -109,6 +109,15 @@ handlers:
       max_child_workflows: 100
       async_submission: true
 
+  # Validation handler configuration (for conditional tasks)
+  validation:
+    execution:
+      mode: native
+    config:
+      # Safe expression evaluation settings
+      max_expression_length: 1000
+      timeout: 10  # seconds
+
 # Worker configuration with handler configs
 workers:
   # API service as worker (self-registers with heartbeat)

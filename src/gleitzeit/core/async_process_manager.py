@@ -136,12 +136,23 @@ class AsyncProcessManager:
             process_env['GLEITZEIT_INSTANCE_ID'] = current_instance.instance_id
             logger.debug(f"Passing instance ID to worker: {current_instance.instance_id}")
 
-        # Create process with asyncio (no PIPE deadlock!)
+        # Create process with asyncio
+        # Only use PIPEs if file logging is enabled, otherwise redirect to DEVNULL
+        # to prevent pipe buffer deadlock when no drain tasks are created
         try:
+            if self.file_logging_enabled:
+                # Use PIPEs - we will create drain tasks to prevent deadlock
+                stdout_dest = asyncio.subprocess.PIPE
+                stderr_dest = asyncio.subprocess.PIPE
+            else:
+                # No file logging - redirect to DEVNULL to prevent pipe deadlock
+                stdout_dest = asyncio.subprocess.DEVNULL
+                stderr_dest = asyncio.subprocess.DEVNULL
+
             process = await asyncio.create_subprocess_exec(
                 *command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                stdout=stdout_dest,
+                stderr=stderr_dest,
                 env=process_env,
                 cwd=cwd,
                 start_new_session=True  # Create new process group
@@ -575,7 +586,8 @@ class AsyncServiceManager:
             'block_timeout': worker_config.get('block_timeout', 5000),
             'shards': list(range(16)),  # All shards
             'redis_url': 'redis://localhost:6379',
-            'redis_cluster_nodes': ['localhost:6379']
+            'redis_cluster_nodes': ['localhost:6379'],
+            'extra': worker_config.get('extra', {})  # Include extra config (e.g., host/port for API worker)
         }
 
         # Add handler configurations if available
@@ -679,11 +691,52 @@ class AsyncServiceManager:
 
         logger.info(f"Starting loki_exporter: {' '.join(command)}")
 
-        await self.process_manager.start_process(
+        result = await self.process_manager.start_process(
             name="loki_exporter",
             command=command,
             port=None  # Loki exporter doesn't need a port
         )
+
+        # Register in service registry
+        if result and self.smart_manager:
+            await self.smart_manager.register_service("loki_exporter", {
+                "pid": str(result.pid),
+                "worker_type": "loki_exporter",
+                "worker_id": "loki_exporter",
+                "started_at": datetime.now().isoformat(),
+                "mode": "native"
+            })
+
+    async def start_redis_monitor(self, monitor_config: dict):
+        """Start the Redis monitor worker as a standalone process"""
+        redis_url = self.config_manager.get_redis_url()
+        check_interval = monitor_config.get('check_interval', 10)
+        retention = monitor_config.get('retention_seconds', 3600)
+
+        command = [
+            sys.executable, "-m", "gleitzeit.workers.redis_monitor_worker",
+            "--redis-url", redis_url,
+            "--check-interval", str(check_interval),
+            "--retention", str(retention)
+        ]
+
+        logger.info(f"Starting redis_monitor: {' '.join(command)}")
+
+        result = await self.process_manager.start_process(
+            name="redis_monitor",
+            command=command,
+            port=None  # Redis monitor doesn't need a port
+        )
+
+        # Register in service registry
+        if result and self.smart_manager:
+            await self.smart_manager.register_service("redis_monitor", {
+                "pid": str(result.pid),
+                "worker_type": "redis_monitor",
+                "worker_id": "redis_monitor",
+                "started_at": datetime.now().isoformat(),
+                "mode": "native"
+            })
 
     def _apply_overrides(self, worker_config: dict, cli_overrides: dict) -> Optional[dict]:
         """
@@ -839,6 +892,15 @@ class AsyncServiceManager:
             await self.start_loki_exporter(loki_config)
         else:
             logger.info(f"Loki exporter not enabled (config: {loki_config})")
+
+        # Start Redis monitor if enabled (standalone process)
+        redis_config = self.config_manager.get_value('redis') or {}
+        monitor_config = redis_config.get('monitoring', {})
+        if monitor_config.get('enabled', False):
+            logger.info("🚀 Starting Redis monitor...")
+            await self.start_redis_monitor(monitor_config)
+        else:
+            logger.info(f"Redis monitor not enabled (config: {monitor_config})")
 
         return await self.process_manager.monitor_processes()
 

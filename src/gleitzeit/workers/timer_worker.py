@@ -1,20 +1,20 @@
 """
 Timer worker for Gleitzeit 0.0.7
 
-Handles scheduled task execution and timer-based workflows using the worker architecture.
+Simple, direct-scanning timer system.
+No buckets, no time_advance events, just scan and fire.
 """
 
 import asyncio
 import json
 import logging
+import os
 from typing import Dict, Any, List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime
 import time
 
 from .base import BaseWorker, WorkerConfig
 from ..core.sharding import default_sharding
-from ..timers.stateless_timer_manager import StatelessTimerManager
-from ..core.leader_election import LeaderElection, LeaderStatus
 from ..core.events import EventType
 from ..core.event_store import EventStore, EventLevel
 
@@ -23,245 +23,242 @@ logger = logging.getLogger(__name__)
 
 class TimerWorker(BaseWorker):
     """
-    Worker that processes timer events and scheduled tasks.
+    Worker that scans for expired timers and fires them.
 
     Features:
-    - Scheduled task execution
-    - Recurring timers
-    - Delay-based task scheduling
-    - Leader election for timer processing (only one worker processes timers)
+    - Scans all timer metadata every 1 second
+    - Fires timers where wake_time <= current_time
+    - Atomic check-and-delete using Lua script (prevents duplicate firing)
+    - Full audit trail for every timer
+    - No buckets, no registry keys, no TTLs
+    - Handles both regular timers and retry timers
     """
 
     def __init__(self, config: WorkerConfig):
         super().__init__(config)
-        self.timer_manager: Optional[StatelessTimerManager] = None
-        self.leader_election: Optional[LeaderElection] = None
-        self.leader_key = default_sharding.get_global_key("timer:leader")
-        self.leader_ttl = 10  # seconds
-        self.last_heartbeat = 0
-        self.check_interval = 1  # seconds
+        self.timers_fired = 0
+        self.scan_interval = 1.0  # Scan every 1 second
+        self.lua_script = None
+        self.lua_script_sha = None
 
     async def on_initialize(self):
         """Initialize timer worker resources"""
-        # StatelessTimerManager uses static methods, no initialization needed
-        self.timer_manager = StatelessTimerManager
-
-        # Initialize atomic leader election
-        self.leader_election = LeaderElection(
-            self.redis,
-            self.leader_key,
-            self.config.worker_id,
-            self.leader_ttl
-        )
-
         # Initialize event store for publishing timer events
         self.event_store = EventStore(self.redis, config={
             'max_events_per_workflow': 10000,
             'event_ttl_seconds': 86400 * 30  # 30 days
         })
 
-        logger.info(f"TimerWorker initialized with atomic leader election")
+        # Load and register Lua script for atomic timer deletion
+        await self._load_lua_script()
+
+        logger.info(f"TimerWorker initialized (direct-scan mode, {self.scan_interval}s interval)")
+
+    async def _load_lua_script(self):
+        """Load Lua script for atomic timer check-and-delete"""
+        script_path = os.path.join(
+            os.path.dirname(__file__),
+            'lua',
+            'get_and_delete_timer_if_expired.lua'
+        )
+
+        try:
+            with open(script_path, 'r') as f:
+                self.lua_script = f.read()
+
+            # Register script with Redis
+            self.lua_script_sha = await self.redis.script_load(self.lua_script.encode())
+            # script_load may return bytes or str depending on Redis client
+            sha_str = self.lua_script_sha.decode() if isinstance(self.lua_script_sha, bytes) else self.lua_script_sha
+            logger.info(f"Loaded Lua script: {sha_str}")
+
+        except FileNotFoundError:
+            logger.error(f"Lua script not found at {script_path}")
+            raise
+        except Exception as e:
+            logger.error(f"Failed to load Lua script: {e}")
+            raise
 
     def get_base_streams(self) -> List[str]:
         """Return streams this worker consumes from"""
-        # Timer worker is stateless - monitors sorted sets, not streams
+        # Timer worker doesn't consume streams - it scans metadata directly
         return []
 
+    async def process_message(
+        self,
+        stream: str,
+        message_id: str,
+        data: Dict
+    ) -> bool:
+        """Timer worker doesn't process stream messages"""
+        # This method is required by BaseWorker but not used by TimerWorker
+        # since we scan metadata directly instead of consuming streams
+        return True
+
     async def run(self):
-        """Enhanced run method with leader election and timer processing"""
-        logger.info(f"Worker {self.config.worker_id} starting with consumer group {self.config.consumer_group}")
+        """Main worker loop - scan for expired timers every second"""
+        logger.info(f"Worker {self.config.worker_id} starting timer scan loop")
 
-        self._running = True  # Important: Set running flag!
+        self._running = True
 
-        # Start heartbeat task (includes worker registration and command checking)
+        # Start heartbeat task (includes worker registration)
         heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
-        # Start leader election task
-        election_task = asyncio.create_task(self._leader_election_loop())
-
-        # Start timer processing (only if leader)
-        timer_task = asyncio.create_task(self._timer_processing_loop())
+        # Start timer scanning task
+        scan_task = asyncio.create_task(self._timer_scan_loop())
 
         try:
-            # Run all tasks
-            await asyncio.gather(heartbeat_task, election_task, timer_task)
+            # Wait for tasks
+            await asyncio.gather(heartbeat_task, scan_task)
         except asyncio.CancelledError:
-            logger.info("Worker cancelled")
+            logger.info(f"Worker {self.config.worker_id} cancelled")
         finally:
-            # Cleanup
-            heartbeat_task.cancel()
-            if self.leader_election and self.leader_election.is_leader:
-                await self.leader_election.release()
+            self._running = False
+            await self._cleanup()
 
-    async def _leader_election_loop(self):
-        """Participate in atomic leader election for timer processing"""
-        logger.info(f"Starting atomic leader election loop for {self.config.worker_id}")
-        while self._running:
-            try:
-                # Atomic leader election
-                status = await self.leader_election.try_elect()
-
-                if status == LeaderStatus.BECAME_LEADER:
-                    logger.info(f"Worker {self.config.worker_id} became timer leader")
-                elif status == LeaderStatus.LOST_LEADERSHIP:
-                    logger.info(f"Worker {self.config.worker_id} lost timer leadership")
-
-                await asyncio.sleep(self.leader_ttl // 3)  # Heartbeat interval
-
-            except Exception as e:
-                logger.error(f"Leader election error: {e}")
-                await asyncio.sleep(1)
-
-    async def _timer_processing_loop(self):
-        """Process timers (only when leader)"""
-        import time
+    async def _timer_scan_loop(self):
+        """Continuously scan for expired timers"""
+        logger.info("Timer scan loop started")
 
         while self._running:
             try:
-                if self.leader_election and self.leader_election.is_leader:
-                    # Use StatelessTimerManager's comprehensive processing
-                    # This handles: cancellation checks, recurring timers, metadata updates
-                    processed, fired_timers = await StatelessTimerManager.process_due_timers(
-                        self.redis,
-                        max_timers=100
-                    )
-
-                    if fired_timers:
-                        logger.info(f"Processing {len(fired_timers)} expired timers")
-
-                        # Process each fired timer
-                        for timer_data in fired_timers:
-                            timer_id = timer_data['timer_id']
-                            task_id = timer_data.get('task_id', '')
-                            workflow_id = timer_data.get('workflow_id', '')
-
-                            if not task_id or not workflow_id:
-                                logger.warning(f"Timer {timer_id} missing task_id or workflow_id, skipping")
-                                continue
-
-                            # Check if this is a retry timer
-                            # Format: "{workflow_id}:{task_id}:retry"
-                            if ":retry" in timer_id:
-                                await self._handle_retry_timer(task_id, workflow_id)
-                            else:
-                                # Regular timer - pass timer_data for enriched results
-                                shard = default_sharding.get_shard(workflow_id)
-                                await self._complete_timer_task(
-                                    task_id,
-                                    workflow_id,
-                                    shard,
-                                    timer_data  # Pass full timer data
-                                )
-
-                await asyncio.sleep(self.check_interval)
+                current_time = time.time()
+                await self._scan_all_shards_for_expired_timers(current_time)
+                await asyncio.sleep(self.scan_interval)
 
             except Exception as e:
-                logger.error(f"Timer processing error: {e}")
-                await asyncio.sleep(1)
+                logger.error(f"Error in timer scan loop: {e}", exc_info=True)
+                await self.log_worker_error("timer_scan_loop", e)
+                await asyncio.sleep(self.scan_interval)
 
-    async def _release_leadership(self):
-        """Release leadership when shutting down"""
-        if self.is_leader:
-            await self.redis.delete(self.leader_key.encode())
-            logger.info(f"Worker {self.config.worker_id} released timer leadership")
+        logger.info("Timer scan loop ended")
 
-    async def process_message(self, stream: str, message_id: str, data: Dict) -> bool:
-        """Process timer-related messages (not used in stateless mode)
+    async def _scan_all_shards_for_expired_timers(self, current_time: float):
+        """Scan all shards for expired timers"""
+        fired_count = 0
 
-        Returns:
-            True if message was processed successfully and should be ACK'd
-            False if message failed and should not be ACK'd
+        for shard in range(16):  # Assuming 16 shards
+            shard_fired = await self._scan_shard_for_expired_timers(shard, current_time)
+            fired_count += shard_fired
+
+        if fired_count > 0:
+            self.timers_fired += fired_count
+            logger.info(f"Fired {fired_count} timers (total: {self.timers_fired})")
+
+    async def _scan_shard_for_expired_timers(self, shard: int, current_time: float) -> int:
+        """Scan one shard for expired timers"""
+        pattern = f"{{shard:{shard}}}:timer:metadata:*"
+        fired_count = 0
+
+        cursor = 0
+        while True:
+            try:
+                cursor, keys = await self.redis.scan(
+                    cursor,
+                    match=pattern.encode(),
+                    count=100
+                )
+
+                # Process each timer key atomically
+                for key in keys:
+                    metadata = await self._try_fire_timer(key, current_time)
+                    if metadata:
+                        fired_count += 1
+
+                if cursor == 0:
+                    break
+
+            except Exception as e:
+                logger.error(f"Error scanning shard {shard}: {e}", exc_info=True)
+                break
+
+        return fired_count
+
+    async def _try_fire_timer(self, key: bytes, current_time: float) -> Optional[Dict]:
+        """
+        Atomically check if timer is expired and delete it.
+        Returns metadata if timer was fired, None otherwise.
         """
         try:
-            if "timer:schedule" in stream:
-                await self._handle_timer_schedule(data)
-            elif "timer:cancel" in stream:
-                await self._handle_timer_cancel(data)
-            return True  # Successfully processed
-        except Exception as e:
-            logger.error(f"Error processing timer message: {e}", exc_info=True)
-            return False  # Don't ACK, leave for retry
-
-    async def _handle_timer_schedule(self, data: Dict):
-        """Handle timer scheduling request"""
-        timer_id = data.get('timer_id')
-        workflow_id = data.get('workflow_id')
-        task_id = data.get('task_id')
-        timer_type = data.get('type', 'delay')  # delay, cron, interval
-
-        if not timer_id or not workflow_id:
-            logger.error(f"Invalid timer schedule request: {data}")
-            return
-
-        logger.info(f"Scheduling timer {timer_id} for workflow {workflow_id}")
-
-        if timer_type == 'delay':
-            # Simple delay timer
-            delay_seconds = float(data.get('delay', 60))
-
-            # Use static method to create timer
-            created_timer_id = await self.timer_manager.create_timer(
-                redis=self.redis,
-                workflow_id=workflow_id,
-                duration_seconds=delay_seconds,
-                task_id=task_id,
-                timer_type='delay',
-                payload=data.get('metadata', {}),
-                timer_id=timer_id
+            # Use Lua script for atomic check-and-delete
+            result = await self.redis.evalsha(
+                self.lua_script_sha,
+                1,
+                key,
+                str(current_time).encode()
             )
 
-        logger.info(f"Timer {timer_id} scheduled successfully")
+            if not result:
+                # Timer not expired or already deleted by another worker
+                return None
 
-    async def _handle_timer_cancel(self, data: Dict):
-        """Handle timer cancellation request"""
-        timer_id = data.get('timer_id')
+            # Parse metadata from Lua result (list of alternating keys/values)
+            metadata = {}
+            for i in range(0, len(result), 2):
+                k = result[i].decode() if isinstance(result[i], bytes) else result[i]
+                v = result[i+1].decode() if isinstance(result[i+1], bytes) else result[i+1]
+                metadata[k] = v
 
-        if not timer_id:
-            logger.error(f"Invalid timer cancel request: {data}")
+            # Fire the timer
+            await self._fire_timer(metadata)
+
+            return metadata
+
+        except Exception as e:
+            logger.error(f"Error firing timer {key}: {e}", exc_info=True)
+            await self.log_worker_error("try_fire_timer", e, timer_key=key.decode())
+            return None
+
+    async def _fire_timer(self, metadata: Dict[str, str]):
+        """Fire an expired timer"""
+        workflow_id = metadata.get('workflow_id')
+        task_id = metadata.get('task_id')
+        timer_type = metadata.get('timer_type', 'sleep')
+        wake_time = float(metadata.get('wake_time', 0))
+
+        if not workflow_id or not task_id:
+            logger.warning(f"Invalid timer metadata: missing workflow_id or task_id")
             return
 
-        logger.info(f"Cancelling timer {timer_id}")
+        logger.info(
+            f"Firing {timer_type} timer for task {task_id} "
+            f"(wake_time={datetime.fromtimestamp(wake_time).isoformat()})"
+        )
 
-        # Use static method to cancel timer
-        success = await self.timer_manager.cancel_timer(self.redis, timer_id)
+        # Emit TIMER_FIRED event for audit
+        await self.event_store.store_event(
+            event_type=EventType.TIMER_FIRED,
+            workflow_id=workflow_id,
+            task_id=task_id,
+            level=EventLevel.IMPORTANT,
+            data={
+                'timer_type': timer_type,
+                'wake_time': wake_time,
+                'fired_at': time.time(),
+                'scheduled_at': metadata.get('created_at')
+            }
+        )
 
-        if success:
-            logger.info(f"Timer {timer_id} cancelled successfully")
+        # Process based on timer type
+        if timer_type == "retry":
+            await self._handle_retry_timer(workflow_id, task_id, metadata)
         else:
-            logger.warning(f"Timer {timer_id} not found or already fired")
+            await self._complete_timer_task(workflow_id, task_id, metadata)
+
+        # Remove from pending set
+        pending_key = default_sharding.get_timer_key("pending", workflow_id)
+        await self.redis.srem(pending_key.encode(), task_id.encode())
 
     async def _complete_timer_task(
         self,
-        task_id: str,
         workflow_id: str,
-        shard: int,
-        timer_data: Dict = None
+        task_id: str,
+        metadata: Dict[str, str]
     ):
         """
         Mark timer task as completed and emit completion event.
-
-        This method validates the task state before marking it complete to prevent
-        marking cancelled or already-completed tasks. It also enriches the result
-        data with timer metadata for better debugging and monitoring.
-
-        Args:
-            task_id: Task identifier
-            workflow_id: Workflow identifier
-            shard: Shard number for the workflow
-            timer_data: Optional timer metadata dict containing:
-                - timer_type: Type of timer (sleep, wait_until, schedule)
-                - duration_seconds: Original timer duration
-                - scheduled_time: When timer was scheduled
-                - fired_at: When timer actually fired
-                - created_at: Timer creation timestamp
-
-        Returns:
-            None (updates Redis and emits event)
-
-        Note:
-            Skips completion if task no longer exists or is already
-            cancelled/completed/failed.
         """
+        logger.info(f"Completing timer task {task_id} for workflow {workflow_id}")
 
         # Validate task state before completion
         task_key = default_sharding.get_task_key(task_id, workflow_id)
@@ -276,28 +273,13 @@ class TimerWorker(BaseWorker):
             logger.info(f"Task {task_id} is {current_status}, skipping timer completion")
             return
 
-        logger.info(f"Completing timer task {task_id} for workflow {workflow_id}")
-
-        # Build enriched result with timer metadata
-        result_data = {"timer_fired": True, "message": "Timer expired"}
-
-        if timer_data:
-            result_data.update({
-                "timer_type": timer_data.get('timer_type', 'unknown'),
-                "duration_seconds": timer_data.get('duration_seconds', 0),
-                "scheduled_time": timer_data.get('scheduled_time'),
-                "fired_at": timer_data.get('fired_at'),
-                "created_at": timer_data.get('created_at')
-            })
-
-        # Publish timer fired event
-        await self.event_store.store_event(
-            event_type=EventType.TIMER_FIRED,
-            workflow_id=workflow_id,
-            task_id=task_id,
-            level=EventLevel.IMPORTANT,
-            data=result_data
-        )
+        # Build result data
+        timer_type = metadata.get('timer_type', 'sleep')
+        result_data = {
+            "timer_fired": True,
+            "timer_type": timer_type,
+            "fired_at": datetime.utcnow().isoformat()
+        }
 
         # Mark timer task as completed
         completion_time = datetime.utcnow().isoformat()
@@ -322,14 +304,17 @@ class TimerWorker(BaseWorker):
             }
         )
 
-        logger.info(f"Timer task {task_id} marked as completed and event emitted to shard {shard}")
+        logger.info(f"Timer task {task_id} marked as completed and event emitted")
 
     async def _handle_retry_timer(
         self,
+        workflow_id: str,
         task_id: str,
-        workflow_id: str
+        metadata: Dict[str, str]
     ):
-        """Handle expired retry timer - put task back in ready queue"""
+        """
+        Handle expired retry timer - re-queue task to ready stream.
+        """
         logger.info(f"Retry timer expired for task {task_id} in workflow {workflow_id}")
 
         # Get workflow data to extract task definition
@@ -342,8 +327,11 @@ class TimerWorker(BaseWorker):
             logger.error(f"Workflow data not found for retry: {workflow_id}")
             return
 
-        import json
-        workflow = json.loads(workflow_data)
+        try:
+            workflow = json.loads(workflow_data)
+        except json.JSONDecodeError as e:
+            logger.error(f"Failed to parse workflow data: {e}")
+            return
 
         # Find the task in the workflow
         task_data = None
@@ -363,7 +351,7 @@ class TimerWorker(BaseWorker):
             b"status", b"pending"
         )
 
-        # Put task back in ready queue (same as DependencyWorker)
+        # Put task back in ready queue
         ready_stream = default_sharding.get_stream_key("task:ready", workflow_id).encode()
         await self.redis.xadd(
             ready_stream,
@@ -375,4 +363,4 @@ class TimerWorker(BaseWorker):
             }
         )
 
-        logger.info(f"Task {task_id} re-queued to task:ready stream")
+        logger.info(f"Task {task_id} re-queued to task:ready stream for retry")

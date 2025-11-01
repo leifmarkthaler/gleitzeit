@@ -1,0 +1,14 @@
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,048 - __main__ - INFO - Initialized worker instance identity: gleitzei-ea6821c4
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,048 - __main__ - INFO - Loading configuration from Redis key: worker:config:time_advance-async:a14c7a5e
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,050 - __main__ - INFO - Loaded config for worker time_advance-async
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,051 - __main__ - INFO - Worker time_advance-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,051 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,051 - gleitzeit.workers.time_advance_worker - INFO - TimeAdvanceWorker initialized with bucket_size=60s
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,053 - time_advance.time_advance-async - INFO - Worker time_advance-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,053 - __main__ - INFO - Worker time_advance-async started successfully
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,053 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,053 - gleitzeit.workers.time_advance_worker - INFO - Worker time_advance-async starting
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,053 - gleitzeit.workers.time_advance_worker - INFO - Starting leader election loop for time_advance-async
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,053 - gleitzeit.workers.time_advance_worker - INFO - Time advance loop started for time_advance-async
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,054 - gleitzeit.core.leader_election - INFO - Worker time_advance-async became leader for {shard:0}:global:time_advance:leader
+[2025-10-31 22:20:17] [STDERR] 2025-10-31 22:20:17,054 - gleitzeit.workers.time_advance_worker - INFO - Worker time_advance-async became time advance leader

@@ -231,7 +231,10 @@ class RetryWorker(BaseWorker):
         next_attempt: int,
         error_msg: str
     ) -> None:
-        """Schedule a task retry via timer mechanism."""
+        """Schedule a task retry - simple metadata only, no buckets/registry."""
+        wake_time = time.time() + delay
+        shard = default_sharding.get_shard(workflow_id)
+
         task_key = default_sharding.get_task_key(task_id, workflow_id).encode()
 
         # Update task status
@@ -241,17 +244,31 @@ class RetryWorker(BaseWorker):
                 b"status": TaskStatus.SCHEDULED.encode(),
                 b"retry_count": str(next_attempt).encode(),
                 b"last_error": error_msg.encode(),
-                b"retry_at": str(time.time() + delay).encode(),
+                b"wake_time": str(wake_time).encode(),
+                b"timer_type": b"retry",
                 b"last_attempt_at": datetime.utcnow().isoformat().encode()
             }
         )
 
-        # Schedule via timer
-        timer_key = default_sharding.get_global_key("timers:pending").encode()
-        await self.redis.zadd(
-            timer_key,
-            {f"{workflow_id}:{task_id}:retry".encode(): time.time() + delay}
+        # Store timer metadata (NO TTL, NO bucket, NO registry)
+        metadata_key = default_sharding.get_timer_key("metadata", workflow_id, task_id)
+        await self.redis.hset(
+            metadata_key.encode(),
+            mapping={
+                b"workflow_id": workflow_id.encode(),
+                b"task_id": task_id.encode(),
+                b"shard": str(shard).encode(),
+                b"wake_time": str(wake_time).encode(),
+                b"timer_type": b"retry",
+                b"created_at": datetime.utcnow().isoformat().encode(),
+                b"retry_attempt": str(next_attempt).encode(),
+                b"last_error": error_msg.encode()
+            }
         )
+
+        # Add to pending set for reconciliation
+        pending_key = default_sharding.get_timer_key("pending", workflow_id)
+        await self.redis.sadd(pending_key, task_id)
 
         # Emit retry scheduled event
         if hasattr(self, 'event_store'):
@@ -263,14 +280,15 @@ class RetryWorker(BaseWorker):
                 data={
                     'attempt': next_attempt,
                     'delay': delay,
-                    'retry_at': time.time() + delay,
+                    'wake_time': wake_time,
+                    'bucket': bucket,
                     'error': error_msg
                 }
             )
 
         logger.info(
             f"Scheduled retry for {task_id} in {delay:.2f}s "
-            f"(attempt {next_attempt})"
+            f"(attempt {next_attempt}, bucket={bucket})"
         )
 
     async def _mark_permanently_failed(

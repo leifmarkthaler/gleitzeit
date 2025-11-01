@@ -1,0 +1,18 @@
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,204 - __main__ - INFO - Initialized worker instance identity: gleitzei-ef866cdd
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,204 - __main__ - INFO - Loading configuration from Redis key: worker:config:timer-async:5137dac5
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,206 - __main__ - INFO - Loaded config for worker timer-async
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,208 - __main__ - INFO - Worker timer-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,208 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,208 - gleitzeit.workers.timer_worker - INFO - TimerWorker initialized (event-driven)
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,210 - timer.timer-async - INFO - Worker timer-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,210 - __main__ - INFO - Worker timer-async started successfully
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,210 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,210 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for timer-async
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,319 - gleitzeit.workers.timer_worker - INFO - Processing time advance for bucket 1761515640 (2025-10-26 22:54:00)
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,319 - gleitzeit.workers.timer_worker - INFO - Processing time advance for bucket 1761945240 (2025-10-31 22:14:00)
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,320 - gleitzeit.workers.timer_worker - INFO - Processing time advance for bucket 1761945780 (2025-10-31 22:23:00)
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,326 - gleitzeit.workers.timer_worker - INFO - Retry timer expired for task 8d07410f-f5f8-4677-affe-34d44389147c in workflow workflow_14c49ed901b3
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,327 - gleitzeit.workers.timer_worker - INFO - Task 8d07410f-f5f8-4677-affe-34d44389147c re-queued to task:ready stream for retry
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,342 - gleitzeit.workers.timer_worker - INFO - Fired 1 timers from bucket 1761945240 (total fired: 1)
+[2025-10-31 22:29:51] [STDERR] 2025-10-31 22:29:51,696 - gleitzeit.workers.timer_worker - INFO - Processing time advance for bucket 1761946140 (2025-10-31 22:29:00)
+[2025-10-31 22:30:02] [STDERR] 2025-10-31 22:30:02,715 - gleitzeit.workers.timer_worker - INFO - Processing time advance for bucket 1761946200 (2025-10-31 22:30:00)

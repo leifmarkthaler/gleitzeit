@@ -165,17 +165,18 @@ workers:
     block_timeout: 5000
 
   # Specialized Python-only worker with custom config
-  - worker_type: python_specialist
-    worker_class: gleitzeit.workers.task_execution_worker.TaskExecutionWorker
-    count: 1
-    max_concurrent: 3
-    enabled_task_types: [python, script]  # Only handle Python tasks
-    handler_configs:
-      "python/v1":
-        subprocess_pool_enabled: true
-        subprocess_pool_min_size: 5
-        subprocess_pool_max_size: 30  # More capacity for Python-heavy workloads
-        default_timeout: 1800  # 30 minutes for long-running scripts
+  # DISABLED: Causes issues with task routing - general task_execution workers handle all types
+  # - worker_type: python_specialist
+  #   worker_class: gleitzeit.workers.task_execution_worker.TaskExecutionWorker
+  #   count: 1
+  #   max_concurrent: 3
+  #   enabled_task_types: [python, script]  # Only handle Python tasks
+  #   handler_configs:
+  #     "python/v1":
+  #       subprocess_pool_enabled: true
+  #       subprocess_pool_min_size: 5
+  #       subprocess_pool_max_size: 30  # More capacity for Python-heavy workloads
+  #       default_timeout: 1800  # 30 minutes for long-running scripts
 
   # Other workers...
   - worker_type: workflow_submission
@@ -192,9 +193,10 @@ workers:
     batch_size: 10
     block_timeout: 5000
 
+  # Timer worker (scans for expired timers every 1 second)
   - worker_type: timer
     worker_class: gleitzeit.workers.timer_worker.TimerWorker
-    count: 1
+    count: 2  # Can scale horizontally now!
     max_concurrent: 10
     batch_size: 10
     block_timeout: 1000
@@ -237,7 +239,7 @@ logging:
   # Enable file-based logging (stdout/stderr to log files)
   # When disabled, only Redis logging is used
   # Useful for debugging or when Redis logging is not sufficient
-  file_logging_enabled: false
+  file_logging_enabled: true
 
   # Minimum level to log to Redis (DEBUG, INFO, WARNING, ERROR)
   redis_log_level: INFO

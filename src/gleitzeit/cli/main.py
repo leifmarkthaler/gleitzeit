@@ -62,13 +62,8 @@ def cli(ctx, redis_url):
 
 # ============= Orchestrator Commands =============
 
-@cli.command('start')
-@click.option('--config', type=click.Path(exists=True), default='gleitzeit.yaml', help='Configuration file (default: gleitzeit.yaml)')
-@click.pass_context
-def start(ctx, config):
-    """Start Gleitzeit (shortcut for orchestrator start)"""
-    # Just call orchestrator start
-    ctx.forward(orchestrator_start, config=config, workers='default')
+# Removed: Use 'gleitzeit serve' instead
+# Start command removed in favor of unified 'serve' command
 
 
 @cli.command('status')

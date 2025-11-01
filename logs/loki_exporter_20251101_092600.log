@@ -1,0 +1,488 @@
+[2025-11-01 09:26:00] [STDERR] 2025-11-01 09:26:00,515 - LokiExporter.loki-exporter - INFO - Loki exporter worker initialized (loki_url=http://localhost:3100, batch_size=100, poll_interval=5, leader_key={shard:0}:global:loki_exporter:leader)
+[2025-11-01 09:26:00] [STDERR] 2025-11-01 09:26:00,515 - LokiExporter.loki-exporter - INFO - Loki exporter worker started (worker_id=loki-exporter)
+[2025-11-01 09:26:00] [STDERR] 2025-11-01 09:26:00,516 - LokiExporter.loki-exporter - INFO - Starting leader election loop for loki-exporter
+[2025-11-01 09:26:00] [STDERR] 2025-11-01 09:26:00,516 - LokiExporter.loki-exporter - INFO - Starting service registry heartbeat for loki-exporter
+[2025-11-01 09:26:00] [STDERR] 2025-11-01 09:26:00,520 - gleitzeit.core.leader_election - ERROR - Error getting current leader: 'str' object has no attribute 'decode'
+[2025-11-01 09:26:00] [STDERR] 2025-11-01 09:26:00,521 - gleitzeit.core.leader_election - INFO - Worker loki-exporter became leader for {shard:0}:global:loki_exporter:leader
+[2025-11-01 09:26:00] [STDERR] 2025-11-01 09:26:00,521 - LokiExporter.loki-exporter - INFO - 🎖️  LokiExporter loki-exporter BECAME LEADER
+[2025-11-01 09:26:05] [STDERR] 2025-11-01 09:26:05,558 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:05] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:05] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:05] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:05] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:05] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)
+[2025-11-01 09:26:05] [STDERR] 
+[2025-11-01 09:26:05] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:05] [STDERR] 
+[2025-11-01 09:26:05] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:05] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:05] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:05] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:05] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:05] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:05] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:05] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:05] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:05] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:05] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:05] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:05] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:05] [STDERR]     raise last_exc
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:05] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:05] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:05] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:05] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:10] [STDERR] 2025-11-01 09:26:10,598 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:10] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:10] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:10] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:10] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:10] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)
+[2025-11-01 09:26:10] [STDERR] 
+[2025-11-01 09:26:10] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:10] [STDERR] 
+[2025-11-01 09:26:10] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:10] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:10] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:10] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:10] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:10] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:10] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:10] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:10] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:10] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:10] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:10] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:10] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:10] [STDERR]     raise last_exc
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:10] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:10] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:10] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:10] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:10] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:15] [STDERR] 2025-11-01 09:26:15,630 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:15] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:15] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:15] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:15] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:15] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)
+[2025-11-01 09:26:15] [STDERR] 
+[2025-11-01 09:26:15] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:15] [STDERR] 
+[2025-11-01 09:26:15] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:15] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:15] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:15] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:15] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:15] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:15] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:15] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:15] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:15] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:15] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:15] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:15] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:15] [STDERR]     raise last_exc
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:15] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:15] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:15] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:15] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:15] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:20] [STDERR] 2025-11-01 09:26:20,667 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:20] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:20] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:20] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:20] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:20] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)
+[2025-11-01 09:26:20] [STDERR] 
+[2025-11-01 09:26:20] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:20] [STDERR] 
+[2025-11-01 09:26:20] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:20] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:20] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:20] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:20] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:20] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:20] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:20] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:20] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:20] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:20] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:20] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:20] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:20] [STDERR]     raise last_exc
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:20] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:20] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:20] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:20] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:20] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:25] [STDERR] 2025-11-01 09:26:25,708 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:25] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:25] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:25] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:25] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:25] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)
+[2025-11-01 09:26:25] [STDERR] 
+[2025-11-01 09:26:25] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:25] [STDERR] 
+[2025-11-01 09:26:25] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:25] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:25] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:25] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:25] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:25] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:25] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:25] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:25] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:25] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:25] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:25] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:25] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:25] [STDERR]     raise last_exc
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:25] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:25] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:25] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:25] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:25] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:30] [STDERR] 2025-11-01 09:26:30,743 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:30] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:30] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:30] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:30] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:30] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)
+[2025-11-01 09:26:30] [STDERR] 
+[2025-11-01 09:26:30] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:30] [STDERR] 
+[2025-11-01 09:26:30] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:30] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:30] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:30] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:30] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:30] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:30] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:30] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:30] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:30] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:30] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:30] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:30] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:30] [STDERR]     raise last_exc
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:30] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:30] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:30] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:30] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:30] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:35] [STDERR] 2025-11-01 09:26:35,777 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:35] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:35] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:35] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:35] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:35] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)
+[2025-11-01 09:26:35] [STDERR] 
+[2025-11-01 09:26:35] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:35] [STDERR] 
+[2025-11-01 09:26:35] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:35] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:35] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:35] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:35] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:35] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:35] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:35] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:35] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:35] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:35] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:35] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:35] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:35] [STDERR]     raise last_exc
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:35] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:35] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:35] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:35] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:35] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:40] [STDERR] 2025-11-01 09:26:40,810 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:40] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:40] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:40] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:40] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:40] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)
+[2025-11-01 09:26:40] [STDERR] 
+[2025-11-01 09:26:40] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:40] [STDERR] 
+[2025-11-01 09:26:40] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:40] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:40] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:40] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:40] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:40] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:40] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:40] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:40] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:40] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:40] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:40] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:40] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:40] [STDERR]     raise last_exc
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:40] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:40] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:40] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:40] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:40] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:45] [STDERR] 2025-11-01 09:26:45,841 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:45] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:45] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:45] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:45] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:45] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)
+[2025-11-01 09:26:45] [STDERR] 
+[2025-11-01 09:26:45] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:45] [STDERR] 
+[2025-11-01 09:26:45] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:45] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:45] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:45] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:45] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:45] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:45] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:45] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:45] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:45] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:45] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:45] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:45] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:45] [STDERR]     raise last_exc
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:45] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:45] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:45] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:45] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:45] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:50] [STDERR] 2025-11-01 09:26:50,877 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:50] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:50] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:50] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:50] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:50] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)
+[2025-11-01 09:26:50] [STDERR] 
+[2025-11-01 09:26:50] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:50] [STDERR] 
+[2025-11-01 09:26:50] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:50] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:50] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:50] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:50] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:50] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:50] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:50] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:50] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:50] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:50] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:50] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:50] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:50] [STDERR]     raise last_exc
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:50] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:50] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:50] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:50] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:50] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:26:55] [STDERR] 2025-11-01 09:26:55,919 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:26:55] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:26:55] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:26:55] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:26:55] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:26:55] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)
+[2025-11-01 09:26:55] [STDERR] 
+[2025-11-01 09:26:55] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:26:55] [STDERR] 
+[2025-11-01 09:26:55] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:26:55] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:26:55] [STDERR]     async with self.session.post(
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:26:55] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:26:55] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:26:55] [STDERR]     resp = await handler(req)
+[2025-11-01 09:26:55] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:26:55] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:26:55] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:26:55] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:26:55] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:26:55] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:26:55] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:26:55] [STDERR]     raise last_exc
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:26:55] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:26:55] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:26:55] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:26:55] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:26:55] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:27:00] [STDERR] 2025-11-01 09:27:00,946 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:27:00] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:27:00] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:27:00] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:27:00] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:27:00] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)
+[2025-11-01 09:27:00] [STDERR] 
+[2025-11-01 09:27:00] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:27:00] [STDERR] 
+[2025-11-01 09:27:00] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:27:00] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:27:00] [STDERR]     async with self.session.post(
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:27:00] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:27:00] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:27:00] [STDERR]     resp = await handler(req)
+[2025-11-01 09:27:00] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:27:00] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:27:00] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:27:00] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:27:00] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:27:00] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:27:00] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:27:00] [STDERR]     raise last_exc
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:27:00] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:27:00] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:00] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:27:00] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:27:00] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('127.0.0.1', 3100), [Errno 61] Connect call failed ('::1', 3100, 0, 0)]
+[2025-11-01 09:27:05] [STDERR] 2025-11-01 09:27:05,975 - LokiExporter.loki-exporter - ERROR - Failed to export logs to Loki: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]
+[2025-11-01 09:27:05] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1268, in _wrap_create_connection
+[2025-11-01 09:27:05] [STDERR]     sock = await aiohappyeyeballs.start_connection(
+[2025-11-01 09:27:05] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohappyeyeballs/impl.py", line 141, in start_connection
+[2025-11-01 09:27:05] [STDERR]     raise OSError(first_errno, msg)
+[2025-11-01 09:27:05] [STDERR] ConnectionRefusedError: [Errno 61] Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)
+[2025-11-01 09:27:05] [STDERR] 
+[2025-11-01 09:27:05] [STDERR] The above exception was the direct cause of the following exception:
+[2025-11-01 09:27:05] [STDERR] 
+[2025-11-01 09:27:05] [STDERR] Traceback (most recent call last):
+[2025-11-01 09:27:05] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/workers/loki_exporter_worker.py", line 251, in export_logs_to_loki
+[2025-11-01 09:27:05] [STDERR]     async with self.session.post(
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 1488, in __aenter__
+[2025-11-01 09:27:05] [STDERR]     self._resp: _RetType = await self._coro
+[2025-11-01 09:27:05] [STDERR]                            ^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 770, in _request
+[2025-11-01 09:27:05] [STDERR]     resp = await handler(req)
+[2025-11-01 09:27:05] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/client.py", line 725, in _connect_and_send_request
+[2025-11-01 09:27:05] [STDERR]     conn = await self._connector.connect(
+[2025-11-01 09:27:05] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 642, in connect
+[2025-11-01 09:27:05] [STDERR]     proto = await self._create_connection(req, traces, timeout)
+[2025-11-01 09:27:05] [STDERR]             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1209, in _create_connection
+[2025-11-01 09:27:05] [STDERR]     _, proto = await self._create_direct_connection(req, traces, timeout)
+[2025-11-01 09:27:05] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1581, in _create_direct_connection
+[2025-11-01 09:27:05] [STDERR]     raise last_exc
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1550, in _create_direct_connection
+[2025-11-01 09:27:05] [STDERR]     transp, proto = await self._wrap_create_connection(
+[2025-11-01 09:27:05] [STDERR]                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 09:27:05] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/aiohttp/connector.py", line 1291, in _wrap_create_connection
+[2025-11-01 09:27:05] [STDERR]     raise client_error(req.connection_key, exc) from exc
+[2025-11-01 09:27:05] [STDERR] aiohttp.client_exceptions.ClientConnectorError: Cannot connect to host localhost:3100 ssl:default [Multiple exceptions: [Errno 61] Connect call failed ('::1', 3100, 0, 0), [Errno 61] Connect call failed ('127.0.0.1', 3100)]

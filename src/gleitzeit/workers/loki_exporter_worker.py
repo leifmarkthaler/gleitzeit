@@ -65,6 +65,9 @@ class LokiExporterWorker:
         self.leader_key = ""  # Will be set in initialize()
         self.leader_ttl = 30  # 30 second TTL with 10s heartbeat
 
+        # Service registry heartbeat
+        self.heartbeat_interval = 30  # Refresh every 30s (TTL is 60s)
+
         # Set up logging with standard Python logger
         self.logger = logging.getLogger(f"LokiExporter.{worker_id}")
 
@@ -107,6 +110,36 @@ class LokiExporterWorker:
             await self.redis.close()
 
         self.logger.info("Loki exporter worker shutdown complete")
+
+    async def _heartbeat_loop(self):
+        """Service registry heartbeat loop to maintain registration"""
+        self.logger.info(f"Starting service registry heartbeat for {self.worker_id}")
+
+        while self.running:
+            try:
+                # Re-register in service registry to refresh TTL
+                from datetime import datetime
+                service_key = f"service:registry:{self.worker_id}"
+                service_info = {
+                    "worker_id": self.worker_id,
+                    "worker_type": "loki_exporter",
+                    "started_at": datetime.utcnow().isoformat(),
+                    "mode": "native",
+                    "last_heartbeat": datetime.utcnow().isoformat()
+                }
+
+                await self.redis.hset(service_key, mapping=service_info)
+                await self.redis.expire(service_key, 60)  # 60s TTL
+
+                self.logger.debug(f"Service registry heartbeat sent for {self.worker_id}")
+                await asyncio.sleep(self.heartbeat_interval)
+
+            except asyncio.CancelledError:
+                self.logger.info("Heartbeat loop cancelled")
+                raise
+            except Exception as e:
+                self.logger.error(f"Heartbeat error: {e}", exc_info=True)
+                await asyncio.sleep(5)
 
     async def _leader_election_loop(self):
         """
@@ -289,8 +322,9 @@ class LokiExporterWorker:
 
         levels = ["DEBUG", "INFO", "WARNING", "ERROR"]
 
-        # Start leader election task
+        # Start leader election and heartbeat tasks
         election_task = asyncio.create_task(self._leader_election_loop())
+        heartbeat_task = asyncio.create_task(self._heartbeat_loop())
 
         try:
             while self.running:
@@ -320,8 +354,9 @@ class LokiExporterWorker:
         finally:
             # Cleanup
             election_task.cancel()
+            heartbeat_task.cancel()
             try:
-                await election_task
+                await asyncio.gather(election_task, heartbeat_task, return_exceptions=True)
             except asyncio.CancelledError:
                 pass
 

@@ -45,7 +45,18 @@ class APIWorker(BaseWorker):
             raise RuntimeError(error_msg)
 
         # Import here to avoid circular dependencies
-        from ..api.main import app
+        from ..api.main import app, set_worker_dependencies
+        from ..core.config_manager import ConfigurationManager
+
+        # Load config from the same source as the worker
+        config_manager = ConfigurationManager('gleitzeit.yaml', {})
+        config = config_manager.get_all_config()
+
+        # Inject worker's Redis connection, config, and redis_url into FastAPI app
+        # This ensures the API uses the properly-initialized GleitzeitRedisCluster
+        # from BaseWorker and gets config from gleitzeit.yaml
+        set_worker_dependencies(self.redis, config, self.config.redis_url)
+        self.logger.info(f"Injected worker dependencies: Redis={type(self.redis)}, redis_url={self.config.redis_url}")
 
         # Create Uvicorn config
         config = uvicorn.Config(

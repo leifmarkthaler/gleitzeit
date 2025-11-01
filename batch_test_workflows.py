@@ -7,7 +7,7 @@ import os
 # Add src to path
 sys.path.insert(0, 'src')
 
-from gleitzeit.client import GleitzeitClient
+from gleitzeit.client.client import GleitzeitClient
 
 async def submit_workflows():
     """Submit 20 workflows and measure execution time"""
@@ -65,8 +65,10 @@ print(f'Task completed in {time.time() - start:.3f}s')
         await asyncio.sleep(0.5)
         completed = 0
         for wf_id in workflow_ids:
-            result = await client.get_workflow_result(wf_id)
-            if result and result.get('status') in ['completed', 'failed']:
+            # Extract workflow_id from WorkflowResponse object
+            actual_id = wf_id.workflow_id if hasattr(wf_id, 'workflow_id') else wf_id
+            status = await client.get_workflow_status(actual_id)
+            if status and status.status in ['completed', 'failed']:
                 completed += 1
         print(f"Progress: {completed}/20 workflows completed", end='\r')
     
@@ -82,10 +84,11 @@ print(f'Task completed in {time.time() - start:.3f}s')
     # Check for any failures
     failures = 0
     for wf_id in workflow_ids:
-        result = await client.get_workflow_result(wf_id)
-        if result.get('status') == 'failed':
+        actual_id = wf_id.workflow_id if hasattr(wf_id, 'workflow_id') else wf_id
+        status = await client.get_workflow_status(actual_id)
+        if status.status == 'failed':
             failures += 1
-            print(f"❌ Workflow {wf_id} failed")
+            print(f"❌ Workflow {actual_id} failed")
     
     if failures == 0:
         print(f"✅ All 20 workflows completed successfully!")
