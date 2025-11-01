@@ -123,3 +123,22 @@
 [2025-11-01 10:21:52] [STDERR] 2025-11-01 10:21:52,217 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:2}:task:ready
 [2025-11-01 10:21:52] [STDERR] 2025-11-01 10:21:52,219 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:5}:task:ready
 [2025-11-01 10:21:52] [STDERR] 2025-11-01 10:21:52,224 - gleitzeit.workers.pending_recovery - INFO - Claimed 2 stuck pending messages
+[2025-11-01 10:26:52] [STDERR] 2025-11-01 10:26:52,251 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:2}:task:ready
+[2025-11-01 10:26:52] [STDERR] 2025-11-01 10:26:52,252 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:5}:task:ready
+[2025-11-01 10:26:52] [STDERR] 2025-11-01 10:26:52,257 - gleitzeit.workers.pending_recovery - INFO - Claimed 2 stuck pending messages
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,520 - gleitzeit.workers.task_execution_worker - INFO - Processing task 64f09c5c-e09a-4896-b12a-1f73c3f3b153 from workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,523 - gleitzeit.workers.task_execution_worker - INFO - Executing task 64f09c5c-e09a-4896-b12a-1f73c3f3b153 with handler OllamaHandler
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,214 - gleitzeit.workers.task_execution_worker - INFO - Task 64f09c5c-e09a-4896-b12a-1f73c3f3b153 completed successfully by handler 5b67331d-494e-4be7-896a-110aad8e7d5e
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,224 - gleitzeit.workers.task_execution_worker - INFO - Processing task a213143a-d09d-479d-82d4-8c90d0542f54 from workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,227 - gleitzeit.workers.task_execution_worker - INFO - Executing task a213143a-d09d-479d-82d4-8c90d0542f54 with handler PythonHandler
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,232 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,304 - gleitzeit.workers.task_execution_worker - INFO - Task a213143a-d09d-479d-82d4-8c90d0542f54 completed successfully by handler 074927d1-a39d-4194-80d2-43f0cd13cc9a
+[2025-11-01 10:31:52] [STDERR] 2025-11-01 10:31:52,287 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:2}:task:ready
+[2025-11-01 10:31:52] [STDERR] 2025-11-01 10:31:52,289 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:5}:task:ready
+[2025-11-01 10:31:52] [STDERR] 2025-11-01 10:31:52,293 - gleitzeit.workers.pending_recovery - INFO - Claimed 2 stuck pending messages
+[2025-11-01 10:37:03] [STDERR] 2025-11-01 10:37:03,487 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:2}:task:ready
+[2025-11-01 10:37:03] [STDERR] 2025-11-01 10:37:03,488 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:5}:task:ready
+[2025-11-01 10:37:03] [STDERR] 2025-11-01 10:37:03,493 - gleitzeit.workers.pending_recovery - INFO - Claimed 2 stuck pending messages
+[2025-11-01 10:42:03] [STDERR] 2025-11-01 10:42:03,521 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:2}:task:ready
+[2025-11-01 10:42:03] [STDERR] 2025-11-01 10:42:03,523 - gleitzeit.workers.pending_recovery - INFO - Successfully claimed 1 messages from {shard:5}:task:ready
+[2025-11-01 10:42:03] [STDERR] 2025-11-01 10:42:03,528 - gleitzeit.workers.pending_recovery - INFO - Claimed 2 stuck pending messages

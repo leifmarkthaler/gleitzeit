@@ -205,3 +205,1106 @@
 [2025-11-01 10:24:14] [STDERR] 2025-11-01 10:24:14,077 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
 [2025-11-01 10:24:24] [STDERR] 2025-11-01 10:24:24,078 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
 [2025-11-01 10:24:34] [STDERR] 2025-11-01 10:24:34,073 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:24:45] [STDERR] 2025-11-01 10:24:45,059 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:24:56] [STDERR] 2025-11-01 10:24:56,062 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:25:07] [STDERR] 2025-11-01 10:25:07,070 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:25:18] [STDERR] 2025-11-01 10:25:18,068 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:25:29] [STDERR] 2025-11-01 10:25:29,064 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:25:40] [STDERR] 2025-11-01 10:25:40,068 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:25:51] [STDERR] 2025-11-01 10:25:51,057 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:26:02] [STDERR] 2025-11-01 10:26:02,067 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:26:13] [STDERR] 2025-11-01 10:26:13,068 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:26:23] [STDERR] 2025-11-01 10:26:23,305 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:26:33] [STDERR] 2025-11-01 10:26:33,307 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:26:49] [STDERR] 2025-11-01 10:26:49,214 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:27:04] [STDERR] 2025-11-01 10:27:04,356 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:27:30] [STDERR] 2025-11-01 10:27:30,230 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:27:51] [STDERR] 2025-11-01 10:27:51,370 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:27:53] [STDERR] 2025-11-01 10:27:53,768 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:27:53] [STDERR] 2025-11-01 10:27:53,927 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:27:53] [STDERR] 2025-11-01 10:27:53,939 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:27:54] [STDERR] 2025-11-01 10:27:54,046 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/list?limit=100 "HTTP/1.1 200 OK"
+[2025-11-01 10:27:56] [STDERR] 2025-11-01 10:27:56,102 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:27:56] [STDERR] 2025-11-01 10:27:56,108 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:27:56] [STDERR] 2025-11-01 10:27:56,124 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,509 - httpx - INFO - HTTP Request: POST http://localhost:8000/workflows/submit "HTTP/1.1 200 OK"
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,619 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,619 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,619 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,619 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,619 - gleitzeit.ui.api.app - INFO - Found 2 task definitions
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,622 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/64f09c5c-e09a-4896-b12a-1f73c3f3b153 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,627 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/a213143a-d09d-479d-82d4-8c90d0542f54 "HTTP/1.1 404 Not Found"
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,640 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,657 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,661 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,667 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b/events "HTTP/1.1 200 OK"
+[2025-11-01 10:28:02] [STDERR] 2025-11-01 10:28:02,673 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,353 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,353 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,353 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,353 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,353 - gleitzeit.ui.api.app - INFO - Found 2 task definitions
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,355 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/64f09c5c-e09a-4896-b12a-1f73c3f3b153 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,358 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/a213143a-d09d-479d-82d4-8c90d0542f54 "HTTP/1.1 404 Not Found"
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,367 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,373 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,375 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,392 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b/events "HTTP/1.1 200 OK"
+[2025-11-01 10:28:09] [STDERR] 2025-11-01 10:28:09,397 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,684 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,684 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,684 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,684 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,684 - gleitzeit.ui.api.app - INFO - Found 2 task definitions
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,686 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/64f09c5c-e09a-4896-b12a-1f73c3f3b153 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,689 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/a213143a-d09d-479d-82d4-8c90d0542f54 "HTTP/1.1 404 Not Found"
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,698 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,704 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,705 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,708 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b/events "HTTP/1.1 200 OK"
+[2025-11-01 10:28:13] [STDERR] 2025-11-01 10:28:13,712 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,206 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,206 - gleitzeit.ui.api.app - INFO - Workflow data keys: dict_keys(['workflow_id', 'state', 'data'])
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,206 - gleitzeit.ui.api.app - INFO - Data keys: dict_keys(['workflow'])
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,206 - gleitzeit.ui.api.app - INFO - Workflow keys: dict_keys(['id', 'name', 'description', 'version', 'created_at', 'tasks'])
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,206 - gleitzeit.ui.api.app - INFO - Found 2 task definitions
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,209 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/64f09c5c-e09a-4896-b12a-1f73c3f3b153 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,211 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/a213143a-d09d-479d-82d4-8c90d0542f54 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,224 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,230 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,230 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0&workflow_id=f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,248 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b/events "HTTP/1.1 200 OK"
+[2025-11-01 10:28:19] [STDERR] 2025-11-01 10:28:19,252 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,402 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,412 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,422 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/list?limit=100 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,424 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/a213143a-d09d-479d-82d4-8c90d0542f54 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,426 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/f9083b1a-3e8f-4f0e-a87d-ba1ae738024b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,428 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/64f09c5c-e09a-4896-b12a-1f73c3f3b153 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,429 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,429 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/79f6c3d9-5f19-4134-ac5b-487a46b3c4d3 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,432 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/workflow_d2c5b02ed2f0 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,434 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/18aac0ad-ec9b-432e-aed7-b9fcbae09d42 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,435 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/b10eb1c1-7c22-4a80-8e62-f059673643be "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,436 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/984c9f1f-2436-4514-b213-7b1b745e1a9d "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,438 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/13dfc5dc-7ebc-4f79-8fc3-71e3f07df4a9 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,439 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/ca380e61-82ad-421f-aab8-f0864bfa7a4e "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,440 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/85c642d3-3954-41ed-a429-df1c9546179e "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,442 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/ea3d2fae-18cd-4322-9a70-a0e9a34d087b "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,443 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/f84cda72-710d-4b70-8396-28b8c91601c9 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,445 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/2492a7d2-2f26-4933-912a-fc52c6a9536a "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,446 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/53aae23b-0467-4825-88ca-07115ee66b1f "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,447 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/86b797a6-c217-4eb5-9ae5-e83bc41d3a7f "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,449 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/42e8d64c-0122-41ca-9b1c-697444892973 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,451 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/69cae530-2131-4e21-af59-22763c045ffa "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,452 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/77d0d3e4-90bf-4886-b9b6-b164c74d4f08 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,454 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/6fe594f5-4171-46b1-b2fd-92335d8db706 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,455 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/d036c286-10d9-445a-9ec8-60836e582de9 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,456 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/54620c39-5e1f-4315-bc80-78e6ab38ad7d "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,458 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/0db8c1a3-8cdc-431b-b17c-84f835bdff3f "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,459 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/65eaa48a-520e-4b97-8a44-9147065143af "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,461 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/2498b60b-9640-4e01-a743-342d760d6347 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,462 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/f60742c7-fbf5-4eee-9c54-ee22300d6585 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,463 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/8d07410f-f5f8-4677-affe-34d44389147c "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,464 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/workflow_14c49ed901b3 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,466 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/18d2c2ff-0f0b-45e3-a87e-ca261093d525 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,467 - httpx - INFO - HTTP Request: GET http://localhost:8000/workflows/workflow_b8256116a426 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,468 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/287d33df-467f-41bd-a8cf-7f1c3d515bd7 "HTTP/1.1 200 OK"
+[2025-11-01 10:28:26] [STDERR] 2025-11-01 10:28:26,469 - httpx - INFO - HTTP Request: GET http://localhost:8000/tasks/ac746b98-8b2a-45c0-90b3-e3c10408b35e "HTTP/1.1 200 OK"
+[2025-11-01 10:28:36] [STDERR] 2025-11-01 10:28:36,427 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:28:46] [STDERR] 2025-11-01 10:28:46,424 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:28:56] [STDERR] 2025-11-01 10:28:56,428 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:29:06] [STDERR] 2025-11-01 10:29:06,428 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:29:16] [STDERR] 2025-11-01 10:29:16,428 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:29:26] [STDERR] 2025-11-01 10:29:26,428 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:29:37] [STDERR] 2025-11-01 10:29:37,071 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:29:48] [STDERR] 2025-11-01 10:29:48,070 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:29:59] [STDERR] 2025-11-01 10:29:59,074 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:30:09] [STDERR] 2025-11-01 10:30:09,073 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:30:19] [STDERR] 2025-11-01 10:30:19,071 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:30:29] [STDERR] 2025-11-01 10:30:29,071 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:30:39] [STDERR] 2025-11-01 10:30:39,074 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:30:49] [STDERR] 2025-11-01 10:30:49,073 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:30:59] [STDERR] 2025-11-01 10:30:59,066 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:31:10] [STDERR] 2025-11-01 10:31:10,060 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:31:21] [STDERR] 2025-11-01 10:31:21,072 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:31:32] [STDERR] 2025-11-01 10:31:32,060 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:31:43] [STDERR] 2025-11-01 10:31:43,070 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:31:54] [STDERR] 2025-11-01 10:31:54,069 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:32:05] [STDERR] 2025-11-01 10:32:05,055 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:32:16] [STDERR] 2025-11-01 10:32:16,069 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:32:27] [STDERR] 2025-11-01 10:32:27,069 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:32:38] [STDERR] 2025-11-01 10:32:38,060 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:32:49] [STDERR] 2025-11-01 10:32:49,069 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:33:00] [STDERR] 2025-11-01 10:33:00,068 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:33:11] [STDERR] 2025-11-01 10:33:11,059 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:33:22] [STDERR] 2025-11-01 10:33:22,068 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:33:33] [STDERR] 2025-11-01 10:33:33,069 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:33:44] [STDERR] 2025-11-01 10:33:44,058 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:05] [STDERR] 2025-11-01 10:36:05,232 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:15] [STDERR] 2025-11-01 10:36:15,254 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:15] [STDERR] 2025-11-01 10:36:15,257 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:36:15] [STDERR] 2025-11-01 10:36:15,366 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:36:15] [STDERR] 2025-11-01 10:36:15,369 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/logs/errors?limit=50&offset=0 "HTTP/1.1 200 OK"
+[2025-11-01 10:36:15] [STDERR] 2025-11-01 10:36:15,377 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:16] [STDERR] 2025-11-01 10:36:16,958 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:36:16] [STDERR] 2025-11-01 10:36:16,971 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/status "HTTP/1.1 200 OK"
+[2025-11-01 10:36:16] [STDERR] 2025-11-01 10:36:16,974 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/workers "HTTP/1.1 200 OK"
+[2025-11-01 10:36:16] [STDERR] 2025-11-01 10:36:16,994 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:36:17] [STDERR] 2025-11-01 10:36:17,011 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:36:17] [STDERR] 2025-11-01 10:36:17,018 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:27] [STDERR] 2025-11-01 10:36:27,024 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:29] [STDERR] 2025-11-01 10:36:29,671 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:36:29] [STDERR] 2025-11-01 10:36:29,687 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/status "HTTP/1.1 200 OK"
+[2025-11-01 10:36:29] [STDERR] 2025-11-01 10:36:29,691 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/workers "HTTP/1.1 200 OK"
+[2025-11-01 10:36:29] [STDERR] 2025-11-01 10:36:29,713 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:36:29] [STDERR] 2025-11-01 10:36:29,724 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:36:29] [STDERR] 2025-11-01 10:36:29,731 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:39] [STDERR] 2025-11-01 10:36:39,739 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:49] [STDERR] 2025-11-01 10:36:49,745 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:36:59] [STDERR] 2025-11-01 10:36:59,736 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:37:09] [STDERR] 2025-11-01 10:37:09,743 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:37:19] [STDERR] 2025-11-01 10:37:19,742 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:37:29] [STDERR] 2025-11-01 10:37:29,743 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:37:39] [STDERR] 2025-11-01 10:37:39,745 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:37:49] [STDERR] 2025-11-01 10:37:49,744 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:37:59] [STDERR] 2025-11-01 10:37:59,742 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:38:09] [STDERR] 2025-11-01 10:38:09,740 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:38:19] [STDERR] 2025-11-01 10:38:19,742 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:38:29] [STDERR] 2025-11-01 10:38:29,738 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:38:39] [STDERR] 2025-11-01 10:38:39,744 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:38:49] [STDERR] 2025-11-01 10:38:49,741 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:38:59] [STDERR] 2025-11-01 10:38:59,744 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:39:09] [STDERR] 2025-11-01 10:39:09,746 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:39:18] [STDERR] 2025-11-01 10:39:18,359 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:39:18] [STDERR] 2025-11-01 10:39:18,373 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/status "HTTP/1.1 200 OK"
+[2025-11-01 10:39:18] [STDERR] 2025-11-01 10:39:18,378 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/workers "HTTP/1.1 200 OK"
+[2025-11-01 10:39:18] [STDERR] 2025-11-01 10:39:18,401 - uvicorn.error - ERROR - Exception in ASGI application
+[2025-11-01 10:39:18] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-11-01 10:39:18] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+[2025-11-01 10:39:18] [STDERR]   |     yield
+[2025-11-01 10:39:18] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 190, in __call__
+[2025-11-01 10:39:18] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-11-01 10:39:18] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-11-01 10:39:18] [STDERR]   |     raise BaseExceptionGroup(
+[2025-11-01 10:39:18] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-11-01 10:39:18] [STDERR]   +-+---------------- 1 ----------------
+[2025-11-01 10:39:18] [STDERR]     | Traceback (most recent call last):
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:39:18] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:39:18] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     raise exc
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     with collapse_excgroups():
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:39:18] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:39:18] [STDERR]     |     raise exc
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:39:18] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:39:18] [STDERR]     |     response = await call_next(request)
+[2025-11-01 10:39:18] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:39:18] [STDERR]     |     raise app_exc
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:39:18] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:39:18] [STDERR]     |     raise exc
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:39:18] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:39:18] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:39:18] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:39:18] [STDERR]     |     await self.app(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:39:18] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:39:18] [STDERR]     |     raise exc
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:39:18] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:39:18] [STDERR]     |     response = await func(request)
+[2025-11-01 10:39:18] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:39:18] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-11-01 10:39:18] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:39:18] [STDERR]     |     return await dependant.call(**values)
+[2025-11-01 10:39:18] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:39:18] [STDERR]     |     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:39:18] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:39:18] [STDERR]     |     return _TemplateResponse(
+[2025-11-01 10:39:18] [STDERR]     |            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:39:18] [STDERR]     |     content = template.render(context)
+[2025-11-01 10:39:18] [STDERR]     |               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:39:18] [STDERR]     |     self.environment.handle_exception()
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:39:18] [STDERR]     |     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:39:18] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:39:18] [STDERR]     |     {% extends "base.html" %}
+[2025-11-01 10:39:18] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:39:18] [STDERR]     |     {% block content %}{% endblock %}
+[2025-11-01 10:39:18] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:39:18] [STDERR]     |     <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+[2025-11-01 10:39:18] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1182, in do_round
+[2025-11-01 10:39:18] [STDERR]     |     return round(value, precision)
+[2025-11-01 10:39:18] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]     | TypeError: type Namespace doesn't define __round__ method
+[2025-11-01 10:39:18] [STDERR]     +------------------------------------
+[2025-11-01 10:39:18] [STDERR] 
+[2025-11-01 10:39:18] [STDERR] During handling of the above exception, another exception occurred:
+[2025-11-01 10:39:18] [STDERR] 
+[2025-11-01 10:39:18] [STDERR] Traceback (most recent call last):
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:39:18] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:39:18] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:39:18] [STDERR]     return await self.app(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:39:18] [STDERR]     await super().__call__(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:39:18] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:39:18] [STDERR]     raise exc
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:39:18] [STDERR]     await self.app(scope, receive, _send)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:39:18] [STDERR]     with collapse_excgroups():
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:39:18] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:39:18] [STDERR]     raise exc
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:39:18] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:39:18] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:39:18] [STDERR]     response = await call_next(request)
+[2025-11-01 10:39:18] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:39:18] [STDERR]     raise app_exc
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:39:18] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:39:18] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:39:18] [STDERR]     raise exc
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:39:18] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:39:18] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:39:18] [STDERR]     await route.handle(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:39:18] [STDERR]     await self.app(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:39:18] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:39:18] [STDERR]     raise exc
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:39:18] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:39:18] [STDERR]     response = await func(request)
+[2025-11-01 10:39:18] [STDERR]                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:39:18] [STDERR]     raw_response = await run_endpoint_function(
+[2025-11-01 10:39:18] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:39:18] [STDERR]     return await dependant.call(**values)
+[2025-11-01 10:39:18] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:39:18] [STDERR]     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:39:18] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:39:18] [STDERR]     return _TemplateResponse(
+[2025-11-01 10:39:18] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:39:18] [STDERR]     content = template.render(context)
+[2025-11-01 10:39:18] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:39:18] [STDERR]     self.environment.handle_exception()
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:39:18] [STDERR]     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:39:18] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:39:18] [STDERR]     {% extends "base.html" %}
+[2025-11-01 10:39:18] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:39:18] [STDERR]     {% block content %}{% endblock %}
+[2025-11-01 10:39:18] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:39:18] [STDERR]     <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+[2025-11-01 10:39:18] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1182, in do_round
+[2025-11-01 10:39:18] [STDERR]     return round(value, precision)
+[2025-11-01 10:39:18] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:39:18] [STDERR] TypeError: type Namespace doesn't define __round__ method
+[2025-11-01 10:39:18] [STDERR] 2025-11-01 10:39:18,415 - gleitzeit.ui.api.app - INFO - WebSocket disconnected. Total connections: 0
+[2025-11-01 10:40:22] [STDERR] 2025-11-01 10:40:22,726 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:40:22] [STDERR] 2025-11-01 10:40:22,740 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/status "HTTP/1.1 200 OK"
+[2025-11-01 10:40:22] [STDERR] 2025-11-01 10:40:22,744 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/workers "HTTP/1.1 200 OK"
+[2025-11-01 10:40:22] [STDERR] 2025-11-01 10:40:22,764 - uvicorn.error - ERROR - Exception in ASGI application
+[2025-11-01 10:40:22] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-11-01 10:40:22] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+[2025-11-01 10:40:22] [STDERR]   |     yield
+[2025-11-01 10:40:22] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 190, in __call__
+[2025-11-01 10:40:22] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-11-01 10:40:22] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-11-01 10:40:22] [STDERR]   |     raise BaseExceptionGroup(
+[2025-11-01 10:40:22] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-11-01 10:40:22] [STDERR]   +-+---------------- 1 ----------------
+[2025-11-01 10:40:22] [STDERR]     | Traceback (most recent call last):
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:40:22] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:40:22] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     raise exc
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     with collapse_excgroups():
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:40:22] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:40:22] [STDERR]     |     raise exc
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:40:22] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:40:22] [STDERR]     |     response = await call_next(request)
+[2025-11-01 10:40:22] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:40:22] [STDERR]     |     raise app_exc
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:40:22] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:40:22] [STDERR]     |     raise exc
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:40:22] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:40:22] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:40:22] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:40:22] [STDERR]     |     await self.app(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:40:22] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:40:22] [STDERR]     |     raise exc
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:40:22] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:40:22] [STDERR]     |     response = await func(request)
+[2025-11-01 10:40:22] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:40:22] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-11-01 10:40:22] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:40:22] [STDERR]     |     return await dependant.call(**values)
+[2025-11-01 10:40:22] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:40:22] [STDERR]     |     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:40:22] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:40:22] [STDERR]     |     return _TemplateResponse(
+[2025-11-01 10:40:22] [STDERR]     |            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:40:22] [STDERR]     |     content = template.render(context)
+[2025-11-01 10:40:22] [STDERR]     |               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:40:22] [STDERR]     |     self.environment.handle_exception()
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:40:22] [STDERR]     |     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:40:22] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:40:22] [STDERR]     |     {% extends "base.html" %}
+[2025-11-01 10:40:22] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:40:22] [STDERR]     |     {% block content %}{% endblock %}
+[2025-11-01 10:40:22] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:40:22] [STDERR]     |     <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+[2025-11-01 10:40:22] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1182, in do_round
+[2025-11-01 10:40:22] [STDERR]     |     return round(value, precision)
+[2025-11-01 10:40:22] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]     | TypeError: type Namespace doesn't define __round__ method
+[2025-11-01 10:40:22] [STDERR]     +------------------------------------
+[2025-11-01 10:40:22] [STDERR] 
+[2025-11-01 10:40:22] [STDERR] During handling of the above exception, another exception occurred:
+[2025-11-01 10:40:22] [STDERR] 
+[2025-11-01 10:40:22] [STDERR] Traceback (most recent call last):
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:40:22] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:40:22] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:40:22] [STDERR]     return await self.app(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:40:22] [STDERR]     await super().__call__(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:40:22] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:40:22] [STDERR]     raise exc
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:40:22] [STDERR]     await self.app(scope, receive, _send)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:40:22] [STDERR]     with collapse_excgroups():
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:40:22] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:40:22] [STDERR]     raise exc
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:40:22] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:40:22] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:40:22] [STDERR]     response = await call_next(request)
+[2025-11-01 10:40:22] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:40:22] [STDERR]     raise app_exc
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:40:22] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:40:22] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:40:22] [STDERR]     raise exc
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:40:22] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:40:22] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:40:22] [STDERR]     await route.handle(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:40:22] [STDERR]     await self.app(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:40:22] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:40:22] [STDERR]     raise exc
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:40:22] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:40:22] [STDERR]     response = await func(request)
+[2025-11-01 10:40:22] [STDERR]                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:40:22] [STDERR]     raw_response = await run_endpoint_function(
+[2025-11-01 10:40:22] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:40:22] [STDERR]     return await dependant.call(**values)
+[2025-11-01 10:40:22] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:40:22] [STDERR]     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:40:22] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:40:22] [STDERR]     return _TemplateResponse(
+[2025-11-01 10:40:22] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:40:22] [STDERR]     content = template.render(context)
+[2025-11-01 10:40:22] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:40:22] [STDERR]     self.environment.handle_exception()
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:40:22] [STDERR]     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:40:22] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:40:22] [STDERR]     {% extends "base.html" %}
+[2025-11-01 10:40:22] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:40:22] [STDERR]     {% block content %}{% endblock %}
+[2025-11-01 10:40:22] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:40:22] [STDERR]     <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+[2025-11-01 10:40:22] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1182, in do_round
+[2025-11-01 10:40:22] [STDERR]     return round(value, precision)
+[2025-11-01 10:40:22] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:22] [STDERR] TypeError: type Namespace doesn't define __round__ method
+[2025-11-01 10:40:24] [STDERR] 2025-11-01 10:40:24,535 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:40:24] [STDERR] 2025-11-01 10:40:24,548 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/status "HTTP/1.1 200 OK"
+[2025-11-01 10:40:24] [STDERR] 2025-11-01 10:40:24,552 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/workers "HTTP/1.1 200 OK"
+[2025-11-01 10:40:24] [STDERR] 2025-11-01 10:40:24,572 - uvicorn.error - ERROR - Exception in ASGI application
+[2025-11-01 10:40:24] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-11-01 10:40:24] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+[2025-11-01 10:40:24] [STDERR]   |     yield
+[2025-11-01 10:40:24] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 190, in __call__
+[2025-11-01 10:40:24] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-11-01 10:40:24] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-11-01 10:40:24] [STDERR]   |     raise BaseExceptionGroup(
+[2025-11-01 10:40:24] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-11-01 10:40:24] [STDERR]   +-+---------------- 1 ----------------
+[2025-11-01 10:40:24] [STDERR]     | Traceback (most recent call last):
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:40:24] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:40:24] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     raise exc
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     with collapse_excgroups():
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:40:24] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:40:24] [STDERR]     |     raise exc
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:40:24] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:40:24] [STDERR]     |     response = await call_next(request)
+[2025-11-01 10:40:24] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:40:24] [STDERR]     |     raise app_exc
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:40:24] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:40:24] [STDERR]     |     raise exc
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:40:24] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:40:24] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:40:24] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:40:24] [STDERR]     |     await self.app(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:40:24] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:40:24] [STDERR]     |     raise exc
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:40:24] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:40:24] [STDERR]     |     response = await func(request)
+[2025-11-01 10:40:24] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:40:24] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-11-01 10:40:24] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:40:24] [STDERR]     |     return await dependant.call(**values)
+[2025-11-01 10:40:24] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:40:24] [STDERR]     |     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:40:24] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:40:24] [STDERR]     |     return _TemplateResponse(
+[2025-11-01 10:40:24] [STDERR]     |            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:40:24] [STDERR]     |     content = template.render(context)
+[2025-11-01 10:40:24] [STDERR]     |               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:40:24] [STDERR]     |     self.environment.handle_exception()
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:40:24] [STDERR]     |     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:40:24] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:40:24] [STDERR]     |     {% extends "base.html" %}
+[2025-11-01 10:40:24] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:40:24] [STDERR]     |     {% block content %}{% endblock %}
+[2025-11-01 10:40:24] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:40:24] [STDERR]     |     <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+[2025-11-01 10:40:24] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1182, in do_round
+[2025-11-01 10:40:24] [STDERR]     |     return round(value, precision)
+[2025-11-01 10:40:24] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]     | TypeError: type Namespace doesn't define __round__ method
+[2025-11-01 10:40:24] [STDERR]     +------------------------------------
+[2025-11-01 10:40:24] [STDERR] 
+[2025-11-01 10:40:24] [STDERR] During handling of the above exception, another exception occurred:
+[2025-11-01 10:40:24] [STDERR] 
+[2025-11-01 10:40:24] [STDERR] Traceback (most recent call last):
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:40:24] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:40:24] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:40:24] [STDERR]     return await self.app(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:40:24] [STDERR]     await super().__call__(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:40:24] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:40:24] [STDERR]     raise exc
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:40:24] [STDERR]     await self.app(scope, receive, _send)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:40:24] [STDERR]     with collapse_excgroups():
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:40:24] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:40:24] [STDERR]     raise exc
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:40:24] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:40:24] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:40:24] [STDERR]     response = await call_next(request)
+[2025-11-01 10:40:24] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:40:24] [STDERR]     raise app_exc
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:40:24] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:40:24] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:40:24] [STDERR]     raise exc
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:40:24] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:40:24] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:40:24] [STDERR]     await route.handle(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:40:24] [STDERR]     await self.app(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:40:24] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:40:24] [STDERR]     raise exc
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:40:24] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:40:24] [STDERR]     response = await func(request)
+[2025-11-01 10:40:24] [STDERR]                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:40:24] [STDERR]     raw_response = await run_endpoint_function(
+[2025-11-01 10:40:24] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:40:24] [STDERR]     return await dependant.call(**values)
+[2025-11-01 10:40:24] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:40:24] [STDERR]     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:40:24] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:40:24] [STDERR]     return _TemplateResponse(
+[2025-11-01 10:40:24] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:40:24] [STDERR]     content = template.render(context)
+[2025-11-01 10:40:24] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:40:24] [STDERR]     self.environment.handle_exception()
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:40:24] [STDERR]     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:40:24] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:40:24] [STDERR]     {% extends "base.html" %}
+[2025-11-01 10:40:24] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:40:24] [STDERR]     {% block content %}{% endblock %}
+[2025-11-01 10:40:24] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:40:24] [STDERR]     <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+[2025-11-01 10:40:24] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1182, in do_round
+[2025-11-01 10:40:24] [STDERR]     return round(value, precision)
+[2025-11-01 10:40:24] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:40:24] [STDERR] TypeError: type Namespace doesn't define __round__ method
+[2025-11-01 10:42:07] [STDERR] 2025-11-01 10:42:07,717 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:42:07] [STDERR] 2025-11-01 10:42:07,731 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/status "HTTP/1.1 200 OK"
+[2025-11-01 10:42:07] [STDERR] 2025-11-01 10:42:07,735 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/workers "HTTP/1.1 200 OK"
+[2025-11-01 10:42:07] [STDERR] 2025-11-01 10:42:07,755 - uvicorn.error - ERROR - Exception in ASGI application
+[2025-11-01 10:42:07] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-11-01 10:42:07] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+[2025-11-01 10:42:07] [STDERR]   |     yield
+[2025-11-01 10:42:07] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 190, in __call__
+[2025-11-01 10:42:07] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-11-01 10:42:07] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-11-01 10:42:07] [STDERR]   |     raise BaseExceptionGroup(
+[2025-11-01 10:42:07] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-11-01 10:42:07] [STDERR]   +-+---------------- 1 ----------------
+[2025-11-01 10:42:07] [STDERR]     | Traceback (most recent call last):
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:42:07] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:42:07] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     raise exc
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     with collapse_excgroups():
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:42:07] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:42:07] [STDERR]     |     raise exc
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:42:07] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:42:07] [STDERR]     |     response = await call_next(request)
+[2025-11-01 10:42:07] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:42:07] [STDERR]     |     raise app_exc
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:42:07] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:42:07] [STDERR]     |     raise exc
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:42:07] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:42:07] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:42:07] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:42:07] [STDERR]     |     await self.app(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:42:07] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:42:07] [STDERR]     |     raise exc
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:42:07] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:42:07] [STDERR]     |     response = await func(request)
+[2025-11-01 10:42:07] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:42:07] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-11-01 10:42:07] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:42:07] [STDERR]     |     return await dependant.call(**values)
+[2025-11-01 10:42:07] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:42:07] [STDERR]     |     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:42:07] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:42:07] [STDERR]     |     return _TemplateResponse(
+[2025-11-01 10:42:07] [STDERR]     |            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:42:07] [STDERR]     |     content = template.render(context)
+[2025-11-01 10:42:07] [STDERR]     |               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:42:07] [STDERR]     |     self.environment.handle_exception()
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:42:07] [STDERR]     |     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:42:07] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:42:07] [STDERR]     |     {% extends "base.html" %}
+[2025-11-01 10:42:07] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:42:07] [STDERR]     |     {% block content %}{% endblock %}
+[2025-11-01 10:42:07] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:42:07] [STDERR]     |     <div class="metric-value-modern">{{ "%.1f"|format(total_memory|default(0)) }}</div>
+[2025-11-01 10:42:07] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1043, in do_format
+[2025-11-01 10:42:07] [STDERR]     |     return soft_str(value) % (kwargs or args)
+[2025-11-01 10:42:07] [STDERR]     |            ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+[2025-11-01 10:42:07] [STDERR]     | TypeError: must be real number, not Namespace
+[2025-11-01 10:42:07] [STDERR]     +------------------------------------
+[2025-11-01 10:42:07] [STDERR] 
+[2025-11-01 10:42:07] [STDERR] During handling of the above exception, another exception occurred:
+[2025-11-01 10:42:07] [STDERR] 
+[2025-11-01 10:42:07] [STDERR] Traceback (most recent call last):
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:42:07] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:42:07] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:42:07] [STDERR]     return await self.app(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:42:07] [STDERR]     await super().__call__(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:42:07] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:42:07] [STDERR]     raise exc
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:42:07] [STDERR]     await self.app(scope, receive, _send)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:42:07] [STDERR]     with collapse_excgroups():
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:42:07] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:42:07] [STDERR]     raise exc
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:42:07] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:42:07] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:42:07] [STDERR]     response = await call_next(request)
+[2025-11-01 10:42:07] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:42:07] [STDERR]     raise app_exc
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:42:07] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:42:07] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:42:07] [STDERR]     raise exc
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:42:07] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:42:07] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:42:07] [STDERR]     await route.handle(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:42:07] [STDERR]     await self.app(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:42:07] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:42:07] [STDERR]     raise exc
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:42:07] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:42:07] [STDERR]     response = await func(request)
+[2025-11-01 10:42:07] [STDERR]                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:42:07] [STDERR]     raw_response = await run_endpoint_function(
+[2025-11-01 10:42:07] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:42:07] [STDERR]     return await dependant.call(**values)
+[2025-11-01 10:42:07] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:42:07] [STDERR]     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:42:07] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:42:07] [STDERR]     return _TemplateResponse(
+[2025-11-01 10:42:07] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:42:07] [STDERR]     content = template.render(context)
+[2025-11-01 10:42:07] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:42:07] [STDERR]     self.environment.handle_exception()
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:42:07] [STDERR]     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:42:07] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:42:07] [STDERR]     {% extends "base.html" %}
+[2025-11-01 10:42:07] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:42:07] [STDERR]     {% block content %}{% endblock %}
+[2025-11-01 10:42:07] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:42:07] [STDERR]     <div class="metric-value-modern">{{ "%.1f"|format(total_memory|default(0)) }}</div>
+[2025-11-01 10:42:07] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:07] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1043, in do_format
+[2025-11-01 10:42:07] [STDERR]     return soft_str(value) % (kwargs or args)
+[2025-11-01 10:42:07] [STDERR]            ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+[2025-11-01 10:42:07] [STDERR] TypeError: must be real number, not Namespace
+[2025-11-01 10:42:09] [STDERR] 2025-11-01 10:42:09,150 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:42:09] [STDERR] 2025-11-01 10:42:09,164 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/status "HTTP/1.1 200 OK"
+[2025-11-01 10:42:09] [STDERR] 2025-11-01 10:42:09,168 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/workers "HTTP/1.1 200 OK"
+[2025-11-01 10:42:09] [STDERR] 2025-11-01 10:42:09,188 - uvicorn.error - ERROR - Exception in ASGI application
+[2025-11-01 10:42:09] [STDERR]   + Exception Group Traceback (most recent call last):
+[2025-11-01 10:42:09] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 87, in collapse_excgroups
+[2025-11-01 10:42:09] [STDERR]   |     yield
+[2025-11-01 10:42:09] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 190, in __call__
+[2025-11-01 10:42:09] [STDERR]   |     async with anyio.create_task_group() as task_group:
+[2025-11-01 10:42:09] [STDERR]   |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+[2025-11-01 10:42:09] [STDERR]   |     raise BaseExceptionGroup(
+[2025-11-01 10:42:09] [STDERR]   | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+[2025-11-01 10:42:09] [STDERR]   +-+---------------- 1 ----------------
+[2025-11-01 10:42:09] [STDERR]     | Traceback (most recent call last):
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:42:09] [STDERR]     |     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:42:09] [STDERR]     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     return await self.app(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     await super().__call__(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     raise exc
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     await self.app(scope, receive, _send)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     with collapse_excgroups():
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:42:09] [STDERR]     |     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:42:09] [STDERR]     |     raise exc
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:42:09] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:42:09] [STDERR]     |     response = await call_next(request)
+[2025-11-01 10:42:09] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:42:09] [STDERR]     |     raise app_exc
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:42:09] [STDERR]     |     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:42:09] [STDERR]     |     raise exc
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:42:09] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:42:09] [STDERR]     |     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:42:09] [STDERR]     |     await route.handle(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:42:09] [STDERR]     |     await self.app(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:42:09] [STDERR]     |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:42:09] [STDERR]     |     raise exc
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:42:09] [STDERR]     |     await app(scope, receive, sender)
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:42:09] [STDERR]     |     response = await func(request)
+[2025-11-01 10:42:09] [STDERR]     |                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:42:09] [STDERR]     |     raw_response = await run_endpoint_function(
+[2025-11-01 10:42:09] [STDERR]     |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:42:09] [STDERR]     |     return await dependant.call(**values)
+[2025-11-01 10:42:09] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:42:09] [STDERR]     |     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:42:09] [STDERR]     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:42:09] [STDERR]     |     return _TemplateResponse(
+[2025-11-01 10:42:09] [STDERR]     |            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:42:09] [STDERR]     |     content = template.render(context)
+[2025-11-01 10:42:09] [STDERR]     |               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:42:09] [STDERR]     |     self.environment.handle_exception()
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:42:09] [STDERR]     |     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:42:09] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:42:09] [STDERR]     |     {% extends "base.html" %}
+[2025-11-01 10:42:09] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:42:09] [STDERR]     |     {% block content %}{% endblock %}
+[2025-11-01 10:42:09] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:42:09] [STDERR]     |     <div class="metric-value-modern">{{ "%.1f"|format(total_memory|default(0)) }}</div>
+[2025-11-01 10:42:09] [STDERR]     |     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]     |   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1043, in do_format
+[2025-11-01 10:42:09] [STDERR]     |     return soft_str(value) % (kwargs or args)
+[2025-11-01 10:42:09] [STDERR]     |            ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+[2025-11-01 10:42:09] [STDERR]     | TypeError: must be real number, not Namespace
+[2025-11-01 10:42:09] [STDERR]     +------------------------------------
+[2025-11-01 10:42:09] [STDERR] 
+[2025-11-01 10:42:09] [STDERR] During handling of the above exception, another exception occurred:
+[2025-11-01 10:42:09] [STDERR] 
+[2025-11-01 10:42:09] [STDERR] Traceback (most recent call last):
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/protocols/http/httptools_impl.py", line 409, in run_asgi
+[2025-11-01 10:42:09] [STDERR]     result = await app(  # type: ignore[func-returns-value]
+[2025-11-01 10:42:09] [STDERR]              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 60, in __call__
+[2025-11-01 10:42:09] [STDERR]     return await self.app(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
+[2025-11-01 10:42:09] [STDERR]     await super().__call__(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
+[2025-11-01 10:42:09] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
+[2025-11-01 10:42:09] [STDERR]     raise exc
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
+[2025-11-01 10:42:09] [STDERR]     await self.app(scope, receive, _send)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 189, in __call__
+[2025-11-01 10:42:09] [STDERR]     with collapse_excgroups():
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/contextlib.py", line 155, in __exit__
+[2025-11-01 10:42:09] [STDERR]     self.gen.throw(typ, value, traceback)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_utils.py", line 93, in collapse_excgroups
+[2025-11-01 10:42:09] [STDERR]     raise exc
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 191, in __call__
+[2025-11-01 10:42:09] [STDERR]     response = await self.dispatch_func(request, call_next)
+[2025-11-01 10:42:09] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 79, in add_no_cache_headers
+[2025-11-01 10:42:09] [STDERR]     response = await call_next(request)
+[2025-11-01 10:42:09] [STDERR]                ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 165, in call_next
+[2025-11-01 10:42:09] [STDERR]     raise app_exc
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/base.py", line 151, in coro
+[2025-11-01 10:42:09] [STDERR]     await self.app(scope, receive_or_disconnect, send_no_error)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
+[2025-11-01 10:42:09] [STDERR]     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:42:09] [STDERR]     raise exc
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:42:09] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
+[2025-11-01 10:42:09] [STDERR]     await self.middleware_stack(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
+[2025-11-01 10:42:09] [STDERR]     await route.handle(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
+[2025-11-01 10:42:09] [STDERR]     await self.app(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
+[2025-11-01 10:42:09] [STDERR]     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
+[2025-11-01 10:42:09] [STDERR]     raise exc
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
+[2025-11-01 10:42:09] [STDERR]     await app(scope, receive, sender)
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
+[2025-11-01 10:42:09] [STDERR]     response = await func(request)
+[2025-11-01 10:42:09] [STDERR]                ^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
+[2025-11-01 10:42:09] [STDERR]     raw_response = await run_endpoint_function(
+[2025-11-01 10:42:09] [STDERR]                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
+[2025-11-01 10:42:09] [STDERR]     return await dependant.call(**values)
+[2025-11-01 10:42:09] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/api/app.py", line 294, in handlers_list
+[2025-11-01 10:42:09] [STDERR]     return templates.TemplateResponse("handlers/list.html", context)
+[2025-11-01 10:42:09] [STDERR]            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 230, in TemplateResponse
+[2025-11-01 10:42:09] [STDERR]     return _TemplateResponse(
+[2025-11-01 10:42:09] [STDERR]            ^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/starlette/templating.py", line 40, in __init__
+[2025-11-01 10:42:09] [STDERR]     content = template.render(context)
+[2025-11-01 10:42:09] [STDERR]               ^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 1295, in render
+[2025-11-01 10:42:09] [STDERR]     self.environment.handle_exception()
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/environment.py", line 942, in handle_exception
+[2025-11-01 10:42:09] [STDERR]     raise rewrite_traceback_stack(source=source)
+[2025-11-01 10:42:09] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 1, in top-level template code
+[2025-11-01 10:42:09] [STDERR]     {% extends "base.html" %}
+[2025-11-01 10:42:09] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/base.html", line 45, in top-level template code
+[2025-11-01 10:42:09] [STDERR]     {% block content %}{% endblock %}
+[2025-11-01 10:42:09] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/ui/templates/handlers/list.html", line 321, in block 'content'
+[2025-11-01 10:42:09] [STDERR]     <div class="metric-value-modern">{{ "%.1f"|format(total_memory|default(0)) }}</div>
+[2025-11-01 10:42:09] [STDERR]     ^^^^^^^^^^^^^^^^^^^^^^^^^
+[2025-11-01 10:42:09] [STDERR]   File "/opt/homebrew/Caskroom/miniconda/base/lib/python3.11/site-packages/jinja2/filters.py", line 1043, in do_format
+[2025-11-01 10:42:09] [STDERR]     return soft_str(value) % (kwargs or args)
+[2025-11-01 10:42:09] [STDERR]            ~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~
+[2025-11-01 10:42:09] [STDERR] TypeError: must be real number, not Namespace
+[2025-11-01 10:44:21] [STDERR] 2025-11-01 10:44:21,252 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:44:21] [STDERR] 2025-11-01 10:44:21,266 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/status "HTTP/1.1 200 OK"
+[2025-11-01 10:44:21] [STDERR] 2025-11-01 10:44:21,270 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/workers "HTTP/1.1 200 OK"
+[2025-11-01 10:44:21] [STDERR] 2025-11-01 10:44:21,443 - gleitzeit.ui.api.app - INFO - WebSocket connected. Total connections: 1
+[2025-11-01 10:44:21] [STDERR] 2025-11-01 10:44:21,453 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:44:29] [STDERR] 2025-11-01 10:44:29,173 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics/workflows?time_range=24h "HTTP/1.1 200 OK"
+[2025-11-01 10:44:29] [STDERR] 2025-11-01 10:44:29,174 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics/tasks?time_range=24h "HTTP/1.1 200 OK"
+[2025-11-01 10:44:29] [STDERR] 2025-11-01 10:44:29,178 - httpx - INFO - HTTP Request: GET http://localhost:8000/system/metrics "HTTP/1.1 200 OK"
+[2025-11-01 10:44:31] [STDERR] 2025-11-01 10:44:31,454 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:44:41] [STDERR] 2025-11-01 10:44:41,457 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:44:51] [STDERR] 2025-11-01 10:44:51,457 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:45:01] [STDERR] 2025-11-01 10:45:01,459 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:45:11] [STDERR] 2025-11-01 10:45:11,455 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:45:21] [STDERR] 2025-11-01 10:45:21,454 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"
+[2025-11-01 10:45:31] [STDERR] 2025-11-01 10:45:31,453 - httpx - INFO - HTTP Request: GET http://localhost:8000/health/detailed "HTTP/1.1 200 OK"

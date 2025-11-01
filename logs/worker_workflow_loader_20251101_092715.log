@@ -333,3 +333,87 @@
 [2025-11-01 10:15:41] [STDERR]   ]
 [2025-11-01 10:15:41] [STDERR] }
 [2025-11-01 10:15:41] [STDERR] 2025-11-01 10:15:41,410 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow_d2c5b02ed2f0 loaded and submitted to shard 3 with indexes
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,509 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b from inline
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,512 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-01 10:28:00] [STDERR]   "name": "Ollama LLM Example",
+[2025-11-01 10:28:00] [STDERR]   "tasks": [
+[2025-11-01 10:28:00] [STDERR]     {
+[2025-11-01 10:28:00] [STDERR]       "id": "generate_story",
+[2025-11-01 10:28:00] [STDERR]       "type": "ollama",
+[2025-11-01 10:28:00] [STDERR]       "params": {
+[2025-11-01 10:28:00] [STDERR]         "model": "llama3.2:latest",
+[2025-11-01 10:28:00] [STDERR]         "prompt": "Write a short story about a robot learning to paint in exactly 3 sentences.",
+[2025-11-01 10:28:00] [STDERR]         "temperature": 0.7,
+[2025-11-01 10:28:00] [STDERR]         "max_tokens": 150
+[2025-11-01 10:28:00] [STDERR]       }
+[2025-11-01 10:28:00] [STDERR]     },
+[2025-11-01 10:28:00] [STDERR]     {
+[2025-11-01 10:28:00] [STDERR]       "id": "analyze_story",
+[2025-11-01 10:28:00] [STDERR]       "type": "python",
+[2025-11-01 10:28:00] [STDERR]       "depends_on": [
+[2025-11-01 10:28:00] [STDERR]         "generate_story"
+[2025-11-01 10:28:00] [STDERR]       ],
+[2025-11-01 10:28:00] [STDERR]       "params": {
+[2025-11-01 10:28:00] [STDERR]         "code": "print(\"Story generated successfully!\")\n# The story from the previous task is available\nresult = {\"analysis\": \"Story analysis complete\"}"
+[2025-11-01 10:28:00] [STDERR]       }
+[2025-11-01 10:28:00] [STDERR]     }
+[2025-11-01 10:28:00] [STDERR]   ],
+[2025-11-01 10:28:00] [STDERR]   "workflow_id": "f9083b1a-3e8f-4f0e-a87d-ba1ae738024b"
+[2025-11-01 10:28:00] [STDERR] }
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,512 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-01 10:28:00] [STDERR]   "id": "f9083b1a-3e8f-4f0e-a87d-ba1ae738024b",
+[2025-11-01 10:28:00] [STDERR]   "name": "Ollama LLM Example",
+[2025-11-01 10:28:00] [STDERR]   "description": "",
+[2025-11-01 10:28:00] [STDERR]   "version": "1.0.0",
+[2025-11-01 10:28:00] [STDERR]   "created_at": "2025-11-01T09:28:00.512273",
+[2025-11-01 10:28:00] [STDERR]   "tasks": [
+[2025-11-01 10:28:00] [STDERR]     {
+[2025-11-01 10:28:00] [STDERR]       "id": "64f09c5c-e09a-4896-b12a-1f73c3f3b153",
+[2025-11-01 10:28:00] [STDERR]       "workflow_id": "f9083b1a-3e8f-4f0e-a87d-ba1ae738024b",
+[2025-11-01 10:28:00] [STDERR]       "name": "64f09c5c-e09a-4896-b12a-1f73c3f3b153",
+[2025-11-01 10:28:00] [STDERR]       "description": "",
+[2025-11-01 10:28:00] [STDERR]       "protocol": "ollama/v1",
+[2025-11-01 10:28:00] [STDERR]       "method": "ollama/generate",
+[2025-11-01 10:28:00] [STDERR]       "params": {
+[2025-11-01 10:28:00] [STDERR]         "model": "llama3.2:latest",
+[2025-11-01 10:28:00] [STDERR]         "prompt": "Write a short story about a robot learning to paint in exactly 3 sentences.",
+[2025-11-01 10:28:00] [STDERR]         "temperature": 0.7,
+[2025-11-01 10:28:00] [STDERR]         "max_tokens": 150
+[2025-11-01 10:28:00] [STDERR]       },
+[2025-11-01 10:28:00] [STDERR]       "dependencies": [],
+[2025-11-01 10:28:00] [STDERR]       "timeout": 300,
+[2025-11-01 10:28:00] [STDERR]       "retry": {
+[2025-11-01 10:28:00] [STDERR]         "max_retries": 2,
+[2025-11-01 10:28:00] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-01 10:28:00] [STDERR]         "base_delay": 1.0,
+[2025-11-01 10:28:00] [STDERR]         "max_delay": 30.0,
+[2025-11-01 10:28:00] [STDERR]         "jitter": true,
+[2025-11-01 10:28:00] [STDERR]         "multiplier": 2.0
+[2025-11-01 10:28:00] [STDERR]       }
+[2025-11-01 10:28:00] [STDERR]     },
+[2025-11-01 10:28:00] [STDERR]     {
+[2025-11-01 10:28:00] [STDERR]       "id": "a213143a-d09d-479d-82d4-8c90d0542f54",
+[2025-11-01 10:28:00] [STDERR]       "workflow_id": "f9083b1a-3e8f-4f0e-a87d-ba1ae738024b",
+[2025-11-01 10:28:00] [STDERR]       "name": "a213143a-d09d-479d-82d4-8c90d0542f54",
+[2025-11-01 10:28:00] [STDERR]       "description": "",
+[2025-11-01 10:28:00] [STDERR]       "protocol": "python/v1",
+[2025-11-01 10:28:00] [STDERR]       "method": "python/execute",
+[2025-11-01 10:28:00] [STDERR]       "params": {
+[2025-11-01 10:28:00] [STDERR]         "code": "print(\"Story generated successfully!\")\n# The story from the previous task is available\nresult = {\"analysis\": \"Story analysis complete\"}"
+[2025-11-01 10:28:00] [STDERR]       },
+[2025-11-01 10:28:00] [STDERR]       "dependencies": [
+[2025-11-01 10:28:00] [STDERR]         "64f09c5c-e09a-4896-b12a-1f73c3f3b153"
+[2025-11-01 10:28:00] [STDERR]       ],
+[2025-11-01 10:28:00] [STDERR]       "timeout": 300,
+[2025-11-01 10:28:00] [STDERR]       "retry": {
+[2025-11-01 10:28:00] [STDERR]         "max_retries": 2,
+[2025-11-01 10:28:00] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-01 10:28:00] [STDERR]         "base_delay": 1.0,
+[2025-11-01 10:28:00] [STDERR]         "max_delay": 30.0,
+[2025-11-01 10:28:00] [STDERR]         "jitter": true,
+[2025-11-01 10:28:00] [STDERR]         "multiplier": 2.0
+[2025-11-01 10:28:00] [STDERR]       }
+[2025-11-01 10:28:00] [STDERR]     }
+[2025-11-01 10:28:00] [STDERR]   ]
+[2025-11-01 10:28:00] [STDERR] }
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,516 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b loaded and submitted to shard 6 with indexes

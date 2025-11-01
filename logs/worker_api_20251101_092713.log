@@ -28,3 +28,10 @@
 [2025-11-01 10:14:48] [STDERR] 2025-11-01 10:14:48,211 - gleitzeit.api.auth.jwt_manager - WARNING - Using default JWT secret key. Change this in production!
 [2025-11-01 10:14:48] [STDERR] 2025-11-01 10:14:48,211 - gleitzeit.api.auth.dependencies - INFO - Authentication components initialized
 [2025-11-01 10:20:38] [STDERR] 2025-11-01 10:20:38,649 - gleitzeit.api.pools.client_pool - INFO - Cleaned up idle pool for user api-dev-key-
+[2025-11-01 10:27:53] [STDERR] 2025-11-01 10:27:53,931 - uvicorn.error - INFO - 127.0.0.1:64819 - "WebSocket /ws/events" [accepted]
+[2025-11-01 10:27:53] [STDERR] 2025-11-01 10:27:53,931 - gleitzeit.api.services.event_broadcaster - INFO - WebSocket client connected. Total: 1, Filters: none
+[2025-11-01 10:27:53] [STDERR] 2025-11-01 10:27:53,932 - uvicorn.error - INFO - connection open
+[2025-11-01 10:27:56] [STDERR] 2025-11-01 10:27:56,094 - gleitzeit.api.routes.websocket - ERROR - Error processing WebSocket message: (<CloseCode.NO_STATUS_RCVD: 1005>, '')
+[2025-11-01 10:27:56] [STDERR] 2025-11-01 10:27:56,094 - gleitzeit.api.services.event_broadcaster - INFO - WebSocket client disconnected. Total: 0
+[2025-11-01 10:27:56] [STDERR] 2025-11-01 10:27:56,095 - uvicorn.error - INFO - connection closed
+[2025-11-01 10:36:02] [STDERR] 2025-11-01 10:36:02,317 - gleitzeit.api.pools.client_pool - INFO - Cleaned up idle pool for user api-dev-key-

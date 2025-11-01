@@ -183,20 +183,70 @@
 
     <!-- Orchestrator Status -->
     {% if orchestrator and orchestrator.metrics %}
-    <div class="card mb-4">
-        <div class="card-header">
-            <h3>🎯 Orchestrator</h3>
+    <div class="section-modern">
+        <div class="section-header">
+            <h2 class="section-title">🎯 Orchestrator Metrics</h2>
+            {% if orchestrator.metrics.timestamp %}
+            <div class="timestamp-badge">
+                Last Updated: {{ orchestrator.metrics.timestamp.split('T')[1].split('.')[0] }}
+            </div>
+            {% endif %}
         </div>
-        <div class="card-body">
-            <div class="info-grid">
-                {% for key, value in orchestrator.metrics.items() %}
-                <div class="info-item">
-                    <span class="info-label">{{ key|replace("_", " ")|title }}</span>
-                    <span class="info-value">{{ value }}</span>
+
+        {% if orchestrator.metrics.workers %}
+        <div class="metrics-section" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+            {% set total_workers = orchestrator.metrics.workers|length %}
+            {% set orch_processed = namespace(count=0) %}
+            {% set orch_failed = namespace(count=0) %}
+            {% set orch_memory = namespace(mb=0.0) %}
+
+            {% for worker_id, metrics in orchestrator.metrics.workers.items() %}
+                {% set orch_processed.count = orch_processed.count + (metrics.processed|int) %}
+                {% set orch_failed.count = orch_failed.count + (metrics.failed|int) %}
+                {% set orch_memory.mb = orch_memory.mb + (metrics.memory_mb|float) %}
+            {% endfor %}
+
+            <div class="metric-card-modern metric-workers">
+                <div class="metric-icon">⚙️</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Active Workers</div>
+                    <div class="metric-value-modern">{{ total_workers }}</div>
+                    <div class="metric-sublabel">reporting</div>
                 </div>
-                {% endfor %}
+            </div>
+
+            <div class="metric-card-modern metric-completed">
+                <div class="metric-icon">✅</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Total Processed</div>
+                    <div class="metric-value-modern">{{ orch_processed.count }}</div>
+                    <div class="metric-sublabel">tasks</div>
+                </div>
+            </div>
+
+            <div class="metric-card-modern metric-tasks">
+                <div class="metric-icon">❌</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Total Failed</div>
+                    <div class="metric-value-modern">{{ orch_failed.count }}</div>
+                    <div class="metric-sublabel">tasks</div>
+                </div>
+            </div>
+
+            <div class="metric-card-modern metric-memory">
+                <div class="metric-icon">💾</div>
+                <div class="metric-content">
+                    <div class="metric-label-modern">Total Memory</div>
+                    <div class="metric-value-modern">{{ "%.1f"|format(orch_memory.mb) }}</div>
+                    <div class="metric-sublabel">MB</div>
+                </div>
             </div>
         </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No worker metrics available</p>
+        </div>
+        {% endif %}
     </div>
     {% endif %}
 
@@ -268,7 +318,7 @@
                 <div class="metric-icon">💾</div>
                 <div class="metric-content">
                     <div class="metric-label-modern">Total Memory</div>
-                    <div class="metric-value-modern">{{ (total_memory|default(0))|round(1) }}</div>
+                    <div class="metric-value-modern">{{ "%.1f"|format(total_memory|default(0)) }}</div>
                     <div class="metric-sublabel">MB</div>
                 </div>
             </div>
@@ -631,7 +681,7 @@
     margin: 0;
 }
 
-.worker-count-badge {
+.worker-count-badge, .timestamp-badge {
     background: #4a5568;
     color: white;
     padding: 0.5rem 1.25rem;
@@ -639,6 +689,12 @@
     font-weight: 600;
     font-size: 0.875rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.timestamp-badge {
+    background: #6b7280;
+    font-size: 0.75rem;
+    font-family: 'Courier New', monospace;
 }
 
 /* Queue Grid */

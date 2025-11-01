@@ -58,3 +58,11 @@
 [2025-11-01 10:15:41] [STDERR] 2025-11-01 10:15:41,412 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 79f6c3d9-5f19-4134-ac5b-487a46b3c4d3 to shard 3
 [2025-11-01 10:15:46] [STDERR] 2025-11-01 10:15:46,888 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 79f6c3d9-5f19-4134-ac5b-487a46b3c4d3 from workflow workflow_d2c5b02ed2f0
 [2025-11-01 10:15:46] [STDERR] 2025-11-01 10:15:46,893 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow_d2c5b02ed2f0 completed successfully!
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,514 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: f9083b1a-3e8f-4f0e-a87d-ba1ae738024b
+[2025-11-01 10:28:00] [STDERR] 2025-11-01 10:28:00,519 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 64f09c5c-e09a-4896-b12a-1f73c3f3b153 to shard 6
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,215 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 64f09c5c-e09a-4896-b12a-1f73c3f3b153 from workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,223 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task a213143a-d09d-479d-82d4-8c90d0542f54 to shard 6
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,225 - gleitzeit.workers.dependency_worker - WARNING - Workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b not found
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,225 - gleitzeit.workers.dependency_worker - INFO - Transitioning workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b from running to pending (task counts: {'completed': 0, 'failed': 0, 'scheduled': 0, 'waiting': 0, 'pending': 0, 'cancelled': 0, 'paused': 0})
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,304 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: a213143a-d09d-479d-82d4-8c90d0542f54 from workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b
+[2025-11-01 10:28:18] [STDERR] 2025-11-01 10:28:18,306 - gleitzeit.workers.dependency_worker - INFO - Workflow f9083b1a-3e8f-4f0e-a87d-ba1ae738024b completed successfully!
