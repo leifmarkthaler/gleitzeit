@@ -1,0 +1,1084 @@
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,125 - __main__ - INFO - Initialized worker instance identity: gleitzei-031eebbc
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,125 - __main__ - INFO - Loading configuration from Redis key: worker:config:workflow_loader-async:1fee3a60
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,127 - __main__ - INFO - Loaded config for worker workflow_loader-async
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,127 - __main__ - INFO - Worker workflow_loader-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,127 - gleitzeit.core.cache - INFO - Created workflow cache with max_size=1000, ttl=3600
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,128 - gleitzeit.handlers.registry - INFO - Registered handler FileHandler for protocol file/v1
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,198 - gleitzeit.handlers.registry - INFO - Registered handler HttpHandler for protocol http/v1
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,199 - gleitzeit.handlers.registry - INFO - Registered handler OllamaHandler for protocol ollama/v1
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,200 - gleitzeit.handlers.registry - INFO - Registered handler PythonHandler for protocol python/v1
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,200 - gleitzeit.handlers.registry - INFO - Registered handler SignalHandler for protocol signal/v1
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,200 - gleitzeit.handlers.registry - INFO - Registered handler TimerHandler for protocol timer/v1
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,200 - gleitzeit.handlers.registry - INFO - Registered handler ValidationHandler for protocol validation/v1
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,200 - gleitzeit.handlers.registry - INFO - Registered handler WorkflowHandler for protocol workflow/v1
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,200 - gleitzeit.handlers - INFO - Auto-discovered 8 handler modules: file, http, ollama, python, signal, timer, validation, workflow
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,200 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Built protocol mappings from handler registry with 24 task types
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,201 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,201 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - WorkflowLoaderWorkerV2 initialized with max tasks: 10000
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,201 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow cache configured: size=1000, ttl=3600s
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,201 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Available protocols: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,202 - workflow_loader.workflow_loader-async - INFO - Worker workflow_loader-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,202 - __main__ - INFO - Worker workflow_loader-async started successfully
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,202 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,203 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_loader-async
+[2025-11-04 16:57:53] [STDERR] 2025-11-04 16:57:53,759 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-e15b4384-db4a-40a8-9f32-e5b5bd39b6db from inline
+[2025-11-04 16:57:53] [STDERR] 2025-11-04 16:57:53,760 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 16:57:53] [STDERR]   "name": "failing-workflow",
+[2025-11-04 16:57:53] [STDERR]   "tasks": [
+[2025-11-04 16:57:53] [STDERR]     {
+[2025-11-04 16:57:53] [STDERR]       "name": "will_fail",
+[2025-11-04 16:57:53] [STDERR]       "protocol": "python/v1",
+[2025-11-04 16:57:53] [STDERR]       "method": "python/execute",
+[2025-11-04 16:57:53] [STDERR]       "params": {
+[2025-11-04 16:57:53] [STDERR]         "code": "raise ValueError('Intentional failure for testing')"
+[2025-11-04 16:57:53] [STDERR]       }
+[2025-11-04 16:57:53] [STDERR]     }
+[2025-11-04 16:57:53] [STDERR]   ],
+[2025-11-04 16:57:53] [STDERR]   "workflow_id": "workflow-e15b4384-db4a-40a8-9f32-e5b5bd39b6db"
+[2025-11-04 16:57:53] [STDERR] }
+[2025-11-04 16:57:53] [STDERR] 2025-11-04 16:57:53,761 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 16:57:53] [STDERR]   "id": "workflow-e15b4384-db4a-40a8-9f32-e5b5bd39b6db",
+[2025-11-04 16:57:53] [STDERR]   "name": "failing-workflow",
+[2025-11-04 16:57:53] [STDERR]   "description": "",
+[2025-11-04 16:57:53] [STDERR]   "version": "1.0.0",
+[2025-11-04 16:57:53] [STDERR]   "created_at": "2025-11-04T15:57:53.761010",
+[2025-11-04 16:57:53] [STDERR]   "tasks": [
+[2025-11-04 16:57:53] [STDERR]     {
+[2025-11-04 16:57:53] [STDERR]       "id": "e6edbb36-6b51-4cee-91b0-1b8f958378fe",
+[2025-11-04 16:57:53] [STDERR]       "workflow_id": "workflow-e15b4384-db4a-40a8-9f32-e5b5bd39b6db",
+[2025-11-04 16:57:53] [STDERR]       "name": "will_fail",
+[2025-11-04 16:57:53] [STDERR]       "description": "",
+[2025-11-04 16:57:53] [STDERR]       "protocol": "python/v1",
+[2025-11-04 16:57:53] [STDERR]       "method": "python/execute",
+[2025-11-04 16:57:53] [STDERR]       "params": {
+[2025-11-04 16:57:53] [STDERR]         "code": "raise ValueError('Intentional failure for testing')"
+[2025-11-04 16:57:53] [STDERR]       },
+[2025-11-04 16:57:53] [STDERR]       "dependencies": [],
+[2025-11-04 16:57:53] [STDERR]       "timeout": 300,
+[2025-11-04 16:57:53] [STDERR]       "retry": {
+[2025-11-04 16:57:53] [STDERR]         "max_retries": 2,
+[2025-11-04 16:57:53] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 16:57:53] [STDERR]         "base_delay": 1.0,
+[2025-11-04 16:57:53] [STDERR]         "max_delay": 30.0,
+[2025-11-04 16:57:53] [STDERR]         "jitter": true,
+[2025-11-04 16:57:53] [STDERR]         "multiplier": 2.0
+[2025-11-04 16:57:53] [STDERR]       }
+[2025-11-04 16:57:53] [STDERR]     }
+[2025-11-04 16:57:53] [STDERR]   ]
+[2025-11-04 16:57:53] [STDERR] }
+[2025-11-04 16:57:53] [STDERR] 2025-11-04 16:57:53,763 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-e15b4384-db4a-40a8-9f32-e5b5bd39b6db loaded and submitted to shard 3 with indexes
+[2025-11-04 16:58:02] [STDERR] 2025-11-04 16:58:02,019 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-d9a8c0b6-0e88-474e-a838-e9df555c594c from inline
+[2025-11-04 16:58:02] [STDERR] 2025-11-04 16:58:02,021 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 16:58:02] [STDERR]   "name": "test-workflow",
+[2025-11-04 16:58:02] [STDERR]   "tasks": [
+[2025-11-04 16:58:02] [STDERR]     {
+[2025-11-04 16:58:02] [STDERR]       "name": "hello",
+[2025-11-04 16:58:02] [STDERR]       "protocol": "python/v1",
+[2025-11-04 16:58:02] [STDERR]       "method": "python/execute",
+[2025-11-04 16:58:02] [STDERR]       "params": {
+[2025-11-04 16:58:02] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 16:58:02] [STDERR]       }
+[2025-11-04 16:58:02] [STDERR]     }
+[2025-11-04 16:58:02] [STDERR]   ],
+[2025-11-04 16:58:02] [STDERR]   "workflow_id": "workflow-d9a8c0b6-0e88-474e-a838-e9df555c594c"
+[2025-11-04 16:58:02] [STDERR] }
+[2025-11-04 16:58:02] [STDERR] 2025-11-04 16:58:02,021 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 16:58:02] [STDERR]   "id": "workflow-d9a8c0b6-0e88-474e-a838-e9df555c594c",
+[2025-11-04 16:58:02] [STDERR]   "name": "test-workflow",
+[2025-11-04 16:58:02] [STDERR]   "description": "",
+[2025-11-04 16:58:02] [STDERR]   "version": "1.0.0",
+[2025-11-04 16:58:02] [STDERR]   "created_at": "2025-11-04T15:58:02.021081",
+[2025-11-04 16:58:02] [STDERR]   "tasks": [
+[2025-11-04 16:58:02] [STDERR]     {
+[2025-11-04 16:58:02] [STDERR]       "id": "7f49741f-e569-45c4-a64b-3d04454a2390",
+[2025-11-04 16:58:02] [STDERR]       "workflow_id": "workflow-d9a8c0b6-0e88-474e-a838-e9df555c594c",
+[2025-11-04 16:58:02] [STDERR]       "name": "hello",
+[2025-11-04 16:58:02] [STDERR]       "description": "",
+[2025-11-04 16:58:02] [STDERR]       "protocol": "python/v1",
+[2025-11-04 16:58:02] [STDERR]       "method": "python/execute",
+[2025-11-04 16:58:02] [STDERR]       "params": {
+[2025-11-04 16:58:02] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 16:58:02] [STDERR]       },
+[2025-11-04 16:58:02] [STDERR]       "dependencies": [],
+[2025-11-04 16:58:02] [STDERR]       "timeout": 300,
+[2025-11-04 16:58:02] [STDERR]       "retry": {
+[2025-11-04 16:58:02] [STDERR]         "max_retries": 2,
+[2025-11-04 16:58:02] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 16:58:02] [STDERR]         "base_delay": 1.0,
+[2025-11-04 16:58:02] [STDERR]         "max_delay": 30.0,
+[2025-11-04 16:58:02] [STDERR]         "jitter": true,
+[2025-11-04 16:58:02] [STDERR]         "multiplier": 2.0
+[2025-11-04 16:58:02] [STDERR]       }
+[2025-11-04 16:58:02] [STDERR]     }
+[2025-11-04 16:58:02] [STDERR]   ]
+[2025-11-04 16:58:02] [STDERR] }
+[2025-11-04 16:58:02] [STDERR] 2025-11-04 16:58:02,024 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-d9a8c0b6-0e88-474e-a838-e9df555c594c loaded and submitted to shard 1 with indexes
+[2025-11-04 16:58:09] [STDERR] 2025-11-04 16:58:09,460 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-6c8ae30e-4cf4-4cb9-8dec-0d52b5cb42f6 from inline
+[2025-11-04 16:58:09] [STDERR] 2025-11-04 16:58:09,461 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 16:58:09] [STDERR]   "name": "test-workflow",
+[2025-11-04 16:58:09] [STDERR]   "tasks": [
+[2025-11-04 16:58:09] [STDERR]     {
+[2025-11-04 16:58:09] [STDERR]       "name": "hello",
+[2025-11-04 16:58:09] [STDERR]       "protocol": "python/v1",
+[2025-11-04 16:58:09] [STDERR]       "method": "python/execute",
+[2025-11-04 16:58:09] [STDERR]       "params": {
+[2025-11-04 16:58:09] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 16:58:09] [STDERR]       }
+[2025-11-04 16:58:09] [STDERR]     }
+[2025-11-04 16:58:09] [STDERR]   ],
+[2025-11-04 16:58:09] [STDERR]   "workflow_id": "workflow-6c8ae30e-4cf4-4cb9-8dec-0d52b5cb42f6"
+[2025-11-04 16:58:09] [STDERR] }
+[2025-11-04 16:58:09] [STDERR] 2025-11-04 16:58:09,461 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 16:58:09] [STDERR]   "id": "workflow-6c8ae30e-4cf4-4cb9-8dec-0d52b5cb42f6",
+[2025-11-04 16:58:09] [STDERR]   "name": "test-workflow",
+[2025-11-04 16:58:09] [STDERR]   "description": "",
+[2025-11-04 16:58:09] [STDERR]   "version": "1.0.0",
+[2025-11-04 16:58:09] [STDERR]   "created_at": "2025-11-04T15:58:09.461787",
+[2025-11-04 16:58:09] [STDERR]   "tasks": [
+[2025-11-04 16:58:09] [STDERR]     {
+[2025-11-04 16:58:09] [STDERR]       "id": "cf351fd0-81fa-4e94-8fe9-fd230ea17c0b",
+[2025-11-04 16:58:09] [STDERR]       "workflow_id": "workflow-6c8ae30e-4cf4-4cb9-8dec-0d52b5cb42f6",
+[2025-11-04 16:58:09] [STDERR]       "name": "hello",
+[2025-11-04 16:58:09] [STDERR]       "description": "",
+[2025-11-04 16:58:09] [STDERR]       "protocol": "python/v1",
+[2025-11-04 16:58:09] [STDERR]       "method": "python/execute",
+[2025-11-04 16:58:09] [STDERR]       "params": {
+[2025-11-04 16:58:09] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 16:58:09] [STDERR]       },
+[2025-11-04 16:58:09] [STDERR]       "dependencies": [],
+[2025-11-04 16:58:09] [STDERR]       "timeout": 300,
+[2025-11-04 16:58:09] [STDERR]       "retry": {
+[2025-11-04 16:58:09] [STDERR]         "max_retries": 2,
+[2025-11-04 16:58:09] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 16:58:09] [STDERR]         "base_delay": 1.0,
+[2025-11-04 16:58:09] [STDERR]         "max_delay": 30.0,
+[2025-11-04 16:58:09] [STDERR]         "jitter": true,
+[2025-11-04 16:58:09] [STDERR]         "multiplier": 2.0
+[2025-11-04 16:58:09] [STDERR]       }
+[2025-11-04 16:58:09] [STDERR]     }
+[2025-11-04 16:58:09] [STDERR]   ]
+[2025-11-04 16:58:09] [STDERR] }
+[2025-11-04 16:58:09] [STDERR] 2025-11-04 16:58:09,466 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-6c8ae30e-4cf4-4cb9-8dec-0d52b5cb42f6 loaded and submitted to shard 5 with indexes
+[2025-11-04 17:00:30] [STDERR] 2025-11-04 17:00:30,088 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-7fdf79eb-fa4a-4202-ba4f-46d2399a29ff from inline
+[2025-11-04 17:00:30] [STDERR] 2025-11-04 17:00:30,091 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:00:30] [STDERR]   "name": "multi-task-workflow",
+[2025-11-04 17:00:30] [STDERR]   "tasks": [
+[2025-11-04 17:00:30] [STDERR]     {
+[2025-11-04 17:00:30] [STDERR]       "name": "task1",
+[2025-11-04 17:00:30] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:30] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:30] [STDERR]       "params": {
+[2025-11-04 17:00:30] [STDERR]         "code": "result = {'step': 1, 'value': 10}"
+[2025-11-04 17:00:30] [STDERR]       }
+[2025-11-04 17:00:30] [STDERR]     },
+[2025-11-04 17:00:30] [STDERR]     {
+[2025-11-04 17:00:30] [STDERR]       "name": "task2",
+[2025-11-04 17:00:30] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:30] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:30] [STDERR]       "params": {
+[2025-11-04 17:00:30] [STDERR]         "code": "\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'step' in value:\n        result = {'step': 2, 'value': value['value'] * 2}\n        break\n"
+[2025-11-04 17:00:30] [STDERR]       },
+[2025-11-04 17:00:30] [STDERR]       "dependencies": [
+[2025-11-04 17:00:30] [STDERR]         "task1"
+[2025-11-04 17:00:30] [STDERR]       ]
+[2025-11-04 17:00:30] [STDERR]     },
+[2025-11-04 17:00:30] [STDERR]     {
+[2025-11-04 17:00:30] [STDERR]       "name": "task3",
+[2025-11-04 17:00:30] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:30] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:30] [STDERR]       "params": {
+[2025-11-04 17:00:30] [STDERR]         "code": "\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'step' in value and value['step'] == 2:\n        result = {'step': 3, 'value': value['value'] + 5}\n        break\n"
+[2025-11-04 17:00:30] [STDERR]       },
+[2025-11-04 17:00:30] [STDERR]       "dependencies": [
+[2025-11-04 17:00:30] [STDERR]         "task2"
+[2025-11-04 17:00:30] [STDERR]       ]
+[2025-11-04 17:00:30] [STDERR]     }
+[2025-11-04 17:00:30] [STDERR]   ],
+[2025-11-04 17:00:30] [STDERR]   "workflow_id": "workflow-7fdf79eb-fa4a-4202-ba4f-46d2399a29ff"
+[2025-11-04 17:00:30] [STDERR] }
+[2025-11-04 17:00:30] [STDERR] 2025-11-04 17:00:30,091 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:00:30] [STDERR]   "id": "workflow-7fdf79eb-fa4a-4202-ba4f-46d2399a29ff",
+[2025-11-04 17:00:30] [STDERR]   "name": "multi-task-workflow",
+[2025-11-04 17:00:30] [STDERR]   "description": "",
+[2025-11-04 17:00:30] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:00:30] [STDERR]   "created_at": "2025-11-04T16:00:30.091174",
+[2025-11-04 17:00:30] [STDERR]   "tasks": [
+[2025-11-04 17:00:30] [STDERR]     {
+[2025-11-04 17:00:30] [STDERR]       "id": "fba3c2f7-8ce1-4527-be3a-1dedc2d6088a",
+[2025-11-04 17:00:30] [STDERR]       "workflow_id": "workflow-7fdf79eb-fa4a-4202-ba4f-46d2399a29ff",
+[2025-11-04 17:00:30] [STDERR]       "name": "task1",
+[2025-11-04 17:00:30] [STDERR]       "description": "",
+[2025-11-04 17:00:30] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:30] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:30] [STDERR]       "params": {
+[2025-11-04 17:00:30] [STDERR]         "code": "result = {'step': 1, 'value': 10}"
+[2025-11-04 17:00:30] [STDERR]       },
+[2025-11-04 17:00:30] [STDERR]       "dependencies": [],
+[2025-11-04 17:00:30] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:30] [STDERR]       "retry": {
+[2025-11-04 17:00:30] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:30] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:30] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:30] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:30] [STDERR]         "jitter": true,
+[2025-11-04 17:00:30] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:30] [STDERR]       }
+[2025-11-04 17:00:30] [STDERR]     },
+[2025-11-04 17:00:30] [STDERR]     {
+[2025-11-04 17:00:30] [STDERR]       "id": "4e1d8350-6d79-4be0-8159-02f938646471",
+[2025-11-04 17:00:30] [STDERR]       "workflow_id": "workflow-7fdf79eb-fa4a-4202-ba4f-46d2399a29ff",
+[2025-11-04 17:00:30] [STDERR]       "name": "task2",
+[2025-11-04 17:00:30] [STDERR]       "description": "",
+[2025-11-04 17:00:30] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:30] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:30] [STDERR]       "params": {
+[2025-11-04 17:00:30] [STDERR]         "code": "\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'step' in value:\n        result = {'step': 2, 'value': value['value'] * 2}\n        break\n"
+[2025-11-04 17:00:30] [STDERR]       },
+[2025-11-04 17:00:30] [STDERR]       "dependencies": [
+[2025-11-04 17:00:30] [STDERR]         "fba3c2f7-8ce1-4527-be3a-1dedc2d6088a"
+[2025-11-04 17:00:30] [STDERR]       ],
+[2025-11-04 17:00:30] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:30] [STDERR]       "retry": {
+[2025-11-04 17:00:30] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:30] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:30] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:30] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:30] [STDERR]         "jitter": true,
+[2025-11-04 17:00:30] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:30] [STDERR]       }
+[2025-11-04 17:00:30] [STDERR]     },
+[2025-11-04 17:00:30] [STDERR]     {
+[2025-11-04 17:00:30] [STDERR]       "id": "cf12b223-1dfb-4662-a6c5-5c3179a3c10d",
+[2025-11-04 17:00:30] [STDERR]       "workflow_id": "workflow-7fdf79eb-fa4a-4202-ba4f-46d2399a29ff",
+[2025-11-04 17:00:30] [STDERR]       "name": "task3",
+[2025-11-04 17:00:30] [STDERR]       "description": "",
+[2025-11-04 17:00:30] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:30] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:30] [STDERR]       "params": {
+[2025-11-04 17:00:30] [STDERR]         "code": "\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'step' in value and value['step'] == 2:\n        result = {'step': 3, 'value': value['value'] + 5}\n        break\n"
+[2025-11-04 17:00:30] [STDERR]       },
+[2025-11-04 17:00:30] [STDERR]       "dependencies": [
+[2025-11-04 17:00:30] [STDERR]         "4e1d8350-6d79-4be0-8159-02f938646471"
+[2025-11-04 17:00:30] [STDERR]       ],
+[2025-11-04 17:00:30] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:30] [STDERR]       "retry": {
+[2025-11-04 17:00:30] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:30] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:30] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:30] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:30] [STDERR]         "jitter": true,
+[2025-11-04 17:00:30] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:30] [STDERR]       }
+[2025-11-04 17:00:30] [STDERR]     }
+[2025-11-04 17:00:30] [STDERR]   ]
+[2025-11-04 17:00:30] [STDERR] }
+[2025-11-04 17:00:30] [STDERR] 2025-11-04 17:00:30,097 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-7fdf79eb-fa4a-4202-ba4f-46d2399a29ff loaded and submitted to shard 7 with indexes
+[2025-11-04 17:00:38] [STDERR] 2025-11-04 17:00:38,541 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-a7536c68-7f70-41b7-a198-60f00828c928 from inline
+[2025-11-04 17:00:38] [STDERR] 2025-11-04 17:00:38,543 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:00:38] [STDERR]   "name": "multi-task-workflow",
+[2025-11-04 17:00:38] [STDERR]   "tasks": [
+[2025-11-04 17:00:38] [STDERR]     {
+[2025-11-04 17:00:38] [STDERR]       "name": "task1",
+[2025-11-04 17:00:38] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:38] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:38] [STDERR]       "params": {
+[2025-11-04 17:00:38] [STDERR]         "code": "result = {'step': 1, 'value': 10}"
+[2025-11-04 17:00:38] [STDERR]       }
+[2025-11-04 17:00:38] [STDERR]     },
+[2025-11-04 17:00:38] [STDERR]     {
+[2025-11-04 17:00:38] [STDERR]       "name": "task2",
+[2025-11-04 17:00:38] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:38] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:38] [STDERR]       "params": {
+[2025-11-04 17:00:38] [STDERR]         "code": "\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'step' in value:\n        result = {'step': 2, 'value': value['value'] * 2}\n        break\n"
+[2025-11-04 17:00:38] [STDERR]       },
+[2025-11-04 17:00:38] [STDERR]       "dependencies": [
+[2025-11-04 17:00:38] [STDERR]         "task1"
+[2025-11-04 17:00:38] [STDERR]       ]
+[2025-11-04 17:00:38] [STDERR]     },
+[2025-11-04 17:00:38] [STDERR]     {
+[2025-11-04 17:00:38] [STDERR]       "name": "task3",
+[2025-11-04 17:00:38] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:38] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:38] [STDERR]       "params": {
+[2025-11-04 17:00:38] [STDERR]         "code": "\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'step' in value and value['step'] == 2:\n        result = {'step': 3, 'value': value['value'] + 5}\n        break\n"
+[2025-11-04 17:00:38] [STDERR]       },
+[2025-11-04 17:00:38] [STDERR]       "dependencies": [
+[2025-11-04 17:00:38] [STDERR]         "task2"
+[2025-11-04 17:00:38] [STDERR]       ]
+[2025-11-04 17:00:38] [STDERR]     }
+[2025-11-04 17:00:38] [STDERR]   ],
+[2025-11-04 17:00:38] [STDERR]   "workflow_id": "workflow-a7536c68-7f70-41b7-a198-60f00828c928"
+[2025-11-04 17:00:38] [STDERR] }
+[2025-11-04 17:00:38] [STDERR] 2025-11-04 17:00:38,543 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:00:38] [STDERR]   "id": "workflow-a7536c68-7f70-41b7-a198-60f00828c928",
+[2025-11-04 17:00:38] [STDERR]   "name": "multi-task-workflow",
+[2025-11-04 17:00:38] [STDERR]   "description": "",
+[2025-11-04 17:00:38] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:00:38] [STDERR]   "created_at": "2025-11-04T16:00:38.543236",
+[2025-11-04 17:00:38] [STDERR]   "tasks": [
+[2025-11-04 17:00:38] [STDERR]     {
+[2025-11-04 17:00:38] [STDERR]       "id": "2db8f38a-ee10-44f6-850f-f2c7a7589559",
+[2025-11-04 17:00:38] [STDERR]       "workflow_id": "workflow-a7536c68-7f70-41b7-a198-60f00828c928",
+[2025-11-04 17:00:38] [STDERR]       "name": "task1",
+[2025-11-04 17:00:38] [STDERR]       "description": "",
+[2025-11-04 17:00:38] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:38] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:38] [STDERR]       "params": {
+[2025-11-04 17:00:38] [STDERR]         "code": "result = {'step': 1, 'value': 10}"
+[2025-11-04 17:00:38] [STDERR]       },
+[2025-11-04 17:00:38] [STDERR]       "dependencies": [],
+[2025-11-04 17:00:38] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:38] [STDERR]       "retry": {
+[2025-11-04 17:00:38] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:38] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:38] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:38] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:38] [STDERR]         "jitter": true,
+[2025-11-04 17:00:38] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:38] [STDERR]       }
+[2025-11-04 17:00:38] [STDERR]     },
+[2025-11-04 17:00:38] [STDERR]     {
+[2025-11-04 17:00:38] [STDERR]       "id": "3f3e6e9f-c38e-463b-944e-ff4218701349",
+[2025-11-04 17:00:38] [STDERR]       "workflow_id": "workflow-a7536c68-7f70-41b7-a198-60f00828c928",
+[2025-11-04 17:00:38] [STDERR]       "name": "task2",
+[2025-11-04 17:00:38] [STDERR]       "description": "",
+[2025-11-04 17:00:38] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:38] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:38] [STDERR]       "params": {
+[2025-11-04 17:00:38] [STDERR]         "code": "\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'step' in value:\n        result = {'step': 2, 'value': value['value'] * 2}\n        break\n"
+[2025-11-04 17:00:38] [STDERR]       },
+[2025-11-04 17:00:38] [STDERR]       "dependencies": [
+[2025-11-04 17:00:38] [STDERR]         "2db8f38a-ee10-44f6-850f-f2c7a7589559"
+[2025-11-04 17:00:38] [STDERR]       ],
+[2025-11-04 17:00:38] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:38] [STDERR]       "retry": {
+[2025-11-04 17:00:38] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:38] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:38] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:38] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:38] [STDERR]         "jitter": true,
+[2025-11-04 17:00:38] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:38] [STDERR]       }
+[2025-11-04 17:00:38] [STDERR]     },
+[2025-11-04 17:00:38] [STDERR]     {
+[2025-11-04 17:00:38] [STDERR]       "id": "6f07553d-cb97-4d3f-8a8f-d857d8596c18",
+[2025-11-04 17:00:38] [STDERR]       "workflow_id": "workflow-a7536c68-7f70-41b7-a198-60f00828c928",
+[2025-11-04 17:00:38] [STDERR]       "name": "task3",
+[2025-11-04 17:00:38] [STDERR]       "description": "",
+[2025-11-04 17:00:38] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:38] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:38] [STDERR]       "params": {
+[2025-11-04 17:00:38] [STDERR]         "code": "\nfor key, value in inputs.items():\n    if isinstance(value, dict) and 'step' in value and value['step'] == 2:\n        result = {'step': 3, 'value': value['value'] + 5}\n        break\n"
+[2025-11-04 17:00:38] [STDERR]       },
+[2025-11-04 17:00:38] [STDERR]       "dependencies": [
+[2025-11-04 17:00:38] [STDERR]         "3f3e6e9f-c38e-463b-944e-ff4218701349"
+[2025-11-04 17:00:38] [STDERR]       ],
+[2025-11-04 17:00:38] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:38] [STDERR]       "retry": {
+[2025-11-04 17:00:38] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:38] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:38] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:38] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:38] [STDERR]         "jitter": true,
+[2025-11-04 17:00:38] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:38] [STDERR]       }
+[2025-11-04 17:00:38] [STDERR]     }
+[2025-11-04 17:00:38] [STDERR]   ]
+[2025-11-04 17:00:38] [STDERR] }
+[2025-11-04 17:00:38] [STDERR] 2025-11-04 17:00:38,545 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-a7536c68-7f70-41b7-a198-60f00828c928 loaded and submitted to shard 12 with indexes
+[2025-11-04 17:00:41] [STDERR] 2025-11-04 17:00:41,669 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-8beaaa52-6711-4da8-96f4-8ec76691e463 from inline
+[2025-11-04 17:00:41] [STDERR] 2025-11-04 17:00:41,671 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:00:41] [STDERR]   "name": "test-workflow",
+[2025-11-04 17:00:41] [STDERR]   "tasks": [
+[2025-11-04 17:00:41] [STDERR]     {
+[2025-11-04 17:00:41] [STDERR]       "name": "hello",
+[2025-11-04 17:00:41] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:41] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:41] [STDERR]       "params": {
+[2025-11-04 17:00:41] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 17:00:41] [STDERR]       }
+[2025-11-04 17:00:41] [STDERR]     }
+[2025-11-04 17:00:41] [STDERR]   ],
+[2025-11-04 17:00:41] [STDERR]   "workflow_id": "workflow-8beaaa52-6711-4da8-96f4-8ec76691e463"
+[2025-11-04 17:00:41] [STDERR] }
+[2025-11-04 17:00:41] [STDERR] 2025-11-04 17:00:41,671 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:00:41] [STDERR]   "id": "workflow-8beaaa52-6711-4da8-96f4-8ec76691e463",
+[2025-11-04 17:00:41] [STDERR]   "name": "test-workflow",
+[2025-11-04 17:00:41] [STDERR]   "description": "",
+[2025-11-04 17:00:41] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:00:41] [STDERR]   "created_at": "2025-11-04T16:00:41.671605",
+[2025-11-04 17:00:41] [STDERR]   "tasks": [
+[2025-11-04 17:00:41] [STDERR]     {
+[2025-11-04 17:00:41] [STDERR]       "id": "64c68c4f-47b0-4d6b-a5b7-4bc153fc95c6",
+[2025-11-04 17:00:41] [STDERR]       "workflow_id": "workflow-8beaaa52-6711-4da8-96f4-8ec76691e463",
+[2025-11-04 17:00:41] [STDERR]       "name": "hello",
+[2025-11-04 17:00:41] [STDERR]       "description": "",
+[2025-11-04 17:00:41] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:41] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:41] [STDERR]       "params": {
+[2025-11-04 17:00:41] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 17:00:41] [STDERR]       },
+[2025-11-04 17:00:41] [STDERR]       "dependencies": [],
+[2025-11-04 17:00:41] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:41] [STDERR]       "retry": {
+[2025-11-04 17:00:41] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:41] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:41] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:41] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:41] [STDERR]         "jitter": true,
+[2025-11-04 17:00:41] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:41] [STDERR]       }
+[2025-11-04 17:00:41] [STDERR]     }
+[2025-11-04 17:00:41] [STDERR]   ]
+[2025-11-04 17:00:41] [STDERR] }
+[2025-11-04 17:00:41] [STDERR] 2025-11-04 17:00:41,675 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-8beaaa52-6711-4da8-96f4-8ec76691e463 loaded and submitted to shard 6 with indexes
+[2025-11-04 17:00:42] [STDERR] 2025-11-04 17:00:42,997 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-a36214ed-5e7f-4dd5-8723-fbac577ab01f from inline
+[2025-11-04 17:00:42] [STDERR] 2025-11-04 17:00:42,998 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:00:42] [STDERR]   "name": "test-workflow",
+[2025-11-04 17:00:42] [STDERR]   "tasks": [
+[2025-11-04 17:00:42] [STDERR]     {
+[2025-11-04 17:00:42] [STDERR]       "name": "hello",
+[2025-11-04 17:00:42] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:42] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:42] [STDERR]       "params": {
+[2025-11-04 17:00:42] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 17:00:42] [STDERR]       }
+[2025-11-04 17:00:42] [STDERR]     }
+[2025-11-04 17:00:42] [STDERR]   ],
+[2025-11-04 17:00:42] [STDERR]   "workflow_id": "workflow-a36214ed-5e7f-4dd5-8723-fbac577ab01f"
+[2025-11-04 17:00:42] [STDERR] }
+[2025-11-04 17:00:42] [STDERR] 2025-11-04 17:00:42,998 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:00:42] [STDERR]   "id": "workflow-a36214ed-5e7f-4dd5-8723-fbac577ab01f",
+[2025-11-04 17:00:42] [STDERR]   "name": "test-workflow",
+[2025-11-04 17:00:42] [STDERR]   "description": "",
+[2025-11-04 17:00:42] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:00:42] [STDERR]   "created_at": "2025-11-04T16:00:42.998671",
+[2025-11-04 17:00:42] [STDERR]   "tasks": [
+[2025-11-04 17:00:42] [STDERR]     {
+[2025-11-04 17:00:42] [STDERR]       "id": "85a9527e-a00b-47b7-8c6b-9cde044a8e2b",
+[2025-11-04 17:00:42] [STDERR]       "workflow_id": "workflow-a36214ed-5e7f-4dd5-8723-fbac577ab01f",
+[2025-11-04 17:00:42] [STDERR]       "name": "hello",
+[2025-11-04 17:00:42] [STDERR]       "description": "",
+[2025-11-04 17:00:42] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:42] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:42] [STDERR]       "params": {
+[2025-11-04 17:00:42] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 17:00:42] [STDERR]       },
+[2025-11-04 17:00:42] [STDERR]       "dependencies": [],
+[2025-11-04 17:00:42] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:42] [STDERR]       "retry": {
+[2025-11-04 17:00:42] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:42] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:42] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:42] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:42] [STDERR]         "jitter": true,
+[2025-11-04 17:00:42] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:42] [STDERR]       }
+[2025-11-04 17:00:42] [STDERR]     }
+[2025-11-04 17:00:42] [STDERR]   ]
+[2025-11-04 17:00:42] [STDERR] }
+[2025-11-04 17:00:43] [STDERR] 2025-11-04 17:00:43,001 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-a36214ed-5e7f-4dd5-8723-fbac577ab01f loaded and submitted to shard 10 with indexes
+[2025-11-04 17:00:49] [STDERR] 2025-11-04 17:00:49,076 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-586e04e3-184e-413e-bf1a-cbec888b9a30 from inline
+[2025-11-04 17:00:49] [STDERR] 2025-11-04 17:00:49,077 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:00:49] [STDERR]   "name": "test-workflow",
+[2025-11-04 17:00:49] [STDERR]   "tasks": [
+[2025-11-04 17:00:49] [STDERR]     {
+[2025-11-04 17:00:49] [STDERR]       "name": "hello",
+[2025-11-04 17:00:49] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:49] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:49] [STDERR]       "params": {
+[2025-11-04 17:00:49] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 17:00:49] [STDERR]       }
+[2025-11-04 17:00:49] [STDERR]     }
+[2025-11-04 17:00:49] [STDERR]   ],
+[2025-11-04 17:00:49] [STDERR]   "workflow_id": "workflow-586e04e3-184e-413e-bf1a-cbec888b9a30"
+[2025-11-04 17:00:49] [STDERR] }
+[2025-11-04 17:00:49] [STDERR] 2025-11-04 17:00:49,078 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:00:49] [STDERR]   "id": "workflow-586e04e3-184e-413e-bf1a-cbec888b9a30",
+[2025-11-04 17:00:49] [STDERR]   "name": "test-workflow",
+[2025-11-04 17:00:49] [STDERR]   "description": "",
+[2025-11-04 17:00:49] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:00:49] [STDERR]   "created_at": "2025-11-04T16:00:49.077966",
+[2025-11-04 17:00:49] [STDERR]   "tasks": [
+[2025-11-04 17:00:49] [STDERR]     {
+[2025-11-04 17:00:49] [STDERR]       "id": "8e9779de-710a-4e35-abb5-4885273f4293",
+[2025-11-04 17:00:49] [STDERR]       "workflow_id": "workflow-586e04e3-184e-413e-bf1a-cbec888b9a30",
+[2025-11-04 17:00:49] [STDERR]       "name": "hello",
+[2025-11-04 17:00:49] [STDERR]       "description": "",
+[2025-11-04 17:00:49] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:00:49] [STDERR]       "method": "python/execute",
+[2025-11-04 17:00:49] [STDERR]       "params": {
+[2025-11-04 17:00:49] [STDERR]         "code": "result = {'message': 'Hello from test!'}"
+[2025-11-04 17:00:49] [STDERR]       },
+[2025-11-04 17:00:49] [STDERR]       "dependencies": [],
+[2025-11-04 17:00:49] [STDERR]       "timeout": 300,
+[2025-11-04 17:00:49] [STDERR]       "retry": {
+[2025-11-04 17:00:49] [STDERR]         "max_retries": 2,
+[2025-11-04 17:00:49] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:00:49] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:00:49] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:00:49] [STDERR]         "jitter": true,
+[2025-11-04 17:00:49] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:00:49] [STDERR]       }
+[2025-11-04 17:00:49] [STDERR]     }
+[2025-11-04 17:00:49] [STDERR]   ]
+[2025-11-04 17:00:49] [STDERR] }
+[2025-11-04 17:00:49] [STDERR] 2025-11-04 17:00:49,081 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-586e04e3-184e-413e-bf1a-cbec888b9a30 loaded and submitted to shard 11 with indexes
+[2025-11-04 17:10:32] [STDERR] 2025-11-04 17:10:32,672 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-773d44d7-54f5-4883-8ada-4d422a4aaf3f from inline
+[2025-11-04 17:10:32] [STDERR] 2025-11-04 17:10:32,675 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:10:32] [STDERR]   "name": "Data Pipeline",
+[2025-11-04 17:10:32] [STDERR]   "tasks": [
+[2025-11-04 17:10:32] [STDERR]     {
+[2025-11-04 17:10:32] [STDERR]       "id": "fetch_data",
+[2025-11-04 17:10:32] [STDERR]       "type": "python",
+[2025-11-04 17:10:32] [STDERR]       "params": {
+[2025-11-04 17:10:32] [STDERR]         "code": "\n# Fetch data\ndata = [1, 2, 3, 4, 5]\nresult = {\"data\": data, \"count\": len(data)}\n"
+[2025-11-04 17:10:32] [STDERR]       }
+[2025-11-04 17:10:32] [STDERR]     },
+[2025-11-04 17:10:32] [STDERR]     {
+[2025-11-04 17:10:32] [STDERR]       "id": "process_data",
+[2025-11-04 17:10:32] [STDERR]       "type": "python",
+[2025-11-04 17:10:32] [STDERR]       "depends_on": [
+[2025-11-04 17:10:32] [STDERR]         "fetch_data"
+[2025-11-04 17:10:32] [STDERR]       ],
+[2025-11-04 17:10:32] [STDERR]       "params": {
+[2025-11-04 17:10:32] [STDERR]         "code": "\n# Access previous task result via inputs\nfetch_result = inputs.get(\"fetch_data\", {})\ndata = fetch_result.get(\"data\", [])\n\n# Process the data\nprocessed = [x * 2 for x in data]\nresult = {\"processed\": processed, \"sum\": sum(processed)}\n"
+[2025-11-04 17:10:32] [STDERR]       }
+[2025-11-04 17:10:32] [STDERR]     },
+[2025-11-04 17:10:32] [STDERR]     {
+[2025-11-04 17:10:32] [STDERR]       "id": "save_results",
+[2025-11-04 17:10:32] [STDERR]       "type": "python",
+[2025-11-04 17:10:32] [STDERR]       "depends_on": [
+[2025-11-04 17:10:32] [STDERR]         "process_data"
+[2025-11-04 17:10:32] [STDERR]       ],
+[2025-11-04 17:10:32] [STDERR]       "params": {
+[2025-11-04 17:10:32] [STDERR]         "code": "\n# Access process_data result\nprocess_result = inputs.get(\"process_data\", {})\nprint(f\"Saving results: {process_result}\")\nresult = {\"status\": \"saved\", \"data\": process_result}\n"
+[2025-11-04 17:10:32] [STDERR]       }
+[2025-11-04 17:10:32] [STDERR]     }
+[2025-11-04 17:10:32] [STDERR]   ],
+[2025-11-04 17:10:32] [STDERR]   "workflow_id": "workflow-773d44d7-54f5-4883-8ada-4d422a4aaf3f"
+[2025-11-04 17:10:32] [STDERR] }
+[2025-11-04 17:10:32] [STDERR] 2025-11-04 17:10:32,675 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:10:32] [STDERR]   "id": "workflow-773d44d7-54f5-4883-8ada-4d422a4aaf3f",
+[2025-11-04 17:10:32] [STDERR]   "name": "Data Pipeline",
+[2025-11-04 17:10:32] [STDERR]   "description": "",
+[2025-11-04 17:10:32] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:10:32] [STDERR]   "created_at": "2025-11-04T16:10:32.675109",
+[2025-11-04 17:10:32] [STDERR]   "tasks": [
+[2025-11-04 17:10:32] [STDERR]     {
+[2025-11-04 17:10:32] [STDERR]       "id": "3b2b63be-9b71-4e1b-a57e-3d178d99e6c6",
+[2025-11-04 17:10:32] [STDERR]       "workflow_id": "workflow-773d44d7-54f5-4883-8ada-4d422a4aaf3f",
+[2025-11-04 17:10:32] [STDERR]       "name": "3b2b63be-9b71-4e1b-a57e-3d178d99e6c6",
+[2025-11-04 17:10:32] [STDERR]       "description": "",
+[2025-11-04 17:10:32] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:10:32] [STDERR]       "method": "python/execute",
+[2025-11-04 17:10:32] [STDERR]       "params": {
+[2025-11-04 17:10:32] [STDERR]         "code": "\n# Fetch data\ndata = [1, 2, 3, 4, 5]\nresult = {\"data\": data, \"count\": len(data)}\n"
+[2025-11-04 17:10:32] [STDERR]       },
+[2025-11-04 17:10:32] [STDERR]       "dependencies": [],
+[2025-11-04 17:10:32] [STDERR]       "timeout": 300,
+[2025-11-04 17:10:32] [STDERR]       "retry": {
+[2025-11-04 17:10:32] [STDERR]         "max_retries": 2,
+[2025-11-04 17:10:32] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:10:32] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:10:32] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:10:32] [STDERR]         "jitter": true,
+[2025-11-04 17:10:32] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:10:32] [STDERR]       }
+[2025-11-04 17:10:32] [STDERR]     },
+[2025-11-04 17:10:32] [STDERR]     {
+[2025-11-04 17:10:32] [STDERR]       "id": "840f8f19-2531-462f-924d-a1dbd5431f0b",
+[2025-11-04 17:10:32] [STDERR]       "workflow_id": "workflow-773d44d7-54f5-4883-8ada-4d422a4aaf3f",
+[2025-11-04 17:10:32] [STDERR]       "name": "840f8f19-2531-462f-924d-a1dbd5431f0b",
+[2025-11-04 17:10:32] [STDERR]       "description": "",
+[2025-11-04 17:10:32] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:10:32] [STDERR]       "method": "python/execute",
+[2025-11-04 17:10:32] [STDERR]       "params": {
+[2025-11-04 17:10:32] [STDERR]         "code": "\n# Access previous task result via inputs\nfetch_result = inputs.get(\"fetch_data\", {})\ndata = fetch_result.get(\"data\", [])\n\n# Process the data\nprocessed = [x * 2 for x in data]\nresult = {\"processed\": processed, \"sum\": sum(processed)}\n"
+[2025-11-04 17:10:32] [STDERR]       },
+[2025-11-04 17:10:32] [STDERR]       "dependencies": [
+[2025-11-04 17:10:32] [STDERR]         "3b2b63be-9b71-4e1b-a57e-3d178d99e6c6"
+[2025-11-04 17:10:32] [STDERR]       ],
+[2025-11-04 17:10:32] [STDERR]       "timeout": 300,
+[2025-11-04 17:10:32] [STDERR]       "retry": {
+[2025-11-04 17:10:32] [STDERR]         "max_retries": 2,
+[2025-11-04 17:10:32] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:10:32] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:10:32] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:10:32] [STDERR]         "jitter": true,
+[2025-11-04 17:10:32] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:10:32] [STDERR]       }
+[2025-11-04 17:10:32] [STDERR]     },
+[2025-11-04 17:10:32] [STDERR]     {
+[2025-11-04 17:10:32] [STDERR]       "id": "5c7f5963-a579-4ef9-9374-7f4149e8b15c",
+[2025-11-04 17:10:32] [STDERR]       "workflow_id": "workflow-773d44d7-54f5-4883-8ada-4d422a4aaf3f",
+[2025-11-04 17:10:32] [STDERR]       "name": "5c7f5963-a579-4ef9-9374-7f4149e8b15c",
+[2025-11-04 17:10:32] [STDERR]       "description": "",
+[2025-11-04 17:10:32] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:10:32] [STDERR]       "method": "python/execute",
+[2025-11-04 17:10:32] [STDERR]       "params": {
+[2025-11-04 17:10:32] [STDERR]         "code": "\n# Access process_data result\nprocess_result = inputs.get(\"process_data\", {})\nprint(f\"Saving results: {process_result}\")\nresult = {\"status\": \"saved\", \"data\": process_result}\n"
+[2025-11-04 17:10:32] [STDERR]       },
+[2025-11-04 17:10:32] [STDERR]       "dependencies": [
+[2025-11-04 17:10:32] [STDERR]         "840f8f19-2531-462f-924d-a1dbd5431f0b"
+[2025-11-04 17:10:32] [STDERR]       ],
+[2025-11-04 17:10:32] [STDERR]       "timeout": 300,
+[2025-11-04 17:10:32] [STDERR]       "retry": {
+[2025-11-04 17:10:32] [STDERR]         "max_retries": 2,
+[2025-11-04 17:10:32] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:10:32] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:10:32] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:10:32] [STDERR]         "jitter": true,
+[2025-11-04 17:10:32] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:10:32] [STDERR]       }
+[2025-11-04 17:10:32] [STDERR]     }
+[2025-11-04 17:10:32] [STDERR]   ]
+[2025-11-04 17:10:32] [STDERR] }
+[2025-11-04 17:10:32] [STDERR] 2025-11-04 17:10:32,679 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-773d44d7-54f5-4883-8ada-4d422a4aaf3f loaded and submitted to shard 4 with indexes
+[2025-11-04 17:10:36] [STDERR] 2025-11-04 17:10:36,917 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-c336e51f-2731-45f9-9026-a56465dddffb from inline
+[2025-11-04 17:10:36] [STDERR] 2025-11-04 17:10:36,919 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:10:36] [STDERR]   "name": "ETL Pipeline",
+[2025-11-04 17:10:36] [STDERR]   "tasks": [
+[2025-11-04 17:10:36] [STDERR]     {
+[2025-11-04 17:10:36] [STDERR]       "id": "extract",
+[2025-11-04 17:10:36] [STDERR]       "type": "python",
+[2025-11-04 17:10:36] [STDERR]       "params": {
+[2025-11-04 17:10:36] [STDERR]         "code": "\nimport json\n# Simulate data extraction\ndata = [\n    {\"id\": 1, \"value\": 100},\n    {\"id\": 2, \"value\": 200},\n    {\"id\": 3, \"value\": 300}\n]\nresult = {\"records\": data, \"count\": len(data)}\n"
+[2025-11-04 17:10:36] [STDERR]       }
+[2025-11-04 17:10:36] [STDERR]     },
+[2025-11-04 17:10:36] [STDERR]     {
+[2025-11-04 17:10:36] [STDERR]       "id": "transform",
+[2025-11-04 17:10:36] [STDERR]       "type": "python",
+[2025-11-04 17:10:36] [STDERR]       "depends_on": [
+[2025-11-04 17:10:36] [STDERR]         "extract"
+[2025-11-04 17:10:36] [STDERR]       ],
+[2025-11-04 17:10:36] [STDERR]       "params": {
+[2025-11-04 17:10:36] [STDERR]         "code": "\n# Get extracted data\nextract_result = inputs.get(\"extract\", {})\nrecords = extract_result.get(\"records\", [])\n\n# Transform: double all values\ntransformed = [\n    {**record, \"value\": record[\"value\"] * 2}\n    for record in records\n]\nresult = {\"transformed\": transformed}\n"
+[2025-11-04 17:10:36] [STDERR]       }
+[2025-11-04 17:10:36] [STDERR]     },
+[2025-11-04 17:10:36] [STDERR]     {
+[2025-11-04 17:10:36] [STDERR]       "id": "load",
+[2025-11-04 17:10:36] [STDERR]       "type": "python",
+[2025-11-04 17:10:36] [STDERR]       "depends_on": [
+[2025-11-04 17:10:36] [STDERR]         "transform"
+[2025-11-04 17:10:36] [STDERR]       ],
+[2025-11-04 17:10:36] [STDERR]       "params": {
+[2025-11-04 17:10:36] [STDERR]         "code": "\n# Get transformed data\ntransform_result = inputs.get(\"transform\", {})\ndata = transform_result.get(\"transformed\", [])\n\n# Simulate loading to database\nprint(f\"Loading {len(data)} records...\")\nfor record in data:\n    print(f\"  Record {record['id']}: {record['value']}\")\n\nresult = {\"loaded_count\": len(data), \"status\": \"success\"}\n"
+[2025-11-04 17:10:36] [STDERR]       }
+[2025-11-04 17:10:36] [STDERR]     }
+[2025-11-04 17:10:36] [STDERR]   ],
+[2025-11-04 17:10:36] [STDERR]   "workflow_id": "workflow-c336e51f-2731-45f9-9026-a56465dddffb"
+[2025-11-04 17:10:36] [STDERR] }
+[2025-11-04 17:10:36] [STDERR] 2025-11-04 17:10:36,919 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:10:36] [STDERR]   "id": "workflow-c336e51f-2731-45f9-9026-a56465dddffb",
+[2025-11-04 17:10:36] [STDERR]   "name": "ETL Pipeline",
+[2025-11-04 17:10:36] [STDERR]   "description": "",
+[2025-11-04 17:10:36] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:10:36] [STDERR]   "created_at": "2025-11-04T16:10:36.919281",
+[2025-11-04 17:10:36] [STDERR]   "tasks": [
+[2025-11-04 17:10:36] [STDERR]     {
+[2025-11-04 17:10:36] [STDERR]       "id": "5b1abab4-806d-4a07-a0ff-65deb08f1379",
+[2025-11-04 17:10:36] [STDERR]       "workflow_id": "workflow-c336e51f-2731-45f9-9026-a56465dddffb",
+[2025-11-04 17:10:36] [STDERR]       "name": "5b1abab4-806d-4a07-a0ff-65deb08f1379",
+[2025-11-04 17:10:36] [STDERR]       "description": "",
+[2025-11-04 17:10:36] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:10:36] [STDERR]       "method": "python/execute",
+[2025-11-04 17:10:36] [STDERR]       "params": {
+[2025-11-04 17:10:36] [STDERR]         "code": "\nimport json\n# Simulate data extraction\ndata = [\n    {\"id\": 1, \"value\": 100},\n    {\"id\": 2, \"value\": 200},\n    {\"id\": 3, \"value\": 300}\n]\nresult = {\"records\": data, \"count\": len(data)}\n"
+[2025-11-04 17:10:36] [STDERR]       },
+[2025-11-04 17:10:36] [STDERR]       "dependencies": [],
+[2025-11-04 17:10:36] [STDERR]       "timeout": 300,
+[2025-11-04 17:10:36] [STDERR]       "retry": {
+[2025-11-04 17:10:36] [STDERR]         "max_retries": 2,
+[2025-11-04 17:10:36] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:10:36] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:10:36] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:10:36] [STDERR]         "jitter": true,
+[2025-11-04 17:10:36] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:10:36] [STDERR]       }
+[2025-11-04 17:10:36] [STDERR]     },
+[2025-11-04 17:10:36] [STDERR]     {
+[2025-11-04 17:10:36] [STDERR]       "id": "98f622b7-83e6-48fb-8b18-a71f65d47b75",
+[2025-11-04 17:10:36] [STDERR]       "workflow_id": "workflow-c336e51f-2731-45f9-9026-a56465dddffb",
+[2025-11-04 17:10:36] [STDERR]       "name": "98f622b7-83e6-48fb-8b18-a71f65d47b75",
+[2025-11-04 17:10:36] [STDERR]       "description": "",
+[2025-11-04 17:10:36] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:10:36] [STDERR]       "method": "python/execute",
+[2025-11-04 17:10:36] [STDERR]       "params": {
+[2025-11-04 17:10:36] [STDERR]         "code": "\n# Get extracted data\nextract_result = inputs.get(\"extract\", {})\nrecords = extract_result.get(\"records\", [])\n\n# Transform: double all values\ntransformed = [\n    {**record, \"value\": record[\"value\"] * 2}\n    for record in records\n]\nresult = {\"transformed\": transformed}\n"
+[2025-11-04 17:10:36] [STDERR]       },
+[2025-11-04 17:10:36] [STDERR]       "dependencies": [
+[2025-11-04 17:10:36] [STDERR]         "5b1abab4-806d-4a07-a0ff-65deb08f1379"
+[2025-11-04 17:10:36] [STDERR]       ],
+[2025-11-04 17:10:36] [STDERR]       "timeout": 300,
+[2025-11-04 17:10:36] [STDERR]       "retry": {
+[2025-11-04 17:10:36] [STDERR]         "max_retries": 2,
+[2025-11-04 17:10:36] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:10:36] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:10:36] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:10:36] [STDERR]         "jitter": true,
+[2025-11-04 17:10:36] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:10:36] [STDERR]       }
+[2025-11-04 17:10:36] [STDERR]     },
+[2025-11-04 17:10:36] [STDERR]     {
+[2025-11-04 17:10:36] [STDERR]       "id": "13351f7e-9046-4121-bb80-6b2517c2e229",
+[2025-11-04 17:10:36] [STDERR]       "workflow_id": "workflow-c336e51f-2731-45f9-9026-a56465dddffb",
+[2025-11-04 17:10:36] [STDERR]       "name": "13351f7e-9046-4121-bb80-6b2517c2e229",
+[2025-11-04 17:10:36] [STDERR]       "description": "",
+[2025-11-04 17:10:36] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:10:36] [STDERR]       "method": "python/execute",
+[2025-11-04 17:10:36] [STDERR]       "params": {
+[2025-11-04 17:10:36] [STDERR]         "code": "\n# Get transformed data\ntransform_result = inputs.get(\"transform\", {})\ndata = transform_result.get(\"transformed\", [])\n\n# Simulate loading to database\nprint(f\"Loading {len(data)} records...\")\nfor record in data:\n    print(f\"  Record {record['id']}: {record['value']}\")\n\nresult = {\"loaded_count\": len(data), \"status\": \"success\"}\n"
+[2025-11-04 17:10:36] [STDERR]       },
+[2025-11-04 17:10:36] [STDERR]       "dependencies": [
+[2025-11-04 17:10:36] [STDERR]         "98f622b7-83e6-48fb-8b18-a71f65d47b75"
+[2025-11-04 17:10:36] [STDERR]       ],
+[2025-11-04 17:10:36] [STDERR]       "timeout": 300,
+[2025-11-04 17:10:36] [STDERR]       "retry": {
+[2025-11-04 17:10:36] [STDERR]         "max_retries": 2,
+[2025-11-04 17:10:36] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:10:36] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:10:36] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:10:36] [STDERR]         "jitter": true,
+[2025-11-04 17:10:36] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:10:36] [STDERR]       }
+[2025-11-04 17:10:36] [STDERR]     }
+[2025-11-04 17:10:36] [STDERR]   ]
+[2025-11-04 17:10:36] [STDERR] }
+[2025-11-04 17:10:36] [STDERR] 2025-11-04 17:10:36,922 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-c336e51f-2731-45f9-9026-a56465dddffb loaded and submitted to shard 9 with indexes
+[2025-11-04 17:10:39] [STDERR] 2025-11-04 17:10:39,082 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-628f7703-918e-4182-bf53-476ba4ed89de from inline
+[2025-11-04 17:10:39] [STDERR] 2025-11-04 17:10:39,084 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:10:39] [STDERR]   "name": "Batch Workflow 2",
+[2025-11-04 17:10:39] [STDERR]   "tasks": [
+[2025-11-04 17:10:39] [STDERR]     {
+[2025-11-04 17:10:39] [STDERR]       "id": "calc",
+[2025-11-04 17:10:39] [STDERR]       "type": "python",
+[2025-11-04 17:10:39] [STDERR]       "params": {
+[2025-11-04 17:10:39] [STDERR]         "code": "result = {\"index\": 1, \"value\": 10}"
+[2025-11-04 17:10:39] [STDERR]       }
+[2025-11-04 17:10:39] [STDERR]     }
+[2025-11-04 17:10:39] [STDERR]   ],
+[2025-11-04 17:10:39] [STDERR]   "workflow_id": "workflow-628f7703-918e-4182-bf53-476ba4ed89de"
+[2025-11-04 17:10:39] [STDERR] }
+[2025-11-04 17:10:39] [STDERR] 2025-11-04 17:10:39,084 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:10:39] [STDERR]   "id": "workflow-628f7703-918e-4182-bf53-476ba4ed89de",
+[2025-11-04 17:10:39] [STDERR]   "name": "Batch Workflow 2",
+[2025-11-04 17:10:39] [STDERR]   "description": "",
+[2025-11-04 17:10:39] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:10:39] [STDERR]   "created_at": "2025-11-04T16:10:39.084379",
+[2025-11-04 17:10:39] [STDERR]   "tasks": [
+[2025-11-04 17:10:39] [STDERR]     {
+[2025-11-04 17:10:39] [STDERR]       "id": "2ac25357-aa8d-4568-a107-c5f09fe88484",
+[2025-11-04 17:10:39] [STDERR]       "workflow_id": "workflow-628f7703-918e-4182-bf53-476ba4ed89de",
+[2025-11-04 17:10:39] [STDERR]       "name": "2ac25357-aa8d-4568-a107-c5f09fe88484",
+[2025-11-04 17:10:39] [STDERR]       "description": "",
+[2025-11-04 17:10:39] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:10:39] [STDERR]       "method": "python/execute",
+[2025-11-04 17:10:39] [STDERR]       "params": {
+[2025-11-04 17:10:39] [STDERR]         "code": "result = {\"index\": 1, \"value\": 10}"
+[2025-11-04 17:10:39] [STDERR]       },
+[2025-11-04 17:10:39] [STDERR]       "dependencies": [],
+[2025-11-04 17:10:39] [STDERR]       "timeout": 300,
+[2025-11-04 17:10:39] [STDERR]       "retry": {
+[2025-11-04 17:10:39] [STDERR]         "max_retries": 2,
+[2025-11-04 17:10:39] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:10:39] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:10:39] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:10:39] [STDERR]         "jitter": true,
+[2025-11-04 17:10:39] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:10:39] [STDERR]       }
+[2025-11-04 17:10:39] [STDERR]     }
+[2025-11-04 17:10:39] [STDERR]   ]
+[2025-11-04 17:10:39] [STDERR] }
+[2025-11-04 17:10:39] [STDERR] 2025-11-04 17:10:39,091 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-628f7703-918e-4182-bf53-476ba4ed89de loaded and submitted to shard 0 with indexes
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,848 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-0b265b38-d1fb-474a-8436-94535983951b from inline
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,849 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:17:13] [STDERR]   "name": "Batch Workflow 5",
+[2025-11-04 17:17:13] [STDERR]   "tasks": [
+[2025-11-04 17:17:13] [STDERR]     {
+[2025-11-04 17:17:13] [STDERR]       "id": "calculate",
+[2025-11-04 17:17:13] [STDERR]       "type": "python",
+[2025-11-04 17:17:13] [STDERR]       "params": {
+[2025-11-04 17:17:13] [STDERR]         "code": "\n# Workflow 5\nimport math\nresult = {\n    \"workflow_number\": 5,\n    \"value\": 40,\n    \"squared\": 16,\n    \"sqrt\": math.sqrt(5)\n}\n"
+[2025-11-04 17:17:13] [STDERR]       }
+[2025-11-04 17:17:13] [STDERR]     }
+[2025-11-04 17:17:13] [STDERR]   ],
+[2025-11-04 17:17:13] [STDERR]   "workflow_id": "workflow-0b265b38-d1fb-474a-8436-94535983951b"
+[2025-11-04 17:17:13] [STDERR] }
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,850 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:17:13] [STDERR]   "id": "workflow-0b265b38-d1fb-474a-8436-94535983951b",
+[2025-11-04 17:17:13] [STDERR]   "name": "Batch Workflow 5",
+[2025-11-04 17:17:13] [STDERR]   "description": "",
+[2025-11-04 17:17:13] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:17:13] [STDERR]   "created_at": "2025-11-04T16:17:13.849951",
+[2025-11-04 17:17:13] [STDERR]   "tasks": [
+[2025-11-04 17:17:13] [STDERR]     {
+[2025-11-04 17:17:13] [STDERR]       "id": "3f23fff5-4d9e-4f79-ab06-875ab0cab5bc",
+[2025-11-04 17:17:13] [STDERR]       "workflow_id": "workflow-0b265b38-d1fb-474a-8436-94535983951b",
+[2025-11-04 17:17:13] [STDERR]       "name": "3f23fff5-4d9e-4f79-ab06-875ab0cab5bc",
+[2025-11-04 17:17:13] [STDERR]       "description": "",
+[2025-11-04 17:17:13] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:17:13] [STDERR]       "method": "python/execute",
+[2025-11-04 17:17:13] [STDERR]       "params": {
+[2025-11-04 17:17:13] [STDERR]         "code": "\n# Workflow 5\nimport math\nresult = {\n    \"workflow_number\": 5,\n    \"value\": 40,\n    \"squared\": 16,\n    \"sqrt\": math.sqrt(5)\n}\n"
+[2025-11-04 17:17:13] [STDERR]       },
+[2025-11-04 17:17:13] [STDERR]       "dependencies": [],
+[2025-11-04 17:17:13] [STDERR]       "timeout": 300,
+[2025-11-04 17:17:13] [STDERR]       "retry": {
+[2025-11-04 17:17:13] [STDERR]         "max_retries": 2,
+[2025-11-04 17:17:13] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:17:13] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:17:13] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:17:13] [STDERR]         "jitter": true,
+[2025-11-04 17:17:13] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:17:13] [STDERR]       }
+[2025-11-04 17:17:13] [STDERR]     }
+[2025-11-04 17:17:13] [STDERR]   ]
+[2025-11-04 17:17:13] [STDERR] }
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,855 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-0b265b38-d1fb-474a-8436-94535983951b loaded and submitted to shard 4 with indexes
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,875 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-adbb53f1-c242-4926-9a07-b4434f54e10c from inline
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,882 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:17:13] [STDERR]   "name": "Batch Workflow 23",
+[2025-11-04 17:17:13] [STDERR]   "tasks": [
+[2025-11-04 17:17:13] [STDERR]     {
+[2025-11-04 17:17:13] [STDERR]       "id": "calculate",
+[2025-11-04 17:17:13] [STDERR]       "type": "python",
+[2025-11-04 17:17:13] [STDERR]       "params": {
+[2025-11-04 17:17:13] [STDERR]         "code": "\n# Workflow 23\nimport math\nresult = {\n    \"workflow_number\": 23,\n    \"value\": 220,\n    \"squared\": 484,\n    \"sqrt\": math.sqrt(23)\n}\n"
+[2025-11-04 17:17:13] [STDERR]       }
+[2025-11-04 17:17:13] [STDERR]     }
+[2025-11-04 17:17:13] [STDERR]   ],
+[2025-11-04 17:17:13] [STDERR]   "workflow_id": "workflow-adbb53f1-c242-4926-9a07-b4434f54e10c"
+[2025-11-04 17:17:13] [STDERR] }
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,882 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:17:13] [STDERR]   "id": "workflow-adbb53f1-c242-4926-9a07-b4434f54e10c",
+[2025-11-04 17:17:13] [STDERR]   "name": "Batch Workflow 23",
+[2025-11-04 17:17:13] [STDERR]   "description": "",
+[2025-11-04 17:17:13] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:17:13] [STDERR]   "created_at": "2025-11-04T16:17:13.882060",
+[2025-11-04 17:17:13] [STDERR]   "tasks": [
+[2025-11-04 17:17:13] [STDERR]     {
+[2025-11-04 17:17:13] [STDERR]       "id": "06b8e3e3-d422-41c5-8e3d-20ed2a6473c9",
+[2025-11-04 17:17:13] [STDERR]       "workflow_id": "workflow-adbb53f1-c242-4926-9a07-b4434f54e10c",
+[2025-11-04 17:17:13] [STDERR]       "name": "06b8e3e3-d422-41c5-8e3d-20ed2a6473c9",
+[2025-11-04 17:17:13] [STDERR]       "description": "",
+[2025-11-04 17:17:13] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:17:13] [STDERR]       "method": "python/execute",
+[2025-11-04 17:17:13] [STDERR]       "params": {
+[2025-11-04 17:17:13] [STDERR]         "code": "\n# Workflow 23\nimport math\nresult = {\n    \"workflow_number\": 23,\n    \"value\": 220,\n    \"squared\": 484,\n    \"sqrt\": math.sqrt(23)\n}\n"
+[2025-11-04 17:17:13] [STDERR]       },
+[2025-11-04 17:17:13] [STDERR]       "dependencies": [],
+[2025-11-04 17:17:13] [STDERR]       "timeout": 300,
+[2025-11-04 17:17:13] [STDERR]       "retry": {
+[2025-11-04 17:17:13] [STDERR]         "max_retries": 2,
+[2025-11-04 17:17:13] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:17:13] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:17:13] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:17:13] [STDERR]         "jitter": true,
+[2025-11-04 17:17:13] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:17:13] [STDERR]       }
+[2025-11-04 17:17:13] [STDERR]     }
+[2025-11-04 17:17:13] [STDERR]   ]
+[2025-11-04 17:17:13] [STDERR] }
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,898 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-adbb53f1-c242-4926-9a07-b4434f54e10c loaded and submitted to shard 7 with indexes
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,927 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-276ea1fc-2906-4a45-9fba-ba278642d3b0 from inline
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,927 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-aaaaaba9-5a78-4c16-ae22-79b6dc061769 from inline
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,933 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:17:13] [STDERR]   "name": "Batch Workflow 49",
+[2025-11-04 17:17:13] [STDERR]   "tasks": [
+[2025-11-04 17:17:13] [STDERR]     {
+[2025-11-04 17:17:13] [STDERR]       "id": "calculate",
+[2025-11-04 17:17:13] [STDERR]       "type": "python",
+[2025-11-04 17:17:13] [STDERR]       "params": {
+[2025-11-04 17:17:13] [STDERR]         "code": "\n# Workflow 49\nimport math\nresult = {\n    \"workflow_number\": 49,\n    \"value\": 480,\n    \"squared\": 2304,\n    \"sqrt\": math.sqrt(49)\n}\n"
+[2025-11-04 17:17:13] [STDERR]       }
+[2025-11-04 17:17:13] [STDERR]     }
+[2025-11-04 17:17:13] [STDERR]   ],
+[2025-11-04 17:17:13] [STDERR]   "workflow_id": "workflow-276ea1fc-2906-4a45-9fba-ba278642d3b0"
+[2025-11-04 17:17:13] [STDERR] }
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,933 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:17:13] [STDERR]   "id": "workflow-276ea1fc-2906-4a45-9fba-ba278642d3b0",
+[2025-11-04 17:17:13] [STDERR]   "name": "Batch Workflow 49",
+[2025-11-04 17:17:13] [STDERR]   "description": "",
+[2025-11-04 17:17:13] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:17:13] [STDERR]   "created_at": "2025-11-04T16:17:13.933254",
+[2025-11-04 17:17:13] [STDERR]   "tasks": [
+[2025-11-04 17:17:13] [STDERR]     {
+[2025-11-04 17:17:13] [STDERR]       "id": "39189dd6-423d-4184-9f79-f36a4db836e3",
+[2025-11-04 17:17:13] [STDERR]       "workflow_id": "workflow-276ea1fc-2906-4a45-9fba-ba278642d3b0",
+[2025-11-04 17:17:13] [STDERR]       "name": "39189dd6-423d-4184-9f79-f36a4db836e3",
+[2025-11-04 17:17:13] [STDERR]       "description": "",
+[2025-11-04 17:17:13] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:17:13] [STDERR]       "method": "python/execute",
+[2025-11-04 17:17:13] [STDERR]       "params": {
+[2025-11-04 17:17:13] [STDERR]         "code": "\n# Workflow 49\nimport math\nresult = {\n    \"workflow_number\": 49,\n    \"value\": 480,\n    \"squared\": 2304,\n    \"sqrt\": math.sqrt(49)\n}\n"
+[2025-11-04 17:17:13] [STDERR]       },
+[2025-11-04 17:17:13] [STDERR]       "dependencies": [],
+[2025-11-04 17:17:13] [STDERR]       "timeout": 300,
+[2025-11-04 17:17:13] [STDERR]       "retry": {
+[2025-11-04 17:17:13] [STDERR]         "max_retries": 2,
+[2025-11-04 17:17:13] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:17:13] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:17:13] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:17:13] [STDERR]         "jitter": true,
+[2025-11-04 17:17:13] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:17:13] [STDERR]       }
+[2025-11-04 17:17:13] [STDERR]     }
+[2025-11-04 17:17:13] [STDERR]   ]
+[2025-11-04 17:17:13] [STDERR] }
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,933 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:17:13] [STDERR]   "name": "Batch Workflow 47",
+[2025-11-04 17:17:13] [STDERR]   "tasks": [
+[2025-11-04 17:17:13] [STDERR]     {
+[2025-11-04 17:17:13] [STDERR]       "id": "calculate",
+[2025-11-04 17:17:13] [STDERR]       "type": "python",
+[2025-11-04 17:17:13] [STDERR]       "params": {
+[2025-11-04 17:17:13] [STDERR]         "code": "\n# Workflow 47\nimport math\nresult = {\n    \"workflow_number\": 47,\n    \"value\": 460,\n    \"squared\": 2116,\n    \"sqrt\": math.sqrt(47)\n}\n"
+[2025-11-04 17:17:13] [STDERR]       }
+[2025-11-04 17:17:13] [STDERR]     }
+[2025-11-04 17:17:13] [STDERR]   ],
+[2025-11-04 17:17:13] [STDERR]   "workflow_id": "workflow-aaaaaba9-5a78-4c16-ae22-79b6dc061769"
+[2025-11-04 17:17:13] [STDERR] }
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,933 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:17:13] [STDERR]   "id": "workflow-aaaaaba9-5a78-4c16-ae22-79b6dc061769",
+[2025-11-04 17:17:13] [STDERR]   "name": "Batch Workflow 47",
+[2025-11-04 17:17:13] [STDERR]   "description": "",
+[2025-11-04 17:17:13] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:17:13] [STDERR]   "created_at": "2025-11-04T16:17:13.933677",
+[2025-11-04 17:17:13] [STDERR]   "tasks": [
+[2025-11-04 17:17:13] [STDERR]     {
+[2025-11-04 17:17:13] [STDERR]       "id": "7fca17b0-31e5-4d0d-bef3-52eefc0ea027",
+[2025-11-04 17:17:13] [STDERR]       "workflow_id": "workflow-aaaaaba9-5a78-4c16-ae22-79b6dc061769",
+[2025-11-04 17:17:13] [STDERR]       "name": "7fca17b0-31e5-4d0d-bef3-52eefc0ea027",
+[2025-11-04 17:17:13] [STDERR]       "description": "",
+[2025-11-04 17:17:13] [STDERR]       "protocol": "python/v1",
+[2025-11-04 17:17:13] [STDERR]       "method": "python/execute",
+[2025-11-04 17:17:13] [STDERR]       "params": {
+[2025-11-04 17:17:13] [STDERR]         "code": "\n# Workflow 47\nimport math\nresult = {\n    \"workflow_number\": 47,\n    \"value\": 460,\n    \"squared\": 2116,\n    \"sqrt\": math.sqrt(47)\n}\n"
+[2025-11-04 17:17:13] [STDERR]       },
+[2025-11-04 17:17:13] [STDERR]       "dependencies": [],
+[2025-11-04 17:17:13] [STDERR]       "timeout": 300,
+[2025-11-04 17:17:13] [STDERR]       "retry": {
+[2025-11-04 17:17:13] [STDERR]         "max_retries": 2,
+[2025-11-04 17:17:13] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:17:13] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:17:13] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:17:13] [STDERR]         "jitter": true,
+[2025-11-04 17:17:13] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:17:13] [STDERR]       }
+[2025-11-04 17:17:13] [STDERR]     }
+[2025-11-04 17:17:13] [STDERR]   ]
+[2025-11-04 17:17:13] [STDERR] }
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,949 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-aaaaaba9-5a78-4c16-ae22-79b6dc061769 loaded and submitted to shard 10 with indexes
+[2025-11-04 17:17:13] [STDERR] 2025-11-04 17:17:13,949 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-276ea1fc-2906-4a45-9fba-ba278642d3b0 loaded and submitted to shard 4 with indexes
+[2025-11-04 17:27:11] [STDERR] 2025-11-04 17:27:11,871 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-92d2cbbc-e393-40f5-9275-cac9ae22d925 from inline
+[2025-11-04 17:27:11] [STDERR] 2025-11-04 17:27:11,873 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:27:11] [STDERR]   "name": "ollama-haiku",
+[2025-11-04 17:27:11] [STDERR]   "tasks": [
+[2025-11-04 17:27:11] [STDERR]     {
+[2025-11-04 17:27:11] [STDERR]       "id": "generate-haiku",
+[2025-11-04 17:27:11] [STDERR]       "type": "ollama",
+[2025-11-04 17:27:11] [STDERR]       "params": {
+[2025-11-04 17:27:11] [STDERR]         "model": "llama3.2:latest",
+[2025-11-04 17:27:11] [STDERR]         "prompt": "Write a haiku about distributed systems",
+[2025-11-04 17:27:11] [STDERR]         "options": {
+[2025-11-04 17:27:11] [STDERR]           "temperature": 0.7,
+[2025-11-04 17:27:11] [STDERR]           "max_tokens": 100
+[2025-11-04 17:27:11] [STDERR]         }
+[2025-11-04 17:27:11] [STDERR]       }
+[2025-11-04 17:27:11] [STDERR]     }
+[2025-11-04 17:27:11] [STDERR]   ],
+[2025-11-04 17:27:11] [STDERR]   "workflow_id": "workflow-92d2cbbc-e393-40f5-9275-cac9ae22d925"
+[2025-11-04 17:27:11] [STDERR] }
+[2025-11-04 17:27:11] [STDERR] 2025-11-04 17:27:11,873 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:27:11] [STDERR]   "id": "workflow-92d2cbbc-e393-40f5-9275-cac9ae22d925",
+[2025-11-04 17:27:11] [STDERR]   "name": "ollama-haiku",
+[2025-11-04 17:27:11] [STDERR]   "description": "",
+[2025-11-04 17:27:11] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:27:11] [STDERR]   "created_at": "2025-11-04T16:27:11.873480",
+[2025-11-04 17:27:11] [STDERR]   "tasks": [
+[2025-11-04 17:27:11] [STDERR]     {
+[2025-11-04 17:27:11] [STDERR]       "id": "72240ffb-d0ba-4fb8-ac97-6993fcc12182",
+[2025-11-04 17:27:11] [STDERR]       "workflow_id": "workflow-92d2cbbc-e393-40f5-9275-cac9ae22d925",
+[2025-11-04 17:27:11] [STDERR]       "name": "72240ffb-d0ba-4fb8-ac97-6993fcc12182",
+[2025-11-04 17:27:11] [STDERR]       "description": "",
+[2025-11-04 17:27:11] [STDERR]       "protocol": "ollama/v1",
+[2025-11-04 17:27:11] [STDERR]       "method": "ollama/generate",
+[2025-11-04 17:27:11] [STDERR]       "params": {
+[2025-11-04 17:27:11] [STDERR]         "model": "llama3.2:latest",
+[2025-11-04 17:27:11] [STDERR]         "prompt": "Write a haiku about distributed systems",
+[2025-11-04 17:27:11] [STDERR]         "options": {
+[2025-11-04 17:27:11] [STDERR]           "temperature": 0.7,
+[2025-11-04 17:27:11] [STDERR]           "max_tokens": 100
+[2025-11-04 17:27:11] [STDERR]         }
+[2025-11-04 17:27:11] [STDERR]       },
+[2025-11-04 17:27:11] [STDERR]       "dependencies": [],
+[2025-11-04 17:27:11] [STDERR]       "timeout": 300,
+[2025-11-04 17:27:11] [STDERR]       "retry": {
+[2025-11-04 17:27:11] [STDERR]         "max_retries": 2,
+[2025-11-04 17:27:11] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:27:11] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:27:11] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:27:11] [STDERR]         "jitter": true,
+[2025-11-04 17:27:11] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:27:11] [STDERR]       }
+[2025-11-04 17:27:11] [STDERR]     }
+[2025-11-04 17:27:11] [STDERR]   ]
+[2025-11-04 17:27:11] [STDERR] }
+[2025-11-04 17:27:11] [STDERR] 2025-11-04 17:27:11,876 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-92d2cbbc-e393-40f5-9275-cac9ae22d925 loaded and submitted to shard 5 with indexes
+[2025-11-04 17:28:26] [STDERR] 2025-11-04 17:28:26,557 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Loading workflow workflow-eabb9697-a2b3-4db2-be9b-bc4a3565911e from inline
+[2025-11-04 17:28:26] [STDERR] 2025-11-04 17:28:26,558 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Raw workflow before transform: {
+[2025-11-04 17:28:26] [STDERR]   "name": "ollama-haiku",
+[2025-11-04 17:28:26] [STDERR]   "tasks": [
+[2025-11-04 17:28:26] [STDERR]     {
+[2025-11-04 17:28:26] [STDERR]       "id": "generate-haiku",
+[2025-11-04 17:28:26] [STDERR]       "type": "ollama",
+[2025-11-04 17:28:26] [STDERR]       "params": {
+[2025-11-04 17:28:26] [STDERR]         "model": "llama3.2:latest",
+[2025-11-04 17:28:26] [STDERR]         "prompt": "Write a haiku about distributed systems",
+[2025-11-04 17:28:26] [STDERR]         "options": {
+[2025-11-04 17:28:26] [STDERR]           "temperature": 0.7,
+[2025-11-04 17:28:26] [STDERR]           "max_tokens": 100
+[2025-11-04 17:28:26] [STDERR]         }
+[2025-11-04 17:28:26] [STDERR]       }
+[2025-11-04 17:28:26] [STDERR]     }
+[2025-11-04 17:28:26] [STDERR]   ],
+[2025-11-04 17:28:26] [STDERR]   "workflow_id": "workflow-eabb9697-a2b3-4db2-be9b-bc4a3565911e"
+[2025-11-04 17:28:26] [STDERR] }
+[2025-11-04 17:28:26] [STDERR] 2025-11-04 17:28:26,558 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow after transform: {
+[2025-11-04 17:28:26] [STDERR]   "id": "workflow-eabb9697-a2b3-4db2-be9b-bc4a3565911e",
+[2025-11-04 17:28:26] [STDERR]   "name": "ollama-haiku",
+[2025-11-04 17:28:26] [STDERR]   "description": "",
+[2025-11-04 17:28:26] [STDERR]   "version": "1.0.0",
+[2025-11-04 17:28:26] [STDERR]   "created_at": "2025-11-04T16:28:26.558795",
+[2025-11-04 17:28:26] [STDERR]   "tasks": [
+[2025-11-04 17:28:26] [STDERR]     {
+[2025-11-04 17:28:26] [STDERR]       "id": "1caa2dcc-a6ff-417e-b7db-1d690ae957f9",
+[2025-11-04 17:28:26] [STDERR]       "workflow_id": "workflow-eabb9697-a2b3-4db2-be9b-bc4a3565911e",
+[2025-11-04 17:28:26] [STDERR]       "name": "1caa2dcc-a6ff-417e-b7db-1d690ae957f9",
+[2025-11-04 17:28:26] [STDERR]       "description": "",
+[2025-11-04 17:28:26] [STDERR]       "protocol": "ollama/v1",
+[2025-11-04 17:28:26] [STDERR]       "method": "ollama/generate",
+[2025-11-04 17:28:26] [STDERR]       "params": {
+[2025-11-04 17:28:26] [STDERR]         "model": "llama3.2:latest",
+[2025-11-04 17:28:26] [STDERR]         "prompt": "Write a haiku about distributed systems",
+[2025-11-04 17:28:26] [STDERR]         "options": {
+[2025-11-04 17:28:26] [STDERR]           "temperature": 0.7,
+[2025-11-04 17:28:26] [STDERR]           "max_tokens": 100
+[2025-11-04 17:28:26] [STDERR]         }
+[2025-11-04 17:28:26] [STDERR]       },
+[2025-11-04 17:28:26] [STDERR]       "dependencies": [],
+[2025-11-04 17:28:26] [STDERR]       "timeout": 300,
+[2025-11-04 17:28:26] [STDERR]       "retry": {
+[2025-11-04 17:28:26] [STDERR]         "max_retries": 2,
+[2025-11-04 17:28:26] [STDERR]         "strategy": "exponential_jitter",
+[2025-11-04 17:28:26] [STDERR]         "base_delay": 1.0,
+[2025-11-04 17:28:26] [STDERR]         "max_delay": 30.0,
+[2025-11-04 17:28:26] [STDERR]         "jitter": true,
+[2025-11-04 17:28:26] [STDERR]         "multiplier": 2.0
+[2025-11-04 17:28:26] [STDERR]       }
+[2025-11-04 17:28:26] [STDERR]     }
+[2025-11-04 17:28:26] [STDERR]   ]
+[2025-11-04 17:28:26] [STDERR] }
+[2025-11-04 17:28:26] [STDERR] 2025-11-04 17:28:26,561 - gleitzeit.workers.workflow_loader_worker_v2 - INFO - Workflow workflow-eabb9697-a2b3-4db2-be9b-bc4a3565911e loaded and submitted to shard 14 with indexes

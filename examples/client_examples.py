@@ -162,9 +162,8 @@ async def example_6_modular_client_basic():
             'name': 'Modular Client Demo',
             'tasks': [
                 {
-                    'name': 'task1',
-                    'protocol': 'python',
-                    'method': 'python/execute',
+                    'id': 'task1',
+                    'type': 'python',
                     'params': {
                         'code': 'result = {"message": "From modular client!"}'
                     }
@@ -216,9 +215,8 @@ async def example_8_batch_operations():
                 'name': f'Batch Workflow {i}',
                 'tasks': [
                     {
-                        'name': 'process',
-                        'protocol': 'python',
-                        'method': 'python/execute',
+                        'id': 'process',
+                        'type': 'python',
                         'params': {
                             'code': f'result = "Batch item {i} processed"'
                         }
@@ -250,9 +248,8 @@ async def example_9_wait_for_completion():
             'name': 'Wait Demo',
             'tasks': [
                 {
-                    'name': 'slow_task',
-                    'protocol': 'python',
-                    'method': 'python/execute',
+                    'id': 'slow_task',
+                    'type': 'python',
                     'params': {
                         'code': '''
 import time

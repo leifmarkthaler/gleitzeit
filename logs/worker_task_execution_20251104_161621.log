@@ -1,0 +1,209 @@
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,409 - __main__ - INFO - Initialized worker instance identity: gleitzei-529d6f54
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,410 - __main__ - INFO - Loading configuration from Redis key: worker:config:task_execution-async:035ae73e
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,411 - __main__ - INFO - Loaded config for worker task_execution-async
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,411 - __main__ - INFO - Worker task_execution-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,412 - gleitzeit.core.config_loader - INFO - Found configuration file at: /Users/leifmarkthaler/github/gleitzeit 0.0.7/config/instance_config.yaml
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,417 - gleitzeit.handlers.registry - INFO - Registered handler FileHandler for protocol file/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,505 - gleitzeit.handlers.registry - INFO - Registered handler HttpHandler for protocol http/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,507 - gleitzeit.handlers.registry - INFO - Registered handler OllamaHandler for protocol ollama/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,507 - gleitzeit.handlers.registry - INFO - Registered handler PythonHandler for protocol python/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,508 - gleitzeit.handlers.registry - INFO - Registered handler SignalHandler for protocol signal/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,508 - gleitzeit.handlers.registry - INFO - Registered handler TimerHandler for protocol timer/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,509 - gleitzeit.handlers.registry - INFO - Registered handler ValidationHandler for protocol validation/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,509 - gleitzeit.handlers.registry - INFO - Registered handler WorkflowHandler for protocol workflow/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,509 - gleitzeit.handlers - INFO - Auto-discovered 8 handler modules: file, http, ollama, python, signal, timer, validation, workflow
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,509 - gleitzeit.workers.task_execution_worker - INFO - Found handler configurations for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,509 - gleitzeit.handlers.base - INFO - Handler FileHandler initialized with ID: 3c768b37-d377-4a7d-bb8b-04af254c0bcc
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,509 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol file/v1: FileHandler (ID: 3c768b37)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,509 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'base_directories', 'max_file_size_mb', 'worker_id']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.handlers.base - INFO - Handler HttpHandler initialized with ID: 00169211-a2ce-43f8-9b1f-f35bad2620cf
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol http/v1: HttpHandler (ID: 00169211)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'timeout', 'max_retries', 'allowed_hosts', 'default_headers', 'worker_id']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.handlers.base - INFO - Handler OllamaHandler initialized with ID: c0128848-2302-44e8-a131-031d01a8f7bc
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.core.circuit_breaker - INFO - Circuit breaker 'ollama_http://localhost:11434' initialized with threshold=3
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol ollama/v1: OllamaHandler (ID: c0128848)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'base_url', 'timeout', 'default_model', 'circuit_breaker', 'worker_id']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.handlers.base - INFO - Handler PythonHandler initialized with ID: a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.handlers.python - INFO - Python handler will use subprocess pool (min=2, max=20)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol python/v1: PythonHandler (ID: a7c18911)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'execution_mode', 'config', 'subprocess_pool_enabled', 'subprocess_pool_min_size', 'subprocess_pool_max_size', 'default_timeout', 'worker_id']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.handlers.base - INFO - Handler SignalHandler initialized with ID: a80b396a-84d3-47d2-826d-0ddbbf110b88
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol signal/v1: SignalHandler (ID: a80b396a)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'delivery_mode', 'max_signals_per_workflow', 'signal_registry_ttl', 'worker_id']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.handlers.base - INFO - Handler TimerHandler initialized with ID: 16d6ae97-cf10-4734-8764-149a9cb86046
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol timer/v1: TimerHandler (ID: 16d6ae97)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'precision_ms', 'backend', 'worker_id']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.handlers.base - INFO - Handler ValidationHandler initialized with ID: 9c262fbe-6685-4b02-8a18-5276a46eefc7
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol validation/v1: ValidationHandler (ID: 9c262fbe)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['worker_id']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.handlers.base - INFO - Handler WorkflowHandler initialized with ID: b6912f95-aa8a-4209-961f-01ed0a53ed96
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO - Loaded handler for protocol workflow/v1: WorkflowHandler (ID: b6912f95)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO -   Handler config keys: ['execution', 'config', 'max_child_workflows', 'async_submission', 'worker_id']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.workers.task_execution_worker - INFO - Worker initialized with 8 handlers: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.core.cache - INFO - Created workflow cache with max_size=1000, ttl=3600
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,510 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,511 - gleitzeit.workers.task_execution_worker - INFO - TaskExecutionWorker initialized with enabled types: ['all']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,511 - gleitzeit.workers.task_execution_worker - INFO - Available handlers: ['file/v1', 'http/v1', 'ollama/v1', 'python/v1', 'signal/v1', 'timer/v1', 'validation/v1', 'workflow/v1']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,511 - gleitzeit.workers.task_execution_worker - INFO - Workflow cache configured: size=1000, ttl=3600s
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,511 - gleitzeit.handlers.python - INFO - Eagerly initializing subprocess pool...
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,511 - gleitzeit.core.subprocess_pool - INFO - Initializing Python subprocess pool (min=2, max=20)
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,558 - gleitzeit.core.subprocess_pool - INFO - Subprocess pool initialized with 2 processes
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,558 - gleitzeit.handlers.python - INFO - Subprocess pool initialized successfully
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,558 - gleitzeit.workers.task_execution_worker - INFO - Async initialization completed for handler python/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,560 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 3c768b37 for protocol file/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,560 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 00169211 for protocol http/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,560 - gleitzeit.workers.task_execution_worker - INFO - Registered handler c0128848 for protocol ollama/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,561 - gleitzeit.workers.task_execution_worker - INFO - Registered handler a7c18911 for protocol python/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,561 - gleitzeit.workers.task_execution_worker - INFO - Registered handler a80b396a for protocol signal/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,561 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 16d6ae97 for protocol timer/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,561 - gleitzeit.workers.task_execution_worker - INFO - Registered handler 9c262fbe for protocol validation/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,561 - gleitzeit.workers.task_execution_worker - INFO - Registered handler b6912f95 for protocol workflow/v1
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,562 - task_execution.task_execution-async - INFO - Worker task_execution-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,562 - __main__ - INFO - Worker task_execution-async started successfully
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,562 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 16:16:21] [STDERR] 2025-11-04 16:16:21,562 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for task_execution-async
+[2025-11-04 16:17:04] [STDERR] 2025-11-04 16:17:04,866 - gleitzeit.workers.task_execution_worker - INFO - Processing task 2d5d7ff6-1744-4680-9d6d-8d0c776ac9f8 from workflow f4ae229d-1853-4f54-8561-3dc777c28d97
+[2025-11-04 16:17:04] [STDERR] 2025-11-04 16:17:04,870 - gleitzeit.workers.task_execution_worker - INFO - Executing task 2d5d7ff6-1744-4680-9d6d-8d0c776ac9f8 with handler PythonHandler
+[2025-11-04 16:17:04] [STDERR] 2025-11-04 16:17:04,945 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:17:04] [STDERR] 2025-11-04 16:17:04,950 - gleitzeit.workers.task_execution_worker - INFO - Task 2d5d7ff6-1744-4680-9d6d-8d0c776ac9f8 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:19:50] [STDERR] 2025-11-04 16:19:50,538 - gleitzeit.workers.task_execution_worker - INFO - Processing task 6c6e0d38-2a02-4a11-8750-5fb73d5d85f2 from workflow easy-workflow-773a613f
+[2025-11-04 16:19:50] [STDERR] 2025-11-04 16:19:50,541 - gleitzeit.workers.task_execution_worker - INFO - Executing task 6c6e0d38-2a02-4a11-8750-5fb73d5d85f2 with handler PythonHandler
+[2025-11-04 16:19:50] [STDERR] 2025-11-04 16:19:50,543 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:19:50] [STDERR] 2025-11-04 16:19:50,546 - gleitzeit.workers.task_execution_worker - INFO - Task 6c6e0d38-2a02-4a11-8750-5fb73d5d85f2 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:21:05] [STDERR] 2025-11-04 16:21:05,447 - gleitzeit.workers.task_execution_worker - INFO - Processing task 5275e609-a9cd-478e-9a16-0f58928bfe05 from workflow 7a354242-9ba4-49c8-94b7-68b6977fd41f
+[2025-11-04 16:21:05] [STDERR] 2025-11-04 16:21:05,450 - gleitzeit.workers.task_execution_worker - INFO - Executing task 5275e609-a9cd-478e-9a16-0f58928bfe05 with handler PythonHandler
+[2025-11-04 16:21:05] [STDERR] 2025-11-04 16:21:05,451 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:21:05] [STDERR] 2025-11-04 16:21:05,454 - gleitzeit.workers.task_execution_worker - INFO - Task 5275e609-a9cd-478e-9a16-0f58928bfe05 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:22:20] [STDERR] 2025-11-04 16:22:20,635 - gleitzeit.workers.task_execution_worker - INFO - Processing task 3b628590-f4ad-4032-97d6-f1deaa28c94e from workflow c4f23137-23d1-4254-bef1-92c79dbbbf61
+[2025-11-04 16:22:20] [STDERR] 2025-11-04 16:22:20,638 - gleitzeit.workers.task_execution_worker - INFO - Executing task 3b628590-f4ad-4032-97d6-f1deaa28c94e with handler PythonHandler
+[2025-11-04 16:22:20] [STDERR] 2025-11-04 16:22:20,640 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:22:20] [STDERR] 2025-11-04 16:22:20,733 - gleitzeit.workers.task_execution_worker - INFO - Task 3b628590-f4ad-4032-97d6-f1deaa28c94e completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:25:11] [STDERR] 2025-11-04 16:25:11,699 - gleitzeit.workers.task_execution_worker - INFO - Processing task 3c9bd677-2746-469e-8c2d-6c1fe655f0b4 from workflow eb05b0c8-a6f0-41f1-9af1-9ad3d971fa54
+[2025-11-04 16:25:11] [STDERR] 2025-11-04 16:25:11,701 - gleitzeit.workers.task_execution_worker - INFO - Executing task 3c9bd677-2746-469e-8c2d-6c1fe655f0b4 with handler PythonHandler
+[2025-11-04 16:25:11] [STDERR] 2025-11-04 16:25:11,703 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:25:11] [STDERR] 2025-11-04 16:25:11,708 - gleitzeit.workers.task_execution_worker - INFO - Task 3c9bd677-2746-469e-8c2d-6c1fe655f0b4 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:26:43] [STDERR] 2025-11-04 16:26:43,326 - gleitzeit.workers.task_execution_worker - INFO - Processing task 1e8c945b-6c6e-4e95-af05-e73d8baaeea4 from workflow 7fa96e75-55a9-4dfa-867d-fdb22279389e
+[2025-11-04 16:26:43] [STDERR] 2025-11-04 16:26:43,328 - gleitzeit.workers.task_execution_worker - INFO - Executing task 1e8c945b-6c6e-4e95-af05-e73d8baaeea4 with handler PythonHandler
+[2025-11-04 16:26:43] [STDERR] 2025-11-04 16:26:43,331 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:26:43] [STDERR] 2025-11-04 16:26:43,334 - gleitzeit.workers.task_execution_worker - INFO - Task 1e8c945b-6c6e-4e95-af05-e73d8baaeea4 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:26:44] [STDERR] 2025-11-04 16:26:44,348 - gleitzeit.workers.task_execution_worker - INFO - Processing task 57430522-1d6e-4ea5-a11d-cfcdc10d0c82 from workflow d8bdd45a-3264-444f-8c34-019f7deb4c29
+[2025-11-04 16:26:44] [STDERR] 2025-11-04 16:26:44,350 - gleitzeit.workers.task_execution_worker - INFO - Executing task 57430522-1d6e-4ea5-a11d-cfcdc10d0c82 with handler PythonHandler
+[2025-11-04 16:26:44] [STDERR] 2025-11-04 16:26:44,351 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:26:45] [STDERR] 2025-11-04 16:26:45,361 - gleitzeit.workers.task_execution_worker - INFO - Task 57430522-1d6e-4ea5-a11d-cfcdc10d0c82 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:26:45] [STDERR] 2025-11-04 16:26:45,361 - gleitzeit.workers.task_execution_worker - INFO - Processing task a81c377b-07db-41d4-a383-28386ce1f92a from workflow d8bdd45a-3264-444f-8c34-019f7deb4c29
+[2025-11-04 16:26:45] [STDERR] 2025-11-04 16:26:45,364 - gleitzeit.workers.task_execution_worker - INFO - Executing task a81c377b-07db-41d4-a383-28386ce1f92a with handler PythonHandler
+[2025-11-04 16:26:45] [STDERR] 2025-11-04 16:26:45,365 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:26:46] [STDERR] 2025-11-04 16:26:46,375 - gleitzeit.workers.task_execution_worker - INFO - Task a81c377b-07db-41d4-a383-28386ce1f92a completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:32:07] [STDERR] 2025-11-04 16:32:07,980 - gleitzeit.workers.task_execution_worker - INFO - Processing task a3c511b8-0b6a-4738-9a12-c7acb3ae3bf8 from workflow 47cd6202-78a2-4895-84eb-84ad206949d2
+[2025-11-04 16:32:07] [STDERR] 2025-11-04 16:32:07,983 - gleitzeit.workers.task_execution_worker - INFO - Executing task a3c511b8-0b6a-4738-9a12-c7acb3ae3bf8 with handler PythonHandler
+[2025-11-04 16:32:07] [STDERR] 2025-11-04 16:32:07,984 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:32:08] [STDERR] 2025-11-04 16:32:08,064 - gleitzeit.workers.task_execution_worker - INFO - Task a3c511b8-0b6a-4738-9a12-c7acb3ae3bf8 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:32:08] [STDERR] 2025-11-04 16:32:08,992 - gleitzeit.workers.task_execution_worker - INFO - Processing task a6cb48ad-92af-4c48-86aa-5bd0cf60fd3d from workflow 9e7f87e0-f960-4cdf-ae5a-a16a34ae4683
+[2025-11-04 16:32:08] [STDERR] 2025-11-04 16:32:08,994 - gleitzeit.workers.task_execution_worker - INFO - Executing task a6cb48ad-92af-4c48-86aa-5bd0cf60fd3d with handler PythonHandler
+[2025-11-04 16:32:08] [STDERR] 2025-11-04 16:32:08,995 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:32:08] [STDERR] 2025-11-04 16:32:08,998 - gleitzeit.workers.task_execution_worker - INFO - Task a6cb48ad-92af-4c48-86aa-5bd0cf60fd3d completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:32:10] [STDERR] 2025-11-04 16:32:10,012 - gleitzeit.workers.task_execution_worker - INFO - Processing task 1640f534-a426-4bc1-b537-0ce571218dd8 from workflow ec4ef728-2fe3-449e-8a0b-12c9b92c218e
+[2025-11-04 16:32:10] [STDERR] 2025-11-04 16:32:10,015 - gleitzeit.workers.task_execution_worker - INFO - Executing task 1640f534-a426-4bc1-b537-0ce571218dd8 with handler PythonHandler
+[2025-11-04 16:32:10] [STDERR] 2025-11-04 16:32:10,018 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:32:11] [STDERR] 2025-11-04 16:32:11,024 - gleitzeit.workers.task_execution_worker - INFO - Task 1640f534-a426-4bc1-b537-0ce571218dd8 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:32:11] [STDERR] 2025-11-04 16:32:11,025 - gleitzeit.workers.task_execution_worker - INFO - Processing task d21ef7c9-0a7e-4826-8ed0-2358b7b950f4 from workflow ec4ef728-2fe3-449e-8a0b-12c9b92c218e
+[2025-11-04 16:32:11] [STDERR] 2025-11-04 16:32:11,027 - gleitzeit.workers.task_execution_worker - INFO - Executing task d21ef7c9-0a7e-4826-8ed0-2358b7b950f4 with handler PythonHandler
+[2025-11-04 16:32:11] [STDERR] 2025-11-04 16:32:11,028 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:32:12] [STDERR] 2025-11-04 16:32:12,037 - gleitzeit.workers.task_execution_worker - INFO - Task d21ef7c9-0a7e-4826-8ed0-2358b7b950f4 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:33:54] [STDERR] 2025-11-04 16:33:54,243 - gleitzeit.workers.task_execution_worker - INFO - Processing task 66f09b44-0486-446f-988e-79c8194f3da6 from workflow eccc2fc7-34f0-4af6-a18f-1c060017eea9
+[2025-11-04 16:33:54] [STDERR] 2025-11-04 16:33:54,245 - gleitzeit.workers.task_execution_worker - INFO - Executing task 66f09b44-0486-446f-988e-79c8194f3da6 with handler PythonHandler
+[2025-11-04 16:33:54] [STDERR] 2025-11-04 16:33:54,247 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:33:54] [STDERR] 2025-11-04 16:33:54,249 - gleitzeit.workers.task_execution_worker - INFO - Task 66f09b44-0486-446f-988e-79c8194f3da6 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:33:54] [STDERR] 2025-11-04 16:33:54,263 - gleitzeit.workers.task_execution_worker - INFO - Processing task 14404d42-bdda-4558-87b4-01975b02f7db from workflow eccc2fc7-34f0-4af6-a18f-1c060017eea9
+[2025-11-04 16:33:54] [STDERR] 2025-11-04 16:33:54,265 - gleitzeit.workers.task_execution_worker - INFO - Executing task 14404d42-bdda-4558-87b4-01975b02f7db with handler PythonHandler
+[2025-11-04 16:33:54] [STDERR] 2025-11-04 16:33:54,266 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:33:54] [STDERR] 2025-11-04 16:33:54,268 - gleitzeit.workers.task_execution_worker - INFO - Task 14404d42-bdda-4558-87b4-01975b02f7db completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:33:55] [STDERR] 2025-11-04 16:33:55,261 - gleitzeit.workers.task_execution_worker - INFO - Processing task 719bf0bd-5d22-4fa0-bbbc-a8d03ffb05dc from workflow 0ea6efb6-d77c-4e1a-9d84-8c0f8d0fa656
+[2025-11-04 16:33:55] [STDERR] 2025-11-04 16:33:55,264 - gleitzeit.workers.task_execution_worker - INFO - Executing task 719bf0bd-5d22-4fa0-bbbc-a8d03ffb05dc with handler PythonHandler
+[2025-11-04 16:33:55] [STDERR] 2025-11-04 16:33:55,265 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:33:56] [STDERR] 2025-11-04 16:33:56,271 - gleitzeit.workers.task_execution_worker - INFO - Task 719bf0bd-5d22-4fa0-bbbc-a8d03ffb05dc completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:33:56] [STDERR] 2025-11-04 16:33:56,271 - gleitzeit.workers.task_execution_worker - INFO - Processing task 12612fcd-9acf-40ea-aa90-6ae3aa2bde0c from workflow 0ea6efb6-d77c-4e1a-9d84-8c0f8d0fa656
+[2025-11-04 16:33:56] [STDERR] 2025-11-04 16:33:56,273 - gleitzeit.workers.task_execution_worker - INFO - Executing task 12612fcd-9acf-40ea-aa90-6ae3aa2bde0c with handler PythonHandler
+[2025-11-04 16:33:56] [STDERR] 2025-11-04 16:33:56,275 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:33:57] [STDERR] 2025-11-04 16:33:57,285 - gleitzeit.workers.task_execution_worker - INFO - Task 12612fcd-9acf-40ea-aa90-6ae3aa2bde0c completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:40:08] [STDERR] 2025-11-04 16:40:08,706 - gleitzeit.workers.task_execution_worker - INFO - Processing task 33833d9f-fa3e-4ff8-8c7d-f6d02240de73 from workflow workflow-ca16d2b0-d10b-41a6-b973-09ee02062d34
+[2025-11-04 16:40:08] [STDERR] 2025-11-04 16:40:08,708 - gleitzeit.workers.task_execution_worker - INFO - Executing task 33833d9f-fa3e-4ff8-8c7d-f6d02240de73 with handler PythonHandler
+[2025-11-04 16:40:08] [STDERR] 2025-11-04 16:40:08,709 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:40:08] [STDERR] 2025-11-04 16:40:08,774 - gleitzeit.workers.task_execution_worker - INFO - Task 33833d9f-fa3e-4ff8-8c7d-f6d02240de73 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:40:24] [STDERR] 2025-11-04 16:40:24,390 - gleitzeit.workers.task_execution_worker - INFO - Processing task bbbfde4c-5ded-4856-a48f-918cb459cf93 from workflow workflow-6cb26b5e-80d5-4690-ade9-6963e27f808d
+[2025-11-04 16:40:24] [STDERR] 2025-11-04 16:40:24,392 - gleitzeit.workers.task_execution_worker - INFO - Executing task bbbfde4c-5ded-4856-a48f-918cb459cf93 with handler PythonHandler
+[2025-11-04 16:40:24] [STDERR] 2025-11-04 16:40:24,393 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:40:24] [STDERR] 2025-11-04 16:40:24,396 - gleitzeit.workers.task_execution_worker - INFO - Task bbbfde4c-5ded-4856-a48f-918cb459cf93 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:40:41] [STDERR] 2025-11-04 16:40:41,784 - gleitzeit.workers.task_execution_worker - INFO - Processing task 93de4c0b-4ed5-46c6-9dbd-d77015b1e5cb from workflow workflow-edfd003e-6e4c-4e9b-bd66-786281c59910
+[2025-11-04 16:40:41] [STDERR] 2025-11-04 16:40:41,785 - gleitzeit.workers.task_execution_worker - INFO - Executing task 93de4c0b-4ed5-46c6-9dbd-d77015b1e5cb with handler PythonHandler
+[2025-11-04 16:40:41] [STDERR] 2025-11-04 16:40:41,787 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:40:41] [STDERR] 2025-11-04 16:40:41,789 - gleitzeit.workers.task_execution_worker - INFO - Task 93de4c0b-4ed5-46c6-9dbd-d77015b1e5cb completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:40:51] [STDERR] 2025-11-04 16:40:51,678 - gleitzeit.workers.task_execution_worker - INFO - Processing task bed83e89-113a-4986-b8dc-afaefd38d71e from workflow workflow-7865cde4-8549-41de-8f09-46bdef06d068
+[2025-11-04 16:40:51] [STDERR] 2025-11-04 16:40:51,679 - gleitzeit.workers.task_execution_worker - INFO - Executing task bed83e89-113a-4986-b8dc-afaefd38d71e with handler PythonHandler
+[2025-11-04 16:40:51] [STDERR] 2025-11-04 16:40:51,681 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:40:51] [STDERR] 2025-11-04 16:40:51,684 - gleitzeit.workers.task_execution_worker - INFO - Task bed83e89-113a-4986-b8dc-afaefd38d71e completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:40:56] [STDERR] 2025-11-04 16:40:56,279 - gleitzeit.workers.task_execution_worker - INFO - Processing task c4861c56-cec9-440c-b910-f68ebb1f1324 from workflow workflow-93c03bc2-6fa4-4eef-b1b3-594fc77329cb
+[2025-11-04 16:40:56] [STDERR] 2025-11-04 16:40:56,282 - gleitzeit.workers.task_execution_worker - INFO - Executing task c4861c56-cec9-440c-b910-f68ebb1f1324 with handler PythonHandler
+[2025-11-04 16:40:56] [STDERR] 2025-11-04 16:40:56,283 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:40:56] [STDERR] 2025-11-04 16:40:56,286 - gleitzeit.workers.task_execution_worker - INFO - Task c4861c56-cec9-440c-b910-f68ebb1f1324 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:41:01] [STDERR] 2025-11-04 16:41:01,953 - gleitzeit.workers.task_execution_worker - INFO - Processing task f892b7a7-d7aa-4fe6-992c-7e234e08e16f from workflow workflow-dd0708b0-ebd0-4f45-ac74-e4ceec602dff
+[2025-11-04 16:41:01] [STDERR] 2025-11-04 16:41:01,955 - gleitzeit.workers.task_execution_worker - INFO - Executing task f892b7a7-d7aa-4fe6-992c-7e234e08e16f with handler PythonHandler
+[2025-11-04 16:41:01] [STDERR] 2025-11-04 16:41:01,957 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:41:01] [STDERR] 2025-11-04 16:41:01,960 - gleitzeit.workers.task_execution_worker - INFO - Task f892b7a7-d7aa-4fe6-992c-7e234e08e16f completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:41:14] [STDERR] 2025-11-04 16:41:14,168 - gleitzeit.workers.task_execution_worker - INFO - Processing task 675f3538-8923-40d7-b29c-67fe4ef22b00 from workflow workflow-5569528a-e528-4a5a-bafe-91639e937445
+[2025-11-04 16:41:14] [STDERR] 2025-11-04 16:41:14,171 - gleitzeit.workers.task_execution_worker - INFO - Executing task 675f3538-8923-40d7-b29c-67fe4ef22b00 with handler PythonHandler
+[2025-11-04 16:41:14] [STDERR] 2025-11-04 16:41:14,172 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:41:14] [STDERR] 2025-11-04 16:41:14,175 - gleitzeit.workers.task_execution_worker - INFO - Task 675f3538-8923-40d7-b29c-67fe4ef22b00 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:41:15] [STDERR] 2025-11-04 16:41:15,342 - gleitzeit.workers.task_execution_worker - INFO - Processing task bd8146f5-74fe-4e71-b851-e085abc140fd from workflow workflow-4cf8a304-98e8-4f21-933c-283e8bc5981e
+[2025-11-04 16:41:15] [STDERR] 2025-11-04 16:41:15,343 - gleitzeit.workers.task_execution_worker - INFO - Executing task bd8146f5-74fe-4e71-b851-e085abc140fd with handler PythonHandler
+[2025-11-04 16:41:15] [STDERR] 2025-11-04 16:41:15,344 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:41:15] [STDERR] 2025-11-04 16:41:15,346 - gleitzeit.workers.task_execution_worker - INFO - Task bd8146f5-74fe-4e71-b851-e085abc140fd completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:42:51] [STDERR] 2025-11-04 16:42:51,795 - gleitzeit.workers.task_execution_worker - INFO - Processing task e2d31a9c-7569-4553-bd63-79c92c063757 from workflow workflow-7ec1b721-f8bf-4756-a7f7-902faaa6f137
+[2025-11-04 16:42:51] [STDERR] 2025-11-04 16:42:51,797 - gleitzeit.workers.task_execution_worker - INFO - Executing task e2d31a9c-7569-4553-bd63-79c92c063757 with handler PythonHandler
+[2025-11-04 16:42:51] [STDERR] 2025-11-04 16:42:51,800 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:42:51] [STDERR] 2025-11-04 16:42:51,804 - gleitzeit.workers.task_execution_worker - INFO - Task e2d31a9c-7569-4553-bd63-79c92c063757 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:42:58] [STDERR] 2025-11-04 16:42:58,003 - gleitzeit.workers.task_execution_worker - INFO - Processing task 5a234837-e939-4c2c-a014-b45ccf67ffe0 from workflow workflow-7cc1e462-1818-45e6-943b-55c47c50b922
+[2025-11-04 16:42:58] [STDERR] 2025-11-04 16:42:58,006 - gleitzeit.workers.task_execution_worker - INFO - Executing task 5a234837-e939-4c2c-a014-b45ccf67ffe0 with handler PythonHandler
+[2025-11-04 16:42:58] [STDERR] 2025-11-04 16:42:58,007 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:42:58] [STDERR] 2025-11-04 16:42:58,011 - gleitzeit.workers.task_execution_worker - INFO - Task 5a234837-e939-4c2c-a014-b45ccf67ffe0 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:42:58] [STDERR] 2025-11-04 16:42:58,028 - gleitzeit.workers.task_execution_worker - INFO - Processing task f43273c0-892d-463d-babb-5e7943376649 from workflow workflow-7cc1e462-1818-45e6-943b-55c47c50b922
+[2025-11-04 16:42:58] [STDERR] 2025-11-04 16:42:58,030 - gleitzeit.workers.task_execution_worker - INFO - Executing task f43273c0-892d-463d-babb-5e7943376649 with handler PythonHandler
+[2025-11-04 16:42:58] [STDERR] 2025-11-04 16:42:58,032 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:42:58] [STDERR] 2025-11-04 16:42:58,034 - gleitzeit.workers.task_execution_worker - INFO - Task f43273c0-892d-463d-babb-5e7943376649 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:43:03] [STDERR] 2025-11-04 16:43:03,777 - gleitzeit.workers.task_execution_worker - INFO - Processing task 94b19f3c-adb9-45ef-9de2-9ce558c87388 from workflow workflow-f91e6a9c-1f3b-4bfa-8702-fad28a768775
+[2025-11-04 16:43:03] [STDERR] 2025-11-04 16:43:03,779 - gleitzeit.workers.task_execution_worker - INFO - Executing task 94b19f3c-adb9-45ef-9de2-9ce558c87388 with handler PythonHandler
+[2025-11-04 16:43:03] [STDERR] 2025-11-04 16:43:03,780 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:43:03] [STDERR] 2025-11-04 16:43:03,783 - gleitzeit.workers.task_execution_worker - INFO - Task 94b19f3c-adb9-45ef-9de2-9ce558c87388 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:43:09] [STDERR] 2025-11-04 16:43:09,510 - gleitzeit.workers.task_execution_worker - INFO - Processing task 9cbd569c-c249-4421-b742-b3468316bad2 from workflow workflow-8eceb88c-662d-4309-b12a-224a985b8a2f
+[2025-11-04 16:43:09] [STDERR] 2025-11-04 16:43:09,512 - gleitzeit.workers.task_execution_worker - INFO - Executing task 9cbd569c-c249-4421-b742-b3468316bad2 with handler PythonHandler
+[2025-11-04 16:43:09] [STDERR] 2025-11-04 16:43:09,514 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:43:09] [STDERR] 2025-11-04 16:43:09,517 - gleitzeit.workers.task_execution_worker - INFO - Task 9cbd569c-c249-4421-b742-b3468316bad2 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:43:18] [STDERR] 2025-11-04 16:43:18,238 - gleitzeit.workers.task_execution_worker - INFO - Processing task da58f779-8ae9-4573-9f67-0766c852a687 from workflow workflow-27ab3481-d0d1-473d-a530-687a5df1097c
+[2025-11-04 16:43:18] [STDERR] 2025-11-04 16:43:18,241 - gleitzeit.workers.task_execution_worker - INFO - Executing task da58f779-8ae9-4573-9f67-0766c852a687 with handler PythonHandler
+[2025-11-04 16:43:18] [STDERR] 2025-11-04 16:43:18,243 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:43:18] [STDERR] 2025-11-04 16:43:18,267 - gleitzeit.workers.task_execution_worker - ERROR - Task da58f779-8ae9-4573-9f67-0766c852a687 failed: [TASK_EXECUTION_FAILED] Python execution failed: Intentional failure for testing
+[2025-11-04 16:43:18] [STDERR] 2025-11-04 16:43:18,269 - gleitzeit.workers.task_execution_worker - INFO - Emitted task failure to RetryWorker for da58f779-8ae9-4573-9f67-0766c852a687
+[2025-11-04 16:43:28] [STDERR] 2025-11-04 16:43:28,717 - gleitzeit.workers.task_execution_worker - INFO - Processing task 486b10c6-c496-4e4a-8ef0-e3869fffe944 from workflow workflow-dbdfb98c-d5a6-453c-b221-1e85f86ba015
+[2025-11-04 16:43:28] [STDERR] 2025-11-04 16:43:28,721 - gleitzeit.workers.task_execution_worker - INFO - Executing task 486b10c6-c496-4e4a-8ef0-e3869fffe944 with handler PythonHandler
+[2025-11-04 16:43:28] [STDERR] 2025-11-04 16:43:28,723 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:43:28] [STDERR] 2025-11-04 16:43:28,728 - gleitzeit.workers.task_execution_worker - INFO - Task 486b10c6-c496-4e4a-8ef0-e3869fffe944 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:43:35] [STDERR] 2025-11-04 16:43:35,989 - gleitzeit.workers.task_execution_worker - INFO - Processing task 4cf58368-6915-4060-97dc-514094c8eb79 from workflow workflow-d249f071-52f8-4ce3-879d-4abbd5b44397
+[2025-11-04 16:43:35] [STDERR] 2025-11-04 16:43:35,994 - gleitzeit.workers.task_execution_worker - INFO - Executing task 4cf58368-6915-4060-97dc-514094c8eb79 with handler PythonHandler
+[2025-11-04 16:43:35] [STDERR] 2025-11-04 16:43:35,996 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:43:36] [STDERR] 2025-11-04 16:43:36,001 - gleitzeit.workers.task_execution_worker - INFO - Task 4cf58368-6915-4060-97dc-514094c8eb79 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:43:39] [STDERR] 2025-11-04 16:43:39,795 - gleitzeit.workers.task_execution_worker - INFO - Processing task 7c16f1c5-dfc3-4330-94b8-c6a867cbfe4e from workflow test-workflow-123
+[2025-11-04 16:43:39] [STDERR] 2025-11-04 16:43:39,798 - gleitzeit.workers.task_execution_worker - INFO - Executing task 7c16f1c5-dfc3-4330-94b8-c6a867cbfe4e with handler PythonHandler
+[2025-11-04 16:43:39] [STDERR] 2025-11-04 16:43:39,799 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:43:39] [STDERR] 2025-11-04 16:43:39,802 - gleitzeit.workers.task_execution_worker - INFO - Task 7c16f1c5-dfc3-4330-94b8-c6a867cbfe4e completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:43:59] [STDERR] 2025-11-04 16:43:59,381 - gleitzeit.workers.task_execution_worker - INFO - Processing task ea32cd77-7cde-4a39-a124-37ef3a416606 from workflow workflow-3d9aeafb-da4a-48ad-b2ab-ddabbaffd9c9
+[2025-11-04 16:43:59] [STDERR] 2025-11-04 16:43:59,383 - gleitzeit.workers.task_execution_worker - INFO - Executing task ea32cd77-7cde-4a39-a124-37ef3a416606 with handler PythonHandler
+[2025-11-04 16:43:59] [STDERR] 2025-11-04 16:43:59,386 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:43:59] [STDERR] 2025-11-04 16:43:59,390 - gleitzeit.workers.task_execution_worker - INFO - Task ea32cd77-7cde-4a39-a124-37ef3a416606 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:44:13] [STDERR] 2025-11-04 16:44:13,930 - gleitzeit.workers.task_execution_worker - INFO - Processing task e24d9ecf-a648-46c4-bb0d-099342023519 from workflow workflow-883a93f6-b526-4c97-a231-71452feff5f5
+[2025-11-04 16:44:13] [STDERR] 2025-11-04 16:44:13,935 - gleitzeit.workers.task_execution_worker - INFO - Executing task e24d9ecf-a648-46c4-bb0d-099342023519 with handler PythonHandler
+[2025-11-04 16:44:13] [STDERR] 2025-11-04 16:44:13,936 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:44:13] [STDERR] 2025-11-04 16:44:13,942 - gleitzeit.workers.task_execution_worker - INFO - Task e24d9ecf-a648-46c4-bb0d-099342023519 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf
+[2025-11-04 16:44:15] [STDERR] 2025-11-04 16:44:15,174 - gleitzeit.workers.task_execution_worker - INFO - Processing task 0deab4ca-48e7-417a-813b-74f93840a965 from workflow workflow-724bcad4-7a42-45ed-9fa8-316d612d5346
+[2025-11-04 16:44:15] [STDERR] 2025-11-04 16:44:15,178 - gleitzeit.workers.task_execution_worker - INFO - Executing task 0deab4ca-48e7-417a-813b-74f93840a965 with handler PythonHandler
+[2025-11-04 16:44:15] [STDERR] 2025-11-04 16:44:15,183 - gleitzeit.handlers.python - WARNING - Container execution requested but Docker not available, falling back to pool
+[2025-11-04 16:44:15] [STDERR] 2025-11-04 16:44:15,187 - gleitzeit.workers.task_execution_worker - INFO - Task 0deab4ca-48e7-417a-813b-74f93840a965 completed successfully by handler a7c18911-0e14-48ea-92db-577b0bf01dcf

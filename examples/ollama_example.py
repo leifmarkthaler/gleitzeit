@@ -11,7 +11,7 @@ This example shows how to:
 
 Prerequisites:
 - Ollama running locally (default: http://localhost:11434)
-- At least one model installed (e.g., ollama pull llama2)
+- At least one model installed (e.g., ollama pull llama3.2:latest)
 """
 
 import asyncio
@@ -27,7 +27,7 @@ async def main():
     config = {
         'base_url': 'http://localhost:11434',
         'timeout': 60,
-        'default_model': 'llama2'
+        'default_model': 'llama3.2:latest'
     }
 
     handler = OllamaHandler(config)
@@ -61,7 +61,7 @@ async def main():
         protocol='ollama/v1',
         method='ollama/generate',
         params={
-            'model': 'llama2',
+            'model': 'llama3.2:latest',
             'prompt': 'Write a haiku about programming',
             'options': {
                 'temperature': 0.7,
@@ -86,7 +86,7 @@ async def main():
         protocol='ollama/v1',
         method='ollama/chat',
         params={
-            'model': 'llama2',
+            'model': 'llama3.2:latest',
             'messages': [
                 {'role': 'system', 'content': 'You are a helpful assistant.'},
                 {'role': 'user', 'content': 'What is the capital of France?'},
@@ -115,7 +115,7 @@ async def main():
         protocol='ollama/v1',
         method='ollama/embeddings',
         params={
-            'model': 'llama2',  # Note: Not all models support embeddings
+            'model': 'llama3.2:latest',  # Note: Not all models support embeddings
             'prompt': 'Machine learning is fascinating'
         }
     )
@@ -138,7 +138,7 @@ async def main():
         protocol='ollama/v1',
         method='ollama/generate',
         params={
-            'model': 'llama2',
+            'model': 'llama3.2:latest',
             'prompt': 'Tell me a very short story about a robot',
             'stream': True,
             'options': {

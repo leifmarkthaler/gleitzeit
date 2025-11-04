@@ -24,8 +24,7 @@ async def main():
                 {
                     "id": "task1",
                     "type": "python",
-                    "handler": "python",
-                    "config": {
+                    "params": {
                         "code": """
 result = 2 + 2
 print(f"The answer is {result}")
@@ -35,9 +34,8 @@ print(f"The answer is {result}")
                 {
                     "id": "task2",
                     "type": "python",
-                    "handler": "python",
                     "depends_on": ["task1"],
-                    "config": {
+                    "params": {
                         "code": """
 import datetime
 result = {
@@ -84,8 +82,7 @@ def sync_example():
             {
                 "id": "simple_task",
                 "type": "python",
-                "handler": "python",
-                "config": {
+                "params": {
                     "code": "result = 'Hello from sync workflow!'"
                 }
             }

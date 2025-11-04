@@ -303,8 +303,8 @@ class ClientSessionAuth:
 
     async def create_client_session(self, user: User) -> str:
         """Create a new client session and return session ID"""
-        session = await self.session_manager.create_session(user)
-        return session.session_id
+        session_id = await self.session_manager.create_session(user)
+        return session_id
 
     async def validate_client_session(self, session_id: str) -> Optional[User]:
         """Validate client session ID"""
