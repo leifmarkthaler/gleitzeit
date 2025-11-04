@@ -965,3 +965,68 @@
 [2025-11-04 17:42:09] [STDERR] 2025-11-04 17:42:09,544 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
 [2025-11-04 17:42:09] [STDERR] 2025-11-04 17:42:09,544 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
 [2025-11-04 17:42:09] [STDERR] 2025-11-04 17:42:09,544 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,059 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,059 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,059 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,059 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,059 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,566 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,566 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,566 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,566 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:10] [STDERR] 2025-11-04 17:42:10,566 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,077 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,077 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,077 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,078 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,078 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,594 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,594 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,594 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,594 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:11] [STDERR] 2025-11-04 17:42:11,594 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,112 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,112 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,112 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,112 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,113 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,629 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,629 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,630 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,630 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:12] [STDERR] 2025-11-04 17:42:12,630 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,145 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,145 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,145 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,145 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,146 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,655 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,655 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,655 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,655 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:13] [STDERR] 2025-11-04 17:42:13,655 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,171 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,171 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,171 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,171 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,172 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,683 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,683 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,683 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,683 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:14] [STDERR] 2025-11-04 17:42:14,684 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,198 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,198 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,199 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,199 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,199 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,729 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,729 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,729 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,729 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:15] [STDERR] 2025-11-04 17:42:15,730 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:16] [STDERR] 2025-11-04 17:42:16,246 - gleitzeit.workers.signal_worker - INFO - SignalWorker found 2 signals in global registry
+[2025-11-04 17:42:16] [STDERR] 2025-11-04 17:42:16,246 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=workflow-completed
+[2025-11-04 17:42:16] [STDERR] 2025-11-04 17:42:16,247 - gleitzeit.workers.signal_worker - INFO - No waiters for signal workflow-completed in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
+[2025-11-04 17:42:16] [STDERR] 2025-11-04 17:42:16,247 - gleitzeit.workers.signal_worker - INFO - Processing registry entry: workflow=workflow-72d17d06-2a7c-4814-9916-9321dfc74316, signal=processing-complete
+[2025-11-04 17:42:16] [STDERR] 2025-11-04 17:42:16,247 - gleitzeit.workers.signal_worker - INFO - No waiters for signal processing-complete in workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 - keeping in registry
