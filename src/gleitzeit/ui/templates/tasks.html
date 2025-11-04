@@ -13,6 +13,37 @@
         .badge-running, .badge-pending { background: rgba(245, 158, 11, 0.1); color: var(--warning-color); }
         .badge-failed { background: rgba(239, 68, 68, 0.1); color: var(--error-color); }
         .loading { text-align: center; padding: 2rem; color: var(--text-secondary); }
+
+        /* Search and pagination styles */
+        .filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
     </style>
 {% endblock %}
 
@@ -21,8 +52,31 @@
         <h1 class="page-title">Tasks</h1>
 
         <div class="section">
+            <!-- Search filters -->
+            <div class="filters">
+                <input type="text" id="task-id-filter" placeholder="Search by Task ID" class="filter-input">
+                <input type="text" id="workflow-id-filter" placeholder="Search by Workflow ID" class="filter-input">
+                <select id="status-filter" class="filter-input" style="flex: 0 0 150px;">
+                    <option value="">All Statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="running">Running</option>
+                    <option value="pending">Pending</option>
+                    <option value="failed">Failed</option>
+                    <option value="waiting">Waiting</option>
+                </select>
+                <button onclick="applyFilters()" class="btn btn-primary">Search</button>
+                <button onclick="clearFilters()" class="btn btn-secondary">Clear</button>
+            </div>
+
             <div id="tasks-container">
                 <div class="loading">Loading tasks...</div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="pagination" style="display: none;">
+                <button onclick="loadPage(currentPage - 1)" class="btn btn-secondary btn-sm" id="prev-btn" disabled>Previous</button>
+                <span class="pagination-info" id="page-info"></span>
+                <button onclick="loadPage(currentPage + 1)" class="btn btn-secondary btn-sm" id="next-btn">Next</button>
             </div>
         </div>
     </div>
@@ -32,64 +86,128 @@
     <script>
         let ws = null;
         let wsReconnectTimeout = null;
+        let currentPage = 0;
+        let allTasks = [];
+        const pageSize = 100;
 
         async function loadTasks() {
             try {
-                const response = await fetch('/api/tasks/list?limit=100', {
+                const response = await fetch('/api/tasks/list?limit=1000', {
                     cache: 'no-cache'
                 });
                 const data = await response.json();
 
-                const container = document.getElementById('tasks-container');
-
-                if (!data.tasks || data.tasks.length === 0) {
-                    container.innerHTML = '<div class="loading">No tasks found</div>';
-                    return;
-                }
-
-                let html = '<table class="table"><thead><tr>';
-                html += '<th>Task ID</th><th>Type</th><th>Workflow ID</th><th>Status</th><th>Completed At</th><th>Actions</th>';
-                html += '</tr></thead><tbody>';
-
-                data.tasks.forEach(task => {
-                    const taskId = task.task_id || task.id || '';
-                    const workflowId = task.workflow_id || '-';
-                    const status = task.state?.status || task.status || 'unknown';
-                    const taskType = task.task_type || 'unknown';
-
-                    // Get timestamp - prefer completed_at, then executed_at
-                    const completedAt = task.state?.completed_at || task.completed_at ||
-                                       task.state?.executed_at || task.executed_at || null;
-
-                    let timeStr = '-';
-                    if (completedAt) {
-                        const date = new Date(completedAt);
-                        timeStr = date.toLocaleString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        });
-                    }
-
-                    html += '<tr>';
-                    html += `<td><code>${taskId.substring(0, 12)}...</code></td>`;
-                    html += `<td><span style="font-size: 0.75rem; font-weight: 600; color: var(--primary-color);">${taskType}</span></td>`;
-                    html += `<td>${workflowId !== '-' ? '<code>' + workflowId.substring(0, 12) + '...</code>' : '-'}</td>`;
-                    html += `<td><span class="badge badge-${status}">${status}</span></td>`;
-                    html += `<td style="font-size: 0.875rem; color: var(--text-secondary);">${timeStr}</td>`;
-                    html += `<td><a href="/tasks/${taskId}" class="btn btn-primary btn-sm">View</a></td>`;
-                    html += '</tr>';
-                });
-
-                html += '</tbody></table>';
-                container.innerHTML = html;
+                allTasks = data.tasks || [];
+                currentPage = 0;
+                displayTasks();
             } catch (error) {
                 console.error('Error loading tasks:', error);
                 document.getElementById('tasks-container').innerHTML =
                     '<div class="loading">Error loading tasks: ' + error.message + '</div>';
             }
+        }
+
+        function displayTasks() {
+            const container = document.getElementById('tasks-container');
+
+            // Apply filters
+            let filtered = allTasks;
+
+            const taskIdFilter = document.getElementById('task-id-filter').value.toLowerCase();
+            const workflowIdFilter = document.getElementById('workflow-id-filter').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value.toLowerCase();
+
+            if (taskIdFilter) {
+                filtered = filtered.filter(t => (t.task_id || t.id || '').toLowerCase().includes(taskIdFilter));
+            }
+            if (workflowIdFilter) {
+                filtered = filtered.filter(t => (t.workflow_id || '').toLowerCase().includes(workflowIdFilter));
+            }
+            if (statusFilter) {
+                filtered = filtered.filter(t => {
+                    const status = (t.state?.status || t.status || '').toLowerCase();
+                    return status === statusFilter;
+                });
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="loading">No tasks found</div>';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            // Pagination
+            const start = currentPage * pageSize;
+            const end = start + pageSize;
+            const pageTasks = filtered.slice(start, end);
+            const totalPages = Math.ceil(filtered.length / pageSize);
+
+            let html = '<table class="table"><thead><tr>';
+            html += '<th>Task ID</th><th>Type</th><th>Workflow ID</th><th>Status</th><th>Completed At</th><th>Actions</th>';
+            html += '</tr></thead><tbody>';
+
+            pageTasks.forEach(task => {
+                const taskId = task.task_id || task.id || '';
+                const workflowId = task.workflow_id || '-';
+                const status = task.state?.status || task.status || 'unknown';
+                const taskType = task.task_type || 'unknown';
+
+                // Get timestamp - prefer completed_at, then executed_at
+                const completedAt = task.state?.completed_at || task.completed_at ||
+                                   task.state?.executed_at || task.executed_at || null;
+
+                let timeStr = '-';
+                if (completedAt) {
+                    const date = new Date(completedAt);
+                    timeStr = date.toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    });
+                }
+
+                html += '<tr>';
+                html += `<td><code>${taskId.substring(0, 12)}...</code></td>`;
+                html += `<td><span style="font-size: 0.75rem; font-weight: 600; color: var(--primary-color);">${taskType}</span></td>`;
+                html += `<td>${workflowId !== '-' ? '<code>' + workflowId.substring(0, 12) + '...</code>' : '-'}</td>`;
+                html += `<td><span class="badge badge-${status}">${status}</span></td>`;
+                html += `<td style="font-size: 0.875rem; color: var(--text-secondary);">${timeStr}</td>`;
+                html += `<td><a href="/tasks/${taskId}" class="btn btn-primary btn-sm">View</a></td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            // Update pagination
+            if (filtered.length > pageSize) {
+                document.getElementById('pagination').style.display = 'flex';
+                document.getElementById('page-info').textContent = `Page ${currentPage + 1} of ${totalPages} (${filtered.length} tasks)`;
+                document.getElementById('prev-btn').disabled = currentPage === 0;
+                document.getElementById('next-btn').disabled = end >= filtered.length;
+            } else {
+                document.getElementById('pagination').style.display = 'none';
+            }
+        }
+
+        function loadPage(page) {
+            currentPage = page;
+            displayTasks();
+        }
+
+        function applyFilters() {
+            currentPage = 0;
+            displayTasks();
+        }
+
+        function clearFilters() {
+            document.getElementById('task-id-filter').value = '';
+            document.getElementById('workflow-id-filter').value = '';
+            document.getElementById('status-filter').value = '';
+            currentPage = 0;
+            displayTasks();
         }
 
         function connectWebSocket() {

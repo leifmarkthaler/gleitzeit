@@ -67,6 +67,37 @@
                 opacity: 1;
             }
         }
+
+        /* Search and pagination styles */
+        .filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+            margin-top: 1rem;
+            justify-content: center;
+        }
+
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
     </style>
 {% endblock %}
 
@@ -75,8 +106,31 @@
         <h1 class="page-title">Workflows</h1>
 
         <div class="section">
+            <!-- Search filters -->
+            <div class="filters">
+                <input type="text" id="workflow-id-filter" placeholder="Search by Workflow ID" class="filter-input">
+                <input type="text" id="workflow-name-filter" placeholder="Search by Name" class="filter-input">
+                <select id="status-filter" class="filter-input" style="flex: 0 0 150px;">
+                    <option value="">All Statuses</option>
+                    <option value="completed">Completed</option>
+                    <option value="running">Running</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="failed">Failed</option>
+                    <option value="pending">Pending</option>
+                </select>
+                <button onclick="applyFilters()" class="btn btn-primary">Search</button>
+                <button onclick="clearFilters()" class="btn btn-secondary">Clear</button>
+            </div>
+
             <div id="workflows-container">
                 <div class="loading">Loading workflows...</div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination" id="pagination" style="display: none;">
+                <button onclick="loadPage(currentPage - 1)" class="btn btn-secondary btn-sm" id="prev-btn" disabled>Previous</button>
+                <span class="pagination-info" id="page-info"></span>
+                <button onclick="loadPage(currentPage + 1)" class="btn btn-secondary btn-sm" id="next-btn">Next</button>
             </div>
         </div>
     </div>
@@ -86,63 +140,124 @@
     <script>
         let ws = null;
         let wsReconnectTimeout = null;
+        let currentPage = 0;
+        let allWorkflows = [];
+        const pageSize = 100;
 
         async function loadWorkflows() {
             try {
-                const response = await fetch('/api/workflows/list?limit=100', {
+                const response = await fetch('/api/workflows/list?limit=1000', {
                     cache: 'no-cache'
                 });
                 const data = await response.json();
 
-                const container = document.getElementById('workflows-container');
-
-                if (!data.workflows || data.workflows.length === 0) {
-                    container.innerHTML = '<div class="loading">No workflows found</div>';
-                    return;
-                }
-
-                let html = '<table class="table"><thead><tr>';
-                html += '<th>ID</th><th>Name</th><th>Status</th><th>Tasks</th><th>Created</th><th>Actions</th>';
-                html += '</tr></thead><tbody>';
-
-                data.workflows.forEach(workflow => {
-                    const id = workflow.workflow_id || workflow.id || '';
-                    const name = workflow.name || 'Unnamed';
-                    const status = workflow.status || 'unknown';
-                    const taskCount = workflow.task_count || workflow.tasks?.length || 0;
-                    const created = workflow.created_at || workflow.submitted_at || '-';
-
-                    // Convert UTC timestamp to local time
-                    let createdLocal = created;
-                    if (created !== '-') {
-                        const date = new Date(created);
-                        createdLocal = date.toLocaleString('sv-SE', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        }).replace(',', '');
-                    }
-
-                    html += '<tr>';
-                    html += `<td><code>${id.substring(0, 12)}...</code></td>`;
-                    html += `<td>${name}</td>`;
-                    html += `<td><span class="badge badge-${status}">${status}</span></td>`;
-                    html += `<td>${taskCount}</td>`;
-                    html += `<td>${createdLocal}</td>`;
-                    html += `<td><a href="/workflows/${id}" class="btn btn-primary btn-sm">View</a></td>`;
-                    html += '</tr>';
-                });
-
-                html += '</tbody></table>';
-                container.innerHTML = html;
+                allWorkflows = data.workflows || [];
+                currentPage = 0;
+                displayWorkflows();
             } catch (error) {
                 console.error('Error loading workflows:', error);
                 document.getElementById('workflows-container').innerHTML =
                     '<div class="loading">Error loading workflows: ' + error.message + '</div>';
             }
+        }
+
+        function displayWorkflows() {
+            const container = document.getElementById('workflows-container');
+
+            // Apply filters
+            let filtered = allWorkflows;
+
+            const idFilter = document.getElementById('workflow-id-filter').value.toLowerCase();
+            const nameFilter = document.getElementById('workflow-name-filter').value.toLowerCase();
+            const statusFilter = document.getElementById('status-filter').value.toLowerCase();
+
+            if (idFilter) {
+                filtered = filtered.filter(w => (w.workflow_id || w.id || '').toLowerCase().includes(idFilter));
+            }
+            if (nameFilter) {
+                filtered = filtered.filter(w => (w.name || '').toLowerCase().includes(nameFilter));
+            }
+            if (statusFilter) {
+                filtered = filtered.filter(w => (w.status || '').toLowerCase() === statusFilter);
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="loading">No workflows found</div>';
+                document.getElementById('pagination').style.display = 'none';
+                return;
+            }
+
+            // Pagination
+            const start = currentPage * pageSize;
+            const end = start + pageSize;
+            const pageWorkflows = filtered.slice(start, end);
+            const totalPages = Math.ceil(filtered.length / pageSize);
+
+            let html = '<table class="table"><thead><tr>';
+            html += '<th>ID</th><th>Name</th><th>Status</th><th>Tasks</th><th>Created</th><th>Actions</th>';
+            html += '</tr></thead><tbody>';
+
+            pageWorkflows.forEach(workflow => {
+                const id = workflow.workflow_id || workflow.id || '';
+                const name = workflow.name || 'Unnamed';
+                const status = workflow.status || 'unknown';
+                const taskCount = workflow.task_count || workflow.tasks?.length || 0;
+                const created = workflow.created_at || workflow.submitted_at || '-';
+
+                // Convert UTC timestamp to local time
+                let createdLocal = created;
+                if (created !== '-') {
+                    const date = new Date(created);
+                    createdLocal = date.toLocaleString('sv-SE', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit'
+                    }).replace(',', '');
+                }
+
+                html += '<tr>';
+                html += `<td><code>${id.substring(0, 12)}...</code></td>`;
+                html += `<td>${name}</td>`;
+                html += `<td><span class="badge badge-${status}">${status}</span></td>`;
+                html += `<td>${taskCount}</td>`;
+                html += `<td>${createdLocal}</td>`;
+                html += `<td><a href="/workflows/${id}" class="btn btn-primary btn-sm">View</a></td>`;
+                html += '</tr>';
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+
+            // Update pagination
+            if (filtered.length > pageSize) {
+                document.getElementById('pagination').style.display = 'flex';
+                document.getElementById('page-info').textContent = `Page ${currentPage + 1} of ${totalPages} (${filtered.length} workflows)`;
+                document.getElementById('prev-btn').disabled = currentPage === 0;
+                document.getElementById('next-btn').disabled = end >= filtered.length;
+            } else {
+                document.getElementById('pagination').style.display = 'none';
+            }
+        }
+
+        function loadPage(page) {
+            currentPage = page;
+            displayWorkflows();
+        }
+
+        function applyFilters() {
+            currentPage = 0;
+            displayWorkflows();
+        }
+
+        function clearFilters() {
+            document.getElementById('workflow-id-filter').value = '';
+            document.getElementById('workflow-name-filter').value = '';
+            document.getElementById('status-filter').value = '';
+            currentPage = 0;
+            displayWorkflows();
         }
 
         function connectWebSocket() {
