@@ -1,6 +1,0 @@
-[2025-09-29 12:00:03] [STDERR] INFO:     Started server process [78546]
-[2025-09-29 12:00:03] [STDERR] INFO:     Waiting for application startup.
-[2025-09-29 12:00:03] [STDERR] INFO:     Application startup complete.
-[2025-09-29 12:00:03] [STDERR] ERROR:    [Errno 48] error while attempting to bind on address ('0.0.0.0', 8000): address already in use
-[2025-09-29 12:00:03] [STDERR] INFO:     Waiting for application shutdown.
-[2025-09-29 12:00:03] [STDERR] INFO:     Application shutdown complete.

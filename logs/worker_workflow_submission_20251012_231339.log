@@ -1,9 +1,0 @@
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,482 - __main__ - INFO - Loading configuration from Redis key: worker:config:workflow_submission-async:37ba8c28
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,485 - __main__ - INFO - Loaded config for worker workflow_submission-async
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,486 - __main__ - INFO - Worker workflow_submission-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,486 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,486 - gleitzeit.workers.workflow_submission_worker - INFO - WorkflowSubmissionWorker initialized with shards [] monitoring streams: ['workflow:submit']
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,488 - workflow_submission.workflow_submission-async - INFO - Worker workflow_submission-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,488 - __main__ - INFO - Worker workflow_submission-async started successfully
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,488 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
-[2025-10-12 23:13:39] [STDERR] 2025-10-12 23:13:39,488 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_submission-async

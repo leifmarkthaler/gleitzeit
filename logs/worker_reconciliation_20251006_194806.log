@@ -1,8 +1,0 @@
-[2025-10-06 19:48:06] [STDERR] 2025-10-06 19:48:06,895 - __main__ - INFO - Loading configuration from Redis key: worker:config:reconciliation-async:e6e73004
-[2025-10-06 19:48:06] [STDERR] 2025-10-06 19:48:06,899 - __main__ - INFO - Loaded config for worker reconciliation-async
-[2025-10-06 19:48:06] [STDERR] 2025-10-06 19:48:06,899 - __main__ - INFO - Worker reconciliation-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
-[2025-10-06 19:48:06] [STDERR] 2025-10-06 19:48:06,900 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
-[2025-10-06 19:48:06] [STDERR] 2025-10-06 19:48:06,900 - gleitzeit.workers.reconciliation_worker - INFO - WorkflowReconciliationWorker initialized: scan_interval=60s, batch_size=100, shards=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-[2025-10-06 19:48:06] [STDERR] 2025-10-06 19:48:06,901 - reconciliation.reconciliation-async - INFO - Worker reconciliation-async initialized with Redis Cluster, shards [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-[2025-10-06 19:48:06] [STDERR] 2025-10-06 19:48:06,901 - __main__ - INFO - Worker reconciliation-async started successfully
-[2025-10-06 19:48:06] [STDERR] 2025-10-06 19:48:06,901 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']

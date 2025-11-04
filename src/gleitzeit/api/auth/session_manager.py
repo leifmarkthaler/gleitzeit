@@ -27,7 +27,7 @@ class SessionManager:
         self.session_ttl = session_ttl
         self.auto_extend = auto_extend
 
-    async def create_session(self, user: User) -> Session:
+    async def create_session(self, user: User) -> str:
         """Create new session for user"""
 
         session_id = str(uuid.uuid4())
@@ -60,7 +60,7 @@ class SessionManager:
         await self.redis.expire(key.encode(), self.session_ttl)
 
         logger.info(f"Created session {session_id} for user {user.username}")
-        return session
+        return session_id
 
     async def get_session(self, session_id: str) -> Optional[User]:
         """Get user from session ID"""

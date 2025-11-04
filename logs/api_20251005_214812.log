@@ -1,4 +1,0 @@
-[2025-10-05 21:48:12] [STDERR] INFO:     Started server process [57782]
-[2025-10-05 21:48:12] [STDERR] INFO:     Waiting for application startup.
-[2025-10-05 21:48:12] [STDERR] INFO:     Application startup complete.
-[2025-10-05 21:48:12] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)

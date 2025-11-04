@@ -1,5 +1,0 @@
-[2025-10-11 15:41:14] [STDERR] INFO:     Started server process [35505]
-[2025-10-11 15:41:14] [STDERR] INFO:     Waiting for application startup.
-[2025-10-11 15:41:14] [STDERR] INFO:     Application startup complete.
-[2025-10-11 15:41:14] [STDERR] INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-[2025-10-11 15:41:18] [STDOUT] INFO:     127.0.0.1:51543 - "GET /health/detailed HTTP/1.1" 200 OK

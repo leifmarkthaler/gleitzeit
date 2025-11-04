@@ -548,6 +548,8 @@
 let currentErrorOffset = 0;
 let currentLogOffset = 0;
 let currentTab = 'errors';
+let ws = null;
+let wsReconnectTimeout = null;
 
 function switchTab(tab) {
     // Hide all tabs
@@ -781,12 +783,80 @@ function clearStatsFilters() {
     loadStats();
 }
 
+function connectWebSocket() {
+    // Don't reconnect if already connected
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        return;
+    }
+
+    // Connect to API WebSocket at port 8000
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//localhost:8000/ws/events`;
+
+    console.log('Connecting to API WebSocket:', wsUrl);
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log('WebSocket connected');
+        // Clear any pending reconnect
+        if (wsReconnectTimeout) {
+            clearTimeout(wsReconnectTimeout);
+            wsReconnectTimeout = null;
+        }
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            console.log('WebSocket message:', message);
+
+            // Reload logs on any error or log event
+            if (message.type === 'error_event' || message.type === 'log_event' ||
+                message.type === 'workflow_event' || message.type === 'task_event') {
+                // Reload current tab data
+                if (currentTab === 'errors') {
+                    loadErrors(currentErrorOffset);
+                } else if (currentTab === 'all') {
+                    loadLogs(currentLogOffset);
+                } else if (currentTab === 'stats') {
+                    loadStats();
+                }
+            } else if (message.type === 'connected') {
+                console.log('WebSocket connection confirmed:', message.message);
+            } else if (message.type === 'ping') {
+                // Respond to ping with pong
+                ws.send(JSON.stringify({action: 'ping'}));
+            }
+        } catch (error) {
+            console.error('Error handling WebSocket message:', error);
+        }
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        // Attempt to reconnect after 5 seconds
+        wsReconnectTimeout = setTimeout(connectWebSocket, 5000);
+    };
+}
+
 // Load initial data
 document.addEventListener('DOMContentLoaded', function() {
     loadErrors();
+    connectWebSocket();
 });
 
-// Auto-refresh every 30 seconds
+// Clean up WebSocket on page unload
+window.addEventListener('beforeunload', () => {
+    if (ws) {
+        ws.close();
+    }
+});
+
+// Auto-refresh every 30 seconds as backup (WebSocket is primary)
 setInterval(() => {
     if (currentTab === 'errors') {
         loadErrors(currentErrorOffset);

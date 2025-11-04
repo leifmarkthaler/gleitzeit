@@ -738,6 +738,34 @@ class AsyncServiceManager:
                 "mode": "native"
             })
 
+    async def start_orchestrator(self):
+        """Start the Component Orchestrator as a standalone process"""
+        config_file = str(self.config_file or 'gleitzeit.yaml')
+
+        command = [
+            sys.executable, "-m", "gleitzeit.cli.main",
+            "orchestrator", "start",
+            "--config", config_file
+        ]
+
+        logger.info(f"Starting orchestrator: {' '.join(command)}")
+
+        result = await self.process_manager.start_process(
+            name="orchestrator",
+            command=command,
+            port=None  # Orchestrator doesn't need a port
+        )
+
+        # Register in service registry
+        if result and self.smart_manager:
+            await self.smart_manager.register_service("orchestrator", {
+                "pid": str(result.pid),
+                "worker_type": "orchestrator",
+                "worker_id": "orchestrator",
+                "started_at": datetime.now().isoformat(),
+                "mode": "native"
+            })
+
     def _apply_overrides(self, worker_config: dict, cli_overrides: dict) -> Optional[dict]:
         """
         Apply CLI flags to worker configuration.
@@ -901,6 +929,15 @@ class AsyncServiceManager:
             await self.start_redis_monitor(monitor_config)
         else:
             logger.info(f"Redis monitor not enabled (config: {monitor_config})")
+
+        # Start Component Orchestrator if enabled (standalone process)
+        serve_config = self.config_manager.get_value('serve') or {}
+        orchestrator_config = serve_config.get('orchestrator', {})
+        if orchestrator_config.get('enabled', False):
+            logger.info("🚀 Starting Component Orchestrator...")
+            await self.start_orchestrator()
+        else:
+            logger.info(f"Component Orchestrator not enabled (config: {orchestrator_config})")
 
         return await self.process_manager.monitor_processes()
 

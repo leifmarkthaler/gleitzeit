@@ -824,30 +824,38 @@ def workflow_status(ctx, workflow_id):
     async def check():
         redis = await aioredis.from_url(ctx.obj['redis_url'])
 
-        # Get workflow status
-        status_data = await redis.hgetall(default_sharding.get_workflow_key("status", workflow_id).encode())
-
-        if not status_data:
-            click.echo(f"❌ Workflow not found: {workflow_id}")
-        else:
-            click.echo(f"\n📋 Workflow: {workflow_id}")
-            click.echo("-" * 50)
-
-            for key, value in status_data.items():
-                k = key.decode()
-                v = value.decode()
-                click.echo(f"  {k}: {v}")
-
-        # Get workflow data
+        # Get workflow data first to check if workflow exists
         workflow_data = await redis.hget(
             default_sharding.get_workflow_key("data", workflow_id).encode(),
             b"workflow"
         )
 
-        if workflow_data:
-            data = json.loads(workflow_data)
-            click.echo(f"\n  Name: {data.get('name', 'N/A')}")
-            click.echo(f"  Tasks: {len(data.get('tasks', []))}")
+        if not workflow_data:
+            click.echo(f"❌ Workflow not found: {workflow_id}")
+            await redis.aclose()
+            return
+
+        # Parse workflow data
+        data = json.loads(workflow_data)
+
+        # Get workflow status
+        status_data = await redis.hgetall(default_sharding.get_workflow_key("status", workflow_id).encode())
+
+        # Display workflow info
+        click.echo(f"\n📋 Workflow: {workflow_id}")
+        click.echo("-" * 50)
+        click.echo(f"  Name: {data.get('name', 'N/A')}")
+        click.echo(f"  Tasks: {len(data.get('tasks', []))}")
+
+        # Display status if available
+        if status_data:
+            click.echo("\n  Status:")
+            for key, value in status_data.items():
+                k = key.decode()
+                v = value.decode()
+                click.echo(f"    {k}: {v}")
+        else:
+            click.echo("\n  Status: No status data available (workflow may be completed)")
 
         await redis.aclose()
 
