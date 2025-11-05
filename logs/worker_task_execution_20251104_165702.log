@@ -244,3 +244,6 @@
 [2025-11-04 17:40:59] [STDERR] 2025-11-04 17:40:59,438 - gleitzeit.handlers.signal - INFO - Task b654c94b-fb60-46db-bb72-f0adf49802f0 sending signal 'processing-complete' to 1 workflow(s)
 [2025-11-04 17:40:59] [STDERR] 2025-11-04 17:40:59,440 - gleitzeit.workers.task_execution_worker - INFO - Emitted signal 'processing-complete' (ID: 1762274459440-0) within workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316, registered in global registry
 [2025-11-04 17:40:59] [STDERR] 2025-11-04 17:40:59,441 - gleitzeit.workers.task_execution_worker - INFO - Task b654c94b-fb60-46db-bb72-f0adf49802f0 completed successfully by handler 8f1edc46-3647-42c2-8005-df713dd70ec7
+[2025-11-04 17:56:27] [STDERR] 2025-11-04 17:56:27,480 - task_execution.task_execution-async - INFO - Shutdown signal received for task_execution-async
+[2025-11-04 17:56:30] [STDERR] 2025-11-04 17:56:30,378 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-11-04 17:56:30] [STDERR] 2025-11-04 17:56:30,379 - task_execution.task_execution-async - INFO - Worker task_execution-async cleaned up

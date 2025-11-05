@@ -1,0 +1,16 @@
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,046 - __main__ - INFO - Initialized worker instance identity: gleitzei-6d0424c7
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,046 - __main__ - INFO - Loading configuration from Redis key: worker:config:reconciliation-async:68943e1a
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,048 - __main__ - INFO - Loaded config for worker reconciliation-async
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,049 - __main__ - INFO - Worker reconciliation-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,049 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,050 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [] -> [14, 15] (7 instances)
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,050 - gleitzeit.workers.reconciliation_worker - INFO - WorkflowReconciliationWorker initialized: scan_interval=60s, batch_size=100, shards=[14, 15]
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,050 - reconciliation.reconciliation-async - INFO - Worker reconciliation-async initialized with Redis Cluster, shards [14, 15]
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,050 - __main__ - INFO - Worker reconciliation-async started successfully
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,050 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,051 - gleitzeit.core.reconciliation_sharding - INFO - Starting reconciliation shard assignment heartbeat (interval=30s)
+[2025-11-04 18:10:13] [STDERR] 2025-11-04 18:10:13,052 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 0 -> 7
+[2025-11-04 18:10:43] [STDERR] 2025-11-04 18:10:43,203 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 7 -> 9
+[2025-11-04 18:10:43] [STDERR] 2025-11-04 18:10:43,310 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [14, 15] -> [14] (9 instances)
+[2025-11-04 18:11:13] [STDERR] 2025-11-04 18:11:13,415 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 9 -> 5
+[2025-11-04 18:11:13] [STDERR] 2025-11-04 18:11:13,416 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [14] -> [10, 11, 12] (5 instances)

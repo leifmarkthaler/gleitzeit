@@ -28,43 +28,30 @@
     <div id="health-tab" class="tab-content-modern active">
 
     <!-- System Overview -->
-    <div class="metrics-section">
+    <div class="section-modern">
+        <div class="section-header">
+            <h2 class="section-title">📊 System Overview</h2>
+        </div>
         {% if metrics %}
-        <div class="metric-card-modern metric-workflows">
-            <div class="metric-icon">📊</div>
-            <div class="metric-content">
-                <div class="metric-label-modern">Total Workflows</div>
-                <div class="metric-value-modern">{{ metrics.workflows.total }}</div>
-                <div class="metric-sublabel">
-                    <span class="running-count">{{ metrics.workflows.running }}</span> running
-                </div>
-            </div>
-        </div>
-        <div class="metric-card-modern metric-tasks">
-            <div class="metric-icon">✓</div>
-            <div class="metric-content">
-                <div class="metric-label-modern">Total Tasks</div>
-                <div class="metric-value-modern">{{ metrics.tasks.total }}</div>
-                <div class="metric-sublabel">
-                    <span class="running-count">{{ metrics.tasks.running }}</span> running
-                </div>
-            </div>
-        </div>
-        <div class="metric-card-modern metric-completed">
-            <div class="metric-icon">🎉</div>
-            <div class="metric-content">
-                <div class="metric-label-modern">Completed</div>
-                <div class="metric-value-modern">{{ metrics.workflows.completed }}</div>
-                <div class="metric-sublabel">workflows</div>
-            </div>
-        </div>
-        <div class="metric-card-modern metric-workers">
-            <div class="metric-icon">⚙️</div>
-            <div class="metric-content">
-                <div class="metric-label-modern">Active Workers</div>
-                <div class="metric-value-modern">{{ workers|length }}</div>
-                <div class="metric-sublabel">healthy</div>
-            </div>
+        <div class="list-container">
+            <ul class="metrics-list">
+                <li class="metric-item">
+                    <span class="metric-label">Total Workflows</span>
+                    <span class="metric-value">{{ metrics.workflows.total }} <span class="metric-detail">({{ metrics.workflows.running }} running)</span></span>
+                </li>
+                <li class="metric-item">
+                    <span class="metric-label">Total Tasks</span>
+                    <span class="metric-value">{{ metrics.tasks.total }} <span class="metric-detail">({{ metrics.tasks.running }} running)</span></span>
+                </li>
+                <li class="metric-item">
+                    <span class="metric-label">Completed Workflows</span>
+                    <span class="metric-value">{{ metrics.workflows.completed }}</span>
+                </li>
+                <li class="metric-item">
+                    <span class="metric-label">Active Workers</span>
+                    <span class="metric-value">{{ workers|length }}</span>
+                </li>
+            </ul>
         </div>
         {% else %}
         <div class="empty-state">
@@ -79,36 +66,21 @@
             <h2 class="section-title">📊 Queue Status</h2>
         </div>
         {% if queues %}
-        <div class="queue-grid-modern">
-            {% for queue_name, queue_depth in queues.items() %}
-            <div class="queue-card-modern {% if queue_depth > 100 %}queue-high{% elif queue_depth > 0 %}queue-active{% else %}queue-empty{% endif %}">
-                <div class="queue-indicator">
-                    {% if queue_depth > 100 %}
-                    <div class="pulse-dot pulse-warning"></div>
-                    {% elif queue_depth > 0 %}
-                    <div class="pulse-dot pulse-info"></div>
-                    {% else %}
-                    <div class="pulse-dot pulse-gray"></div>
-                    {% endif %}
-                </div>
-                <div class="queue-info">
-                    <div class="queue-name-modern">{{ queue_name.replace(':', ' › ') }}</div>
-                    <div class="queue-count">
-                        <span class="count-number">{{ queue_depth }}</span>
-                        <span class="count-label">messages</span>
-                    </div>
-                </div>
-                <div class="queue-status-badge">
-                    {% if queue_depth > 100 %}
-                    High Load
-                    {% elif queue_depth > 0 %}
-                    Active
-                    {% else %}
-                    Idle
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
+        <div class="list-container">
+            <ul class="queue-list">
+                {% for queue_name, queue_depth in queues.items() %}
+                <li class="queue-item {% if queue_depth > 100 %}queue-high{% elif queue_depth > 0 %}queue-active{% else %}queue-empty{% endif %}">
+                    <span class="queue-status-indicator">
+                        {% if queue_depth > 100 %}⚠️
+                        {% elif queue_depth > 0 %}●
+                        {% else %}○
+                        {% endif %}
+                    </span>
+                    <span class="queue-name">{{ queue_name.replace(':', ' › ') }}</span>
+                    <span class="queue-depth">{{ queue_depth }} messages</span>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
         {% else %}
         <div class="empty-state">
@@ -124,55 +96,47 @@
             <div class="worker-count-badge">{{ workers|length }} Active</div>
         </div>
         {% if workers %}
-        <div class="workers-grid">
-            {% for worker_id, worker_data in workers.items() %}
-            <div class="worker-card {% if worker_data.status == 'healthy' %}worker-healthy{% elif worker_data.status == 'degraded' %}worker-degraded{% else %}worker-unhealthy{% endif %}">
-                <div class="worker-header">
-                    <div class="worker-type-icon">
-                        {% if worker_data.worker_type == 'task_execution' %}⚡
-                        {% elif worker_data.worker_type == 'python_specialist' %}🐍
-                        {% elif worker_data.worker_type == 'dependency' %}🔗
-                        {% elif worker_data.worker_type == 'retry' %}🔄
-                        {% elif worker_data.worker_type == 'reconciliation' %}🔍
-                        {% elif worker_data.worker_type == 'workflow_loader' %}📥
-                        {% elif worker_data.worker_type == 'workflow_submission' %}📤
-                        {% else %}⚙️
-                        {% endif %}
-                    </div>
-                    <div class="worker-status-indicator">
-                        {% if worker_data.status == "healthy" %}
-                        <div class="status-dot status-healthy"></div>
-                        {% elif worker_data.status == "degraded" %}
-                        <div class="status-dot status-degraded"></div>
-                        {% else %}
-                        <div class="status-dot status-unhealthy"></div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="worker-name">{{ worker_data.worker_type|replace('_', ' ')|title }}</div>
-                <div class="worker-id-code">{{ worker_id[:20] }}...</div>
-                <div class="worker-stats">
-                    <div class="worker-stat">
-                        <div class="stat-value">{{ worker_data.tasks_processed|default("0") }}</div>
-                        <div class="stat-label">Processed</div>
-                    </div>
-                    <div class="worker-stat">
-                        <div class="stat-value {% if worker_data.errors|default(0) > 0 %}stat-errors{% endif %}">
-                            {{ worker_data.errors|default("0") }}
-                        </div>
-                        <div class="stat-label">Errors</div>
-                    </div>
-                    <div class="worker-stat">
-                        <div class="stat-value">{{ worker_data.cpu_percent|default(0)|round(1) }}%</div>
-                        <div class="stat-label">CPU</div>
-                    </div>
-                    <div class="worker-stat">
-                        <div class="stat-value">{{ worker_data.memory_mb|default(0)|round(1) }} MB</div>
-                        <div class="stat-label">Memory</div>
-                    </div>
-                </div>
-            </div>
-            {% endfor %}
+        <div class="list-container">
+            <table class="info-table">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Worker Type</th>
+                        <th>Processed</th>
+                        <th>Errors</th>
+                        <th>CPU</th>
+                        <th>Memory</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for worker_id, worker_data in workers.items() %}
+                    <tr>
+                        <td class="icon-cell">
+                            {% if worker_data.worker_type == 'task_execution' %}⚡
+                            {% elif worker_data.worker_type == 'python_specialist' %}🐍
+                            {% elif worker_data.worker_type == 'dependency' %}🔗
+                            {% elif worker_data.worker_type == 'retry' %}🔄
+                            {% elif worker_data.worker_type == 'reconciliation' %}🔍
+                            {% elif worker_data.worker_type == 'workflow_loader' %}📥
+                            {% elif worker_data.worker_type == 'workflow_submission' %}📤
+                            {% else %}⚙️
+                            {% endif %}
+                        </td>
+                        <td class="name-cell">{{ worker_data.worker_type|replace('_', ' ')|title }}</td>
+                        <td>{{ worker_data.tasks_processed|default("0") }}</td>
+                        <td>{{ worker_data.errors|default("0") }}</td>
+                        <td>{{ worker_data.cpu_percent|default(0)|round(1) }}%</td>
+                        <td>{{ worker_data.memory_mb|default(0)|round(1) }} MB</td>
+                        <td>
+                            <span class="worker-status {% if worker_data.status == 'healthy' %}status-healthy{% elif worker_data.status == 'degraded' %}status-degraded{% else %}status-unhealthy{% endif %}">
+                                {{ worker_data.status|capitalize }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
         {% else %}
         <div class="empty-state">
@@ -194,53 +158,36 @@
         </div>
 
         {% if orchestrator.metrics.workers %}
-        <div class="metrics-section" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
-            {% set total_workers = orchestrator.metrics.workers|length %}
-            {% set orch_processed = namespace(count=0) %}
-            {% set orch_failed = namespace(count=0) %}
-            {% set orch_memory = namespace(mb=0.0) %}
+        {% set total_workers = orchestrator.metrics.workers|length %}
+        {% set orch_processed = namespace(count=0) %}
+        {% set orch_failed = namespace(count=0) %}
+        {% set orch_memory = namespace(mb=0.0) %}
 
-            {% for worker_id, metrics in orchestrator.metrics.workers.items() %}
-                {% set orch_processed.count = orch_processed.count + (metrics.processed|int) %}
-                {% set orch_failed.count = orch_failed.count + (metrics.failed|int) %}
-                {% set orch_memory.mb = orch_memory.mb + (metrics.memory_mb|float) %}
-            {% endfor %}
+        {% for worker_id, metrics in orchestrator.metrics.workers.items() %}
+            {% set orch_processed.count = orch_processed.count + (metrics.processed|int) %}
+            {% set orch_failed.count = orch_failed.count + (metrics.failed|int) %}
+            {% set orch_memory.mb = orch_memory.mb + (metrics.memory_mb|float) %}
+        {% endfor %}
 
-            <div class="metric-card-modern metric-workers">
-                <div class="metric-icon">⚙️</div>
-                <div class="metric-content">
-                    <div class="metric-label-modern">Active Workers</div>
-                    <div class="metric-value-modern">{{ total_workers }}</div>
-                    <div class="metric-sublabel">reporting</div>
-                </div>
-            </div>
-
-            <div class="metric-card-modern metric-completed">
-                <div class="metric-icon">✅</div>
-                <div class="metric-content">
-                    <div class="metric-label-modern">Total Processed</div>
-                    <div class="metric-value-modern">{{ orch_processed.count }}</div>
-                    <div class="metric-sublabel">tasks</div>
-                </div>
-            </div>
-
-            <div class="metric-card-modern metric-tasks">
-                <div class="metric-icon">❌</div>
-                <div class="metric-content">
-                    <div class="metric-label-modern">Total Failed</div>
-                    <div class="metric-value-modern">{{ orch_failed.count }}</div>
-                    <div class="metric-sublabel">tasks</div>
-                </div>
-            </div>
-
-            <div class="metric-card-modern metric-memory">
-                <div class="metric-icon">💾</div>
-                <div class="metric-content">
-                    <div class="metric-label-modern">Total Memory</div>
-                    <div class="metric-value-modern">{{ "%.1f"|format(orch_memory.mb) }}</div>
-                    <div class="metric-sublabel">MB</div>
-                </div>
-            </div>
+        <div class="list-container">
+            <ul class="metrics-list">
+                <li class="metric-item">
+                    <span class="metric-label">Active Workers</span>
+                    <span class="metric-value">{{ total_workers }}</span>
+                </li>
+                <li class="metric-item">
+                    <span class="metric-label">Total Processed</span>
+                    <span class="metric-value">{{ orch_processed.count }} tasks</span>
+                </li>
+                <li class="metric-item">
+                    <span class="metric-label">Total Failed</span>
+                    <span class="metric-value">{{ orch_failed.count }} tasks</span>
+                </li>
+                <li class="metric-item">
+                    <span class="metric-label">Total Memory</span>
+                    <span class="metric-value">{{ "%.1f"|format(orch_memory.mb) }} MB</span>
+                </li>
+            </ul>
         </div>
         {% else %}
         <div class="empty-state">
@@ -255,47 +202,49 @@
         <div class="section-header">
             <h2 class="section-title">📦 Available Handlers</h2>
         </div>
-        <div class="handlers-grid">
-            <div class="handler-card-modern handler-python">
-                <div class="handler-icon-modern">🐍</div>
-                <div class="handler-name-modern">Python</div>
-                <div class="handler-protocol-modern">python://</div>
-            </div>
-            <div class="handler-card-modern handler-http">
-                <div class="handler-icon-modern">🌐</div>
-                <div class="handler-name-modern">HTTP</div>
-                <div class="handler-protocol-modern">http://</div>
-            </div>
-            <div class="handler-card-modern handler-file">
-                <div class="handler-icon-modern">📁</div>
-                <div class="handler-name-modern">File</div>
-                <div class="handler-protocol-modern">file://</div>
-            </div>
-            <div class="handler-card-modern handler-workflow">
-                <div class="handler-icon-modern">📋</div>
-                <div class="handler-name-modern">Workflow</div>
-                <div class="handler-protocol-modern">workflow://</div>
-            </div>
-            <div class="handler-card-modern handler-timer">
-                <div class="handler-icon-modern">⏰</div>
-                <div class="handler-name-modern">Timer</div>
-                <div class="handler-protocol-modern">timer://</div>
-            </div>
-            <div class="handler-card-modern handler-signal">
-                <div class="handler-icon-modern">📡</div>
-                <div class="handler-name-modern">Signal</div>
-                <div class="handler-protocol-modern">signal://</div>
-            </div>
-            <div class="handler-card-modern handler-validation">
-                <div class="handler-icon-modern">✅</div>
-                <div class="handler-name-modern">Validation</div>
-                <div class="handler-protocol-modern">validate://</div>
-            </div>
-            <div class="handler-card-modern handler-ollama">
-                <div class="handler-icon-modern">🤖</div>
-                <div class="handler-name-modern">Ollama</div>
-                <div class="handler-protocol-modern">ollama://</div>
-            </div>
+        <div class="list-container">
+            <ul class="handlers-list">
+                <li class="handler-item">
+                    <span class="handler-icon">🐍</span>
+                    <span class="handler-name">Python</span>
+                    <span class="handler-protocol">python://</span>
+                </li>
+                <li class="handler-item">
+                    <span class="handler-icon">🌐</span>
+                    <span class="handler-name">HTTP</span>
+                    <span class="handler-protocol">http://</span>
+                </li>
+                <li class="handler-item">
+                    <span class="handler-icon">📁</span>
+                    <span class="handler-name">File</span>
+                    <span class="handler-protocol">file://</span>
+                </li>
+                <li class="handler-item">
+                    <span class="handler-icon">📋</span>
+                    <span class="handler-name">Workflow</span>
+                    <span class="handler-protocol">workflow://</span>
+                </li>
+                <li class="handler-item">
+                    <span class="handler-icon">⏰</span>
+                    <span class="handler-name">Timer</span>
+                    <span class="handler-protocol">timer://</span>
+                </li>
+                <li class="handler-item">
+                    <span class="handler-icon">📡</span>
+                    <span class="handler-name">Signal</span>
+                    <span class="handler-protocol">signal://</span>
+                </li>
+                <li class="handler-item">
+                    <span class="handler-icon">✅</span>
+                    <span class="handler-name">Validation</span>
+                    <span class="handler-protocol">validate://</span>
+                </li>
+                <li class="handler-item">
+                    <span class="handler-icon">🤖</span>
+                    <span class="handler-name">Ollama</span>
+                    <span class="handler-protocol">ollama://</span>
+                </li>
+            </ul>
         </div>
     </div>
     </div>
@@ -305,44 +254,35 @@
     <div id="processes-tab" class="tab-content-modern">
         {% if processes %}
         <!-- Process Summary -->
-        <div class="metrics-section">
-            <div class="metric-card-modern metric-processes">
-                <div class="metric-icon">⚙️</div>
-                <div class="metric-content">
-                    <div class="metric-label-modern">Total Processes</div>
-                    <div class="metric-value-modern">{{ process_count|default(0) }}</div>
-                    <div class="metric-sublabel">running</div>
-                </div>
+        <div class="section-modern">
+            <div class="section-header">
+                <h2 class="section-title">📊 Process Summary</h2>
             </div>
-            <div class="metric-card-modern metric-memory">
-                <div class="metric-icon">💾</div>
-                <div class="metric-content">
-                    <div class="metric-label-modern">Total Memory</div>
-                    <div class="metric-value-modern">{{ "%.1f"|format(total_memory|default(0)) }}</div>
-                    <div class="metric-sublabel">MB</div>
-                </div>
-            </div>
-            <div class="metric-card-modern metric-servers">
-                <div class="metric-icon">🌐</div>
-                <div class="metric-content">
-                    <div class="metric-label-modern">Servers</div>
-                    <div class="metric-value-modern">
-                        {% set server_count = processes|selectattr('type', 'in', ['api_server', 'ui_server'])|list|length %}
-                        {{ server_count }}
-                    </div>
-                    <div class="metric-sublabel">active</div>
-                </div>
-            </div>
-            <div class="metric-card-modern metric-workers">
-                <div class="metric-icon">👷</div>
-                <div class="metric-content">
-                    <div class="metric-label-modern">Workers</div>
-                    <div class="metric-value-modern">
-                        {% set worker_count = processes|length - (processes|selectattr('type', 'in', ['api_server', 'ui_server'])|list|length) %}
-                        {{ worker_count }}
-                    </div>
-                    <div class="metric-sublabel">active</div>
-                </div>
+            <div class="list-container">
+                <ul class="metrics-list">
+                    <li class="metric-item">
+                        <span class="metric-label">Total Processes</span>
+                        <span class="metric-value">{{ process_count|default(0) }}</span>
+                    </li>
+                    <li class="metric-item">
+                        <span class="metric-label">Total Memory</span>
+                        <span class="metric-value">{{ "%.1f"|format(total_memory|default(0)) }} MB</span>
+                    </li>
+                    <li class="metric-item">
+                        <span class="metric-label">Servers</span>
+                        <span class="metric-value">
+                            {% set server_count = processes|selectattr('type', 'in', ['api_server', 'ui_server'])|list|length %}
+                            {{ server_count }}
+                        </span>
+                    </li>
+                    <li class="metric-item">
+                        <span class="metric-label">Workers</span>
+                        <span class="metric-value">
+                            {% set worker_count = processes|length - (processes|selectattr('type', 'in', ['api_server', 'ui_server'])|list|length) %}
+                            {{ worker_count }}
+                        </span>
+                    </li>
+                </ul>
             </div>
         </div>
 
@@ -351,77 +291,59 @@
             <div class="section-header">
                 <h2 class="section-title">🖥️ Running Processes</h2>
             </div>
-            <div class="processes-grid">
-                {% for process in processes %}
-                <div class="process-card {% if process.is_current %}process-current{% endif %} {% if process.type == 'api_server' or process.type == 'ui_server' %}process-server{% else %}process-worker{% endif %}">
-                    <div class="process-header">
-                        <div class="process-icon">
-                            {% if process.type == 'api_server' %}🚀
-                            {% elif process.type == 'ui_server' %}🎨
-                            {% elif process.type == 'orchestrator' %}🎯
-                            {% elif process.type == 'worker_loki_exporter' %}📊
-                            {% elif 'task_execution' in process.type %}⚡
-                            {% elif 'python_specialist' in process.type %}🐍
-                            {% elif 'dependency' in process.type %}🔗
-                            {% elif 'retry' in process.type %}🔄
-                            {% elif 'reconciliation' in process.type %}🔍
-                            {% elif 'workflow_loader' in process.type %}📥
-                            {% elif 'workflow_submission' in process.type %}📤
-                            {% elif 'timer' in process.type %}⏰
-                            {% else %}⚙️
-                            {% endif %}
-                        </div>
-                        <div class="process-status-badge">
-                            {% if process.is_current %}
-                            <span class="current-badge">Current</span>
-                            {% else %}
-                            <span class="running-badge">Running</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                    <div class="process-name">{{ process.name }}</div>
-                    <div class="process-meta">
-                        <div class="meta-item">
-                            <span class="meta-label">PID</span>
-                            <span class="meta-value">{{ process.pid }}</span>
-                        </div>
-                        {% if process.port %}
-                        <div class="meta-item">
-                            <span class="meta-label">Port</span>
-                            <span class="meta-value">:{{ process.port }}</span>
-                        </div>
-                        {% endif %}
-                    </div>
-                    <div class="process-stats">
-                        <div class="process-stat">
-                            <div class="stat-value">{{ process.memory_mb|round(1) }} MB</div>
-                            <div class="stat-label">Memory</div>
-                        </div>
-                        <div class="process-stat">
-                            <div class="stat-value">{{ process.cpu_percent|round(1) }}%</div>
-                            <div class="stat-label">CPU</div>
-                        </div>
-                        <div class="process-stat">
-                            {% set hours = process.uptime_seconds // 3600 %}
-                            {% set minutes = (process.uptime_seconds % 3600) // 60 %}
-                            <div class="stat-value">
+            <div class="list-container">
+                <table class="info-table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Name</th>
+                            <th>PID</th>
+                            <th>Port</th>
+                            <th>CPU</th>
+                            <th>Memory</th>
+                            <th>Uptime</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for process in processes %}
+                        <tr>
+                            <td class="icon-cell">
+                                {% if process.type == 'api_server' %}🚀
+                                {% elif process.type == 'ui_server' %}🎨
+                                {% elif process.type == 'orchestrator' %}🎯
+                                {% elif process.type == 'worker_loki_exporter' %}📊
+                                {% elif 'task_execution' in process.type %}⚡
+                                {% elif 'python_specialist' in process.type %}🐍
+                                {% elif 'dependency' in process.type %}🔗
+                                {% elif 'retry' in process.type %}🔄
+                                {% elif 'reconciliation' in process.type %}🔍
+                                {% elif 'workflow_loader' in process.type %}📥
+                                {% elif 'workflow_submission' in process.type %}📤
+                                {% elif 'timer' in process.type %}⏰
+                                {% else %}⚙️
+                                {% endif %}
+                            </td>
+                            <td class="name-cell">{{ process.name }}</td>
+                            <td>{{ process.pid }}</td>
+                            <td>{% if process.port %}{{ process.port }}{% else %}-{% endif %}</td>
+                            <td>{{ process.cpu_percent|round(1) }}%</td>
+                            <td>{{ process.memory_mb|round(1) }} MB</td>
+                            <td>
+                                {% set hours = process.uptime_seconds // 3600 %}
+                                {% set minutes = (process.uptime_seconds % 3600) // 60 %}
                                 {% if hours > 0 %}{{ hours }}h {% endif %}{{ minutes }}m
-                            </div>
-                            <div class="stat-label">Uptime</div>
-                        </div>
-                    </div>
-                    <div class="process-actions">
-                        <button class="btn-details" onclick="showWorkerDetails('{{ process.type }}', {{ process.pid }})">
-                            Details
-                        </button>
-                        {% if not process.is_current %}
-                        <button class="btn-stop" onclick="stopWorker('{{ process.type }}', {{ process.pid }})">
-                            Stop
-                        </button>
-                        {% endif %}
-                    </div>
-                </div>
-                {% endfor %}
+                            </td>
+                            <td class="actions-cell">
+                                <button class="btn-details-sm" onclick="showWorkerDetails('{{ process.type }}', {{ process.pid }})">Details</button>
+                                {% if not process.is_current %}
+                                <button class="btn-stop-sm" onclick="stopWorker('{{ process.type }}', {{ process.pid }})">Stop</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         </div>
         {% else %}
@@ -492,7 +414,7 @@
 <style>
 /* Modern Page Layout */
 .handlers-page {
-    max-width: 1400px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 2rem 1rem;
 }
@@ -590,6 +512,330 @@
 @keyframes spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+/* List Container - White Box Wrapper */
+.list-container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+/* Info Table Styles */
+.info-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.info-table thead {
+    background: #f8f9fa;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.info-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.info-table tbody tr {
+    border-bottom: 1px solid #e2e8f0;
+    transition: background 0.2s ease;
+}
+
+.info-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.info-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.info-table td {
+    padding: 0.875rem 1rem;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+.info-table .icon-cell {
+    width: 40px;
+    text-align: center;
+    font-size: 1.2rem;
+}
+
+.info-table .name-cell {
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.info-table .actions-cell {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+/* List Styles - Clean and Scannable */
+.metrics-list, .queue-list, .workers-list, .handlers-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.metric-item, .queue-item, .worker-item, .handler-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background 0.2s ease;
+}
+
+.metric-item:last-child, .queue-item:last-child, .worker-item:last-child, .handler-item:last-child {
+    border-bottom: none;
+}
+
+.metric-item:hover, .queue-item:hover, .worker-item:hover, .handler-item:hover {
+    background: #f8f9fa;
+}
+
+/* Metrics List Specific */
+.metric-label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 1rem;
+}
+
+.metric-value {
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 1.1rem;
+}
+
+.metric-detail {
+    font-weight: 400;
+    color: #6c757d;
+    font-size: 0.95rem;
+}
+
+/* Queue List Specific */
+.queue-item {
+    gap: 1rem;
+}
+
+.queue-status-indicator {
+    font-size: 0.65rem;
+    min-width: 20px;
+}
+
+.queue-name {
+    flex: 1;
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+.queue-depth {
+    color: #6c757d;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.queue-active {
+    border-left: 3px solid #4facfe;
+}
+
+.queue-high {
+    border-left: 3px solid #f5576c;
+}
+
+.queue-empty {
+    border-left: 3px solid #cbd5e0;
+}
+
+/* Workers List Specific */
+.worker-item {
+    gap: 1rem;
+    flex-wrap: nowrap;
+}
+
+.worker-icon {
+    font-size: 1.2rem;
+    min-width: 25px;
+}
+
+.worker-name {
+    flex: 0 0 180px;
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+.worker-stats {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: #4a5568;
+    font-size: 0.9rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.worker-stats strong {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.worker-status {
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.worker-status.status-healthy {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.worker-status.status-degraded {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.worker-status.status-unhealthy {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* Handlers List Specific */
+.handler-item {
+    gap: 1rem;
+}
+
+.handler-icon {
+    font-size: 1.2rem;
+    min-width: 25px;
+}
+
+.handler-name {
+    flex: 0 0 120px;
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+.handler-protocol {
+    flex: 1;
+    color: #6c757d;
+    font-size: 0.95rem;
+    font-family: 'Courier New', monospace;
+}
+
+/* Processes List Specific */
+.processes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.process-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid #e2e8f0;
+    transition: background 0.2s ease;
+    flex-wrap: nowrap;
+}
+
+.process-item:last-child {
+    border-bottom: none;
+}
+
+.process-item:hover {
+    background: #f8f9fa;
+}
+
+.process-icon {
+    font-size: 1.2rem;
+    min-width: 25px;
+}
+
+.process-name {
+    flex: 0 0 200px;
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 1rem;
+}
+
+.process-info {
+    flex: 0 0 150px;
+    color: #4a5568;
+    font-size: 0.9rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    white-space: nowrap;
+}
+
+.process-info strong {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.process-stats {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: #4a5568;
+    font-size: 0.9rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.process-stats strong {
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.process-actions-inline {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-details-sm, .btn-stop-sm {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    background: white;
+    color: #4a5568;
+}
+
+.btn-details-sm:hover {
+    background: #f7fafc;
+    border-color: #a0aec0;
+    color: #2d3748;
+}
+
+.btn-stop-sm {
+    color: #c53030;
+    border-color: #fc8181;
+}
+
+.btn-stop-sm:hover {
+    background: #fff5f5;
+    border-color: #f56565;
+    color: #9b2c2c;
 }
 
 /* Metrics Section */
@@ -1741,11 +1987,83 @@ async function stopWorker(workerType, pid) {
     }
 }
 
-// Auto-refresh every 5 seconds (but not when modal is open)
+// WebSocket connection for real-time updates
+let ws = null;
+let wsReconnectTimeout = null;
+
+function connectWebSocket() {
+    // Don't reconnect if already connected
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        return;
+    }
+
+    // Connect to API WebSocket at port 8000
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.hostname}:8000/ws/updates`;
+
+    console.log('Connecting to API WebSocket:', wsUrl);
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+        console.log('WebSocket connected');
+        // Clear any reconnect timeout
+        if (wsReconnectTimeout) {
+            clearTimeout(wsReconnectTimeout);
+            wsReconnectTimeout = null;
+        }
+    };
+
+    ws.onmessage = (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            console.log('WebSocket message:', message);
+
+            // Handle different message types
+            if (message.type === 'worker_update' ||
+                message.type === 'process_update' ||
+                message.type === 'system_update') {
+                // Refresh page data when system/worker/process updates occur
+                if (!document.getElementById('workerModal').classList.contains('active')) {
+                    window.location.reload();
+                }
+            } else if (message.type === 'connection') {
+                console.log('WebSocket connection confirmed:', message.message);
+                // Send ping to keep connection alive
+                ws.send(JSON.stringify({action: 'ping'}));
+            }
+        } catch (error) {
+            console.error('Error handling WebSocket message:', error);
+        }
+    };
+
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+    };
+
+    ws.onclose = () => {
+        console.log('WebSocket disconnected');
+        ws = null;
+        wsReconnectTimeout = setTimeout(connectWebSocket, 5000);
+    };
+}
+
+// Start WebSocket connection
+connectWebSocket();
+
+// Fallback: Auto-refresh every 30 seconds (in case WebSocket fails)
 setInterval(() => {
     if (!document.getElementById('workerModal').classList.contains('active')) {
-        htmx.trigger(document.body, 'refresh');
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            htmx.trigger(document.body, 'refresh');
+        }
     }
-}, 5000);
+}, 30000);
+
+// Clean up WebSocket on page unload
+window.addEventListener('beforeunload', () => {
+    if (ws) {
+        ws.close();
+    }
+});
 </script>
 {% endblock %}

@@ -3,6 +3,7 @@ README.md
 gleitzeit.yaml
 pyproject.toml
 setup.py
+docs/CLIENT_GUIDE.md
 docs/COMPLETE_STATE_PROGRESSION_AUDIT.md
 docs/CONSOLIDATED_STATE_ARCHITECTURE.md
 docs/EASY_CLIENT_GUIDE.md
@@ -53,6 +54,7 @@ docs/subprocess-improvements-summary.md
 docs/timer-refactor-design.md
 docs/timer-retry-system-audit.md
 docs/timer-simple-refactor-design.md
+docs/timer-system.md
 docs/timer-tasks-explained.md
 docs/unified_retry_system.md
 docs/worker-lifecycle-audit.md
@@ -258,7 +260,9 @@ tests/test_signal_delivery.py
 tests/test_signal_registry.py
 tests/test_signal_send_handler.py
 tests/test_stateless_retry.py
+tests/test_stress_workflows.py
 tests/test_task_timeline.py
+tests/test_timer_system.py
 tests/test_unsupported_types.py
 tests/test_validation_inputs.py
 tests/test_validation_websocket.py

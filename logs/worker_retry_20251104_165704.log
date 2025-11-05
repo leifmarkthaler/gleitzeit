@@ -12,3 +12,6 @@
 [2025-11-04 16:57:05] [STDERR] 2025-11-04 16:57:05,141 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for retry-async
 [2025-11-04 16:57:53] [STDERR] 2025-11-04 16:57:53,782 - gleitzeit.workers.retry_worker - INFO - Retry decision for e6edbb36-6b51-4cee-91b0-1b8f958378fe: skip (attempt 0)
 [2025-11-04 16:57:53] [STDERR] 2025-11-04 16:57:53,786 - gleitzeit.workers.retry_worker - WARNING - Task e6edbb36-6b51-4cee-91b0-1b8f958378fe permanently failed: skip ({'reason': 'non_retryable_error'})
+[2025-11-04 17:56:27] [STDERR] 2025-11-04 17:56:27,486 - retry.retry-async - INFO - Shutdown signal received for retry-async
+[2025-11-04 17:56:31] [STDERR] 2025-11-04 17:56:31,127 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-11-04 17:56:31] [STDERR] 2025-11-04 17:56:31,127 - retry.retry-async - INFO - Worker retry-async cleaned up

@@ -4,38 +4,35 @@
 
 {% block head %}
     <style>
-        .health-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
+        .health-list, .stats-list {
+            list-style: none;
+            padding: 0;
+            margin: 1rem 0;
         }
 
-        .health-card {
+        .health-item, .stat-item {
             display: flex;
+            justify-content: space-between;
             align-items: center;
-            gap: 1rem;
-            padding: 1rem;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .health-item:last-child, .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .health-item:hover, .stat-item:hover {
             background: var(--bg-secondary);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border-color);
         }
 
-        .health-icon {
-            font-size: 2rem;
-        }
-
-        .health-info {
-            flex: 1;
-        }
-
-        .health-label {
+        .health-label, .stat-label {
             font-size: 0.875rem;
             color: var(--text-secondary);
-            margin-bottom: 0.25rem;
+            font-weight: 500;
         }
 
-        .health-value {
+        .health-value, .stat-value {
             font-weight: 600;
             color: var(--text-primary);
         }
@@ -48,33 +45,9 @@
             color: #ef4444;
         }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-
-        .stat-card {
-            padding: 1.5rem;
-            background: var(--bg-secondary);
-            border-radius: 0.5rem;
-            border: 1px solid var(--border-color);
-            text-align: center;
-        }
-
         .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
             color: var(--primary-color);
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-size: 1.25rem;
         }
 
         .workflow-list {
@@ -189,52 +162,43 @@
         <!-- System Health Status -->
         <div class="section">
             <h2 class="section-title">System Health</h2>
-            <div id="health-status" class="health-grid">
-                <div class="health-card">
-                    <div class="health-icon">🔄</div>
-                    <div class="health-info">
-                        <div class="health-label">API Status</div>
-                        <div id="api-health-detail" class="health-value">Loading...</div>
-                    </div>
-                </div>
-                <div class="health-card">
-                    <div class="health-icon">📦</div>
-                    <div class="health-info">
-                        <div class="health-label">Redis</div>
-                        <div id="redis-status" class="health-value">Loading...</div>
-                    </div>
-                </div>
-                <div class="health-card">
-                    <div class="health-icon">⚡</div>
-                    <div class="health-info">
-                        <div class="health-label">Workers</div>
-                        <div id="workers-status" class="health-value">Loading...</div>
-                    </div>
-                </div>
-            </div>
+            <ul class="health-list">
+                <li class="health-item">
+                    <span class="health-label">API Status</span>
+                    <span id="api-health-detail" class="health-value">Loading...</span>
+                </li>
+                <li class="health-item">
+                    <span class="health-label">Redis</span>
+                    <span id="redis-status" class="health-value">Loading...</span>
+                </li>
+                <li class="health-item">
+                    <span class="health-label">Workers</span>
+                    <span id="workers-status" class="health-value">Loading...</span>
+                </li>
+            </ul>
         </div>
 
         <!-- Quick Stats -->
         <div class="section">
             <h2 class="section-title">Overview</h2>
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-value" id="total-workflows">-</div>
-                    <div class="stat-label">Total Workflows</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="running-workflows">-</div>
-                    <div class="stat-label">Running</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="completed-workflows">-</div>
-                    <div class="stat-label">Completed</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-value" id="failed-workflows">-</div>
-                    <div class="stat-label">Failed</div>
-                </div>
-            </div>
+            <ul class="stats-list">
+                <li class="stat-item">
+                    <span class="stat-label">Total Workflows</span>
+                    <span id="total-workflows" class="stat-value">-</span>
+                </li>
+                <li class="stat-item">
+                    <span class="stat-label">Running</span>
+                    <span id="running-workflows" class="stat-value">-</span>
+                </li>
+                <li class="stat-item">
+                    <span class="stat-label">Completed</span>
+                    <span id="completed-workflows" class="stat-value">-</span>
+                </li>
+                <li class="stat-item">
+                    <span class="stat-label">Failed</span>
+                    <span id="failed-workflows" class="stat-value">-</span>
+                </li>
+            </ul>
         </div>
 
         <!-- Recent Activity -->

@@ -8,3 +8,6 @@
 [2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,638 - __main__ - INFO - Worker workflow_submission-async started successfully
 [2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,638 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
 [2025-11-04 16:57:04] [STDERR] 2025-11-04 16:57:04,638 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for workflow_submission-async
+[2025-11-04 17:56:27] [STDERR] 2025-11-04 17:56:27,495 - workflow_submission.workflow_submission-async - INFO - Shutdown signal received for workflow_submission-async
+[2025-11-04 17:56:30] [STDERR] 2025-11-04 17:56:30,378 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-11-04 17:56:30] [STDERR] 2025-11-04 17:56:30,378 - workflow_submission.workflow_submission-async - INFO - Worker workflow_submission-async cleaned up

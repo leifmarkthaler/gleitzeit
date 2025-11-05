@@ -17,3 +17,4 @@
 [2025-11-04 16:58:36] [STDERR] 2025-11-04 16:58:36,878 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 2 -> 3
 [2025-11-04 17:22:37] [STDERR] 2025-11-04 17:22:37,009 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 3 -> 5
 [2025-11-04 17:22:37] [STDERR] 2025-11-04 17:22:37,010 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [10, 11, 12] (5 instances)
+[2025-11-04 17:56:27] [STDERR] 2025-11-04 17:56:27,486 - reconciliation.reconciliation-async - INFO - Shutdown signal received for reconciliation-async

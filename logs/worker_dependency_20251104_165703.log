@@ -317,3 +317,6 @@
 [2025-11-04 17:39:10] [STDERR] 2025-11-04 17:39:10,177 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow-40387362-8fe8-42a2-bb6a-126b2f0d9eb3 already failed (status: failed), emitting WORKFLOW_FAILED event
 [2025-11-04 17:40:59] [STDERR] 2025-11-04 17:40:59,456 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 9e09050b-4e5a-4d42-8b9e-44b14923e146 from workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316
 [2025-11-04 17:40:59] [STDERR] 2025-11-04 17:40:59,459 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 completed successfully!
+[2025-11-04 17:56:27] [STDERR] 2025-11-04 17:56:27,480 - dependency.dependency-async - INFO - Shutdown signal received for dependency-async
+[2025-11-04 17:56:31] [STDERR] 2025-11-04 17:56:31,892 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-11-04 17:56:31] [STDERR] 2025-11-04 17:56:31,892 - dependency.dependency-async - INFO - Worker dependency-async cleaned up

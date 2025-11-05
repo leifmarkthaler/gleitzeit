@@ -25,3 +25,6 @@
 [2025-11-04 17:40:59] [STDERR] 2025-11-04 17:40:59,380 - gleitzeit.workers.dependency_worker - INFO - Emitted ready task 0976b974-1d70-4351-b2f2-7b2e4965889c to shard 2
 [2025-11-04 17:40:59] [STDERR] 2025-11-04 17:40:59,380 - gleitzeit.workers.dependency_worker - WARNING - Workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 not found
 [2025-11-04 17:40:59] [STDERR] 2025-11-04 17:40:59,380 - gleitzeit.workers.dependency_worker - INFO - Transitioning workflow workflow-72d17d06-2a7c-4814-9916-9321dfc74316 from running to pending (task counts: {'completed': 0, 'failed': 0, 'scheduled': 0, 'waiting': 0, 'pending': 0, 'cancelled': 0, 'paused': 0})
+[2025-11-04 17:56:27] [STDERR] 2025-11-04 17:56:27,486 - dependency.dependency-async - INFO - Shutdown signal received for dependency-async
+[2025-11-04 17:56:31] [STDERR] 2025-11-04 17:56:31,632 - gleitzeit.core.redis_cluster - INFO - Redis connections closed
+[2025-11-04 17:56:31] [STDERR] 2025-11-04 17:56:31,632 - dependency.dependency-async - INFO - Worker dependency-async cleaned up

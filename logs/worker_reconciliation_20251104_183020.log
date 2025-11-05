@@ -1,0 +1,138 @@
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,729 - __main__ - INFO - Initialized worker instance identity: gleitzei-649b4341
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,729 - __main__ - INFO - Loading configuration from Redis key: worker:config:reconciliation-async:66e369ef
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,731 - __main__ - INFO - Loaded config for worker reconciliation-async
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,732 - __main__ - INFO - Worker reconciliation-async handler configs: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,733 - gleitzeit.core.redis_cluster - INFO - Redis single instance initialized at localhost:6379
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,734 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [] -> [2, 3] (8 instances)
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,734 - gleitzeit.workers.reconciliation_worker - INFO - WorkflowReconciliationWorker initialized: scan_interval=60s, batch_size=100, shards=[2, 3]
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,734 - reconciliation.reconciliation-async - INFO - Worker reconciliation-async initialized with Redis Cluster, shards [2, 3]
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,735 - __main__ - INFO - Worker reconciliation-async started successfully
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,735 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,735 - gleitzeit.core.reconciliation_sharding - INFO - Starting reconciliation shard assignment heartbeat (interval=30s)
+[2025-11-04 18:30:20] [STDERR] 2025-11-04 18:30:20,736 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 0 -> 8
+[2025-11-04 18:30:25] [STDERR] 2025-11-04 18:30:25,735 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [2, 3] -> [4, 5] (9 instances)
+[2025-11-04 18:30:50] [STDERR] 2025-11-04 18:30:50,837 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 8 -> 9
+[2025-11-04 18:30:50] [STDERR] 2025-11-04 18:30:50,940 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [4, 5] -> [2, 3] (9 instances)
+[2025-11-04 19:26:51] [STDERR] 2025-11-04 19:26:51,108 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 9 -> 6
+[2025-11-04 19:26:51] [STDERR] 2025-11-04 19:26:51,109 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [2, 3] -> [0, 1, 2] (6 instances)
+[2025-11-04 19:42:21] [STDERR] 2025-11-04 19:42:21,024 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 7
+[2025-11-04 19:57:26] [STDERR] 2025-11-04 19:57:26,609 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-04 19:57:51] [STDERR] 2025-11-04 19:57:51,554 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 7 -> 8
+[2025-11-04 19:57:51] [STDERR] 2025-11-04 19:57:51,556 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [2, 3] (8 instances)
+[2025-11-04 20:13:21] [STDERR] 2025-11-04 20:13:21,451 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 8 -> 8
+[2025-11-04 20:13:21] [STDERR] 2025-11-04 20:13:21,451 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [2, 3] -> [0, 1] (8 instances)
+[2025-11-04 20:28:27] [STDERR] 2025-11-04 20:28:27,170 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1] -> [6, 7, 8, 9, 10] (3 instances)
+[2025-11-04 20:43:52] [STDERR] 2025-11-04 20:43:52,690 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 8 -> 1
+[2025-11-04 20:43:52] [STDERR] 2025-11-04 20:43:52,690 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-04 20:59:22] [STDERR] 2025-11-04 20:59:22,583 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 3
+[2025-11-04 20:59:22] [STDERR] 2025-11-04 20:59:22,584 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [0, 1, 2, 3, 4, 5] (3 instances)
+[2025-11-04 20:59:27] [STDERR] 2025-11-04 20:59:27,651 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5] -> [4, 5, 6] (5 instances)
+[2025-11-04 21:27:41] [STDERR] 2025-11-04 21:27:41,895 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 3 -> 2
+[2025-11-04 21:27:41] [STDERR] 2025-11-04 21:27:41,896 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [4, 5, 6] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-04 21:43:12] [STDERR] 2025-11-04 21:43:12,494 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 2 -> 4
+[2025-11-04 21:43:12] [STDERR] 2025-11-04 21:43:12,495 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3] (4 instances)
+[2025-11-04 21:43:17] [STDERR] 2025-11-04 21:43:17,566 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (6 instances)
+[2025-11-04 21:58:42] [STDERR] 2025-11-04 21:58:42,381 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 6
+[2025-11-04 21:58:42] [STDERR] 2025-11-04 21:58:42,381 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2] (6 instances)
+[2025-11-04 22:28:51] [STDERR] 2025-11-04 22:28:51,388 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 4
+[2025-11-04 22:28:51] [STDERR] 2025-11-04 22:28:51,389 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1, 2, 3] (4 instances)
+[2025-11-04 22:28:56] [STDERR] 2025-11-04 22:28:56,465 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (6 instances)
+[2025-11-04 22:44:21] [STDERR] 2025-11-04 22:44:21,319 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 6
+[2025-11-04 22:44:21] [STDERR] 2025-11-04 22:44:21,320 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2] (6 instances)
+[2025-11-04 23:01:38] [STDERR] 2025-11-04 23:01:38,450 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 1
+[2025-11-04 23:01:38] [STDERR] 2025-11-04 23:01:38,451 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-04 23:01:43] [STDERR] 2025-11-04 23:01:43,527 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [6, 7, 8, 9, 10] (3 instances)
+[2025-11-05 00:00:53] [STDERR] 2025-11-05 00:00:53,723 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 4
+[2025-11-05 00:00:53] [STDERR] 2025-11-05 00:00:53,724 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [0, 1, 2, 3] (4 instances)
+[2025-11-05 00:30:46] [STDERR] 2025-11-05 00:30:46,675 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 4
+[2025-11-05 00:30:51] [STDERR] 2025-11-05 00:30:51,767 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (6 instances)
+[2025-11-05 00:46:16] [STDERR] 2025-11-05 00:46:16,627 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 6
+[2025-11-05 00:46:16] [STDERR] 2025-11-05 00:46:16,628 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2] (6 instances)
+[2025-11-05 01:01:46] [STDERR] 2025-11-05 01:01:46,547 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 8
+[2025-11-05 01:01:46] [STDERR] 2025-11-05 01:01:46,547 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1] (8 instances)
+[2025-11-05 01:16:31] [STDERR] 2025-11-05 01:16:31,303 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 01:31:56] [STDERR] 2025-11-05 01:31:56,729 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 8 -> 6
+[2025-11-05 01:31:56] [STDERR] 2025-11-05 01:31:56,730 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2] (6 instances)
+[2025-11-05 01:47:26] [STDERR] 2025-11-05 01:47:26,856 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 8
+[2025-11-05 01:47:26] [STDERR] 2025-11-05 01:47:26,858 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1] (8 instances)
+[2025-11-05 02:02:32] [STDERR] 2025-11-05 02:02:32,655 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 02:17:57] [STDERR] 2025-11-05 02:17:57,430 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 8 -> 1
+[2025-11-05 02:17:57] [STDERR] 2025-11-05 02:17:57,431 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-05 02:33:33] [STDERR] 2025-11-05 02:33:33,272 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [6, 7, 8, 9, 10] (3 instances)
+[2025-11-05 02:48:58] [STDERR] 2025-11-05 02:48:58,725 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 3
+[2025-11-05 02:48:58] [STDERR] 2025-11-05 02:48:58,727 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [0, 1, 2, 3, 4, 5] (3 instances)
+[2025-11-05 03:04:29] [STDERR] 2025-11-05 03:04:29,152 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 3 -> 5
+[2025-11-05 03:04:29] [STDERR] 2025-11-05 03:04:29,152 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5] -> [0, 1, 2, 3] (5 instances)
+[2025-11-05 03:04:34] [STDERR] 2025-11-05 03:04:34,302 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (7 instances)
+[2025-11-05 03:19:59] [STDERR] 2025-11-05 03:19:59,799 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 5 -> 6
+[2025-11-05 03:19:59] [STDERR] 2025-11-05 03:19:59,800 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2] (6 instances)
+[2025-11-05 03:50:30] [STDERR] 2025-11-05 03:50:30,270 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 1
+[2025-11-05 03:50:30] [STDERR] 2025-11-05 03:50:30,271 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-05 03:50:35] [STDERR] 2025-11-05 03:50:35,433 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [6, 7, 8, 9, 10] (3 instances)
+[2025-11-05 04:06:00] [STDERR] 2025-11-05 04:06:00,930 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 2
+[2025-11-05 04:06:00] [STDERR] 2025-11-05 04:06:00,932 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 04:21:31] [STDERR] 2025-11-05 04:21:31,550 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 2 -> 4
+[2025-11-05 04:21:31] [STDERR] 2025-11-05 04:21:31,550 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3] (4 instances)
+[2025-11-05 04:21:36] [STDERR] 2025-11-05 04:21:36,723 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (6 instances)
+[2025-11-05 04:37:01] [STDERR] 2025-11-05 04:37:01,470 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 6
+[2025-11-05 04:37:01] [STDERR] 2025-11-05 04:37:01,472 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2] (6 instances)
+[2025-11-05 04:52:31] [STDERR] 2025-11-05 04:52:31,381 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 7
+[2025-11-05 05:07:37] [STDERR] 2025-11-05 05:07:37,245 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-05 05:23:01] [STDERR] 2025-11-05 05:23:01,966 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 7 -> 1
+[2025-11-05 05:38:37] [STDERR] 2025-11-05 05:38:37,054 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [6, 7, 8, 9, 10] (3 instances)
+[2025-11-05 05:54:02] [STDERR] 2025-11-05 05:54:02,542 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 2
+[2025-11-05 05:54:02] [STDERR] 2025-11-05 05:54:02,543 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 06:16:14] [STDERR] 2025-11-05 06:16:14,063 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 2 -> 1
+[2025-11-05 06:16:14] [STDERR] 2025-11-05 06:16:14,063 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-05 06:16:19] [STDERR] 2025-11-05 06:16:19,298 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [6, 7, 8, 9, 10] (3 instances)
+[2025-11-05 06:31:25] [STDERR] 2025-11-05 06:31:25,247 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 3
+[2025-11-05 06:31:25] [STDERR] 2025-11-05 06:31:25,247 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [0, 1, 2, 3, 4, 5] (3 instances)
+[2025-11-05 07:14:46] [STDERR] 2025-11-05 07:14:46,717 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 3 -> 3
+[2025-11-05 07:28:14] [STDERR] 2025-11-05 07:28:14,326 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 07:41:51] [STDERR] 2025-11-05 07:41:51,746 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 3 -> 2
+[2025-11-05 07:55:34] [STDERR] 2025-11-05 07:55:34,520 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 2 -> 4
+[2025-11-05 07:55:34] [STDERR] 2025-11-05 07:55:34,520 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3] (4 instances)
+[2025-11-05 08:02:02] [STDERR] 2025-11-05 08:02:02,895 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 08:15:47] [STDERR] 2025-11-05 08:15:47,745 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 5
+[2025-11-05 08:15:47] [STDERR] 2025-11-05 08:15:47,746 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3] (5 instances)
+[2025-11-05 08:42:56] [STDERR] 2025-11-05 08:42:56,413 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 5 -> 4
+[2025-11-05 08:43:01] [STDERR] 2025-11-05 08:43:01,672 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (6 instances)
+[2025-11-05 09:03:01] [STDERR] 2025-11-05 09:03:01,201 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 1
+[2025-11-05 09:03:01] [STDERR] 2025-11-05 09:03:01,202 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-05 09:16:45] [STDERR] 2025-11-05 09:16:45,663 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 4
+[2025-11-05 09:16:45] [STDERR] 2025-11-05 09:16:45,665 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [0, 1, 2, 3] (4 instances)
+[2025-11-05 09:30:10] [STDERR] 2025-11-05 09:30:10,802 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 09:43:55] [STDERR] 2025-11-05 09:43:55,469 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 4
+[2025-11-05 09:43:55] [STDERR] 2025-11-05 09:43:55,470 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3] (4 instances)
+[2025-11-05 10:04:15] [STDERR] 2025-11-05 10:04:15,126 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 4
+[2025-11-05 10:04:20] [STDERR] 2025-11-05 10:04:20,422 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (6 instances)
+[2025-11-05 10:31:09] [STDERR] 2025-11-05 10:31:09,250 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 1
+[2025-11-05 10:31:09] [STDERR] 2025-11-05 10:31:09,251 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-05 10:44:54] [STDERR] 2025-11-05 10:44:54,030 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 4
+[2025-11-05 10:44:54] [STDERR] 2025-11-05 10:44:54,032 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [0, 1, 2, 3] (4 instances)
+[2025-11-05 10:58:19] [STDERR] 2025-11-05 10:58:19,248 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 11:05:12] [STDERR] 2025-11-05 11:05:12,325 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 4
+[2025-11-05 11:05:12] [STDERR] 2025-11-05 11:05:12,326 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3] (4 instances)
+[2025-11-05 11:32:19] [STDERR] 2025-11-05 11:32:19,453 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 4
+[2025-11-05 11:32:24] [STDERR] 2025-11-05 11:32:24,760 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (6 instances)
+[2025-11-05 11:46:00] [STDERR] 2025-11-05 11:46:00,265 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 6
+[2025-11-05 11:46:00] [STDERR] 2025-11-05 11:46:00,266 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2] (6 instances)
+[2025-11-05 12:06:01] [STDERR] 2025-11-05 12:06:01,467 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 1
+[2025-11-05 12:06:01] [STDERR] 2025-11-05 12:06:01,468 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-05 12:06:06] [STDERR] 2025-11-05 12:06:06,781 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [6, 7, 8, 9, 10] (3 instances)
+[2025-11-05 12:33:10] [STDERR] 2025-11-05 12:33:10,319 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 2
+[2025-11-05 12:33:10] [STDERR] 2025-11-05 12:33:10,321 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 13:00:24] [STDERR] 2025-11-05 13:00:24,227 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 2 -> 4
+[2025-11-05 13:00:24] [STDERR] 2025-11-05 13:00:24,227 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1, 2, 3] (4 instances)
+[2025-11-05 13:00:29] [STDERR] 2025-11-05 13:00:29,561 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3] -> [3, 4, 5] (6 instances)
+[2025-11-05 13:07:16] [STDERR] 2025-11-05 13:07:16,661 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 4 -> 6
+[2025-11-05 13:07:16] [STDERR] 2025-11-05 13:07:16,662 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [3, 4, 5] -> [0, 1, 2] (6 instances)
+[2025-11-05 13:34:15] [STDERR] 2025-11-05 13:34:15,043 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 6 -> 1
+[2025-11-05 13:34:15] [STDERR] 2025-11-05 13:34:15,044 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2] -> [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] (1 instances)
+[2025-11-05 13:34:20] [STDERR] 2025-11-05 13:34:20,387 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] -> [6, 7, 8, 9, 10] (3 instances)
+[2025-11-05 14:01:24] [STDERR] 2025-11-05 14:01:24,981 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 1 -> 2
+[2025-11-05 14:01:24] [STDERR] 2025-11-05 14:01:24,983 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [6, 7, 8, 9, 10] -> [0, 1, 2, 3, 4, 5, 6, 7] (2 instances)
+[2025-11-05 14:03:22] [STDERR] 2025-11-05 14:03:22,510 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 2 -> 8
+[2025-11-05 14:03:22] [STDERR] 2025-11-05 14:03:22,511 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1, 2, 3, 4, 5, 6, 7] -> [0, 1] (8 instances)
+[2025-11-05 14:03:27] [STDERR] 2025-11-05 14:03:27,858 - gleitzeit.core.reconciliation_sharding - INFO - Reconciliation worker shard assignment changed: [0, 1] -> [2, 3] (9 instances)
+[2025-11-05 14:03:52] [STDERR] 2025-11-05 14:03:52,522 - gleitzeit.core.reconciliation_sharding - INFO - Instance count changed: 8 -> 9
