@@ -268,7 +268,7 @@
 
             // Connect to API WebSocket at port 8000
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//localhost:8000/ws/events`;
+            const wsUrl = `${protocol}//{{ api_host }}:{{ api_port }}/ws/events`;
 
             console.log('Connecting to API WebSocket:', wsUrl);
             ws = new WebSocket(wsUrl);

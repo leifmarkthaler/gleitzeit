@@ -50,8 +50,15 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
-# Configuration
-API_BASE_URL = os.getenv("GLEITZEIT_API_URL", "http://localhost:8000")
+# Load configuration from gleitzeit.yaml
+from gleitzeit.core.config_loader import get_config
+
+config = get_config()
+api_host = config.get('serve', {}).get('api', {}).get('host', '0.0.0.0')
+api_port = config.get('serve', {}).get('api', {}).get('port', 8000)
+
+# Configuration - Use gleitzeit.yaml settings, environment variable can override
+API_BASE_URL = os.getenv("GLEITZEIT_API_URL", f"http://{api_host}:{api_port}")
 API_KEY = os.getenv("GLEITZEIT_API_KEY", "dev-key-12345")  # Default dev key
 
 app = FastAPI(title="Gleitzeit UI2")
@@ -96,7 +103,9 @@ async def get_base_context(request: Request) -> dict:
     return {
         "request": request,
         "session_id": session_id,
-        "version": "0.0.7"
+        "version": "0.0.7",
+        "api_host": api_host,
+        "api_port": api_port
     }
 
 

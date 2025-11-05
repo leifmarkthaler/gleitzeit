@@ -1876,7 +1876,7 @@ async function showWorkerDetails(workerType, pid) {
         const workerName = workerType.replace('worker_', '').replace('_server', '');
 
         // Try to fetch from API
-        const response = await fetch(`http://localhost:8000/workers/`);
+        const response = await fetch(`http://{{ api_host }}:{{ api_port }}/workers/`);
         if (!response.ok) throw new Error('Failed to fetch workers');
 
         const data = await response.json();
@@ -1958,7 +1958,7 @@ async function stopWorker(workerType, pid) {
         // Extract worker name from type
         const workerName = workerType.replace('worker_', '').replace('_server', '');
 
-        const response = await fetch('http://localhost:8000/workers/stop', {
+        const response = await fetch('http://{{ api_host }}:{{ api_port }}/workers/stop', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
