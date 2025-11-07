@@ -52,14 +52,36 @@ Tests monitoring and health functionality:
 
 ### Prerequisites
 
-1. **Start Gleitzeit server** (required for all tests):
+1. **Python Version**: Python 3.11 or higher is required
+   ```bash
+   python3 --version  # Should be >= 3.11
+   ```
+
+2. **Install Test Dependencies**:
+
+   Option A - Install with extras (recommended):
+   ```bash
+   pip install -e ".[test]"
+   ```
+
+   Option B - Install manually:
+   ```bash
+   pip install pytest>=8.0.0 pytest-asyncio>=0.23.0
+   ```
+
+   **Common Error**: If you see "async def function are not natively supported", install pytest-asyncio:
+   ```bash
+   pip install pytest-asyncio
+   ```
+
+3. **Start Gleitzeit server** (required for all tests):
    ```bash
    cd /Users/leifmarkthaler/github/gleitzeit\ 0.0.7
    export PYTHONPATH="$PWD/src:$PYTHONPATH"
    python -m gleitzeit.cli.main serve -c gleitzeit.yaml
    ```
 
-2. **Ensure Redis is running**:
+4. **Ensure Redis is running**:
    ```bash
    redis-cli ping  # Should return PONG
    ```
@@ -200,11 +222,37 @@ This demonstrates how the GleitzeitClient handles result chaining with the depen
 
 ## Troubleshooting
 
+### "async def function are not natively supported"
+This error occurs when `pytest-asyncio` is not installed. Fix:
+```bash
+pip install pytest-asyncio>=0.23.0
+```
+
+Then verify it's installed:
+```bash
+pip list | grep pytest-asyncio
+```
+
+### Python Version Errors
+Tests require Python 3.11 or higher. Check your version:
+```bash
+python3 --version
+```
+
+If you have an older version, upgrade Python or use a virtual environment with Python 3.11+.
+
 ### Connection Errors
 If tests fail with connection errors:
 1. Ensure Gleitzeit server is running on `http://localhost:8000`
 2. Check that Redis is running: `redis-cli ping`
 3. Verify no firewall blocking localhost:8000
+4. If running tests on a different machine, update API URL in gleitzeit.yaml:
+   ```yaml
+   serve:
+     api:
+       host: 0.0.0.0  # Listen on all interfaces
+       port: 8000
+   ```
 
 ### Test Timeouts
 If workflows don't complete:

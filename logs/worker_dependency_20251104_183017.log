@@ -9,3 +9,16 @@
 [2025-11-04 18:30:17] [STDERR] 2025-11-04 18:30:17,814 - __main__ - INFO - Worker dependency-async started successfully
 [2025-11-04 18:30:17] [STDERR] 2025-11-04 18:30:17,814 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
 [2025-11-04 18:30:17] [STDERR] 2025-11-04 18:30:17,814 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for dependency-async
+[2025-11-05 15:01:45] [STDERR] 2025-11-05 15:01:45,381 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: workflow-b816bcee-09f0-40cd-afe2-3fd564164a2b
+[2025-11-05 15:01:45] [STDERR] 2025-11-05 15:01:45,384 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 4154181e-0913-4acd-9dbd-7a940d170bc0 to shard 0
+[2025-11-05 15:01:49] [STDERR] 2025-11-05 15:01:49,613 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: workflow-73a2b8b7-548d-4f33-a399-7c8c8e2c444b
+[2025-11-05 15:01:49] [STDERR] 2025-11-05 15:01:49,616 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task fca18055-0754-4516-90a9-6481e7568829 to shard 14
+[2025-11-05 15:01:52] [STDERR] 2025-11-05 15:01:52,960 - gleitzeit.workers.dependency_worker - INFO - Processing task failure: 22463c96-9247-4ad0-bec1-28359ad78715 from workflow workflow-06af496f-cd69-4965-961e-80cb43a997f2
+[2025-11-05 15:01:52] [STDERR] 2025-11-05 15:01:52,960 - gleitzeit.workers.dependency_worker - WARNING - Task 22463c96-9247-4ad0-bec1-28359ad78715 failed - applying HARD FAIL policy for workflow workflow-06af496f-cd69-4965-961e-80cb43a997f2
+[2025-11-05 15:01:52] [STDERR] 2025-11-05 15:01:52,961 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow-06af496f-cd69-4965-961e-80cb43a997f2 marked as FAILED due to task 22463c96-9247-4ad0-bec1-28359ad78715 failure (hard fail policy)
+[2025-11-05 15:02:01] [STDERR] 2025-11-05 15:02:01,224 - gleitzeit.workers.dependency_worker - INFO - Processing workflow submission: workflow-60188b1b-d085-4fc2-a872-137340a9507e
+[2025-11-05 15:02:01] [STDERR] 2025-11-05 15:02:01,229 - gleitzeit.workers.dependency_worker - INFO - Emitted initial task 8bda6f76-f05b-4924-bf34-1143974b0443 to shard 14
+[2025-11-05 15:02:03] [STDERR] 2025-11-05 15:02:03,696 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 4d899d1f-b8a4-4894-8c2f-c1dcbd01c710 from workflow workflow-c4c00d0c-7e85-4ce2-8afa-f06a7bc24f13
+[2025-11-05 15:02:03] [STDERR] 2025-11-05 15:02:03,697 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow-c4c00d0c-7e85-4ce2-8afa-f06a7bc24f13 completed successfully!
+[2025-11-05 15:02:07] [STDERR] 2025-11-05 15:02:07,928 - gleitzeit.workers.dependency_worker - INFO - Processing task completion: 0f61ce41-0bba-46c8-89b1-6a323eeff93c from workflow workflow-d84f1a6f-8879-4ea5-950a-a95246ec03f0
+[2025-11-05 15:02:07] [STDERR] 2025-11-05 15:02:07,929 - gleitzeit.workers.dependency_worker - INFO - Workflow workflow-d84f1a6f-8879-4ea5-950a-a95246ec03f0 completed successfully!

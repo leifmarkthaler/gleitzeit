@@ -12476,3 +12476,1118 @@
 [2025-11-05 14:50:10] [STDERR] 2025-11-05 14:50:10,216 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14720
 [2025-11-05 14:50:20] [STDERR] 2025-11-05 14:50:20,231 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14740
 [2025-11-05 14:50:30] [STDERR] 2025-11-05 14:50:30,306 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14760
+[2025-11-05 14:50:40] [STDERR] 2025-11-05 14:50:40,322 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14780
+[2025-11-05 14:50:50] [STDERR] 2025-11-05 14:50:50,352 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14800
+[2025-11-05 14:51:00] [STDERR] 2025-11-05 14:51:00,408 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14820
+[2025-11-05 14:51:10] [STDERR] 2025-11-05 14:51:10,422 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14840
+[2025-11-05 14:51:20] [STDERR] 2025-11-05 14:51:20,439 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14860
+[2025-11-05 14:51:30] [STDERR] 2025-11-05 14:51:30,512 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14880
+[2025-11-05 14:51:40] [STDERR] 2025-11-05 14:51:40,525 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14900
+[2025-11-05 14:51:50] [STDERR] 2025-11-05 14:51:50,539 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14920
+[2025-11-05 14:52:00] [STDERR] 2025-11-05 14:52:00,616 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14940
+[2025-11-05 14:52:10] [STDERR] 2025-11-05 14:52:10,631 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14960
+[2025-11-05 14:52:20] [STDERR] 2025-11-05 14:52:20,647 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 14980
+[2025-11-05 14:52:30] [STDERR] 2025-11-05 14:52:30,724 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15000
+[2025-11-05 14:52:40] [STDERR] 2025-11-05 14:52:40,739 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15020
+[2025-11-05 14:52:50] [STDERR] 2025-11-05 14:52:50,756 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15040
+[2025-11-05 14:53:00] [STDERR] 2025-11-05 14:53:00,824 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15060
+[2025-11-05 14:53:10] [STDERR] 2025-11-05 14:53:10,839 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15080
+[2025-11-05 14:53:20] [STDERR] 2025-11-05 14:53:20,852 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15100
+[2025-11-05 14:53:30] [STDERR] 2025-11-05 14:53:30,933 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15120
+[2025-11-05 14:53:40] [STDERR] 2025-11-05 14:53:40,947 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15140
+[2025-11-05 14:53:50] [STDERR] 2025-11-05 14:53:50,959 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15160
+[2025-11-05 14:54:01] [STDERR] 2025-11-05 14:54:01,029 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15180
+[2025-11-05 14:54:11] [STDERR] 2025-11-05 14:54:11,040 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15200
+[2025-11-05 14:54:21] [STDERR] 2025-11-05 14:54:21,056 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15220
+[2025-11-05 14:54:31] [STDERR] 2025-11-05 14:54:31,142 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15240
+[2025-11-05 14:54:41] [STDERR] 2025-11-05 14:54:41,158 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15260
+[2025-11-05 14:54:51] [STDERR] 2025-11-05 14:54:51,172 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15280
+[2025-11-05 14:55:01] [STDERR] 2025-11-05 14:55:01,240 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15300
+[2025-11-05 14:55:11] [STDERR] 2025-11-05 14:55:11,254 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15320
+[2025-11-05 14:55:21] [STDERR] 2025-11-05 14:55:21,268 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15340
+[2025-11-05 14:55:31] [STDERR] 2025-11-05 14:55:31,348 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15360
+[2025-11-05 14:55:41] [STDERR] 2025-11-05 14:55:41,361 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15380
+[2025-11-05 14:55:51] [STDERR] 2025-11-05 14:55:51,377 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15400
+[2025-11-05 14:56:01] [STDERR] 2025-11-05 14:56:01,456 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15420
+[2025-11-05 14:56:11] [STDERR] 2025-11-05 14:56:11,473 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15440
+[2025-11-05 14:56:21] [STDERR] 2025-11-05 14:56:21,486 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15460
+[2025-11-05 14:56:31] [STDERR] 2025-11-05 14:56:31,567 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15480
+[2025-11-05 14:56:41] [STDERR] 2025-11-05 14:56:41,581 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15500
+[2025-11-05 14:56:51] [STDERR] 2025-11-05 14:56:51,607 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15520
+[2025-11-05 14:57:21] [STDERR] 2025-11-05 14:57:21,727 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15540
+[2025-11-05 14:57:31] [STDERR] 2025-11-05 14:57:31,741 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15560
+[2025-11-05 14:57:41] [STDERR] 2025-11-05 14:57:41,756 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15580
+[2025-11-05 14:57:51] [STDERR] 2025-11-05 14:57:51,820 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15600
+[2025-11-05 14:58:01] [STDERR] 2025-11-05 14:58:01,833 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15620
+[2025-11-05 14:58:11] [STDERR] 2025-11-05 14:58:11,850 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15640
+[2025-11-05 14:58:21] [STDERR] 2025-11-05 14:58:21,923 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15660
+[2025-11-05 14:58:31] [STDERR] 2025-11-05 14:58:31,936 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15680
+[2025-11-05 14:58:41] [STDERR] 2025-11-05 14:58:41,948 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15700
+[2025-11-05 14:58:52] [STDERR] 2025-11-05 14:58:52,026 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15720
+[2025-11-05 14:59:02] [STDERR] 2025-11-05 14:59:02,040 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15740
+[2025-11-05 14:59:12] [STDERR] 2025-11-05 14:59:12,051 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15760
+[2025-11-05 14:59:22] [STDERR] 2025-11-05 14:59:22,129 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15780
+[2025-11-05 14:59:32] [STDERR] 2025-11-05 14:59:32,138 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15800
+[2025-11-05 14:59:42] [STDERR] 2025-11-05 14:59:42,150 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15820
+[2025-11-05 14:59:52] [STDERR] 2025-11-05 14:59:52,235 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15840
+[2025-11-05 15:00:02] [STDERR] 2025-11-05 15:00:02,245 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15860
+[2025-11-05 15:00:12] [STDERR] 2025-11-05 15:00:12,259 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15880
+[2025-11-05 15:00:22] [STDERR] 2025-11-05 15:00:22,339 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15900
+[2025-11-05 15:00:32] [STDERR] 2025-11-05 15:00:32,351 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15920
+[2025-11-05 15:00:42] [STDERR] 2025-11-05 15:00:42,362 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15940
+[2025-11-05 15:00:52] [STDERR] 2025-11-05 15:00:52,446 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15960
+[2025-11-05 15:01:02] [STDERR] 2025-11-05 15:01:02,460 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 15980
+[2025-11-05 15:01:12] [STDERR] 2025-11-05 15:01:12,476 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16000
+[2025-11-05 15:01:22] [STDERR] 2025-11-05 15:01:22,550 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16020
+[2025-11-05 15:01:32] [STDERR] 2025-11-05 15:01:32,565 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16040
+[2025-11-05 15:01:42] [STDERR] 2025-11-05 15:01:42,580 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16060
+[2025-11-05 15:01:52] [STDERR] 2025-11-05 15:01:52,651 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16080
+[2025-11-05 15:02:02] [STDERR] 2025-11-05 15:02:02,662 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16100
+[2025-11-05 15:02:12] [STDERR] 2025-11-05 15:02:12,673 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16120
+[2025-11-05 15:02:22] [STDERR] 2025-11-05 15:02:22,749 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16140
+[2025-11-05 15:02:32] [STDERR] 2025-11-05 15:02:32,762 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16160
+[2025-11-05 15:02:42] [STDERR] 2025-11-05 15:02:42,772 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16180
+[2025-11-05 15:02:52] [STDERR] 2025-11-05 15:02:52,858 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16200
+[2025-11-05 15:03:02] [STDERR] 2025-11-05 15:03:02,869 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16220
+[2025-11-05 15:03:12] [STDERR] 2025-11-05 15:03:12,884 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16240
+[2025-11-05 15:03:23] [STDERR] 2025-11-05 15:03:23,007 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16260
+[2025-11-05 15:03:33] [STDERR] 2025-11-05 15:03:33,021 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16280
+[2025-11-05 15:03:43] [STDERR] 2025-11-05 15:03:43,035 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16300
+[2025-11-05 15:03:53] [STDERR] 2025-11-05 15:03:53,058 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16320
+[2025-11-05 15:04:03] [STDERR] 2025-11-05 15:04:03,071 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16340
+[2025-11-05 15:04:13] [STDERR] 2025-11-05 15:04:13,130 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16360
+[2025-11-05 15:04:23] [STDERR] 2025-11-05 15:04:23,164 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16380
+[2025-11-05 15:04:33] [STDERR] 2025-11-05 15:04:33,178 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16400
+[2025-11-05 15:04:43] [STDERR] 2025-11-05 15:04:43,189 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16420
+[2025-11-05 15:04:53] [STDERR] 2025-11-05 15:04:53,266 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16440
+[2025-11-05 15:05:03] [STDERR] 2025-11-05 15:05:03,275 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16460
+[2025-11-05 15:05:13] [STDERR] 2025-11-05 15:05:13,290 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16480
+[2025-11-05 15:05:23] [STDERR] 2025-11-05 15:05:23,364 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16500
+[2025-11-05 15:05:33] [STDERR] 2025-11-05 15:05:33,375 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16520
+[2025-11-05 15:05:43] [STDERR] 2025-11-05 15:05:43,386 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16540
+[2025-11-05 15:05:53] [STDERR] 2025-11-05 15:05:53,464 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16560
+[2025-11-05 15:06:03] [STDERR] 2025-11-05 15:06:03,474 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16580
+[2025-11-05 15:06:13] [STDERR] 2025-11-05 15:06:13,485 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16600
+[2025-11-05 15:06:23] [STDERR] 2025-11-05 15:06:23,563 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16620
+[2025-11-05 15:06:33] [STDERR] 2025-11-05 15:06:33,572 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16640
+[2025-11-05 15:06:43] [STDERR] 2025-11-05 15:06:43,584 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16660
+[2025-11-05 15:06:53] [STDERR] 2025-11-05 15:06:53,664 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16680
+[2025-11-05 15:07:03] [STDERR] 2025-11-05 15:07:03,674 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16700
+[2025-11-05 15:07:13] [STDERR] 2025-11-05 15:07:13,691 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16720
+[2025-11-05 15:07:23] [STDERR] 2025-11-05 15:07:23,769 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16740
+[2025-11-05 15:07:33] [STDERR] 2025-11-05 15:07:33,782 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16760
+[2025-11-05 15:07:43] [STDERR] 2025-11-05 15:07:43,794 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16780
+[2025-11-05 15:07:53] [STDERR] 2025-11-05 15:07:53,890 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16800
+[2025-11-05 15:08:03] [STDERR] 2025-11-05 15:08:03,895 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16820
+[2025-11-05 15:08:13] [STDERR] 2025-11-05 15:08:13,900 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16840
+[2025-11-05 15:08:23] [STDERR] 2025-11-05 15:08:23,979 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16860
+[2025-11-05 15:08:33] [STDERR] 2025-11-05 15:08:33,992 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16880
+[2025-11-05 15:08:44] [STDERR] 2025-11-05 15:08:44,001 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16900
+[2025-11-05 15:08:54] [STDERR] 2025-11-05 15:08:54,073 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16920
+[2025-11-05 15:09:04] [STDERR] 2025-11-05 15:09:04,082 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16940
+[2025-11-05 15:09:14] [STDERR] 2025-11-05 15:09:14,090 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16960
+[2025-11-05 15:09:24] [STDERR] 2025-11-05 15:09:24,176 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 16980
+[2025-11-05 15:09:34] [STDERR] 2025-11-05 15:09:34,186 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17000
+[2025-11-05 15:09:44] [STDERR] 2025-11-05 15:09:44,196 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17020
+[2025-11-05 15:09:54] [STDERR] 2025-11-05 15:09:54,276 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17040
+[2025-11-05 15:10:04] [STDERR] 2025-11-05 15:10:04,292 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17060
+[2025-11-05 15:10:14] [STDERR] 2025-11-05 15:10:14,335 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17080
+[2025-11-05 15:10:24] [STDERR] 2025-11-05 15:10:24,386 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17100
+[2025-11-05 15:10:34] [STDERR] 2025-11-05 15:10:34,395 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17120
+[2025-11-05 15:10:44] [STDERR] 2025-11-05 15:10:44,407 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17140
+[2025-11-05 15:10:54] [STDERR] 2025-11-05 15:10:54,482 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17160
+[2025-11-05 15:11:04] [STDERR] 2025-11-05 15:11:04,492 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17180
+[2025-11-05 15:11:14] [STDERR] 2025-11-05 15:11:14,507 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17200
+[2025-11-05 15:11:24] [STDERR] 2025-11-05 15:11:24,590 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17220
+[2025-11-05 15:11:34] [STDERR] 2025-11-05 15:11:34,602 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17240
+[2025-11-05 15:11:44] [STDERR] 2025-11-05 15:11:44,613 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17260
+[2025-11-05 15:11:54] [STDERR] 2025-11-05 15:11:54,725 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17280
+[2025-11-05 15:12:04] [STDERR] 2025-11-05 15:12:04,735 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17300
+[2025-11-05 15:12:14] [STDERR] 2025-11-05 15:12:14,744 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17320
+[2025-11-05 15:12:24] [STDERR] 2025-11-05 15:12:24,793 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17340
+[2025-11-05 15:12:34] [STDERR] 2025-11-05 15:12:34,804 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17360
+[2025-11-05 15:12:44] [STDERR] 2025-11-05 15:12:44,817 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17380
+[2025-11-05 15:12:54] [STDERR] 2025-11-05 15:12:54,901 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17400
+[2025-11-05 15:13:04] [STDERR] 2025-11-05 15:13:04,915 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17420
+[2025-11-05 15:13:14] [STDERR] 2025-11-05 15:13:14,925 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17440
+[2025-11-05 15:13:25] [STDERR] 2025-11-05 15:13:25,005 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17460
+[2025-11-05 15:13:35] [STDERR] 2025-11-05 15:13:35,019 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17480
+[2025-11-05 15:13:45] [STDERR] 2025-11-05 15:13:45,033 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17500
+[2025-11-05 15:13:55] [STDERR] 2025-11-05 15:13:55,112 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17520
+[2025-11-05 15:14:05] [STDERR] 2025-11-05 15:14:05,124 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17540
+[2025-11-05 15:14:15] [STDERR] 2025-11-05 15:14:15,138 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17560
+[2025-11-05 15:14:25] [STDERR] 2025-11-05 15:14:25,289 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17580
+[2025-11-05 15:24:56] [STDERR] 2025-11-05 15:24:56,447 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 15:24:56] [STDERR] 2025-11-05 15:24:56,447 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 15:25:03] [STDERR] 2025-11-05 15:25:03,676 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17600
+[2025-11-05 15:25:14] [STDERR] 2025-11-05 15:25:14,161 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17620
+[2025-11-05 15:27:37] [STDERR] 2025-11-05 15:27:37,391 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 15:27:37] [STDERR] 2025-11-05 15:27:37,391 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 15:27:41] [STDERR] 2025-11-05 15:27:41,447 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17640
+[2025-11-05 15:43:36] [STDERR] 2025-11-05 15:43:36,410 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 15:43:36] [STDERR] 2025-11-05 15:43:36,410 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 16:08:21] [STDERR] 2025-11-05 16:08:21,212 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 16:08:21] [STDERR] 2025-11-05 16:08:21,213 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 16:08:23] [STDERR] 2025-11-05 16:08:23,535 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17660
+[2025-11-05 16:18:41] [STDERR] 2025-11-05 16:18:41,394 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 16:18:41] [STDERR] 2025-11-05 16:18:41,394 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 16:18:48] [STDERR] 2025-11-05 16:18:48,299 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17680
+[2025-11-05 16:33:58] [STDERR] 2025-11-05 16:33:58,857 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17700
+[2025-11-05 16:34:09] [STDERR] 2025-11-05 16:34:09,426 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17720
+[2025-11-05 16:49:14] [STDERR] 2025-11-05 16:49:14,409 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 16:49:14] [STDERR] 2025-11-05 16:49:14,409 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 16:49:19] [STDERR] 2025-11-05 16:49:19,741 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17740
+[2025-11-05 16:49:29] [STDERR] 2025-11-05 16:49:29,762 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17760
+[2025-11-05 17:04:39] [STDERR] 2025-11-05 17:04:39,865 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17780
+[2025-11-05 17:04:49] [STDERR] 2025-11-05 17:04:49,897 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17800
+[2025-11-05 17:04:59] [STDERR] 2025-11-05 17:04:59,918 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17820
+[2025-11-05 17:15:23] [STDERR] 2025-11-05 17:15:23,153 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 17:15:23] [STDERR] 2025-11-05 17:15:23,153 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 17:15:28] [STDERR] 2025-11-05 17:15:28,003 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17840
+[2025-11-05 17:30:29] [STDERR] 2025-11-05 17:30:29,064 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 17:30:29] [STDERR] 2025-11-05 17:30:29,064 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 17:30:38] [STDERR] 2025-11-05 17:30:38,232 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17860
+[2025-11-05 17:30:48] [STDERR] 2025-11-05 17:30:48,254 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17880
+[2025-11-05 17:45:53] [STDERR] 2025-11-05 17:45:53,003 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 17:45:53] [STDERR] 2025-11-05 17:45:53,003 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 17:45:58] [STDERR] 2025-11-05 17:45:58,411 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17900
+[2025-11-05 17:46:08] [STDERR] 2025-11-05 17:46:08,807 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17920
+[2025-11-05 18:01:19] [STDERR] 2025-11-05 18:01:19,081 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17940
+[2025-11-05 18:01:19] [STDERR] 2025-11-05 18:01:19,941 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 18:01:19] [STDERR] 2025-11-05 18:01:19,941 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 18:01:29] [STDERR] 2025-11-05 18:01:29,145 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17960
+[2025-11-05 18:01:39] [STDERR] 2025-11-05 18:01:39,168 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 17980
+[2025-11-05 18:16:27] [STDERR] 2025-11-05 18:16:27,922 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18000
+[2025-11-05 18:16:37] [STDERR] 2025-11-05 18:16:37,930 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18020
+[2025-11-05 18:31:47] [STDERR] 2025-11-05 18:31:47,831 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18040
+[2025-11-05 18:31:57] [STDERR] 2025-11-05 18:31:57,851 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18060
+[2025-11-05 18:47:07] [STDERR] 2025-11-05 18:47:07,892 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18080
+[2025-11-05 18:47:17] [STDERR] 2025-11-05 18:47:17,921 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18100
+[2025-11-05 18:47:27] [STDERR] 2025-11-05 18:47:27,957 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18120
+[2025-11-05 19:02:35] [STDERR] 2025-11-05 19:02:35,351 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 19:02:35] [STDERR] 2025-11-05 19:02:35,351 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 19:02:38] [STDERR] 2025-11-05 19:02:38,678 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18140
+[2025-11-05 19:02:49] [STDERR] 2025-11-05 19:02:49,144 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18160
+[2025-11-05 19:17:22] [STDERR] 2025-11-05 19:17:22,632 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 19:17:22] [STDERR] 2025-11-05 19:17:22,632 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 19:17:23] [STDERR] 2025-11-05 19:17:23,066 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18180
+[2025-11-05 19:17:33] [STDERR] 2025-11-05 19:17:33,094 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18200
+[2025-11-05 19:32:43] [STDERR] 2025-11-05 19:32:43,012 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18220
+[2025-11-05 19:32:53] [STDERR] 2025-11-05 19:32:53,042 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18240
+[2025-11-05 19:33:03] [STDERR] 2025-11-05 19:33:03,067 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18260
+[2025-11-05 19:48:12] [STDERR] 2025-11-05 19:48:12,986 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18280
+[2025-11-05 19:48:23] [STDERR] 2025-11-05 19:48:23,016 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18300
+[2025-11-05 20:03:33] [STDERR] 2025-11-05 20:03:33,807 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18320
+[2025-11-05 20:03:35] [STDERR] 2025-11-05 20:03:35,306 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 20:03:35] [STDERR] 2025-11-05 20:03:35,306 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 20:03:44] [STDERR] 2025-11-05 20:03:44,136 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18340
+[2025-11-05 20:03:54] [STDERR] 2025-11-05 20:03:54,593 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18360
+[2025-11-05 20:18:22] [STDERR] 2025-11-05 20:18:22,138 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 20:18:22] [STDERR] 2025-11-05 20:18:22,138 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 20:18:27] [STDERR] 2025-11-05 20:18:27,525 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18380
+[2025-11-05 20:33:37] [STDERR] 2025-11-05 20:33:37,631 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18400
+[2025-11-05 20:33:47] [STDERR] 2025-11-05 20:33:47,646 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18420
+[2025-11-05 20:48:57] [STDERR] 2025-11-05 20:48:57,927 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18440
+[2025-11-05 20:49:07] [STDERR] 2025-11-05 20:49:07,971 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18460
+[2025-11-05 20:49:18] [STDERR] 2025-11-05 20:49:18,011 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18480
+[2025-11-05 21:04:28] [STDERR] 2025-11-05 21:04:28,704 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18500
+[2025-11-05 21:04:38] [STDERR] 2025-11-05 21:04:38,727 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18520
+[2025-11-05 21:19:22] [STDERR] 2025-11-05 21:19:22,457 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18540
+[2025-11-05 21:19:32] [STDERR] 2025-11-05 21:19:32,494 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18560
+[2025-11-05 21:34:41] [STDERR] 2025-11-05 21:34:41,968 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 21:34:41] [STDERR] 2025-11-05 21:34:41,968 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 21:34:42] [STDERR] 2025-11-05 21:34:42,413 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18580
+[2025-11-05 21:34:52] [STDERR] 2025-11-05 21:34:52,981 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18600
+[2025-11-05 21:35:03] [STDERR] 2025-11-05 21:35:03,512 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18620
+[2025-11-05 21:50:08] [STDERR] 2025-11-05 21:50:08,918 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 21:50:08] [STDERR] 2025-11-05 21:50:08,918 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 21:50:13] [STDERR] 2025-11-05 21:50:13,987 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18640
+[2025-11-05 21:50:24] [STDERR] 2025-11-05 21:50:24,020 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18660
+[2025-11-05 22:05:34] [STDERR] 2025-11-05 22:05:34,788 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18680
+[2025-11-05 22:05:44] [STDERR] 2025-11-05 22:05:44,820 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18700
+[2025-11-05 22:05:54] [STDERR] 2025-11-05 22:05:54,852 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18720
+[2025-11-05 22:20:29] [STDERR] 2025-11-05 22:20:29,450 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18740
+[2025-11-05 22:20:39] [STDERR] 2025-11-05 22:20:39,485 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18760
+[2025-11-05 22:35:49] [STDERR] 2025-11-05 22:35:49,469 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18780
+[2025-11-05 22:35:59] [STDERR] 2025-11-05 22:35:59,496 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18800
+[2025-11-05 22:36:12] [STDERR] 2025-11-05 22:36:12,170 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18820
+[2025-11-05 22:36:28] [STDERR] 2025-11-05 22:36:28,795 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18840
+[2025-11-05 22:51:31] [STDERR] 2025-11-05 22:51:31,399 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-05 22:51:31] [STDERR] 2025-11-05 22:51:31,399 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-05 22:51:39] [STDERR] 2025-11-05 22:51:39,194 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18860
+[2025-11-05 22:51:49] [STDERR] 2025-11-05 22:51:49,637 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18880
+[2025-11-05 23:06:58] [STDERR] 2025-11-05 23:06:58,183 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-05 23:06:58] [STDERR] 2025-11-05 23:06:58,183 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-05 23:07:00] [STDERR] 2025-11-05 23:07:00,766 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18900
+[2025-11-05 23:07:10] [STDERR] 2025-11-05 23:07:10,791 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18920
+[2025-11-05 23:07:20] [STDERR] 2025-11-05 23:07:20,816 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18940
+[2025-11-05 23:21:30] [STDERR] 2025-11-05 23:21:30,288 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18960
+[2025-11-05 23:21:40] [STDERR] 2025-11-05 23:21:40,309 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 18980
+[2025-11-05 23:36:50] [STDERR] 2025-11-05 23:36:50,227 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19000
+[2025-11-05 23:37:00] [STDERR] 2025-11-05 23:37:00,250 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19020
+[2025-11-05 23:40:37] [STDERR] 2025-11-05 23:40:37,754 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19040
+[2025-11-05 23:55:47] [STDERR] 2025-11-05 23:55:47,664 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19060
+[2025-11-05 23:55:57] [STDERR] 2025-11-05 23:55:57,692 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19080
+[2025-11-05 23:56:07] [STDERR] 2025-11-05 23:56:07,715 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19100
+[2025-11-06 00:11:17] [STDERR] 2025-11-06 00:11:17,635 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19120
+[2025-11-06 00:11:27] [STDERR] 2025-11-06 00:11:27,663 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19140
+[2025-11-06 00:17:41] [STDERR] 2025-11-06 00:17:41,857 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 00:17:41] [STDERR] 2025-11-06 00:17:41,857 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 00:17:45] [STDERR] 2025-11-06 00:17:45,969 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19160
+[2025-11-06 00:17:56] [STDERR] 2025-11-06 00:17:56,538 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19180
+[2025-11-06 00:22:22] [STDERR] 2025-11-06 00:22:22,973 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 00:22:22] [STDERR] 2025-11-06 00:22:22,973 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 00:37:29] [STDERR] 2025-11-06 00:37:29,949 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19200
+[2025-11-06 00:37:39] [STDERR] 2025-11-06 00:37:39,977 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19220
+[2025-11-06 00:37:50] [STDERR] 2025-11-06 00:37:50,007 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19240
+[2025-11-06 00:52:52] [STDERR] 2025-11-06 00:52:52,874 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 00:52:52] [STDERR] 2025-11-06 00:52:52,874 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 00:53:00] [STDERR] 2025-11-06 00:53:00,274 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19260
+[2025-11-06 00:53:10] [STDERR] 2025-11-06 00:53:10,698 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19280
+[2025-11-06 01:08:21] [STDERR] 2025-11-06 01:08:21,477 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19300
+[2025-11-06 01:08:31] [STDERR] 2025-11-06 01:08:31,990 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19320
+[2025-11-06 01:08:42] [STDERR] 2025-11-06 01:08:42,498 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19340
+[2025-11-06 01:23:21] [STDERR] 2025-11-06 01:23:21,656 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 01:23:21] [STDERR] 2025-11-06 01:23:21,656 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 01:38:31] [STDERR] 2025-11-06 01:38:31,164 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19360
+[2025-11-06 01:38:41] [STDERR] 2025-11-06 01:38:41,195 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19380
+[2025-11-06 01:38:51] [STDERR] 2025-11-06 01:38:51,224 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19400
+[2025-11-06 01:54:01] [STDERR] 2025-11-06 01:54:01,281 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19420
+[2025-11-06 01:54:11] [STDERR] 2025-11-06 01:54:11,310 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19440
+[2025-11-06 02:09:21] [STDERR] 2025-11-06 02:09:21,423 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19460
+[2025-11-06 02:09:31] [STDERR] 2025-11-06 02:09:31,465 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19480
+[2025-11-06 02:09:41] [STDERR] 2025-11-06 02:09:41,503 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19500
+[2025-11-06 02:24:43] [STDERR] 2025-11-06 02:24:43,723 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 02:24:43] [STDERR] 2025-11-06 02:24:43,723 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 02:24:52] [STDERR] 2025-11-06 02:24:52,214 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19520
+[2025-11-06 02:25:02] [STDERR] 2025-11-06 02:25:02,632 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19540
+[2025-11-06 02:40:10] [STDERR] 2025-11-06 02:40:10,729 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 02:40:10] [STDERR] 2025-11-06 02:40:10,729 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 02:40:13] [STDERR] 2025-11-06 02:40:13,254 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19560
+[2025-11-06 02:40:23] [STDERR] 2025-11-06 02:40:23,343 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19580
+[2025-11-06 02:40:33] [STDERR] 2025-11-06 02:40:33,370 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19600
+[2025-11-06 02:55:34] [STDERR] 2025-11-06 02:55:34,839 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 02:55:34] [STDERR] 2025-11-06 02:55:34,839 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 02:55:43] [STDERR] 2025-11-06 02:55:43,720 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19620
+[2025-11-06 02:55:54] [STDERR] 2025-11-06 02:55:54,142 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19640
+[2025-11-06 03:11:04] [STDERR] 2025-11-06 03:11:04,415 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19660
+[2025-11-06 03:11:14] [STDERR] 2025-11-06 03:11:14,760 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19680
+[2025-11-06 03:26:22] [STDERR] 2025-11-06 03:26:22,509 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19700
+[2025-11-06 03:41:32] [STDERR] 2025-11-06 03:41:32,882 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19720
+[2025-11-06 03:41:43] [STDERR] 2025-11-06 03:41:43,369 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19740
+[2025-11-06 03:56:53] [STDERR] 2025-11-06 03:56:53,906 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 03:56:53] [STDERR] 2025-11-06 03:56:53,906 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 03:56:54] [STDERR] 2025-11-06 03:56:54,563 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19760
+[2025-11-06 03:57:04] [STDERR] 2025-11-06 03:57:04,579 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19780
+[2025-11-06 03:57:14] [STDERR] 2025-11-06 03:57:14,598 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19800
+[2025-11-06 04:12:18] [STDERR] 2025-11-06 04:12:18,602 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 04:12:18] [STDERR] 2025-11-06 04:12:18,602 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 04:12:25] [STDERR] 2025-11-06 04:12:25,457 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19820
+[2025-11-06 04:12:35] [STDERR] 2025-11-06 04:12:35,890 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19840
+[2025-11-06 04:27:46] [STDERR] 2025-11-06 04:27:46,258 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19860
+[2025-11-06 04:27:56] [STDERR] 2025-11-06 04:27:56,800 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19880
+[2025-11-06 04:28:07] [STDERR] 2025-11-06 04:28:07,313 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19900
+[2025-11-06 04:43:10] [STDERR] 2025-11-06 04:43:10,193 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 04:43:10] [STDERR] 2025-11-06 04:43:10,193 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 04:43:18] [STDERR] 2025-11-06 04:43:18,109 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19920
+[2025-11-06 04:43:28] [STDERR] 2025-11-06 04:43:28,136 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19940
+[2025-11-06 04:58:34] [STDERR] 2025-11-06 04:58:34,170 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 04:58:34] [STDERR] 2025-11-06 04:58:34,171 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 04:58:38] [STDERR] 2025-11-06 04:58:38,263 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19960
+[2025-11-06 04:58:48] [STDERR] 2025-11-06 04:58:48,583 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 19980
+[2025-11-06 05:13:59] [STDERR] 2025-11-06 05:13:59,088 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20000
+[2025-11-06 05:14:09] [STDERR] 2025-11-06 05:14:09,554 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20020
+[2025-11-06 05:14:20] [STDERR] 2025-11-06 05:14:20,055 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20040
+[2025-11-06 05:29:30] [STDERR] 2025-11-06 05:29:30,861 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20060
+[2025-11-06 05:29:41] [STDERR] 2025-11-06 05:29:41,516 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20080
+[2025-11-06 05:44:53] [STDERR] 2025-11-06 05:44:53,173 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20100
+[2025-11-06 05:45:03] [STDERR] 2025-11-06 05:45:03,720 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20120
+[2025-11-06 06:00:14] [STDERR] 2025-11-06 06:00:14,450 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20140
+[2025-11-06 06:00:24] [STDERR] 2025-11-06 06:00:24,889 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20160
+[2025-11-06 06:00:35] [STDERR] 2025-11-06 06:00:35,348 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20180
+[2025-11-06 06:15:40] [STDERR] 2025-11-06 06:15:40,965 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 06:15:40] [STDERR] 2025-11-06 06:15:40,965 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 06:15:45] [STDERR] 2025-11-06 06:15:45,809 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20200
+[2025-11-06 06:15:55] [STDERR] 2025-11-06 06:15:55,850 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20220
+[2025-11-06 06:30:36] [STDERR] 2025-11-06 06:30:36,644 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 06:30:36] [STDERR] 2025-11-06 06:30:36,644 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 06:30:37] [STDERR] 2025-11-06 06:30:37,495 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20240
+[2025-11-06 06:30:47] [STDERR] 2025-11-06 06:30:47,958 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20260
+[2025-11-06 06:48:48] [STDERR] 2025-11-06 06:48:48,872 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20280
+[2025-11-06 07:21:59] [STDERR] 2025-11-06 07:21:59,916 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20300
+[2025-11-06 07:37:12] [STDERR] 2025-11-06 07:37:12,667 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 07:37:12] [STDERR] 2025-11-06 07:37:12,667 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 07:52:41] [STDERR] 2025-11-06 07:52:41,553 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 07:52:41] [STDERR] 2025-11-06 07:52:41,553 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 07:52:41] [STDERR] 2025-11-06 07:52:41,896 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20320
+[2025-11-06 07:53:37] [STDERR] 2025-11-06 07:53:37,355 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 07:53:37] [STDERR] 2025-11-06 07:53:37,355 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 07:53:41] [STDERR] 2025-11-06 07:53:41,909 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20340
+[2025-11-06 08:01:15] [STDERR] 2025-11-06 08:01:15,112 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20360
+[2025-11-06 08:01:25] [STDERR] 2025-11-06 08:01:25,139 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20380
+[2025-11-06 08:14:47] [STDERR] 2025-11-06 08:14:47,834 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 08:14:47] [STDERR] 2025-11-06 08:14:47,834 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 08:14:49] [STDERR] 2025-11-06 08:14:49,412 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20400
+[2025-11-06 08:14:59] [STDERR] 2025-11-06 08:14:59,939 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20420
+[2025-11-06 08:28:22] [STDERR] 2025-11-06 08:28:22,532 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 08:28:22] [STDERR] 2025-11-06 08:28:22,532 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 08:28:23] [STDERR] 2025-11-06 08:28:23,879 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20440
+[2025-11-06 08:28:33] [STDERR] 2025-11-06 08:28:33,899 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20460
+[2025-11-06 08:41:54] [STDERR] 2025-11-06 08:41:54,195 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 08:41:54] [STDERR] 2025-11-06 08:41:54,195 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 08:42:04] [STDERR] 2025-11-06 08:42:04,029 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20480
+[2025-11-06 08:55:30] [STDERR] 2025-11-06 08:55:30,427 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 08:55:30] [STDERR] 2025-11-06 08:55:30,428 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 08:55:32] [STDERR] 2025-11-06 08:55:32,801 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20500
+[2025-11-06 09:02:13] [STDERR] 2025-11-06 09:02:13,288 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 09:02:13] [STDERR] 2025-11-06 09:02:13,288 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 09:02:13] [STDERR] 2025-11-06 09:02:13,689 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20520
+[2025-11-06 09:02:24] [STDERR] 2025-11-06 09:02:24,156 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20540
+[2025-11-06 09:15:53] [STDERR] 2025-11-06 09:15:53,189 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20560
+[2025-11-06 09:16:03] [STDERR] 2025-11-06 09:16:03,713 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20580
+[2025-11-06 09:29:25] [STDERR] 2025-11-06 09:29:25,640 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20600
+[2025-11-06 09:29:36] [STDERR] 2025-11-06 09:29:36,253 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20620
+[2025-11-06 09:42:56] [STDERR] 2025-11-06 09:42:56,445 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 09:42:56] [STDERR] 2025-11-06 09:42:56,445 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 09:42:59] [STDERR] 2025-11-06 09:42:59,988 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20640
+[2025-11-06 09:43:10] [STDERR] 2025-11-06 09:43:10,017 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20660
+[2025-11-06 09:56:32] [STDERR] 2025-11-06 09:56:32,231 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20680
+[2025-11-06 09:56:42] [STDERR] 2025-11-06 09:56:42,265 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20700
+[2025-11-06 10:03:17] [STDERR] 2025-11-06 10:03:17,117 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20720
+[2025-11-06 10:16:50] [STDERR] 2025-11-06 10:16:50,190 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20740
+[2025-11-06 10:17:00] [STDERR] 2025-11-06 10:17:00,222 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20760
+[2025-11-06 10:30:29] [STDERR] 2025-11-06 10:30:29,335 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20780
+[2025-11-06 10:43:59] [STDERR] 2025-11-06 10:43:59,164 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20800
+[2025-11-06 10:57:27] [STDERR] 2025-11-06 10:57:27,919 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 10:57:27] [STDERR] 2025-11-06 10:57:27,919 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 10:57:28] [STDERR] 2025-11-06 10:57:28,475 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20820
+[2025-11-06 10:57:39] [STDERR] 2025-11-06 10:57:39,072 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20840
+[2025-11-06 10:57:49] [STDERR] 2025-11-06 10:57:49,545 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20860
+[2025-11-06 11:04:15] [STDERR] 2025-11-06 11:04:15,137 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 11:04:15] [STDERR] 2025-11-06 11:04:15,137 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 11:04:22] [STDERR] 2025-11-06 11:04:22,904 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20880
+[2025-11-06 11:04:32] [STDERR] 2025-11-06 11:04:32,935 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20900
+[2025-11-06 11:17:56] [STDERR] 2025-11-06 11:17:56,791 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20920
+[2025-11-06 11:18:06] [STDERR] 2025-11-06 11:18:06,817 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20940
+[2025-11-06 11:31:23] [STDERR] 2025-11-06 11:31:23,213 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 11:31:23] [STDERR] 2025-11-06 11:31:23,213 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 11:31:32] [STDERR] 2025-11-06 11:31:32,294 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20960
+[2025-11-06 11:44:57] [STDERR] 2025-11-06 11:44:57,661 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 11:44:57] [STDERR] 2025-11-06 11:44:57,661 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 11:45:01] [STDERR] 2025-11-06 11:45:01,952 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 20980
+[2025-11-06 11:58:32] [STDERR] 2025-11-06 11:58:32,246 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21000
+[2025-11-06 11:58:42] [STDERR] 2025-11-06 11:58:42,275 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21020
+[2025-11-06 12:05:13] [STDERR] 2025-11-06 12:05:13,991 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 12:05:13] [STDERR] 2025-11-06 12:05:13,991 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 12:05:21] [STDERR] 2025-11-06 12:05:21,633 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21040
+[2025-11-06 12:18:51] [STDERR] 2025-11-06 12:18:51,623 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21060
+[2025-11-06 12:19:02] [STDERR] 2025-11-06 12:19:02,282 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21080
+[2025-11-06 12:32:22] [STDERR] 2025-11-06 12:32:22,310 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 12:32:22] [STDERR] 2025-11-06 12:32:22,310 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 12:32:25] [STDERR] 2025-11-06 12:32:25,898 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21100
+[2025-11-06 12:45:54] [STDERR] 2025-11-06 12:45:54,614 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21120
+[2025-11-06 12:45:56] [STDERR] 2025-11-06 12:45:56,005 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 12:45:56] [STDERR] 2025-11-06 12:45:56,005 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 12:59:28] [STDERR] 2025-11-06 12:59:28,271 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 12:59:28] [STDERR] 2025-11-06 12:59:28,272 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 12:59:28] [STDERR] 2025-11-06 12:59:28,280 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21140
+[2025-11-06 12:59:38] [STDERR] 2025-11-06 12:59:38,307 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21160
+[2025-11-06 13:06:14] [STDERR] 2025-11-06 13:06:14,973 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 13:06:14] [STDERR] 2025-11-06 13:06:14,973 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 13:06:20] [STDERR] 2025-11-06 13:06:20,397 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21180
+[2025-11-06 13:19:49] [STDERR] 2025-11-06 13:19:49,020 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 13:19:49] [STDERR] 2025-11-06 13:19:49,020 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 13:19:49] [STDERR] 2025-11-06 13:19:49,824 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21200
+[2025-11-06 13:19:59] [STDERR] 2025-11-06 13:19:59,853 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21220
+[2025-11-06 13:20:09] [STDERR] 2025-11-06 13:20:09,880 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21240
+[2025-11-06 13:33:22] [STDERR] 2025-11-06 13:33:22,207 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 13:33:22] [STDERR] 2025-11-06 13:33:22,207 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 13:33:29] [STDERR] 2025-11-06 13:33:29,520 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21260
+[2025-11-06 13:46:57] [STDERR] 2025-11-06 13:46:57,587 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 13:46:57] [STDERR] 2025-11-06 13:46:57,587 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 13:47:03] [STDERR] 2025-11-06 13:47:03,068 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21280
+[2025-11-06 14:00:29] [STDERR] 2025-11-06 14:00:29,425 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 14:00:29] [STDERR] 2025-11-06 14:00:29,425 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 14:00:33] [STDERR] 2025-11-06 14:00:33,139 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21300
+[2025-11-06 14:07:13] [STDERR] 2025-11-06 14:07:13,942 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21320
+[2025-11-06 14:07:14] [STDERR] 2025-11-06 14:07:14,872 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 14:07:14] [STDERR] 2025-11-06 14:07:14,872 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 14:07:23] [STDERR] 2025-11-06 14:07:23,986 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21340
+[2025-11-06 14:20:49] [STDERR] 2025-11-06 14:20:49,203 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 14:20:49] [STDERR] 2025-11-06 14:20:49,203 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 14:20:53] [STDERR] 2025-11-06 14:20:53,564 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21360
+[2025-11-06 14:21:04] [STDERR] 2025-11-06 14:21:04,110 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21380
+[2025-11-06 14:34:22] [STDERR] 2025-11-06 14:34:22,873 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 14:34:22] [STDERR] 2025-11-06 14:34:22,873 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 14:34:27] [STDERR] 2025-11-06 14:34:27,378 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21400
+[2025-11-06 14:34:37] [STDERR] 2025-11-06 14:34:37,408 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21420
+[2025-11-06 14:48:02] [STDERR] 2025-11-06 14:48:02,044 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21440
+[2025-11-06 14:48:12] [STDERR] 2025-11-06 14:48:12,074 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21460
+[2025-11-06 15:01:31] [STDERR] 2025-11-06 15:01:31,186 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 15:01:31] [STDERR] 2025-11-06 15:01:31,186 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 15:01:36] [STDERR] 2025-11-06 15:01:36,895 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21480
+[2025-11-06 15:08:14] [STDERR] 2025-11-06 15:08:14,548 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 15:08:14] [STDERR] 2025-11-06 15:08:14,548 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 15:08:15] [STDERR] 2025-11-06 15:08:15,856 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21500
+[2025-11-06 15:08:25] [STDERR] 2025-11-06 15:08:25,883 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21520
+[2025-11-06 15:14:33] [STDERR] 2025-11-06 15:14:33,990 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21540
+[2025-11-06 15:28:04] [STDERR] 2025-11-06 15:28:04,195 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21560
+[2025-11-06 15:41:33] [STDERR] 2025-11-06 15:41:33,953 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21580
+[2025-11-06 15:41:43] [STDERR] 2025-11-06 15:41:43,983 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21600
+[2025-11-06 15:55:09] [STDERR] 2025-11-06 15:55:09,314 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21620
+[2025-11-06 15:55:10] [STDERR] 2025-11-06 15:55:10,986 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 15:55:10] [STDERR] 2025-11-06 15:55:10,986 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 15:55:19] [STDERR] 2025-11-06 15:55:19,684 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21640
+[2025-11-06 16:06:40] [STDERR] 2025-11-06 16:06:40,940 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21660
+[2025-11-06 16:09:13] [STDERR] 2025-11-06 16:09:13,778 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21680
+[2025-11-06 16:09:14] [STDERR] 2025-11-06 16:09:14,219 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 16:09:14] [STDERR] 2025-11-06 16:09:14,219 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 16:09:23] [STDERR] 2025-11-06 16:09:23,816 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21700
+[2025-11-06 16:20:31] [STDERR] 2025-11-06 16:20:31,307 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21720
+[2025-11-06 16:33:58] [STDERR] 2025-11-06 16:33:58,195 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 16:33:58] [STDERR] 2025-11-06 16:33:58,195 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 16:34:00] [STDERR] 2025-11-06 16:34:00,735 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21740
+[2025-11-06 16:34:11] [STDERR] 2025-11-06 16:34:11,318 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21760
+[2025-11-06 16:47:33] [STDERR] 2025-11-06 16:47:33,829 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21780
+[2025-11-06 16:47:44] [STDERR] 2025-11-06 16:47:44,283 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21800
+[2025-11-06 17:01:08] [STDERR] 2025-11-06 17:01:08,753 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 17:01:08] [STDERR] 2025-11-06 17:01:08,753 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 17:06:52] [STDERR] 2025-11-06 17:06:52,714 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21820
+[2025-11-06 17:10:15] [STDERR] 2025-11-06 17:10:15,098 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 17:10:15] [STDERR] 2025-11-06 17:10:15,098 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 17:10:15] [STDERR] 2025-11-06 17:10:15,750 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21840
+[2025-11-06 17:54:48] [STDERR] 2025-11-06 17:54:48,778 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21860
+[2025-11-06 17:54:49] [STDERR] 2025-11-06 17:54:49,838 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 17:54:49] [STDERR] 2025-11-06 17:54:49,838 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 18:11:18] [STDERR] 2025-11-06 18:11:18,635 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21880
+[2025-11-06 18:44:20] [STDERR] 2025-11-06 18:44:20,313 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 18:44:20] [STDERR] 2025-11-06 18:44:20,313 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 18:44:21] [STDERR] 2025-11-06 18:44:21,439 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21900
+[2025-11-06 19:12:16] [STDERR] 2025-11-06 19:12:16,293 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21920
+[2025-11-06 19:26:46] [STDERR] 2025-11-06 19:26:46,817 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21940
+[2025-11-06 19:26:57] [STDERR] 2025-11-06 19:26:57,281 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21960
+[2025-11-06 19:27:07] [STDERR] 2025-11-06 19:27:07,639 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 21980
+[2025-11-06 19:42:17] [STDERR] 2025-11-06 19:42:17,940 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22000
+[2025-11-06 19:42:28] [STDERR] 2025-11-06 19:42:28,255 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22020
+[2025-11-06 19:57:37] [STDERR] 2025-11-06 19:57:37,508 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 19:57:37] [STDERR] 2025-11-06 19:57:37,508 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 19:57:39] [STDERR] 2025-11-06 19:57:39,047 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22040
+[2025-11-06 19:57:49] [STDERR] 2025-11-06 19:57:49,074 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22060
+[2025-11-06 19:57:59] [STDERR] 2025-11-06 19:57:59,103 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22080
+[2025-11-06 20:13:09] [STDERR] 2025-11-06 20:13:09,707 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22100
+[2025-11-06 20:13:19] [STDERR] 2025-11-06 20:13:19,730 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22120
+[2025-11-06 20:28:26] [STDERR] 2025-11-06 20:28:26,718 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 20:28:26] [STDERR] 2025-11-06 20:28:26,718 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 20:28:30] [STDERR] 2025-11-06 20:28:30,717 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22140
+[2025-11-06 20:28:40] [STDERR] 2025-11-06 20:28:40,960 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22160
+[2025-11-06 20:28:51] [STDERR] 2025-11-06 20:28:51,213 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22180
+[2025-11-06 20:44:02] [STDERR] 2025-11-06 20:44:02,443 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22200
+[2025-11-06 20:44:12] [STDERR] 2025-11-06 20:44:12,786 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22220
+[2025-11-06 20:59:23] [STDERR] 2025-11-06 20:59:23,894 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22240
+[2025-11-06 20:59:34] [STDERR] 2025-11-06 20:59:34,339 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22260
+[2025-11-06 21:06:03] [STDERR] 2025-11-06 21:06:03,540 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22280
+[2025-11-06 21:06:05] [STDERR] 2025-11-06 21:06:05,101 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 21:06:05] [STDERR] 2025-11-06 21:06:05,101 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 21:06:13] [STDERR] 2025-11-06 21:06:13,759 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22300
+[2025-11-06 21:06:23] [STDERR] 2025-11-06 21:06:23,838 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22320
+[2025-11-06 21:14:01] [STDERR] 2025-11-06 21:14:01,215 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 21:14:01] [STDERR] 2025-11-06 21:14:01,215 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 21:14:09] [STDERR] 2025-11-06 21:14:09,208 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22340
+[2025-11-06 21:14:19] [STDERR] 2025-11-06 21:14:19,464 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22360
+[2025-11-06 21:29:22] [STDERR] 2025-11-06 21:29:22,137 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 21:29:22] [STDERR] 2025-11-06 21:29:22,137 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 21:29:29] [STDERR] 2025-11-06 21:29:29,637 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22380
+[2025-11-06 21:29:39] [STDERR] 2025-11-06 21:29:39,669 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22400
+[2025-11-06 21:44:46] [STDERR] 2025-11-06 21:44:46,904 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 21:44:46] [STDERR] 2025-11-06 21:44:46,904 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 21:44:50] [STDERR] 2025-11-06 21:44:50,388 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22420
+[2025-11-06 21:45:00] [STDERR] 2025-11-06 21:45:00,701 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22440
+[2025-11-06 21:45:10] [STDERR] 2025-11-06 21:45:10,971 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22460
+[2025-11-06 22:00:21] [STDERR] 2025-11-06 22:00:21,351 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22480
+[2025-11-06 22:00:31] [STDERR] 2025-11-06 22:00:31,715 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22500
+[2025-11-06 22:15:05] [STDERR] 2025-11-06 22:15:05,654 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22520
+[2025-11-06 22:15:15] [STDERR] 2025-11-06 22:15:15,984 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22540
+[2025-11-06 22:30:26] [STDERR] 2025-11-06 22:30:26,833 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22560
+[2025-11-06 22:30:37] [STDERR] 2025-11-06 22:30:37,192 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22580
+[2025-11-06 22:30:47] [STDERR] 2025-11-06 22:30:47,506 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22600
+[2025-11-06 22:45:58] [STDERR] 2025-11-06 22:45:58,402 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22620
+[2025-11-06 22:46:08] [STDERR] 2025-11-06 22:46:08,669 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22640
+[2025-11-06 23:01:15] [STDERR] 2025-11-06 23:01:15,446 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-06 23:01:15] [STDERR] 2025-11-06 23:01:15,446 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-06 23:01:19] [STDERR] 2025-11-06 23:01:19,568 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22660
+[2025-11-06 23:01:29] [STDERR] 2025-11-06 23:01:29,598 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22680
+[2025-11-06 23:01:39] [STDERR] 2025-11-06 23:01:39,628 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22700
+[2025-11-06 23:16:09] [STDERR] 2025-11-06 23:16:09,871 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22720
+[2025-11-06 23:16:19] [STDERR] 2025-11-06 23:16:19,906 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22740
+[2025-11-06 23:31:30] [STDERR] 2025-11-06 23:31:30,488 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22760
+[2025-11-06 23:31:40] [STDERR] 2025-11-06 23:31:40,518 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22780
+[2025-11-06 23:46:48] [STDERR] 2025-11-06 23:46:48,535 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-06 23:46:48] [STDERR] 2025-11-06 23:46:48,535 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-06 23:46:50] [STDERR] 2025-11-06 23:46:50,731 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22800
+[2025-11-06 23:47:01] [STDERR] 2025-11-06 23:47:01,020 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22820
+[2025-11-06 23:47:11] [STDERR] 2025-11-06 23:47:11,391 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22840
+[2025-11-07 00:02:22] [STDERR] 2025-11-07 00:02:22,286 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22860
+[2025-11-07 00:02:32] [STDERR] 2025-11-07 00:02:32,582 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22880
+[2025-11-07 00:17:03] [STDERR] 2025-11-07 00:17:03,461 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 00:17:03] [STDERR] 2025-11-07 00:17:03,461 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 00:17:06] [STDERR] 2025-11-07 00:17:06,034 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22900
+[2025-11-07 00:17:16] [STDERR] 2025-11-07 00:17:16,073 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22920
+[2025-11-07 00:19:37] [STDERR] 2025-11-07 00:19:37,270 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 00:19:37] [STDERR] 2025-11-07 00:19:37,270 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 00:19:38] [STDERR] 2025-11-07 00:19:38,843 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22940
+[2025-11-07 00:34:50] [STDERR] 2025-11-07 00:34:50,252 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22960
+[2025-11-07 00:35:00] [STDERR] 2025-11-07 00:35:00,544 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 22980
+[2025-11-07 00:35:10] [STDERR] 2025-11-07 00:35:10,927 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23000
+[2025-11-07 00:50:13] [STDERR] 2025-11-07 00:50:13,980 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 00:50:13] [STDERR] 2025-11-07 00:50:13,980 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 00:50:21] [STDERR] 2025-11-07 00:50:21,062 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23020
+[2025-11-07 00:50:31] [STDERR] 2025-11-07 00:50:31,083 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23040
+[2025-11-07 01:05:38] [STDERR] 2025-11-07 01:05:38,778 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 01:05:38] [STDERR] 2025-11-07 01:05:38,778 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 01:05:41] [STDERR] 2025-11-07 01:05:41,909 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23060
+[2025-11-07 01:05:52] [STDERR] 2025-11-07 01:05:52,229 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23080
+[2025-11-07 01:06:02] [STDERR] 2025-11-07 01:06:02,472 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23100
+[2025-11-07 01:18:02] [STDERR] 2025-11-07 01:18:02,377 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 01:18:02] [STDERR] 2025-11-07 01:18:02,377 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 01:18:09] [STDERR] 2025-11-07 01:18:09,424 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23120
+[2025-11-07 01:18:19] [STDERR] 2025-11-07 01:18:19,478 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23140
+[2025-11-07 01:33:20] [STDERR] 2025-11-07 01:33:20,579 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 01:33:20] [STDERR] 2025-11-07 01:33:20,579 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 01:33:29] [STDERR] 2025-11-07 01:33:29,884 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23160
+[2025-11-07 01:33:40] [STDERR] 2025-11-07 01:33:40,165 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23180
+[2025-11-07 01:48:51] [STDERR] 2025-11-07 01:48:51,489 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23200
+[2025-11-07 01:49:01] [STDERR] 2025-11-07 01:49:01,856 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23220
+[2025-11-07 02:04:12] [STDERR] 2025-11-07 02:04:12,224 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23240
+[2025-11-07 02:04:22] [STDERR] 2025-11-07 02:04:22,580 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23260
+[2025-11-07 02:04:32] [STDERR] 2025-11-07 02:04:32,878 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23280
+[2025-11-07 02:19:39] [STDERR] 2025-11-07 02:19:39,914 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 02:19:39] [STDERR] 2025-11-07 02:19:39,914 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 02:19:43] [STDERR] 2025-11-07 02:19:43,653 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23300
+[2025-11-07 02:19:53] [STDERR] 2025-11-07 02:19:53,685 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23320
+[2025-11-07 02:35:04] [STDERR] 2025-11-07 02:35:04,487 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23340
+[2025-11-07 02:35:04] [STDERR] 2025-11-07 02:35:04,689 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 02:35:04] [STDERR] 2025-11-07 02:35:04,690 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 02:35:14] [STDERR] 2025-11-07 02:35:14,758 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23360
+[2025-11-07 02:35:25] [STDERR] 2025-11-07 02:35:25,026 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23380
+[2025-11-07 02:50:29] [STDERR] 2025-11-07 02:50:29,449 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 02:50:29] [STDERR] 2025-11-07 02:50:29,449 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 02:50:36] [STDERR] 2025-11-07 02:50:36,070 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23400
+[2025-11-07 02:50:46] [STDERR] 2025-11-07 02:50:46,110 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23420
+[2025-11-07 03:05:56] [STDERR] 2025-11-07 03:05:56,130 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23440
+[2025-11-07 03:06:06] [STDERR] 2025-11-07 03:06:06,166 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23460
+[2025-11-07 03:06:16] [STDERR] 2025-11-07 03:06:16,199 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23480
+[2025-11-07 03:21:26] [STDERR] 2025-11-07 03:21:26,253 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23500
+[2025-11-07 03:21:36] [STDERR] 2025-11-07 03:21:36,277 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23520
+[2025-11-07 03:36:46] [STDERR] 2025-11-07 03:36:46,470 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23540
+[2025-11-07 03:36:56] [STDERR] 2025-11-07 03:36:56,487 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23560
+[2025-11-07 03:37:06] [STDERR] 2025-11-07 03:37:06,509 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23580
+[2025-11-07 03:52:12] [STDERR] 2025-11-07 03:52:12,255 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 03:52:12] [STDERR] 2025-11-07 03:52:12,255 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 03:52:17] [STDERR] 2025-11-07 03:52:17,348 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23600
+[2025-11-07 03:52:27] [STDERR] 2025-11-07 03:52:27,590 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23620
+[2025-11-07 04:07:37] [STDERR] 2025-11-07 04:07:37,948 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23640
+[2025-11-07 04:07:39] [STDERR] 2025-11-07 04:07:39,486 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 04:07:39] [STDERR] 2025-11-07 04:07:39,486 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 04:07:48] [STDERR] 2025-11-07 04:07:48,033 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23660
+[2025-11-07 04:07:58] [STDERR] 2025-11-07 04:07:58,119 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23680
+[2025-11-07 04:23:03] [STDERR] 2025-11-07 04:23:03,724 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 04:23:03] [STDERR] 2025-11-07 04:23:03,725 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 04:23:08] [STDERR] 2025-11-07 04:23:08,426 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23700
+[2025-11-07 04:23:18] [STDERR] 2025-11-07 04:23:18,701 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23720
+[2025-11-07 04:38:29] [STDERR] 2025-11-07 04:38:29,129 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23740
+[2025-11-07 04:38:39] [STDERR] 2025-11-07 04:38:39,498 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23760
+[2025-11-07 04:38:49] [STDERR] 2025-11-07 04:38:49,806 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23780
+[2025-11-07 04:53:55] [STDERR] 2025-11-07 04:53:55,466 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 04:53:55] [STDERR] 2025-11-07 04:53:55,466 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 04:54:00] [STDERR] 2025-11-07 04:54:00,681 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23800
+[2025-11-07 04:54:10] [STDERR] 2025-11-07 04:54:10,715 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23820
+[2025-11-07 05:09:20] [STDERR] 2025-11-07 05:09:20,079 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 05:09:20] [STDERR] 2025-11-07 05:09:20,079 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 05:09:21] [STDERR] 2025-11-07 05:09:21,357 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23840
+[2025-11-07 05:09:31] [STDERR] 2025-11-07 05:09:31,568 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23860
+[2025-11-07 05:09:41] [STDERR] 2025-11-07 05:09:41,838 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23880
+[2025-11-07 05:24:53] [STDERR] 2025-11-07 05:24:53,034 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23900
+[2025-11-07 05:25:03] [STDERR] 2025-11-07 05:25:03,302 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23920
+[2025-11-07 05:40:13] [STDERR] 2025-11-07 05:40:13,620 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23940
+[2025-11-07 05:40:23] [STDERR] 2025-11-07 05:40:23,938 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23960
+[2025-11-07 05:40:34] [STDERR] 2025-11-07 05:40:34,282 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 23980
+[2025-11-07 05:55:38] [STDERR] 2025-11-07 05:55:38,845 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 05:55:38] [STDERR] 2025-11-07 05:55:38,845 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 05:55:44] [STDERR] 2025-11-07 05:55:44,471 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24000
+[2025-11-07 05:55:54] [STDERR] 2025-11-07 05:55:54,502 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24020
+[2025-11-07 06:01:01] [STDERR] 2025-11-07 06:01:01,223 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 06:01:01] [STDERR] 2025-11-07 06:01:01,223 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 06:01:02] [STDERR] 2025-11-07 06:01:02,831 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24040
+[2025-11-07 06:16:13] [STDERR] 2025-11-07 06:16:13,055 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24060
+[2025-11-07 06:16:23] [STDERR] 2025-11-07 06:16:23,371 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24080
+[2025-11-07 06:31:25] [STDERR] 2025-11-07 06:31:25,413 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24100
+[2025-11-07 06:31:35] [STDERR] 2025-11-07 06:31:35,744 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24120
+[2025-11-07 06:49:06] [STDERR] 2025-11-07 06:49:06,410 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 06:49:06] [STDERR] 2025-11-07 06:49:06,410 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 07:06:06] [STDERR] 2025-11-07 07:06:06,167 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24140
+[2025-11-07 07:23:46] [STDERR] 2025-11-07 07:23:46,861 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 07:23:46] [STDERR] 2025-11-07 07:23:46,861 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 07:40:16] [STDERR] 2025-11-07 07:40:16,941 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24160
+[2025-11-07 07:56:07] [STDERR] 2025-11-07 07:56:07,219 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 07:56:07] [STDERR] 2025-11-07 07:56:07,219 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 08:02:03] [STDERR] 2025-11-07 08:02:03,616 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24180
+[2025-11-07 08:02:13] [STDERR] 2025-11-07 08:02:13,647 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24200
+[2025-11-07 08:15:38] [STDERR] 2025-11-07 08:15:38,800 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 08:15:38] [STDERR] 2025-11-07 08:15:38,800 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 08:15:39] [STDERR] 2025-11-07 08:15:39,426 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24220
+[2025-11-07 08:15:49] [STDERR] 2025-11-07 08:15:49,742 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24240
+[2025-11-07 08:29:12] [STDERR] 2025-11-07 08:29:12,254 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 08:29:12] [STDERR] 2025-11-07 08:29:12,255 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 08:29:12] [STDERR] 2025-11-07 08:29:12,509 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24260
+[2025-11-07 08:29:22] [STDERR] 2025-11-07 08:29:22,541 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24280
+[2025-11-07 08:32:36] [STDERR] 2025-11-07 08:32:36,785 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24300
+[2025-11-07 08:32:37] [STDERR] 2025-11-07 08:32:37,479 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 08:32:37] [STDERR] 2025-11-07 08:32:37,479 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 08:32:47] [STDERR] 2025-11-07 08:32:47,015 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24320
+[2025-11-07 08:43:09] [STDERR] 2025-11-07 08:43:09,103 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 08:43:09] [STDERR] 2025-11-07 08:43:09,104 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 08:43:13] [STDERR] 2025-11-07 08:43:13,853 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24340
+[2025-11-07 08:43:23] [STDERR] 2025-11-07 08:43:23,891 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24360
+[2025-11-07 08:56:43] [STDERR] 2025-11-07 08:56:43,801 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 08:56:43] [STDERR] 2025-11-07 08:56:43,801 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 08:56:47] [STDERR] 2025-11-07 08:56:47,691 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24380
+[2025-11-07 09:03:01] [STDERR] 2025-11-07 09:03:01,772 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24400
+[2025-11-07 09:03:02] [STDERR] 2025-11-07 09:03:02,401 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 09:03:02] [STDERR] 2025-11-07 09:03:02,401 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 09:03:11] [STDERR] 2025-11-07 09:03:11,836 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24420
+[2025-11-07 09:16:42] [STDERR] 2025-11-07 09:16:42,324 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24440
+[2025-11-07 09:30:12] [STDERR] 2025-11-07 09:30:12,454 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24460
+[2025-11-07 09:43:41] [STDERR] 2025-11-07 09:43:41,722 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24480
+[2025-11-07 09:43:51] [STDERR] 2025-11-07 09:43:51,758 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24500
+[2025-11-07 09:44:01] [STDERR] 2025-11-07 09:44:01,794 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24520
+[2025-11-07 09:57:17] [STDERR] 2025-11-07 09:57:17,558 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 09:57:17] [STDERR] 2025-11-07 09:57:17,558 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 09:57:24] [STDERR] 2025-11-07 09:57:24,147 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24540
+[2025-11-07 09:57:34] [STDERR] 2025-11-07 09:57:34,346 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24560
+[2025-11-07 10:04:01] [STDERR] 2025-11-07 10:04:01,565 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 10:04:01] [STDERR] 2025-11-07 10:04:01,565 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 10:04:07] [STDERR] 2025-11-07 10:04:07,358 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24580
+[2025-11-07 10:04:17] [STDERR] 2025-11-07 10:04:17,390 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24600
+[2025-11-07 10:17:35] [STDERR] 2025-11-07 10:17:35,094 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 10:17:35] [STDERR] 2025-11-07 10:17:35,095 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 10:17:43] [STDERR] 2025-11-07 10:17:43,109 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24620
+[2025-11-07 10:31:10] [STDERR] 2025-11-07 10:31:10,213 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 10:31:10] [STDERR] 2025-11-07 10:31:10,213 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 10:31:13] [STDERR] 2025-11-07 10:31:13,398 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24640
+[2025-11-07 10:44:42] [STDERR] 2025-11-07 10:44:42,583 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 10:44:42] [STDERR] 2025-11-07 10:44:42,583 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 10:44:43] [STDERR] 2025-11-07 10:44:43,819 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24660
+[2025-11-07 10:44:54] [STDERR] 2025-11-07 10:44:54,108 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24680
+[2025-11-07 10:58:17] [STDERR] 2025-11-07 10:58:17,532 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 10:58:17] [STDERR] 2025-11-07 10:58:17,532 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 10:58:24] [STDERR] 2025-11-07 10:58:24,195 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24700
+[2025-11-07 11:05:03] [STDERR] 2025-11-07 11:05:03,566 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24720
+[2025-11-07 11:05:13] [STDERR] 2025-11-07 11:05:13,606 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24740
+[2025-11-07 11:18:34] [STDERR] 2025-11-07 11:18:34,519 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24760
+[2025-11-07 11:18:44] [STDERR] 2025-11-07 11:18:44,550 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24780
+[2025-11-07 11:18:54] [STDERR] 2025-11-07 11:18:54,581 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24800
+[2025-11-07 11:32:19] [STDERR] 2025-11-07 11:32:19,010 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24820
+[2025-11-07 11:32:29] [STDERR] 2025-11-07 11:32:29,041 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24840
+[2025-11-07 11:45:44] [STDERR] 2025-11-07 11:45:44,749 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 11:45:44] [STDERR] 2025-11-07 11:45:44,749 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 11:45:53] [STDERR] 2025-11-07 11:45:53,862 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24860
+[2025-11-07 11:47:11] [STDERR] 2025-11-07 11:47:11,502 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 11:47:11] [STDERR] 2025-11-07 11:47:11,502 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 11:47:16] [STDERR] 2025-11-07 11:47:16,033 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24880
+[2025-11-07 11:47:26] [STDERR] 2025-11-07 11:47:26,054 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24900
+[2025-11-07 11:47:36] [STDERR] 2025-11-07 11:47:36,118 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24920
+[2025-11-07 11:47:46] [STDERR] 2025-11-07 11:47:46,142 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24940
+[2025-11-07 11:47:56] [STDERR] 2025-11-07 11:47:56,161 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24960
+[2025-11-07 11:48:06] [STDERR] 2025-11-07 11:48:06,228 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 24980
+[2025-11-07 11:48:16] [STDERR] 2025-11-07 11:48:16,245 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25000
+[2025-11-07 11:48:26] [STDERR] 2025-11-07 11:48:26,264 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25020
+[2025-11-07 11:48:36] [STDERR] 2025-11-07 11:48:36,337 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25040
+[2025-11-07 11:48:46] [STDERR] 2025-11-07 11:48:46,357 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25060
+[2025-11-07 11:48:56] [STDERR] 2025-11-07 11:48:56,373 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25080
+[2025-11-07 11:49:06] [STDERR] 2025-11-07 11:49:06,447 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25100
+[2025-11-07 11:49:16] [STDERR] 2025-11-07 11:49:16,464 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25120
+[2025-11-07 11:49:26] [STDERR] 2025-11-07 11:49:26,482 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25140
+[2025-11-07 11:49:36] [STDERR] 2025-11-07 11:49:36,548 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25160
+[2025-11-07 11:49:46] [STDERR] 2025-11-07 11:49:46,566 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25180
+[2025-11-07 11:49:56] [STDERR] 2025-11-07 11:49:56,585 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25200
+[2025-11-07 11:50:06] [STDERR] 2025-11-07 11:50:06,654 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25220
+[2025-11-07 11:50:16] [STDERR] 2025-11-07 11:50:16,672 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25240
+[2025-11-07 11:50:26] [STDERR] 2025-11-07 11:50:26,690 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25260
+[2025-11-07 11:50:36] [STDERR] 2025-11-07 11:50:36,757 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25280
+[2025-11-07 11:50:46] [STDERR] 2025-11-07 11:50:46,775 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25300
+[2025-11-07 11:50:56] [STDERR] 2025-11-07 11:50:56,796 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25320
+[2025-11-07 11:51:06] [STDERR] 2025-11-07 11:51:06,868 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25340
+[2025-11-07 11:51:16] [STDERR] 2025-11-07 11:51:16,887 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25360
+[2025-11-07 11:51:26] [STDERR] 2025-11-07 11:51:26,905 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25380
+[2025-11-07 11:51:36] [STDERR] 2025-11-07 11:51:36,977 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25400
+[2025-11-07 11:51:46] [STDERR] 2025-11-07 11:51:46,997 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25420
+[2025-11-07 11:51:57] [STDERR] 2025-11-07 11:51:57,017 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25440
+[2025-11-07 11:52:07] [STDERR] 2025-11-07 11:52:07,079 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25460
+[2025-11-07 11:52:17] [STDERR] 2025-11-07 11:52:17,096 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25480
+[2025-11-07 11:52:27] [STDERR] 2025-11-07 11:52:27,112 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25500
+[2025-11-07 11:52:37] [STDERR] 2025-11-07 11:52:37,182 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25520
+[2025-11-07 11:52:47] [STDERR] 2025-11-07 11:52:47,199 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25540
+[2025-11-07 11:52:57] [STDERR] 2025-11-07 11:52:57,215 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25560
+[2025-11-07 11:53:07] [STDERR] 2025-11-07 11:53:07,293 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25580
+[2025-11-07 11:53:17] [STDERR] 2025-11-07 11:53:17,310 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25600
+[2025-11-07 11:53:27] [STDERR] 2025-11-07 11:53:27,328 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25620
+[2025-11-07 11:53:37] [STDERR] 2025-11-07 11:53:37,396 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25640
+[2025-11-07 11:53:47] [STDERR] 2025-11-07 11:53:47,413 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25660
+[2025-11-07 11:53:57] [STDERR] 2025-11-07 11:53:57,432 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25680
+[2025-11-07 11:54:07] [STDERR] 2025-11-07 11:54:07,500 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25700
+[2025-11-07 11:54:17] [STDERR] 2025-11-07 11:54:17,519 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25720
+[2025-11-07 12:07:37] [STDERR] 2025-11-07 12:07:37,501 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25740
+[2025-11-07 12:07:47] [STDERR] 2025-11-07 12:07:47,545 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25760
+[2025-11-07 12:21:10] [STDERR] 2025-11-07 12:21:10,856 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25780
+[2025-11-07 12:21:20] [STDERR] 2025-11-07 12:21:20,894 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25800
+[2025-11-07 12:21:30] [STDERR] 2025-11-07 12:21:30,935 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25820
+[2025-11-07 12:34:47] [STDERR] 2025-11-07 12:34:47,696 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 12:34:47] [STDERR] 2025-11-07 12:34:47,696 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 12:34:55] [STDERR] 2025-11-07 12:34:55,560 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25840
+[2025-11-07 12:35:05] [STDERR] 2025-11-07 12:35:05,913 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25860
+[2025-11-07 12:48:24] [STDERR] 2025-11-07 12:48:24,941 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25880
+[2025-11-07 12:48:35] [STDERR] 2025-11-07 12:48:35,273 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25900
+[2025-11-07 13:01:57] [STDERR] 2025-11-07 13:01:57,713 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 13:01:57] [STDERR] 2025-11-07 13:01:57,713 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 13:01:58] [STDERR] 2025-11-07 13:01:58,803 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25920
+[2025-11-07 13:02:08] [STDERR] 2025-11-07 13:02:08,840 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25940
+[2025-11-07 13:15:32] [STDERR] 2025-11-07 13:15:32,568 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 13:15:32] [STDERR] 2025-11-07 13:15:32,568 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 13:15:32] [STDERR] 2025-11-07 13:15:32,638 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25960
+[2025-11-07 13:15:43] [STDERR] 2025-11-07 13:15:43,296 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 25980
+[2025-11-07 13:15:53] [STDERR] 2025-11-07 13:15:53,640 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26000
+[2025-11-07 13:29:12] [STDERR] 2025-11-07 13:29:12,651 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26020
+[2025-11-07 13:42:43] [STDERR] 2025-11-07 13:42:43,373 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26040
+[2025-11-07 13:42:43] [STDERR] 2025-11-07 13:42:43,374 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 13:42:43] [STDERR] 2025-11-07 13:42:43,374 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 13:42:53] [STDERR] 2025-11-07 13:42:53,421 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26060
+[2025-11-07 13:55:26] [STDERR] 2025-11-07 13:55:26,738 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26080
+[2025-11-07 13:55:36] [STDERR] 2025-11-07 13:55:36,760 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26100
+[2025-11-07 14:08:58] [STDERR] 2025-11-07 14:08:58,930 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26120
+[2025-11-07 14:09:08] [STDERR] 2025-11-07 14:09:08,962 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26140
+[2025-11-07 14:22:31] [STDERR] 2025-11-07 14:22:31,717 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26160
+[2025-11-07 14:22:41] [STDERR] 2025-11-07 14:22:41,759 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26180
+[2025-11-07 14:22:51] [STDERR] 2025-11-07 14:22:51,795 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26200
+[2025-11-07 14:36:10] [STDERR] 2025-11-07 14:36:10,734 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26220
+[2025-11-07 14:36:20] [STDERR] 2025-11-07 14:36:20,768 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26240
+[2025-11-07 14:49:41] [STDERR] 2025-11-07 14:49:41,529 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 14:49:41] [STDERR] 2025-11-07 14:49:41,530 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 14:49:43] [STDERR] 2025-11-07 14:49:43,659 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26260
+[2025-11-07 14:49:53] [STDERR] 2025-11-07 14:49:53,975 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26280
+[2025-11-07 14:56:18] [STDERR] 2025-11-07 14:56:18,820 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 14:56:18] [STDERR] 2025-11-07 14:56:18,820 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 14:56:23] [STDERR] 2025-11-07 14:56:23,338 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26300
+[2025-11-07 14:56:33] [STDERR] 2025-11-07 14:56:33,366 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26320
+[2025-11-07 15:09:56] [STDERR] 2025-11-07 15:09:56,946 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26340
+[2025-11-07 15:23:28] [STDERR] 2025-11-07 15:23:28,526 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26360
+[2025-11-07 15:23:38] [STDERR] 2025-11-07 15:23:38,557 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26380
+[2025-11-07 15:26:33] [STDERR] 2025-11-07 15:26:33,175 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26400
+[2025-11-07 15:26:43] [STDERR] 2025-11-07 15:26:43,177 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26420
+[2025-11-07 15:26:53] [STDERR] 2025-11-07 15:26:53,186 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26440
+[2025-11-07 15:27:03] [STDERR] 2025-11-07 15:27:03,238 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26460
+[2025-11-07 15:27:13] [STDERR] 2025-11-07 15:27:13,254 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26480
+[2025-11-07 15:27:23] [STDERR] 2025-11-07 15:27:23,270 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26500
+[2025-11-07 15:27:33] [STDERR] 2025-11-07 15:27:33,334 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26520
+[2025-11-07 15:27:43] [STDERR] 2025-11-07 15:27:43,354 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26540
+[2025-11-07 15:27:53] [STDERR] 2025-11-07 15:27:53,375 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26560
+[2025-11-07 15:28:03] [STDERR] 2025-11-07 15:28:03,440 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26580
+[2025-11-07 15:28:13] [STDERR] 2025-11-07 15:28:13,461 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26600
+[2025-11-07 15:28:23] [STDERR] 2025-11-07 15:28:23,482 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26620
+[2025-11-07 15:28:33] [STDERR] 2025-11-07 15:28:33,543 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26640
+[2025-11-07 15:28:43] [STDERR] 2025-11-07 15:28:43,563 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26660
+[2025-11-07 15:28:53] [STDERR] 2025-11-07 15:28:53,585 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26680
+[2025-11-07 15:29:03] [STDERR] 2025-11-07 15:29:03,650 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26700
+[2025-11-07 15:29:13] [STDERR] 2025-11-07 15:29:13,669 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26720
+[2025-11-07 15:29:23] [STDERR] 2025-11-07 15:29:23,688 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26740
+[2025-11-07 15:29:33] [STDERR] 2025-11-07 15:29:33,751 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26760
+[2025-11-07 15:29:43] [STDERR] 2025-11-07 15:29:43,771 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26780
+[2025-11-07 15:29:53] [STDERR] 2025-11-07 15:29:53,790 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26800
+[2025-11-07 15:30:03] [STDERR] 2025-11-07 15:30:03,858 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26820
+[2025-11-07 15:30:13] [STDERR] 2025-11-07 15:30:13,876 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26840
+[2025-11-07 15:30:23] [STDERR] 2025-11-07 15:30:23,895 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26860
+[2025-11-07 15:30:33] [STDERR] 2025-11-07 15:30:33,965 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26880
+[2025-11-07 15:30:43] [STDERR] 2025-11-07 15:30:43,983 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26900
+[2025-11-07 15:30:54] [STDERR] 2025-11-07 15:30:54,001 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26920
+[2025-11-07 15:31:04] [STDERR] 2025-11-07 15:31:04,077 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26940
+[2025-11-07 15:31:14] [STDERR] 2025-11-07 15:31:14,097 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26960
+[2025-11-07 15:31:24] [STDERR] 2025-11-07 15:31:24,117 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 26980
+[2025-11-07 15:31:34] [STDERR] 2025-11-07 15:31:34,185 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27000
+[2025-11-07 15:31:44] [STDERR] 2025-11-07 15:31:44,204 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27020
+[2025-11-07 15:31:54] [STDERR] 2025-11-07 15:31:54,223 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27040
+[2025-11-07 15:32:04] [STDERR] 2025-11-07 15:32:04,292 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27060
+[2025-11-07 15:32:14] [STDERR] 2025-11-07 15:32:14,310 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27080
+[2025-11-07 15:32:24] [STDERR] 2025-11-07 15:32:24,330 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27100
+[2025-11-07 15:32:34] [STDERR] 2025-11-07 15:32:34,398 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27120
+[2025-11-07 15:32:44] [STDERR] 2025-11-07 15:32:44,414 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27140
+[2025-11-07 15:32:54] [STDERR] 2025-11-07 15:32:54,432 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27160
+[2025-11-07 15:33:04] [STDERR] 2025-11-07 15:33:04,503 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27180
+[2025-11-07 15:33:14] [STDERR] 2025-11-07 15:33:14,525 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27200
+[2025-11-07 15:33:24] [STDERR] 2025-11-07 15:33:24,542 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27220
+[2025-11-07 15:33:34] [STDERR] 2025-11-07 15:33:34,609 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27240
+[2025-11-07 15:33:44] [STDERR] 2025-11-07 15:33:44,631 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27260
+[2025-11-07 15:33:54] [STDERR] 2025-11-07 15:33:54,652 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27280
+[2025-11-07 15:34:04] [STDERR] 2025-11-07 15:34:04,713 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27300
+[2025-11-07 15:34:14] [STDERR] 2025-11-07 15:34:14,731 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27320
+[2025-11-07 15:34:24] [STDERR] 2025-11-07 15:34:24,752 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27340
+[2025-11-07 15:34:34] [STDERR] 2025-11-07 15:34:34,821 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27360
+[2025-11-07 15:34:44] [STDERR] 2025-11-07 15:34:44,837 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27380
+[2025-11-07 15:34:54] [STDERR] 2025-11-07 15:34:54,857 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27400
+[2025-11-07 15:35:04] [STDERR] 2025-11-07 15:35:04,927 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27420
+[2025-11-07 15:35:14] [STDERR] 2025-11-07 15:35:14,949 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27440
+[2025-11-07 15:35:24] [STDERR] 2025-11-07 15:35:24,967 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27460
+[2025-11-07 15:35:35] [STDERR] 2025-11-07 15:35:35,033 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27480
+[2025-11-07 15:35:45] [STDERR] 2025-11-07 15:35:45,052 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27500
+[2025-11-07 15:35:55] [STDERR] 2025-11-07 15:35:55,072 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27520
+[2025-11-07 15:36:05] [STDERR] 2025-11-07 15:36:05,139 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27540
+[2025-11-07 15:36:15] [STDERR] 2025-11-07 15:36:15,161 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27560
+[2025-11-07 15:36:25] [STDERR] 2025-11-07 15:36:25,184 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27580
+[2025-11-07 15:36:35] [STDERR] 2025-11-07 15:36:35,252 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27600
+[2025-11-07 15:42:30] [STDERR] 2025-11-07 15:42:30,889 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27620
+[2025-11-07 15:42:40] [STDERR] 2025-11-07 15:42:40,967 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27640
+[2025-11-07 15:42:51] [STDERR] 2025-11-07 15:42:51,004 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27660
+[2025-11-07 15:43:01] [STDERR] 2025-11-07 15:43:01,022 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27680
+[2025-11-07 15:43:11] [STDERR] 2025-11-07 15:43:11,042 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27700
+[2025-11-07 15:43:21] [STDERR] 2025-11-07 15:43:21,112 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27720
+[2025-11-07 15:43:31] [STDERR] 2025-11-07 15:43:31,134 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27740
+[2025-11-07 15:43:41] [STDERR] 2025-11-07 15:43:41,151 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27760
+[2025-11-07 15:43:51] [STDERR] 2025-11-07 15:43:51,219 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27780
+[2025-11-07 15:44:01] [STDERR] 2025-11-07 15:44:01,238 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27800
+[2025-11-07 15:44:11] [STDERR] 2025-11-07 15:44:11,260 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27820
+[2025-11-07 15:44:21] [STDERR] 2025-11-07 15:44:21,326 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27840
+[2025-11-07 15:44:31] [STDERR] 2025-11-07 15:44:31,345 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27860
+[2025-11-07 15:44:41] [STDERR] 2025-11-07 15:44:41,366 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27880
+[2025-11-07 15:44:51] [STDERR] 2025-11-07 15:44:51,435 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27900
+[2025-11-07 15:45:01] [STDERR] 2025-11-07 15:45:01,454 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27920
+[2025-11-07 15:45:11] [STDERR] 2025-11-07 15:45:11,474 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27940
+[2025-11-07 15:45:21] [STDERR] 2025-11-07 15:45:21,536 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27960
+[2025-11-07 15:45:31] [STDERR] 2025-11-07 15:45:31,555 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 27980
+[2025-11-07 15:45:41] [STDERR] 2025-11-07 15:45:41,576 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28000
+[2025-11-07 15:45:51] [STDERR] 2025-11-07 15:45:51,640 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28020
+[2025-11-07 15:46:01] [STDERR] 2025-11-07 15:46:01,662 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28040
+[2025-11-07 15:46:11] [STDERR] 2025-11-07 15:46:11,685 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28060
+[2025-11-07 15:46:21] [STDERR] 2025-11-07 15:46:21,746 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28080
+[2025-11-07 15:46:31] [STDERR] 2025-11-07 15:46:31,766 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28100
+[2025-11-07 15:46:41] [STDERR] 2025-11-07 15:46:41,785 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28120
+[2025-11-07 15:46:51] [STDERR] 2025-11-07 15:46:51,850 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28140
+[2025-11-07 15:47:01] [STDERR] 2025-11-07 15:47:01,865 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28160
+[2025-11-07 15:47:11] [STDERR] 2025-11-07 15:47:11,885 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28180
+[2025-11-07 15:47:21] [STDERR] 2025-11-07 15:47:21,953 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28200
+[2025-11-07 15:47:31] [STDERR] 2025-11-07 15:47:31,974 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28220
+[2025-11-07 15:47:41] [STDERR] 2025-11-07 15:47:41,993 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28240
+[2025-11-07 15:47:52] [STDERR] 2025-11-07 15:47:52,062 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28260
+[2025-11-07 15:48:02] [STDERR] 2025-11-07 15:48:02,083 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28280
+[2025-11-07 15:48:12] [STDERR] 2025-11-07 15:48:12,102 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28300
+[2025-11-07 15:48:22] [STDERR] 2025-11-07 15:48:22,167 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28320
+[2025-11-07 15:48:32] [STDERR] 2025-11-07 15:48:32,186 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28340
+[2025-11-07 15:48:42] [STDERR] 2025-11-07 15:48:42,206 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28360
+[2025-11-07 15:48:52] [STDERR] 2025-11-07 15:48:52,275 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28380
+[2025-11-07 15:49:02] [STDERR] 2025-11-07 15:49:02,291 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28400
+[2025-11-07 15:49:12] [STDERR] 2025-11-07 15:49:12,310 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28420
+[2025-11-07 15:49:22] [STDERR] 2025-11-07 15:49:22,382 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28440
+[2025-11-07 15:49:32] [STDERR] 2025-11-07 15:49:32,402 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28460
+[2025-11-07 15:49:42] [STDERR] 2025-11-07 15:49:42,421 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28480
+[2025-11-07 15:49:52] [STDERR] 2025-11-07 15:49:52,485 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28500
+[2025-11-07 15:50:02] [STDERR] 2025-11-07 15:50:02,503 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28520
+[2025-11-07 15:50:12] [STDERR] 2025-11-07 15:50:12,525 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28540
+[2025-11-07 15:50:22] [STDERR] 2025-11-07 15:50:22,592 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28560
+[2025-11-07 15:50:32] [STDERR] 2025-11-07 15:50:32,610 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28580
+[2025-11-07 15:50:42] [STDERR] 2025-11-07 15:50:42,629 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28600
+[2025-11-07 15:50:52] [STDERR] 2025-11-07 15:50:52,696 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28620
+[2025-11-07 15:51:02] [STDERR] 2025-11-07 15:51:02,715 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28640
+[2025-11-07 15:51:12] [STDERR] 2025-11-07 15:51:12,736 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28660
+[2025-11-07 15:51:22] [STDERR] 2025-11-07 15:51:22,808 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28680
+[2025-11-07 15:51:32] [STDERR] 2025-11-07 15:51:32,842 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28700
+[2025-11-07 15:51:42] [STDERR] 2025-11-07 15:51:42,874 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28720
+[2025-11-07 15:51:52] [STDERR] 2025-11-07 15:51:52,920 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28740
+[2025-11-07 15:52:02] [STDERR] 2025-11-07 15:52:02,954 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28760
+[2025-11-07 15:52:12] [STDERR] 2025-11-07 15:52:12,979 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28780
+[2025-11-07 15:52:23] [STDERR] 2025-11-07 15:52:23,029 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28800
+[2025-11-07 15:52:33] [STDERR] 2025-11-07 15:52:33,060 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28820
+[2025-11-07 15:52:43] [STDERR] 2025-11-07 15:52:43,091 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28840
+[2025-11-07 15:52:53] [STDERR] 2025-11-07 15:52:53,140 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28860
+[2025-11-07 15:53:03] [STDERR] 2025-11-07 15:53:03,166 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28880
+[2025-11-07 15:53:13] [STDERR] 2025-11-07 15:53:13,198 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28900
+[2025-11-07 15:53:23] [STDERR] 2025-11-07 15:53:23,252 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28920
+[2025-11-07 15:53:33] [STDERR] 2025-11-07 15:53:33,283 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28940
+[2025-11-07 15:53:43] [STDERR] 2025-11-07 15:53:43,315 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28960
+[2025-11-07 15:53:53] [STDERR] 2025-11-07 15:53:53,360 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 28980
+[2025-11-07 15:54:03] [STDERR] 2025-11-07 15:54:03,387 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29000
+[2025-11-07 15:54:13] [STDERR] 2025-11-07 15:54:13,419 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29020
+[2025-11-07 15:54:23] [STDERR] 2025-11-07 15:54:23,466 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29040
+[2025-11-07 15:54:33] [STDERR] 2025-11-07 15:54:33,494 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29060
+[2025-11-07 15:54:43] [STDERR] 2025-11-07 15:54:43,526 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29080
+[2025-11-07 15:54:53] [STDERR] 2025-11-07 15:54:53,579 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29100
+[2025-11-07 15:55:03] [STDERR] 2025-11-07 15:55:03,610 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29120
+[2025-11-07 15:55:13] [STDERR] 2025-11-07 15:55:13,641 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29140
+[2025-11-07 15:55:23] [STDERR] 2025-11-07 15:55:23,683 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29160
+[2025-11-07 15:55:33] [STDERR] 2025-11-07 15:55:33,716 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29180
+[2025-11-07 15:55:43] [STDERR] 2025-11-07 15:55:43,747 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29200
+[2025-11-07 15:55:53] [STDERR] 2025-11-07 15:55:53,787 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29220
+[2025-11-07 15:56:03] [STDERR] 2025-11-07 15:56:03,819 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29240
+[2025-11-07 15:56:13] [STDERR] 2025-11-07 15:56:13,853 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29260
+[2025-11-07 15:56:23] [STDERR] 2025-11-07 15:56:23,900 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29280
+[2025-11-07 15:56:33] [STDERR] 2025-11-07 15:56:33,927 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29300
+[2025-11-07 15:56:43] [STDERR] 2025-11-07 15:56:43,961 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29320
+[2025-11-07 15:56:54] [STDERR] 2025-11-07 15:56:54,010 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29340
+[2025-11-07 15:57:04] [STDERR] 2025-11-07 15:57:04,041 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29360
+[2025-11-07 15:57:14] [STDERR] 2025-11-07 15:57:14,073 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29380
+[2025-11-07 15:57:24] [STDERR] 2025-11-07 15:57:24,116 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29400
+[2025-11-07 15:57:34] [STDERR] 2025-11-07 15:57:34,136 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29420
+[2025-11-07 15:57:44] [STDERR] 2025-11-07 15:57:44,155 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29440
+[2025-11-07 15:57:54] [STDERR] 2025-11-07 15:57:54,219 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29460
+[2025-11-07 15:58:04] [STDERR] 2025-11-07 15:58:04,236 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29480
+[2025-11-07 15:58:14] [STDERR] 2025-11-07 15:58:14,256 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29500
+[2025-11-07 15:58:24] [STDERR] 2025-11-07 15:58:24,324 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29520
+[2025-11-07 15:58:34] [STDERR] 2025-11-07 15:58:34,344 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29540
+[2025-11-07 15:58:44] [STDERR] 2025-11-07 15:58:44,365 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29560
+[2025-11-07 15:58:54] [STDERR] 2025-11-07 15:58:54,432 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29580
+[2025-11-07 15:59:04] [STDERR] 2025-11-07 15:59:04,452 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29600
+[2025-11-07 15:59:14] [STDERR] 2025-11-07 15:59:14,470 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29620
+[2025-11-07 15:59:24] [STDERR] 2025-11-07 15:59:24,538 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29640
+[2025-11-07 15:59:34] [STDERR] 2025-11-07 15:59:34,558 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29660
+[2025-11-07 15:59:44] [STDERR] 2025-11-07 15:59:44,574 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29680
+[2025-11-07 15:59:54] [STDERR] 2025-11-07 15:59:54,643 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29700
+[2025-11-07 16:00:04] [STDERR] 2025-11-07 16:00:04,663 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29720
+[2025-11-07 16:00:14] [STDERR] 2025-11-07 16:00:14,686 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29740
+[2025-11-07 16:00:24] [STDERR] 2025-11-07 16:00:24,748 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29760
+[2025-11-07 16:00:34] [STDERR] 2025-11-07 16:00:34,768 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29780
+[2025-11-07 16:00:44] [STDERR] 2025-11-07 16:00:44,805 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29800
+[2025-11-07 16:00:54] [STDERR] 2025-11-07 16:00:54,857 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29820
+[2025-11-07 16:01:04] [STDERR] 2025-11-07 16:01:04,873 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29840
+[2025-11-07 16:01:14] [STDERR] 2025-11-07 16:01:14,889 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29860
+[2025-11-07 16:01:24] [STDERR] 2025-11-07 16:01:24,957 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29880
+[2025-11-07 16:01:34] [STDERR] 2025-11-07 16:01:34,977 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29900
+[2025-11-07 16:01:44] [STDERR] 2025-11-07 16:01:44,997 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29920
+[2025-11-07 16:01:55] [STDERR] 2025-11-07 16:01:55,060 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29940
+[2025-11-07 16:02:05] [STDERR] 2025-11-07 16:02:05,079 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29960
+[2025-11-07 16:02:15] [STDERR] 2025-11-07 16:02:15,099 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 29980
+[2025-11-07 16:02:25] [STDERR] 2025-11-07 16:02:25,168 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30000
+[2025-11-07 16:02:35] [STDERR] 2025-11-07 16:02:35,187 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30020
+[2025-11-07 16:02:45] [STDERR] 2025-11-07 16:02:45,205 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30040
+[2025-11-07 16:02:55] [STDERR] 2025-11-07 16:02:55,276 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30060
+[2025-11-07 16:03:05] [STDERR] 2025-11-07 16:03:05,294 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30080
+[2025-11-07 16:03:15] [STDERR] 2025-11-07 16:03:15,312 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30100
+[2025-11-07 16:03:25] [STDERR] 2025-11-07 16:03:25,381 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30120
+[2025-11-07 16:03:35] [STDERR] 2025-11-07 16:03:35,396 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30140
+[2025-11-07 16:03:45] [STDERR] 2025-11-07 16:03:45,415 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30160
+[2025-11-07 16:03:55] [STDERR] 2025-11-07 16:03:55,483 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30180
+[2025-11-07 16:04:05] [STDERR] 2025-11-07 16:04:05,501 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30200
+[2025-11-07 16:04:15] [STDERR] 2025-11-07 16:04:15,519 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30220
+[2025-11-07 16:04:25] [STDERR] 2025-11-07 16:04:25,589 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30240
+[2025-11-07 16:04:35] [STDERR] 2025-11-07 16:04:35,607 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30260
+[2025-11-07 16:04:45] [STDERR] 2025-11-07 16:04:45,625 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30280
+[2025-11-07 16:04:55] [STDERR] 2025-11-07 16:04:55,694 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30300
+[2025-11-07 16:05:05] [STDERR] 2025-11-07 16:05:05,711 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30320
+[2025-11-07 16:05:15] [STDERR] 2025-11-07 16:05:15,730 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30340
+[2025-11-07 16:05:25] [STDERR] 2025-11-07 16:05:25,798 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30360
+[2025-11-07 16:05:35] [STDERR] 2025-11-07 16:05:35,816 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30380
+[2025-11-07 16:05:45] [STDERR] 2025-11-07 16:05:45,837 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30400
+[2025-11-07 16:05:55] [STDERR] 2025-11-07 16:05:55,906 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30420
+[2025-11-07 16:06:05] [STDERR] 2025-11-07 16:06:05,925 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30440
+[2025-11-07 16:06:15] [STDERR] 2025-11-07 16:06:15,946 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30460
+[2025-11-07 16:06:26] [STDERR] 2025-11-07 16:06:26,013 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30480
+[2025-11-07 16:06:36] [STDERR] 2025-11-07 16:06:36,035 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30500
+[2025-11-07 16:06:46] [STDERR] 2025-11-07 16:06:46,050 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30520
+[2025-11-07 16:06:56] [STDERR] 2025-11-07 16:06:56,121 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30540
+[2025-11-07 16:07:06] [STDERR] 2025-11-07 16:07:06,138 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30560
+[2025-11-07 16:07:16] [STDERR] 2025-11-07 16:07:16,156 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30580
+[2025-11-07 16:07:26] [STDERR] 2025-11-07 16:07:26,230 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30600
+[2025-11-07 16:07:36] [STDERR] 2025-11-07 16:07:36,246 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30620
+[2025-11-07 16:07:46] [STDERR] 2025-11-07 16:07:46,265 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30640
+[2025-11-07 16:07:56] [STDERR] 2025-11-07 16:07:56,337 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30660
+[2025-11-07 16:08:06] [STDERR] 2025-11-07 16:08:06,357 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30680
+[2025-11-07 16:08:16] [STDERR] 2025-11-07 16:08:16,376 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30700
+[2025-11-07 16:08:26] [STDERR] 2025-11-07 16:08:26,449 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30720
+[2025-11-07 16:08:36] [STDERR] 2025-11-07 16:08:36,469 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30740
+[2025-11-07 16:08:46] [STDERR] 2025-11-07 16:08:46,487 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30760
+[2025-11-07 16:08:56] [STDERR] 2025-11-07 16:08:56,556 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30780
+[2025-11-07 16:09:06] [STDERR] 2025-11-07 16:09:06,574 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30800
+[2025-11-07 16:09:16] [STDERR] 2025-11-07 16:09:16,594 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30820
+[2025-11-07 16:09:26] [STDERR] 2025-11-07 16:09:26,658 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30840
+[2025-11-07 16:09:36] [STDERR] 2025-11-07 16:09:36,678 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30860
+[2025-11-07 16:09:46] [STDERR] 2025-11-07 16:09:46,697 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30880
+[2025-11-07 16:09:56] [STDERR] 2025-11-07 16:09:56,761 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30900
+[2025-11-07 16:10:06] [STDERR] 2025-11-07 16:10:06,780 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30920
+[2025-11-07 16:10:16] [STDERR] 2025-11-07 16:10:16,800 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30940
+[2025-11-07 16:10:26] [STDERR] 2025-11-07 16:10:26,868 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30960
+[2025-11-07 16:10:36] [STDERR] 2025-11-07 16:10:36,886 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 30980
+[2025-11-07 16:10:46] [STDERR] 2025-11-07 16:10:46,905 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31000
+[2025-11-07 16:10:56] [STDERR] 2025-11-07 16:10:56,971 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31020
+[2025-11-07 16:11:06] [STDERR] 2025-11-07 16:11:06,989 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31040
+[2025-11-07 16:11:17] [STDERR] 2025-11-07 16:11:17,008 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31060
+[2025-11-07 16:11:27] [STDERR] 2025-11-07 16:11:27,082 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31080
+[2025-11-07 16:11:37] [STDERR] 2025-11-07 16:11:37,119 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31100
+[2025-11-07 16:19:14] [STDERR] 2025-11-07 16:19:14,368 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 16:19:14] [STDERR] 2025-11-07 16:19:14,369 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 16:19:17] [STDERR] 2025-11-07 16:19:17,166 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31120
+[2025-11-07 16:19:27] [STDERR] 2025-11-07 16:19:27,505 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31140
+[2025-11-07 16:32:48] [STDERR] 2025-11-07 16:32:48,891 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 16:32:48] [STDERR] 2025-11-07 16:32:48,892 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 16:32:51] [STDERR] 2025-11-07 16:32:51,163 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31160
+[2025-11-07 16:33:01] [STDERR] 2025-11-07 16:33:01,208 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31180
+[2025-11-07 16:46:26] [STDERR] 2025-11-07 16:46:26,048 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31200
+[2025-11-07 16:46:36] [STDERR] 2025-11-07 16:46:36,086 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31220
+[2025-11-07 16:52:48] [STDERR] 2025-11-07 16:52:48,663 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31240
+[2025-11-07 16:52:58] [STDERR] 2025-11-07 16:52:58,695 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31260
+[2025-11-07 16:53:08] [STDERR] 2025-11-07 16:53:08,723 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31280
+[2025-11-07 17:06:19] [STDERR] 2025-11-07 17:06:19,980 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 17:06:19] [STDERR] 2025-11-07 17:06:19,981 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 17:06:20] [STDERR] 2025-11-07 17:06:20,417 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31300
+[2025-11-07 17:06:30] [STDERR] 2025-11-07 17:06:30,954 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31320
+[2025-11-07 17:06:41] [STDERR] 2025-11-07 17:06:41,206 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31340
+[2025-11-07 17:19:58] [STDERR] 2025-11-07 17:19:58,986 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31360
+[2025-11-07 17:20:09] [STDERR] 2025-11-07 17:20:09,258 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31380
+[2025-11-07 17:33:31] [STDERR] 2025-11-07 17:33:31,956 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31400
+[2025-11-07 17:33:42] [STDERR] 2025-11-07 17:33:42,255 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31420
+[2025-11-07 17:33:52] [STDERR] 2025-11-07 17:33:52,572 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31440
+[2025-11-07 17:47:08] [STDERR] 2025-11-07 17:47:08,110 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 17:47:08] [STDERR] 2025-11-07 17:47:08,110 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 17:47:09] [STDERR] 2025-11-07 17:47:09,813 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31460
+[2025-11-07 17:47:19] [STDERR] 2025-11-07 17:47:19,844 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31480
+[2025-11-07 18:02:54] [STDERR] 2025-11-07 18:02:54,654 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31500
+[2025-11-07 18:35:22] [STDERR] 2025-11-07 18:35:22,191 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31520
+[2025-11-07 18:35:23] [STDERR] 2025-11-07 18:35:23,494 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 18:35:23] [STDERR] 2025-11-07 18:35:23,494 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 18:52:00] [STDERR] 2025-11-07 18:52:00,260 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 18:52:00] [STDERR] 2025-11-07 18:52:00,260 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 18:53:45] [STDERR] 2025-11-07 18:53:45,996 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 18:53:45] [STDERR] 2025-11-07 18:53:45,996 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 18:53:46] [STDERR] 2025-11-07 18:53:46,072 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31540
+[2025-11-07 19:11:32] [STDERR] 2025-11-07 19:11:32,089 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 19:11:32] [STDERR] 2025-11-07 19:11:32,090 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 19:11:33] [STDERR] 2025-11-07 19:11:33,282 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31560
+[2025-11-07 19:28:28] [STDERR] 2025-11-07 19:28:28,831 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 19:28:28] [STDERR] 2025-11-07 19:28:28,832 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 19:45:32] [STDERR] 2025-11-07 19:45:32,041 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31580
+[2025-11-07 19:54:53] [STDERR] 2025-11-07 19:54:53,953 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31600
+[2025-11-07 19:55:04] [STDERR] 2025-11-07 19:55:04,226 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31620
+[2025-11-07 20:11:29] [STDERR] 2025-11-07 20:11:29,421 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 20:11:29] [STDERR] 2025-11-07 20:11:29,421 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 20:26:41] [STDERR] 2025-11-07 20:26:41,187 - gleitzeit.core.leader_election - INFO - Worker signal-async became leader for {shard:0}:global:signal:leader
+[2025-11-07 20:26:41] [STDERR] 2025-11-07 20:26:41,188 - gleitzeit.workers.signal_worker - INFO - Worker signal-async became signal leader
+[2025-11-07 20:26:44] [STDERR] 2025-11-07 20:26:44,286 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31640
+[2025-11-07 20:43:13] [STDERR] 2025-11-07 20:43:13,947 - gleitzeit.core.leader_election - INFO - Worker signal-async lost leadership for {shard:0}:global:signal:leader
+[2025-11-07 20:43:13] [STDERR] 2025-11-07 20:43:13,947 - gleitzeit.workers.signal_worker - INFO - Worker signal-async lost signal leadership
+[2025-11-07 20:55:49] [STDERR] 2025-11-07 20:55:49,108 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31660
+[2025-11-07 20:55:59] [STDERR] 2025-11-07 20:55:59,026 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31680
+[2025-11-07 20:56:09] [STDERR] 2025-11-07 20:56:09,058 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31700
+[2025-11-07 21:03:04] [STDERR] 2025-11-07 21:03:04,389 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31720
+[2025-11-07 21:03:14] [STDERR] 2025-11-07 21:03:14,408 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31740
+[2025-11-07 21:03:24] [STDERR] 2025-11-07 21:03:24,427 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31760
+[2025-11-07 21:03:34] [STDERR] 2025-11-07 21:03:34,444 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31780
+[2025-11-07 21:03:44] [STDERR] 2025-11-07 21:03:44,464 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31800
+[2025-11-07 21:03:54] [STDERR] 2025-11-07 21:03:54,480 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31820
+[2025-11-07 21:04:04] [STDERR] 2025-11-07 21:04:04,499 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31840
+[2025-11-07 21:04:14] [STDERR] 2025-11-07 21:04:14,518 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31860
+[2025-11-07 21:04:24] [STDERR] 2025-11-07 21:04:24,537 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31880
+[2025-11-07 21:04:34] [STDERR] 2025-11-07 21:04:34,553 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31900
+[2025-11-07 21:04:44] [STDERR] 2025-11-07 21:04:44,571 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31920
+[2025-11-07 21:04:54] [STDERR] 2025-11-07 21:04:54,589 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31940
+[2025-11-07 21:05:04] [STDERR] 2025-11-07 21:05:04,612 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31960
+[2025-11-07 21:05:14] [STDERR] 2025-11-07 21:05:14,627 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 31980
+[2025-11-07 21:05:24] [STDERR] 2025-11-07 21:05:24,644 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32000
+[2025-11-07 21:05:34] [STDERR] 2025-11-07 21:05:34,658 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32020
+[2025-11-07 21:05:44] [STDERR] 2025-11-07 21:05:44,672 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32040
+[2025-11-07 21:05:54] [STDERR] 2025-11-07 21:05:54,690 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32060
+[2025-11-07 21:06:04] [STDERR] 2025-11-07 21:06:04,706 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32080
+[2025-11-07 21:06:14] [STDERR] 2025-11-07 21:06:14,725 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32100

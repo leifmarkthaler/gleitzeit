@@ -52,13 +52,32 @@ manager = ConnectionManager()
 
 # Load configuration from gleitzeit.yaml
 from gleitzeit.core.config_loader import get_config
+import socket
 
 config = get_config()
-api_host = config.get('serve', {}).get('api', {}).get('host', '0.0.0.0')
+api_host_config = config.get('serve', {}).get('api', {}).get('host', '0.0.0.0')
 api_port = config.get('serve', {}).get('api', {}).get('port', 8000)
 
+# Convert 0.0.0.0 or localhost to actual accessible IP for browser connections
+def get_accessible_ip(host: str) -> str:
+    """Convert 0.0.0.0 or localhost to actual accessible IP address"""
+    if host in ('0.0.0.0', '127.0.0.1', 'localhost'):
+        # Get the actual IP address of this machine
+        try:
+            # Create a socket to determine the actual IP
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(('8.8.8.8', 80))  # Connect to public DNS to get interface IP
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return 'localhost'  # Fallback to localhost if detection fails
+    return host
+
+api_host = get_accessible_ip(api_host_config)
+
 # Configuration - Use gleitzeit.yaml settings, environment variable can override
-API_BASE_URL = os.getenv("GLEITZEIT_API_URL", f"http://{api_host}:{api_port}")
+API_BASE_URL = os.getenv("GLEITZEIT_API_URL", f"http://{api_host_config}:{api_port}")
 API_KEY = os.getenv("GLEITZEIT_API_KEY", "dev-key-12345")  # Default dev key
 
 app = FastAPI(title="Gleitzeit UI2")

@@ -10,3 +10,5 @@
 [2025-11-04 18:30:19] [STDERR] 2025-11-04 18:30:19,185 - __main__ - INFO - Worker retry-async started successfully
 [2025-11-04 18:30:19] [STDERR] 2025-11-04 18:30:19,185 - __main__ - INFO - Handler configurations loaded for: ['python/v1', 'ollama/v1', 'http/v1', 'file/v1', 'timer/v1', 'signal/v1', 'workflow/v1']
 [2025-11-04 18:30:19] [STDERR] 2025-11-04 18:30:19,185 - gleitzeit.workers.pending_recovery - INFO - Started pending recovery task for retry-async
+[2025-11-05 15:01:52] [STDERR] 2025-11-05 15:01:52,961 - gleitzeit.workers.retry_worker - INFO - Retry decision for 22463c96-9247-4ad0-bec1-28359ad78715: skip (attempt 0)
+[2025-11-05 15:01:52] [STDERR] 2025-11-05 15:01:52,963 - gleitzeit.workers.retry_worker - WARNING - Task 22463c96-9247-4ad0-bec1-28359ad78715 permanently failed: skip ({'reason': 'non_retryable_error'})

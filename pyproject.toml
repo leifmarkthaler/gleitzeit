@@ -28,6 +28,14 @@ dependencies = [
     "simpleeval>=0.9.13",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
+]
+
 [project.scripts]
 gleitzeit = "gleitzeit.cli.main:cli"
 
