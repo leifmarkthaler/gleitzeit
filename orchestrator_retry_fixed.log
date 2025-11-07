@@ -1,3 +1,0 @@
-<frozen runpy>:128: RuntimeWarning: 'gleitzeit.orchestrator.component_orchestrator' found in sys.modules after import of package 'gleitzeit.orchestrator', but prior to execution of 'gleitzeit.orchestrator.component_orchestrator'; this may result in unpredictable behaviour
-/Users/leifmarkthaler/github/gleitzeit 0.0.7/src/gleitzeit/orchestrator/component_orchestrator.py:641: DeprecationWarning: Call to deprecated close. (Use aclose() instead) -- Deprecated since version 5.0.1.
-  await self.redis.close()
