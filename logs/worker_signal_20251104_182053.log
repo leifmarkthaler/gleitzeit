@@ -13591,3 +13591,16 @@
 [2025-11-07 21:05:54] [STDERR] 2025-11-07 21:05:54,690 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32060
 [2025-11-07 21:06:04] [STDERR] 2025-11-07 21:06:04,706 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32080
 [2025-11-07 21:06:14] [STDERR] 2025-11-07 21:06:14,725 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32100
+[2025-11-07 21:06:24] [STDERR] 2025-11-07 21:06:24,750 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32120
+[2025-11-07 21:06:34] [STDERR] 2025-11-07 21:06:34,765 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32140
+[2025-11-07 21:06:44] [STDERR] 2025-11-07 21:06:44,829 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32160
+[2025-11-07 21:06:54] [STDERR] 2025-11-07 21:06:54,846 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32180
+[2025-11-07 21:07:04] [STDERR] 2025-11-07 21:07:04,864 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32200
+[2025-11-07 21:07:14] [STDERR] 2025-11-07 21:07:14,935 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32220
+[2025-11-07 21:07:24] [STDERR] 2025-11-07 21:07:24,951 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32240
+[2025-11-07 21:07:34] [STDERR] 2025-11-07 21:07:34,993 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32260
+[2025-11-07 21:07:45] [STDERR] 2025-11-07 21:07:45,042 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32280
+[2025-11-07 21:07:55] [STDERR] 2025-11-07 21:07:55,061 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32300
+[2025-11-07 21:08:05] [STDERR] 2025-11-07 21:08:05,078 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32320
+[2025-11-07 21:08:15] [STDERR] 2025-11-07 21:08:15,151 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32340
+[2025-11-07 21:08:25] [STDERR] 2025-11-07 21:08:25,166 - gleitzeit.workers.signal_worker - INFO - Signal processing loop iteration 32360
