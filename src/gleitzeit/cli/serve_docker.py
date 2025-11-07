@@ -96,8 +96,12 @@ class DockerOrchestrator:
         return self.compose_file.exists()
 
     def copy_dockerfiles_from_package(self) -> None:
-        """Copy Dockerfile templates from package to project root"""
+        """Copy Dockerfile templates from package to project docker/ directory"""
         dockerfile_names = ["Dockerfile.api", "Dockerfile.ui", "Dockerfile.base", "Dockerfile.worker"]
+
+        # Ensure docker directory exists
+        docker_dir = self.project_root / "docker"
+        docker_dir.mkdir(exist_ok=True)
 
         try:
             # For Python 3.9+
@@ -107,7 +111,7 @@ class DockerOrchestrator:
 
                 for dockerfile in dockerfile_names:
                     source = docker_pkg.joinpath(dockerfile)
-                    dest = self.project_root / dockerfile
+                    dest = docker_dir / dockerfile
 
                     # Read from package and write to destination
                     content = source.read_text()
@@ -243,7 +247,7 @@ class DockerOrchestrator:
             compose["services"]["api"] = {
                 "build": {
                     "context": ".",
-                    "dockerfile": "Dockerfile.api"
+                    "dockerfile": "docker/Dockerfile.api"
                 },
                 "container_name": api_container_name,
                 "hostname": api_hostname,  # Consistent hostname for service discovery
@@ -280,7 +284,7 @@ class DockerOrchestrator:
                 compose["services"]["ui"] = {
                     "build": {
                         "context": ".",
-                        "dockerfile": "Dockerfile.ui"
+                        "dockerfile": "docker/Dockerfile.ui"
                     },
                     "container_name": ui_container_name,
                     "hostname": ui_hostname,
@@ -330,7 +334,7 @@ class DockerOrchestrator:
                     compose["services"][service_name] = {
                         "build": {
                             "context": ".",
-                            "dockerfile": "Dockerfile.worker"
+                            "dockerfile": "docker/Dockerfile.worker"
                         },
                         "container_name": container_name,
                         "hostname": hostname,

@@ -93,7 +93,7 @@ services:
   loki-exporter:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/Dockerfile.worker
     container_name: gleitzeit_loki_exporter
     command: ["python", "-m", "gleitzeit.workers.loki_exporter_worker",
               "--redis-url", "redis://redis:6379",

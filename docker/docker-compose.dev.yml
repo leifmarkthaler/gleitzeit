@@ -59,7 +59,7 @@ services:
   debug:
     build:
       context: .
-      dockerfile: Dockerfile.api
+      dockerfile: docker/Dockerfile.api
     container_name: gleitzeit_debug
     command: ["sleep", "infinity"]  # Keep container running
     environment:

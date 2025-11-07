@@ -34,7 +34,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile.api
+      dockerfile: docker/Dockerfile.api
     container_name: gleitzeit_api
     ports:
       - "8000:8000"
@@ -59,7 +59,7 @@ services:
   ui:
     build:
       context: .
-      dockerfile: Dockerfile.ui
+      dockerfile: docker/Dockerfile.ui
     container_name: gleitzeit_ui
     ports:
       - "8004:8004"
@@ -84,7 +84,7 @@ services:
   worker-task-execution:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/Dockerfile.worker
     command: ["python", "-m", "gleitzeit.workers.runner",
               "--worker-class", "gleitzeit.workers.task_execution_worker.TaskExecutionWorker",
               "--worker-id", "task-exec-1",
@@ -115,7 +115,7 @@ services:
   worker-executor:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/Dockerfile.worker
     environment:
       - REDIS_URL=redis://redis:6379
       - WORKER_TYPE=executor
@@ -138,7 +138,7 @@ services:
   worker-workflow-loader:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/Dockerfile.worker
     container_name: gleitzeit_worker_workflow_loader
     command: ["python", "-m", "gleitzeit.workers.runner",
               "--worker-class", "gleitzeit.workers.workflow_loader_worker_v2.WorkflowLoaderWorkerV2",
@@ -164,7 +164,7 @@ services:
   worker-dependency:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/Dockerfile.worker
     container_name: gleitzeit_worker_dependency
     command: ["python", "-m", "gleitzeit.workers.runner",
               "--worker-class", "gleitzeit.workers.dependency_worker.DependencyWorker",
@@ -190,7 +190,7 @@ services:
   worker-monitor:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/Dockerfile.worker
     container_name: gleitzeit_worker_monitor
     environment:
       - REDIS_URL=redis://redis:6379
@@ -210,7 +210,7 @@ services:
   worker-recovery:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/Dockerfile.worker
     container_name: gleitzeit_worker_recovery
     environment:
       - REDIS_URL=redis://redis:6379
@@ -230,7 +230,7 @@ services:
   worker-retry:
     build:
       context: .
-      dockerfile: Dockerfile.worker
+      dockerfile: docker/Dockerfile.worker
     container_name: gleitzeit_worker_retry
     environment:
       - REDIS_URL=redis://redis:6379

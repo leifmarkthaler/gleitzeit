@@ -165,20 +165,25 @@ def stop_docker_services(force: bool, timeout: int, stop_all: bool):
     # Find all compose files (including main ones and observability)
     compose_files = []
 
-    # Check for main compose files
-    for main_file in ["docker-compose.yml", "docker-compose.yaml"]:
+    # Check for main compose files in docker/ directory and root
+    for main_file in ["docker/docker-compose.yml", "docker/docker-compose.yaml", "docker-compose.yml", "docker-compose.yaml"]:
         main_path = Path(main_file)
         if main_path.exists():
             compose_files.append(main_path)
 
-    # Check for additional compose files (observability, dev, prod, etc.)
-    for pattern in ["docker-compose.*.yml", "docker-compose-*.yml"]:
+    # Check for additional compose files in docker/ directory and root (observability, dev, prod, etc.)
+    for pattern in ["docker/docker-compose.*.yml", "docker/docker-compose-*.yml", "docker-compose.*.yml", "docker-compose-*.yml"]:
         for f in Path(".").glob(pattern):
             if f not in compose_files:
                 compose_files.append(f)
 
     # Static compose files that should NOT be deleted
     static_compose_files = {
+        "docker/docker-compose.yml",
+        "docker/docker-compose.yaml",
+        "docker/docker-compose.observability.yml",
+        "docker/docker-compose.dev.yml",
+        "docker/docker-compose.prod.yml",
         "docker-compose.yml",
         "docker-compose.yaml",
         "docker-compose.observability.yml",
