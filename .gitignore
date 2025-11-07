@@ -64,3 +64,4 @@ htmlcov/
 *.tmp
 *.temp
 *.bak
+old_needs_check/
