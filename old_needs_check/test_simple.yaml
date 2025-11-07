@@ -1,8 +1,0 @@
-name: Simple Python Task
-tasks:
-  - id: hello
-    type: python
-    params:
-      code: |
-        print("Hello from Gleitzeit!")
-        result = {"message": "Success"}
