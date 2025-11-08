@@ -14,16 +14,16 @@ pip install -e .
 
 ```bash
 # Start with default settings (port 8000)
-gleitzeit-api
+gleitzeit serve
 
 # Custom port and host
-gleitzeit-api --host 0.0.0.0 --port 8080
+gleitzeit serve --api-host 0.0.0.0 --api-port 8080
 
 # Development mode with auto-reload
-gleitzeit-api --reload
+gleitzeit serve --dev-mode
 
-# Production with multiple workers
-gleitzeit-api --workers 4
+# API only (no UI)
+gleitzeit serve --no-ui
 ```
 
 ### Option 2: Direct Python
@@ -39,7 +39,7 @@ python -m uvicorn gleitzeit.api.main:app --host 0.0.0.0 --port 8000
 ### Option 3: Docker (if available)
 
 ```bash
-docker run -p 8000:8000 -e REDIS_URL=redis://redis:6379 gleitzeit-api:0.0.7
+docker run -p 8000:8000 -e REDIS_URL=redis://redis:6379 gleitzeit:0.0.7
 ```
 
 ## Basic Workflow Submission
@@ -55,8 +55,8 @@ curl -X POST http://localhost:8000/workflows/submit \
       "name": "hello_world",
       "tasks": [{
         "id": "task1",
-        "type": "python",
-        "handler": "python",
+        "protocol": "python/v1",
+        "method": "python/execute",
         "config": {
           "code": "result = \"Hello, World!\""
         }
@@ -82,8 +82,8 @@ curl -X POST http://localhost:8000/workflows/submit \
       "name": "authenticated_workflow",
       "tasks": [{
         "id": "task1",
-        "type": "python",
-        "handler": "python",
+        "protocol": "python/v1",
+        "method": "python/execute",
         "config": {
           "code": "result = 42"
         }
@@ -112,8 +112,8 @@ def run_workflow():
         "name": "my_workflow",
         "tasks": [{
             "id": "calculate",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "config": {
                 "code": "result = sum(range(100))"
             }
@@ -149,8 +149,8 @@ async def async_workflow():
             "name": "async_workflow",
             "tasks": [{
                 "id": "task1",
-                "type": "python",
-                "handler": "python",
+                "protocol": "python/v1",
+                "method": "python/execute",
                 "config": {"code": "result = 'async result'"}
             }]
         }
@@ -175,21 +175,21 @@ workflow = {
     "tasks": [
         {
             "id": "step1",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "config": {"code": "result = 'Step 1 complete'"}
         },
         {
             "id": "step2",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "depends_on": ["step1"],
             "config": {"code": "result = 'Step 2 complete'"}
         },
         {
             "id": "step3",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "depends_on": ["step2"],
             "config": {"code": "result = 'All steps complete'"}
         }
@@ -205,20 +205,20 @@ workflow = {
     "tasks": [
         {
             "id": "task_a",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "config": {"code": "result = 'Task A'"}
         },
         {
             "id": "task_b",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "config": {"code": "result = 'Task B'"}
         },
         {
             "id": "combine",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "depends_on": ["task_a", "task_b"],
             "config": {"code": "result = 'Combined results'"}
         }
@@ -234,8 +234,8 @@ workflow = {
     "tasks": [
         {
             "id": "fetch",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "config": {
                 "code": """
 import json
@@ -246,8 +246,8 @@ result = {"data": data}
         },
         {
             "id": "transform",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "depends_on": ["fetch"],
             "config": {
                 "code": """
@@ -260,8 +260,8 @@ result = {"transformed": transformed}
         },
         {
             "id": "aggregate",
-            "type": "python",
-            "handler": "python",
+            "protocol": "python/v1",
+            "method": "python/execute",
             "depends_on": ["transform"],
             "config": {
                 "code": """
@@ -350,7 +350,7 @@ lsof -i :8000
 redis-cli ping
 
 # Start with debug logging
-gleitzeit-api --log-level debug
+gleitzeit serve --log-level debug
 ```
 
 ### Authentication Issues
@@ -372,14 +372,14 @@ async def check_session():
 ### Workflow Not Processing
 
 ```bash
-# Check if workers are running
-gleitzeit worker status
+# Check if services are running
+gleitzeit ps
 
 # Check Redis streams
 redis-cli xlen "{shard:0}:workflow:load"
 
-# Start workers if needed
-gleitzeit orchestrator start
+# Start services if needed
+gleitzeit serve
 ```
 
 ## Next Steps
