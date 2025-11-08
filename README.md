@@ -10,7 +10,22 @@ Distributed workflow orchestration system built on Redis Streams.
 
 ## What It Does
 
-Gleitzeit runs workflows as directed acyclic graphs (DAGs) of tasks. Tasks execute in parallel when possible, wait for dependencies when needed, and recover from failures automatically.
+Gleitzeit orchestrates multi-step workflows by breaking them into tasks and executing them as a directed acyclic graph (DAG).
+
+**Key capabilities:**
+- Execute tasks in parallel when dependencies allow
+- Coordinate task execution across dependencies
+- Retry failed tasks automatically with exponential backoff
+- Scale horizontally by adding more workers
+- Monitor execution in real-time via API or web UI
+
+**Use cases:**
+- Data pipelines (ETL, data processing)
+- Multi-step automation (API calls, file processing, validation)
+- LLM workflows (chaining prompts, validation, post-processing)
+- Integration workflows (coordinate multiple services)
+
+Gleitzeit is built for reliability - workers are stateless, all state lives in Redis, and the system recovers gracefully from failures.
 
 ## Installation
 
