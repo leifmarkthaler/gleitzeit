@@ -143,6 +143,285 @@ gleitzeit serve --workers-only
 gleitzeit serve --no-ui
 ```
 
+## Worker Types
+
+Gleitzeit has **17 worker types** organized into core execution workers, support workers, and infrastructure workers. All workers follow the same self-registration pattern.
+
+### Core Execution Workers
+
+#### 1. **Task Execution Worker**
+**File:** `task_execution_worker.py`
+**Purpose:** Executes tasks using registered handlers
+**Listens to:** `{shard:X}:task:ready`
+**Count:** 2+ (horizontally scalable)
+
+**Responsibilities:**
+- Load appropriate handler for task protocol
+- Execute task with circuit breaker protection
+- Store results in Redis
+- Emit `task:completed` or `task:failed` events
+- Handle timeouts and errors
+
+**Related Docs:** [UNIFIED_WORKER_ARCHITECTURE.md](#), Handler documentation in `/docs/handlers/`
+
+#### 2. **Dependency Worker**
+**File:** `dependency_worker.py`
+**Purpose:** Manages task dependencies and readiness
+**Listens to:** `{shard:X}:task:completed`, `{shard:X}:task:failed`, `{shard:X}:workflow:submitted`
+**Count:** 1-2
+
+**Responsibilities:**
+- Track task completion status
+- Check if task dependencies are satisfied
+- Resolve input variables from dependency outputs
+- Move ready tasks to execution queue
+- Update consolidated workflow state
+
+**Related Docs:** [CONSOLIDATED_STATE_ARCHITECTURE.md](CONSOLIDATED_STATE_ARCHITECTURE.md)
+
+#### 3. **Workflow Loader Worker**
+**File:** `workflow_loader_worker_v2.py`
+**Purpose:** Validates and loads workflow definitions
+**Listens to:** `{shard:X}:workflow:load`
+**Count:** 2+ (can scale with load)
+
+**Responsibilities:**
+- Validate workflow structure and syntax
+- Transform tasks from simplified to protocol-based schema
+- Verify handler capabilities for all tasks
+- Create task records in Redis
+- Emit `workflow:submitted` event
+
+**Related Docs:** [WORKFLOW_VALIDATION_ARCHITECTURE.md](WORKFLOW_VALIDATION_ARCHITECTURE.md)
+
+#### 4. **Workflow Submission Worker**
+**File:** `workflow_submission_worker.py`
+**Purpose:** Handles workflow submissions from workflow handler
+**Listens to:** `{shard:X}:workflow:submission`
+**Count:** 1
+
+**Responsibilities:**
+- Receive nested workflow submissions
+- Route to workflow loader
+- Track parent-child workflow relationships
+- Manage workflow invocation metadata
+
+**Related Docs:** [WORKFLOW_HANDLER_EXECUTION_FLOW.md](WORKFLOW_HANDLER_EXECUTION_FLOW.md)
+
+#### 5. **Workflow Monitor Worker**
+**File:** `workflow_monitor_worker.py`
+**Purpose:** Detects workflow completion and updates parent tasks
+**Listens to:** `{shard:X}:task:completed`, `{shard:X}:task:failed`
+**Count:** 1
+
+**Responsibilities:**
+- Monitor all tasks in workflows
+- Detect when all tasks complete
+- Mark workflow as completed or failed
+- Wake parent task if workflow was invoked from another workflow
+- Update workflow completion timestamp
+
+**Related Docs:** [WORKFLOW_HANDLER_EXECUTION_FLOW.md](WORKFLOW_HANDLER_EXECUTION_FLOW.md)
+
+#### 6. **Timer Worker**
+**File:** `timer_worker.py`
+**Purpose:** Manages timer tasks (sleep, delayed execution)
+**Listens to:** Direct Redis scan of timer metadata
+**Count:** 2+ (horizontally scalable)
+
+**Responsibilities:**
+- Scan timer metadata every 1 second
+- Check for expired timers
+- Atomically delete expired timers and wake tasks
+- Support sleep and retry timer types
+- No buckets or registry (simple direct-scan design)
+
+**Related Docs:** [timer-system.md](timer-system.md)
+
+#### 7. **Signal Worker**
+**File:** `signal_worker.py`
+**Purpose:** Manages signal communication (wait/send/broadcast)
+**Listens to:** Direct Redis scan of signal metadata
+**Count:** 1 (uses leader election)
+
+**Responsibilities:**
+- Leader election for signal processing
+- Match signal senders with waiters
+- Handle broadcast signals across workflows
+- Timeout expired signal waits
+- Support scoped and broadcast signals
+
+**Related Docs:** [SIGNAL_SEND_BROADCAST.md](SIGNAL_SEND_BROADCAST.md)
+
+#### 8. **Retry Worker**
+**File:** `retry_worker.py`
+**Purpose:** Handles task retries with exponential backoff
+**Listens to:** `{shard:X}:task:retry`
+**Count:** 1-2
+
+**Responsibilities:**
+- Classify errors (retryable vs non-retryable)
+- Implement exponential backoff with jitter
+- Track retry attempts and history
+- Move to failed state after max retries
+- Dead letter queue for non-retryable errors
+
+**Related Docs:** [retry_mechanism.md](retry_mechanism.md), [RECOVERY_SYSTEM.md](RECOVERY_SYSTEM.md)
+
+### Infrastructure Workers
+
+#### 9. **API Worker**
+**File:** `api_worker.py`
+**Purpose:** Serves REST API and WebSocket connections
+**Port:** 8000 (default, configurable)
+**Count:** 1+ (horizontally scalable with load balancing)
+
+**Responsibilities:**
+- Serve FastAPI REST API
+- Handle WebSocket connections
+- Session-based authentication
+- Workflow submission endpoint
+- Status and monitoring endpoints
+- Port conflict detection
+
+**Related Docs:** [api/QUICK_START.md](api/QUICK_START.md), [api/API_AUTHENTICATION.md](api/API_AUTHENTICATION.md)
+
+#### 10. **UI Worker**
+**File:** `ui_worker.py`
+**Purpose:** Serves web UI for workflow monitoring
+**Port:** 8004 (default, configurable)
+**Count:** 1
+
+**Responsibilities:**
+- Serve HTML/CSS/JS frontend
+- Real-time workflow status display
+- Task timeline visualization
+- Event log viewing
+- Worker registry display
+
+**Related Docs:** [UNIFIED_WORKER_ARCHITECTURE.md](#)
+
+### Support Workers
+
+#### 11. **Reconciliation Worker**
+**File:** `reconciliation_worker.py`
+**Purpose:** Cleanup and garbage collection
+**Scan Interval:** 60 seconds (configurable)
+**Count:** 1
+
+**Responsibilities:**
+- Clean up orphaned tasks
+- Remove expired workflows
+- Prune old events from streams
+- Maintain Redis memory usage
+- Detect and recover zombie workflows
+
+**Configuration:**
+```yaml
+- worker_type: reconciliation
+  worker_class: gleitzeit.workers.reconciliation_worker.WorkflowReconciliationWorker
+  count: 1
+  extra:
+    scan_interval: 60
+    zombie_threshold: 600
+```
+
+#### 12. **Loki Exporter Worker**
+**File:** `loki_exporter_worker.py`
+**Purpose:** Exports logs to Grafana Loki
+**Poll Interval:** 5 seconds (configurable)
+**Count:** 1
+
+**Responsibilities:**
+- Poll Redis for new logs
+- Format logs for Loki ingestion
+- Batch and push to Loki endpoint
+- Add workflow/task metadata labels
+- Handle Loki connection failures
+
+**Note:** Configured via `logging.loki.enabled` in gleitzeit.yaml, not in workers list.
+
+**Configuration:**
+```yaml
+logging:
+  loki:
+    enabled: true
+    url: http://localhost:3100
+    batch_size: 100
+    poll_interval: 5
+```
+
+#### 13. **File Loader Worker**
+**File:** `file_loader_worker.py`
+**Purpose:** Loads workflow definitions from files
+**Status:** Available but not in default config
+**Count:** 0-1 (optional)
+
+**Responsibilities:**
+- Watch filesystem for workflow files (.yaml, .json)
+- Parse workflow definitions
+- Submit workflows automatically
+- Hot-reload on file changes
+- Support directory watching
+
+**Use Case:** Development environments, automated workflow deployment
+
+#### 14. **Health Monitor Worker**
+**File:** `health_monitor_worker.py`
+**Purpose:** Monitors system health
+**Status:** Available but not in default config
+**Count:** 0-1 (optional)
+
+**Responsibilities:**
+- Track worker heartbeats
+- Monitor Redis performance
+- Alert on worker failures
+- Check stream lengths
+- Expose health metrics
+
+**Use Case:** Production environments with monitoring dashboards
+
+#### 15. **Redis Monitor Worker**
+**File:** `redis_monitor_worker.py`
+**Purpose:** Monitors Redis metrics
+**Status:** Available but not in default config
+**Count:** 0-1 (optional)
+
+**Responsibilities:**
+- Track stream lengths and lag
+- Monitor memory usage
+- Detect slow commands
+- Alert on Redis issues
+- Collect performance metrics
+
+**Use Case:** Large deployments, performance tuning
+
+#### 16. **Replay Worker**
+**File:** `replay_worker.py`
+**Purpose:** Replays events for debugging
+**Status:** Available but not in default config
+**Count:** 0-1 (optional)
+
+**Responsibilities:**
+- Capture event streams
+- Store event history
+- Replay events for debugging
+- Support time-travel debugging
+- Event filtering and search
+
+**Use Case:** Debugging complex workflows, post-mortem analysis
+
+### Deprecated Workers
+
+#### 17. **Time Advance Worker** ⚠️
+**File:** `time_advance_worker.py`
+**Status:** Deprecated (kept for backward compatibility)
+**Replaced by:** Direct timer scanning in TimerWorker
+
+**Note:** The old bucket-based timer system with TimeAdvanceWorker was replaced by a simpler direct-scan approach in version 0.0.7. This worker is no longer used but remains in the codebase for backward compatibility.
+
+**Related Docs:** [timer-system.md](timer-system.md#migration-from-old-system)
+
 ## Worker Self-Registration
 
 ### How It Works
