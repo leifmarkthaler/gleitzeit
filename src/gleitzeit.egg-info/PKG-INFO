@@ -23,268 +23,292 @@ Requires-Dist: jinja2>=3.1.0
 Requires-Dist: docker>=6.1.0
 Requires-Dist: rich>=13.0.0
 Requires-Dist: simpleeval>=0.9.13
+Provides-Extra: test
+Requires-Dist: pytest>=8.0.0; extra == "test"
+Requires-Dist: pytest-asyncio>=0.23.0; extra == "test"
+Requires-Dist: pytest-cov>=4.0.0; extra == "test"
+Requires-Dist: pytest-mock>=3.10.0; extra == "test"
 Dynamic: author
 Dynamic: home-page
 Dynamic: requires-python
 
-# Gleitzeit 0.0.7 - Worker-Based Architecture
+# Gleitzeit
 
-A complete rewrite of Gleitzeit with a distributed, worker-based architecture for horizontal scalability.
+Distributed workflow orchestration system built on Redis Streams.
 
-## Key Features
+**Version:** 0.0.7
+**Python:** 3.11+
+**License:** MIT
 
-- **Worker-Based Processing**: Specialized workers for different tasks
-- **Workflow Sharding**: All tasks from a workflow stay on the same shard for locality
-- **Component Orchestrator**: Manages worker lifecycle, health, and auto-scaling
-- **No SystemManager Bottleneck**: Direct API → Redis Streams → Workers architecture
-- **Linear Scalability**: Add workers to increase throughput
-- **Robust Restart Capability**: Force restart with `--restart` flag to take over ports from stuck processes
-- **Distributed Port Management**: Redis-based port allocation with file-based locks for multi-instance support
+---
 
-## Architecture
+## What It Does
 
-```
-API Layer (Thin)
-    ↓
-Redis Streams (Sharded)
-    ↓
-Specialized Workers
-    ├── TaskExecutionWorker (execute tasks)
-    ├── DependencyWorker (resolve dependencies)
-    └── WorkflowLoaderWorker (load workflows)
-```
+Gleitzeit orchestrates multi-step workflows by breaking them into tasks and executing them as a directed acyclic graph (DAG).
 
-## Quick Start
+**Key capabilities:**
+- Execute tasks in parallel when dependencies allow
+- Coordinate task execution across dependencies
+- Retry failed tasks automatically with exponential backoff
+- Scale horizontally by adding more workers
+- Monitor execution in real-time via API or web UI
 
-### Install
+**Use cases:**
+- Data pipelines (ETL, data processing)
+- Multi-step automation (API calls, file processing, validation)
+- LLM workflows (chaining prompts, validation, post-processing)
+- Integration workflows (coordinate multiple services)
+
+Gleitzeit is built for reliability - workers are stateless, all state lives in Redis, and the system recovers gracefully from failures.
+
+## Installation
 
 ```bash
 pip install -e .
 ```
 
-### Start Gleitzeit Services
+**Requirements:**
+- Python 3.11+
+- Redis 4.5.0+
 
-Start all services with the serve command:
+## Quick Start
 
+**1. Start Redis:**
 ```bash
-# Start with default settings
+redis-server
+```
+
+**2. Start Gleitzeit:**
+```bash
 gleitzeit serve
-
-# Start with restart capability (forcefully takes over ports)
-gleitzeit serve --restart
-
-# Start with custom instance name
-gleitzeit serve --instance-name "production" --restart
 ```
 
-### Start Component Orchestrator (Alternative)
+**3. Submit a workflow:**
+```python
+from gleitzeit.client import GleitzeitClient
 
-The orchestrator manages all workers:
+async with GleitzeitClient('http://localhost:8000') as client:
+    workflow = {
+        'name': 'Hello World',
+        'tasks': [{
+            'id': 'greet',
+            'type': 'python',
+            'params': {
+                'code': 'result = {"message": "Hello, World!"}'
+            }
+        }]
+    }
 
-```bash
-gleitzeit orchestrator start
+    response = await client.submit_workflow(workflow)
+    result = await client.wait_for_workflow(response.workflow_id)
+    print(result)
 ```
 
-### Or Start Workers Manually
+## Task Types
 
-```bash
-# Start task execution workers
-gleitzeit worker start --type task_execution --count 10
+Gleitzeit can execute:
 
-# Start dependency workers
-gleitzeit worker start --type dependency --count 5
+- **Python code** (`type: 'python'`)
+- **HTTP requests** (`type: 'http'`)
+- **Timers/delays** (`type: 'timer'`)
+- **Signals** (`type: 'signal'`)
+- **Data validation** (`type: 'validation'`)
+- **LLMs** (Ollama, vLLM)
+- **Nested workflows** (`type: 'workflow'`)
+- **File operations** (`type: 'file'`)
 
-# Start workflow loader workers
-gleitzeit worker start --type workflow_loader --count 2
-```
-
-### Submit a Workflow
-
-```bash
-gleitzeit workflow submit workflow.yaml
-```
-
-### Check Status
-
-```bash
-# Check orchestrator and worker status
-gleitzeit orchestrator status
-
-# List workers
-gleitzeit worker list
-
-# Check workflow status
-gleitzeit workflow status workflow_abc123
-
-# Show metrics
-gleitzeit admin metrics
-
-# View workflow timeline
-gleitzeit replay timeline workflow_abc123
-
-# View task-specific timeline
-gleitzeit replay timeline workflow_abc123 --task process_payment
-
-# Get task execution details
-gleitzeit replay task-details workflow_abc123 process_payment
-```
-
-## Event Timeline & Replay
-
-Gleitzeit provides comprehensive event tracking and replay capabilities:
-
-### Event Timeline
-- **Complete Visibility**: Every workflow and task state change is captured as an event
-- **Workflow Timeline**: View complete execution history with `gleitzeit replay timeline <workflow_id>`
-- **Task Timeline**: Drill down to specific task execution with `--task <task_id>`
-- **System Monitoring**: Cross-workflow event analysis with `gleitzeit monitor events`
-
-### Task-Specific Timeline
-- **Detailed Task Info**: Get execution details, timing, results, and errors for any task
-- **Performance Analysis**: Track task duration and identify bottlenecks
-- **Validation Tracking**: Understand XOR patterns and skip decisions
-- **API Ready**: Built for UI integration with structured data responses
-
-### Replay Capabilities
-- **Multiple Replay Modes**: Full, from_task, failed_only, deterministic
-- **Validation Preservation**: Optionally preserve or re-evaluate validation decisions
-- **Stateless Replay**: Uses existing workers, no special replay infrastructure
-
-### Circuit Breaker Protection
-- **Fail Fast**: Prevents cascade failures when external services are down
-- **Automatic Recovery**: Tests and recovers when services return
-- **Per-Handler Configuration**: Each external service can have its own thresholds
-- **Preserves Hard-Fail**: Failed tasks still fail workflows as expected
-
-See [Event Timeline Documentation](docs/features/event_timeline.md), [Task Timeline Documentation](docs/features/task_timeline.md), and [Circuit Breaker Documentation](docs/features/circuit_breaker.md) for details.
-
-## Workflow Format
-
-```yaml
-name: example-workflow
-tasks:
-  - id: task1
-    type: python
-    function: process_data
-
-  - id: task2
-    type: shell
-    command: echo "Processing complete"
-    dependencies: [task1]
-```
-
-## Worker Types
-
-### TaskExecutionWorker
-- Executes tasks from `task:ready` streams
-- Maintains provider pools for different execution types
-- Handles retries and failures
-
-### DependencyWorker
-- Processes task completions
-- Resolves dependencies
-- Emits ready tasks
-
-### WorkflowLoaderWorker
-- Loads workflows from files
-- Validates workflow structure
-- Submits to execution pipeline
-
-## Sharding Strategy
-
-Workflows are sharded by ID to maintain locality:
-- All tasks from a workflow go to the same shard
-- Dependencies are resolved locally
-- No cross-shard communication needed
-
-## Scaling
-
-### Auto-scaling with Orchestrator
-
-The ComponentOrchestrator automatically scales workers based on queue depth:
+## Example Workflow
 
 ```python
-WorkerSpec(
-    worker_type="task_execution",
-    count=5,
-    auto_scale=True,
-    min_replicas=1,
-    max_replicas=50,
-    scale_threshold_high=100,  # Scale up threshold
-    scale_threshold_low=10      # Scale down threshold
-)
+workflow = {
+    'name': 'Data Pipeline',
+    'tasks': [
+        {
+            'id': 'fetch',
+            'type': 'http',
+            'params': {
+                'url': 'https://api.example.com/data',
+                'method': 'GET'
+            }
+        },
+        {
+            'id': 'process',
+            'type': 'python',
+            'depends_on': ['fetch'],
+            'params': {
+                'code': '''
+data = inputs.get("fetch", {})
+result = {"processed": len(data)}
+'''
+            }
+        },
+        {
+            'id': 'save',
+            'type': 'http',
+            'depends_on': ['process'],
+            'params': {
+                'url': 'https://api.example.com/results',
+                'method': 'POST',
+                'json': '{{ inputs.process }}'
+            }
+        }
+    ]
+}
 ```
 
-### Manual Scaling
+## CLI Commands
 
 ```bash
-# Scale task execution workers to 50
-kubectl scale deployment task-execution-workers --replicas=50
+# Start services
+gleitzeit serve
+
+# Check status
+gleitzeit ps
+
+# View logs
+gleitzeit logs <service>
+
+# Stop services
+gleitzeit stop
 ```
+
+## Architecture
+
+```
+Client → API (port 8000) → Redis Streams → Workers → Handlers
+```
+
+**Components:**
+- **Workers:** Self-registering processes (task execution, dependency resolution, etc.)
+- **Redis Streams:** Event bus for communication
+- **Handlers:** Execute different task types
+- **State:** Single source of truth in Redis
+
+All workers are stateless and horizontally scalable.
 
 ## Configuration
 
-Create a `gleitzeit.yaml` configuration file:
+Edit `gleitzeit.yaml` to configure:
+- Worker counts and scaling
+- Handler settings (timeouts, retries)
+- Redis connection
+- Logging and monitoring
 
-```yaml
-redis_url: redis://localhost:6379
-num_shards: 16
+## API
 
-workers:
-  - worker_type: task_execution
-    count: 10
-    auto_scale: true
-    max_replicas: 100
+REST API on port 8000:
 
-  - worker_type: dependency
-    count: 5
-    auto_scale: true
-    max_replicas: 20
+```bash
+# Submit workflow
+curl -X POST http://localhost:8000/workflows/submit \
+  -H "Content-Type: application/json" \
+  -d '{"workflow": {...}}'
 
-  - worker_type: workflow_loader
-    count: 2
-    auto_scale: false
+# Check status
+curl http://localhost:8000/workflows/{workflow_id}
+
+# Get results
+curl http://localhost:8000/tasks/{task_id}/result
+```
+
+Web UI: http://localhost:8004
+
+## Documentation
+
+- **Quick Start:** [docs/api/QUICK_START.md](docs/api/QUICK_START.md)
+- **Python Client:** [docs/EASY_CLIENT_GUIDE.md](docs/EASY_CLIENT_GUIDE.md)
+- **Architecture:** [docs/ARCHITECTURE_OVERVIEW.md](docs/ARCHITECTURE_OVERVIEW.md)
+- **All Documentation:** [docs/](docs/)
+
+## Project Structure
+
+```
+gleitzeit/
+├── src/gleitzeit/      # Source code
+│   ├── api/            # REST API
+│   ├── client/         # Python SDK
+│   ├── workers/        # Worker implementations
+│   ├── handlers/       # Task handlers
+│   └── core/           # Core utilities
+├── docs/               # Documentation
+├── examples/           # Example workflows
+├── tests/              # Tests
+└── gleitzeit.yaml      # Configuration
 ```
 
 ## Development
 
-### Run Tests
-
 ```bash
-pytest tests/
+# Install with test dependencies
+pip install -e ".[test]"
+
+# Run tests
+pytest
+
+# Development mode with auto-reload
+gleitzeit serve --dev-mode
 ```
 
-### Worker Development
+## How It Works
 
-Create custom workers by extending `BaseWorker`:
+1. Client submits workflow to API
+2. Workflow Loader validates and creates tasks
+3. Dependency Worker tracks task readiness
+4. Task Execution Workers execute via handlers
+5. Results stored in Redis
+6. Client retrieves results
 
-```python
-from gleitzeit.workers.base import BaseWorker
+All communication happens through Redis Streams. Workers self-register with heartbeats. Failed tasks retry with exponential backoff.
 
-class CustomWorker(BaseWorker):
-    def get_base_streams(self):
-        return ["custom:stream"]
+## Deployment
 
-    async def process_message(self, stream, msg_id, data):
-        # Process message
-        pass
+**Single Machine:**
+```bash
+gleitzeit serve
 ```
 
-## Migration from 0.0.6
+**Multi-Machine:**
+```bash
+# Coordinator (API + workers)
+gleitzeit serve --instance-role coordinator
 
-The architecture has fundamentally changed:
-- SystemManager is replaced by ComponentOrchestrator
-- All processing moved to workers
-- Direct stream writing from API
-- Workflow-based sharding
+# Workers only
+gleitzeit serve --workers-only --redis-url redis://coordinator:6379
+```
+
+## Monitoring
+
+- Service status: `gleitzeit ps`
+- Redis streams: `redis-cli xlen "{shard:0}:task:ready"`
+- Logs: `gleitzeit logs <service>`
+- Web UI: http://localhost:8004
+
+## Recovery
+
+Gleitzeit handles failures at four levels:
+
+1. **ACK Control:** Workers acknowledge messages
+2. **Consumer Groups:** Redis manages delivery
+3. **XCLAIM Recovery:** Reclaim stuck messages
+4. **Retry Worker:** Exponential backoff
+
+See [docs/RECOVERY_SYSTEM.md](docs/RECOVERY_SYSTEM.md)
 
 ## Performance
 
-With the worker architecture:
-- **Throughput**: 10,000+ tasks/second (was 100/sec)
-- **Latency**: <50ms P99 (was 500ms)
-- **Scale**: Unlimited horizontal scaling
+Typical throughput:
+- 100-1000 tasks/second (depends on task complexity)
+- Horizontally scalable
+- Low overhead (<100ms per task)
+
+## Contributing
+
+Personal project. Feel free to fork and adapt.
 
 ## License
 
-MIT
+MIT - see LICENSE file
+
+---
+
+**Version 0.0.7** - November 2025

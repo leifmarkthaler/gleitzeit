@@ -1,0 +1,361 @@
+# Gleitzeit Configuration with Handler Support
+# This example shows how to configure handlers in gleitzeit.yaml
+
+redis:
+  mode: single
+  single_node:
+    host: localhost
+    port: 6379
+
+  # Redis Health Monitoring (per-instance)
+  health:
+    enabled: true
+    check_interval: 10              # Seconds between Redis health checks
+    warning_threshold: 3            # Consecutive failures before WARNING
+    critical_timeout: 120           # Seconds before CRITICAL state
+    shutdown_timeout: 300           # Seconds before SHUTDOWN
+
+  # Shutdown Behavior on Redis Failure
+  shutdown:
+    mode: graceful                  # "graceful" or "immediate"
+    grace_period: 30                # Seconds to wait for task completion
+    force_after: 60                 # Force shutdown after this many seconds
+
+# Handler Configuration Section
+handlers:
+  # Python handler configuration
+  python:
+    execution:
+      mode: container  # Options: native, subprocess, container, remote, auto
+      container:
+        image: python:3.11-slim  # Use official Python image
+        network: bridge  # Use bridge network for isolation
+        memory_limit: "512m"  # Limit memory usage
+        cpu_limit: 1.0  # Limit to 1 CPU core
+        volumes:
+          /tmp/gleitzeit: /tmp/gleitzeit  # For file sharing
+        environment:
+          PYTHONUNBUFFERED: "1"
+          TZ: "UTC"
+    # Handler will now check execution_mode from execution.mode
+    execution_mode: container  # This tells handler to use container mode
+    config:
+      # Subprocess pool settings (used when mode: subprocess or fallback)
+      subprocess_pool_enabled: true
+      subprocess_pool_min_size: 2
+      subprocess_pool_max_size: 10
+      default_timeout: 300
+
+  # Ollama handler configuration
+  ollama:
+    execution:
+      mode: native
+    config:
+      base_url: http://localhost:11434
+      timeout: 300
+      default_model: llama3.2:latest
+      circuit_breaker:
+        enabled: true
+        failure_threshold: 3
+        success_threshold: 2
+        reset_timeout: 60
+
+  # HTTP handler configuration
+  http:
+    execution:
+      mode: native
+    config:
+      timeout: 30
+      max_retries: 3
+      allowed_hosts:
+        - api.example.com
+        - webhook.service.com
+      default_headers:
+        User-Agent: Gleitzeit/0.0.7
+
+  # File handler configuration
+  file:
+    execution:
+      mode: native
+    config:
+      base_directories:
+        input: /data/input
+        output: /data/output
+        temp: /tmp/gleitzeit
+      max_file_size_mb: 100
+
+  # Timer handler configuration
+  timer:
+    execution:
+      mode: native
+    config:
+      precision_ms: 100
+      backend: redis
+
+  # Signal handler configuration
+  signal:
+    execution:
+      mode: native
+    config:
+      delivery_mode: at_least_once
+      max_signals_per_workflow: 1000
+      signal_registry_ttl: 3600  # Seconds before orphaned signals expire (default: 1 hour)
+
+  # Workflow handler configuration
+  workflow:
+    execution:
+      mode: native
+    config:
+      max_child_workflows: 100
+      async_submission: true
+
+# Worker configuration with handler configs
+workers:
+  # API service as worker (self-registers with heartbeat)
+  - worker_type: api
+    worker_class: gleitzeit.workers.api_worker.APIWorker
+    count: 1
+    extra:
+      host: 0.0.0.0
+      port: 8000
+      dev_mode: false
+
+  # UI service as worker (self-registers with heartbeat)
+  - worker_type: ui
+    worker_class: gleitzeit.workers.ui_worker.UIWorker
+    count: 1
+    extra:
+      host: 0.0.0.0
+      port: 8004
+      api_port: 8000
+      dev_mode: false
+
+  # Task execution worker with handler configurations
+  - worker_type: task_execution
+    worker_class: gleitzeit.workers.task_execution_worker.TaskExecutionWorker
+    count: 2
+    max_concurrent: 5
+    batch_size: 10
+    block_timeout: 5000
+    # Worker-specific handler configs (override global settings)
+    handler_configs:
+      "python/v1":
+        subprocess_pool_enabled: true
+        subprocess_pool_max_size: 20  # Override global setting for this worker
+        default_timeout: 600  # Longer timeout for this worker
+      "ollama/v1":
+        base_url: http://localhost:11434
+        timeout: 180  # 3 minutes for LLM tasks
+        default_model: llama3.2:latest  # Use llama3.2:latest for this worker
+
+  # Dependency worker
+  - worker_type: dependency
+    worker_class: gleitzeit.workers.dependency_worker.DependencyWorker
+    count: 1
+    max_concurrent: 10
+    batch_size: 10
+    block_timeout: 5000
+
+  # Workflow loader worker
+  - worker_type: workflow_loader
+    worker_class: gleitzeit.workers.workflow_loader_worker_v2.WorkflowLoaderWorkerV2
+    count: 2
+    max_concurrent: 10
+    batch_size: 10
+    block_timeout: 5000
+
+  # Specialized Python-only worker with custom config
+  # DISABLED: Causes issues with task routing - general task_execution workers handle all types
+  # - worker_type: python_specialist
+  #   worker_class: gleitzeit.workers.task_execution_worker.TaskExecutionWorker
+  #   count: 1
+  #   max_concurrent: 3
+  #   enabled_task_types: [python, script]  # Only handle Python tasks
+  #   handler_configs:
+  #     "python/v1":
+  #       subprocess_pool_enabled: true
+  #       subprocess_pool_min_size: 5
+  #       subprocess_pool_max_size: 30  # More capacity for Python-heavy workloads
+  #       default_timeout: 1800  # 30 minutes for long-running scripts
+
+  # Other workers...
+  - worker_type: workflow_submission
+    worker_class: gleitzeit.workers.workflow_submission_worker.WorkflowSubmissionWorker
+    count: 1
+    max_concurrent: 5
+    batch_size: 5
+    block_timeout: 5000
+
+  - worker_type: retry
+    worker_class: gleitzeit.workers.retry_worker.RetryWorker
+    count: 1
+    max_concurrent: 10
+    batch_size: 10
+    block_timeout: 5000
+
+  # Timer worker (scans for expired timers every 1 second)
+  - worker_type: timer
+    worker_class: gleitzeit.workers.timer_worker.TimerWorker
+    count: 2  # Can scale horizontally now!
+    max_concurrent: 10
+    batch_size: 10
+    block_timeout: 1000
+
+  - worker_type: signal
+    worker_class: gleitzeit.workers.signal_worker.SignalWorker
+    count: 1
+    max_concurrent: 10
+    batch_size: 10
+    block_timeout: 1000
+
+  # Workflow state reconciliation worker
+  - worker_type: reconciliation
+    worker_class: gleitzeit.workers.reconciliation_worker.WorkflowReconciliationWorker
+    count: 1
+    max_concurrent: 5
+    # Extra configuration for reconciliation worker
+    extra:
+      scan_interval: 60        # Seconds between reconciliation scans
+      batch_size: 100          # Workflows to process per batch
+      lock_ttl: 120           # Lock TTL in seconds
+      zombie_threshold: 600    # Seconds of inactivity before marking as zombie
+      max_concurrent: 5        # Max workflows to reconcile concurrently
+
+  # NOTE: Loki exporter is NOT configured here
+  # It runs as a standalone process (like API/UI) and is controlled by:
+  #   logging.loki.enabled: true/false
+  # See AsyncProcessManager.start_loki_exporter() for implementation
+
+# Sharding configuration
+sharding:
+  num_shards: 16
+  rebalance_interval: 300
+
+# Logging Configuration
+logging:
+  # Enable Redis-backed queryable logging
+  redis_logging_enabled: true
+
+  # Enable file-based logging (stdout/stderr to log files)
+  # When disabled, only Redis logging is used
+  # Useful for debugging or when Redis logging is not sufficient
+  file_logging_enabled: true
+
+  # Minimum level to log to Redis (DEBUG, INFO, WARNING, ERROR)
+  redis_log_level: INFO
+
+  # Sampling rates (0.0 - 1.0) to control Redis memory usage
+  sampling:
+    debug: 0.1    # Only log 10% of DEBUG logs to Redis
+    info: 1.0     # Log all INFO logs
+    warning: 1.0  # Log all WARNING logs
+    error: 1.0    # Log all ERROR logs
+
+  # TTL (time to live) in seconds for log retention in Redis
+  # With Loki integration, Redis serves as hot storage for fast queries
+  # while Loki provides long-term persistent storage
+  ttl:
+    debug: 172800     # 48 hours (2 days)
+    info: 172800      # 48 hours (2 days)
+    warning: 172800   # 48 hours (2 days)
+    error: 172800     # 48 hours (2 days)
+
+  # Component-specific log levels
+  # Override redis_log_level for specific components
+  component_levels:
+    # Example: More verbose logging for specific components
+    # PythonHandler: DEBUG
+    # TaskExecutionWorker: INFO
+    # DependencyWorker: WARNING
+
+  # Performance limits to prevent Redis memory bloat
+  limits:
+    # Max logs per workflow (per level) before rotation
+    max_logs_per_workflow: 10000
+
+    # Max log message size (bytes)
+    max_message_size: 10240  # 10KB
+
+    # Batch size for bulk log operations
+    batch_size: 100
+
+  # Loki Integration for long-term log storage
+  loki:
+    enabled: true               # Enable Loki exporter
+    url: http://localhost:3100  # Loki server URL
+    batch_size: 100             # Number of logs to batch before pushing
+    poll_interval: 5            # Seconds between polls for new logs
+    retention_days: 30          # How long Loki should retain logs
+
+# Monitoring Configuration
+monitoring:
+  # Worker Heartbeat and Metrics
+  worker:
+    heartbeat_interval: 30          # Seconds between worker heartbeats
+    heartbeat_timeout: 60           # Consider worker unhealthy after this
+    max_health_failures: 3          # Restart worker after this many failures
+    include_metrics: true           # Include worker metrics in heartbeat
+    include_system_stats: true      # Include CPU/memory in heartbeat
+
+    # Enhanced Health Thresholds
+    health_thresholds:
+      max_memory_mb: 2048           # Max memory before unhealthy
+      min_processing_rate: 0.1      # Min messages/sec
+      max_error_rate: 0.5           # Max error rate (0.0-1.0)
+      max_avg_processing_ms: 30000  # Max avg processing time
+
+  # Service Heartbeat
+  service:
+    heartbeat_interval: 30          # Seconds between service heartbeats
+    registration_ttl: 90            # TTL for service registrations
+    circuit_breaker:
+      enabled: true
+      failure_threshold: 10         # Open circuit after N failures
+      reset_timeout: 300            # Reset circuit after N seconds
+
+  # Component Health Monitoring
+  component:
+    health_check_interval: 10       # Seconds between health checks
+    enable_system_metrics: true     # Collect CPU/memory metrics
+    enable_queue_metrics: true      # Collect queue depth metrics
+
+  # Metrics Collection
+  metrics:
+    collection_interval: 60         # Seconds between metric collection
+    retention_period: 3600          # Seconds to retain metrics
+
+  # Auto-Scaling
+  auto_scale:
+    enabled: true
+    check_interval: 30              # Seconds between scaling checks
+    scale_up_threshold: 100         # Avg queue depth to scale up
+    scale_down_threshold: 10        # Avg queue depth to scale down
+
+# Authentication
+auth:
+  auto_login: true
+  jwt:
+    secret: ${JWT_SECRET:-development-secret-change-in-production}
+    algorithm: HS256
+    expiration: 3600
+
+# Security
+security:
+  cors:
+    use_serve_config: true
+    allow_credentials: true
+    allow_methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers: ["Content-Type", "Authorization"]
+
+# Serve configuration
+serve:
+  api:
+    host: 0.0.0.0
+    port: 8000
+  ui:
+    host: 0.0.0.0
+    port: 8004
+    enabled: true
+  orchestrator:
+    enabled: true
+  dev_mode: false
