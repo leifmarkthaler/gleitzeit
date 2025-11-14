@@ -49,5 +49,6 @@ where = ["src"]
 gleitzeit = [
     "ui/templates/*.html",
     "ui/static/**/*",
-    "config/*.yaml"
+    "config/*.yaml",
+    "config/*.default"
 ]

@@ -77,7 +77,7 @@ def get_accessible_ip(host: str) -> str:
 api_host = get_accessible_ip(api_host_config)
 
 # Configuration - Use gleitzeit.yaml settings, environment variable can override
-API_BASE_URL = os.getenv("GLEITZEIT_API_URL", f"http://{api_host_config}:{api_port}")
+API_BASE_URL = os.getenv("GLEITZEIT_API_URL", f"http://{api_host}:{api_port}")
 API_KEY = os.getenv("GLEITZEIT_API_KEY", "dev-key-12345")  # Default dev key
 
 app = FastAPI(title="Gleitzeit UI2")
